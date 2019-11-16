@@ -1,0 +1,25 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "0A1139FA2CF7A59823D00B169C0CB3385DF13370",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+    "0A1139FA2CF7A59823D00B169C0CB3385DF13370" : {
+
+    }
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "0A1139FA2CF7A59823D00B169C0CB3385DF13370" : 0
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "5D407ABA-CB94-4248-A405-E35E1FEDBF88",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "0A1139FA2CF7A59823D00B169C0CB3385DF13370" : "Lightwave\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "LWEngine",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "Engine\/Build\/XCode\/LWEngine.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/neonlightgames.com\/svn\/Lightwave",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Subversion",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "0A1139FA2CF7A59823D00B169C0CB3385DF13370"
+    }
+  ]
+}

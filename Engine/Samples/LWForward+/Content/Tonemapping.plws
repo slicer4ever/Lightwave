@@ -1,0 +1,35 @@
+#module Pixel DirectX11_1
+static const float Gamma = 2.2f;
+static const float InvGamma = 1.0f/Gamma;
+
+float4 SRGBToLinear(float4 RGBA){
+	return float4(pow(RGBA.xyz, float3(Gamma, Gamma, Gamma)), RGBA.w);
+}
+
+float4 LinearToSRGB(float4 RGBA){
+	return float4(pow(RGBA.xyz, float3(InvGamma, InvGamma, InvGamma)), RGBA.w);
+}
+
+float4 ToneMap(float4 RGBA){
+	const float Exposure = 1.0f;
+	return LinearToSRGB(float4(RGBA.xyz*Exposure, RGBA.a));
+}
+
+#module Pixel OpenGL4_5
+const float Gamma = 2.2f;
+const float InvGamma = 1.0f/Gamma;
+
+vec4 SRGBToLinear(vec4 RGBA){
+	//return RGBA;
+	return vec4(pow(RGBA.xyz, vec3(Gamma)), RGBA.w);
+}
+
+vec4 LinearToSRGB(vec4 RGBA){
+	//return RGBA;
+	return vec4(pow(RGBA.xyz, vec3(InvGamma)), RGBA.w);
+}
+
+vec4 ToneMap(vec4 RGBA){
+	const float Exposure = 1.0f;
+	return LinearToSRGB(vec4(RGBA.xyz*Exposure, RGBA.a));
+}

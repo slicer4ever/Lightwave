@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>SchemeUserState</key>
+	<dict>
+		<key>LWCore.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>1</integer>
+		</dict>
+		<key>LWPlatform.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>2</integer>
+		</dict>
+		<key>LWVideo.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>3</integer>
+		</dict>
+		<key>LightWave Framework.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>0</integer>
+		</dict>
+	</dict>
+	<key>SuppressBuildableAutocreation</key>
+	<dict>
+		<key>183AEAB41A6E066300ABD02F</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>183AEACF1A6E08B100ABD02F</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>1897DC0D1A7462B0006971A4</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>189822091A704AEE0026FF0D</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+	</dict>
+</dict>
+</plist>

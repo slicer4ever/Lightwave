@@ -1,0 +1,25 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "0A1139FA2CF7A59823D00B169C0CB3385DF13370",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+    "0A1139FA2CF7A59823D00B169C0CB3385DF13370" : {
+
+    }
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "0A1139FA2CF7A59823D00B169C0CB3385DF13370" : 0
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "2CD9D1B3-AFDB-484C-9122-97527DDD2445",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "0A1139FA2CF7A59823D00B169C0CB3385DF13370" : "Lightwave\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "ogg",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "Dependency\/Build\/libogg\/XCode\/ogg.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/liquidgames.org\/svn\/Lightwave",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Subversion",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "0A1139FA2CF7A59823D00B169C0CB3385DF13370"
+    }
+  ]
+}

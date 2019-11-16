@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\LWAllocators">
+      <UniqueIdentifier>{f30f3ebb-8b15-4e34-856e-1a524689856f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\LWConcurrent">
+      <UniqueIdentifier>{adbc1d5f-c337-4e66-b37b-8a5b62950621}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\LWAllocators">
+      <UniqueIdentifier>{040e5a78-5cf3-4b40-84d8-00f861603cba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\LWConcurrent">
+      <UniqueIdentifier>{cf76440f-c0b2-4711-845b-e5ee9a00b45e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWAllocators\LWAllocator_Default.h">
+      <Filter>Header Files\LWAllocators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWAllocators\LWAllocator_LocalCircular.h">
+      <Filter>Header Files\LWAllocators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWAllocators\LWAllocator_LocalHeap.h">
+      <Filter>Header Files\LWAllocators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWAllocators\LWAllocator_ConcurrentCircular.h">
+      <Filter>Header Files\LWAllocators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWAllocators\LWAllocator_DefaultDebug.h">
+      <Filter>Header Files\LWAllocators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWConcurrent\LWFIFO.h">
+      <Filter>Header Files\LWConcurrent</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWAllocator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWByteBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWCrypto.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWMath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWMatrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWQuaternion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWText.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWTimer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWVector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWByteStream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWAllocator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWByteBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWCrypto.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWText.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWTimer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWAllocators\LWAllocator_Default.cpp">
+      <Filter>Source Files\LWAllocators</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWAllocators\LWAllocator_LocalCircular.cpp">
+      <Filter>Source Files\LWAllocators</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWAllocators\LWAllocator_LocalHeap.cpp">
+      <Filter>Source Files\LWAllocators</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWAllocators\LWAllocator_ConcurrentCircular.cpp">
+      <Filter>Source Files\LWAllocators</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWAllocators\LWAllocator_DefaultDebug.cpp">
+      <Filter>Source Files\LWAllocators</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\c++11\LWCore\LWMath.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWByteStream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

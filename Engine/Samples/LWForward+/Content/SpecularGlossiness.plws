@@ -1,0 +1,103 @@
+#module Pixel DirectX11_1
+static const uint DiffuseColorTexBit = 0x8;
+static const uint SpecularColorTexBit = 0x10;
+
+struct SpecularGlossMat{
+	float4 m_DiffuseColor;
+	float4 m_SpecularColor;
+};
+
+Texture2D DiffuseColorTex;
+Texture2D SpecularColorTex;
+SamplerState DiffuseColorSmp;
+SamplerState SpecularColorSmp;
+
+SpecularGlossMat PrepareMaterial(float2 TexCoord, uint HasTexturesFlag, float4 DiffuseColorFactor, float4 SpecularColorFactor){
+	SpecularGlossMat R;
+	R.m_DiffuseColor = DiffuseColorFactor;
+	R.m_SpecularColor = SpecularColorFactor;
+	if((HasTexturesFlag&DiffuseColorTexBit)!=0) R.m_DiffuseColor *= SRGBToLinear(DiffuseColorTex.Sample(DiffuseColorSmp, TexCoord));
+	//glossiness is stored in the w channel.
+	if((HasTexturesFlag&SpecularColorTexBit)!=0) R.m_SpecularColor *= SRGBToLinear(SpecularColorTex.Sample(SpecularColorSmp, TexCoord));
+
+	return R;
+}
+
+float4 doSpecularGlossiness(Light L, LightResults LR, SpecularGlossMat Mat){
+	const float pi = 3.1415926535897932384626433832795f;
+	float Roughness = (1.0f-Mat.m_SpecularColor.w);
+	float A = Roughness*Roughness;
+	float A2 = A*A;
+	float m = max(max(Mat.m_SpecularColor.x, Mat.m_SpecularColor.y), Mat.m_SpecularColor.z);
+	
+	float4 CDiff = Mat.m_DiffuseColor*(1.0f-m);
+	float4 CSpec = float4(Mat.m_SpecularColor.xyz, 0.0f);
+	
+	float Reflectance = saturate(max(max(CSpec.r, CSpec.g), CSpec.b)*50.0f);
+	float4 Spec0 = CSpec;
+	float4 Spec90 = float4(Reflectance, Reflectance, Reflectance, Reflectance);
+	float4 F = Spec0+(Spec90-Spec0)*pow(clamp(1.0f-LR.VdotH, 0.0f, 1.0f), 5.0f);
+	
+    float GGXV = LR.NdotL*sqrt(LR.NdotV * LR.NdotV * (1.0 - A2) +A2);
+    float GGXL = LR.NdotV*sqrt(LR.NdotL * LR.NdotL * (1.0 - A2) +A2);
+	float G = max(GGXV+GGXL, 0.0f);
+	if(G>0.0f) G = 0.5f/G;
+	
+	float K = (LR.NdotH*A2-LR.NdotH)*LR.NdotH+1.0;
+	float D = A2/(pi*K*K);
+	
+	float4 fSpecular = F*G*D;
+	float4 fDiffuse = (1.0f-F)*(CDiff/pi);
+	return float4(L.m_Color.xyz, 1.0f)*L.m_Color.w*LR.Att*LR.NdotL*(fSpecular+fDiffuse);
+}
+
+#module Pixel OpenGL4_5
+const uint DiffuseColorTexBit = 0x8;
+const uint SpecularColorTexBit = 0x10;
+
+struct SpecularGlossMat{
+	vec4 m_DiffuseColor;
+	vec4 m_SpecularColor;
+};
+
+uniform sampler2D DiffuseColorTex;
+uniform sampler2D SpecularColorTex;
+
+SpecularGlossMat PrepareMaterial(vec2 TexCoord, uint HasTexturesFlag, vec4 DiffuseColorFactor, vec4 SpecularColorFactor){
+	SpecularGlossMat R;
+	R.m_DiffuseColor = DiffuseColorFactor;
+	R.m_SpecularColor = SpecularColorFactor;
+	if((HasTexturesFlag&DiffuseColorTexBit)!=0) R.m_DiffuseColor *= SRGBToLinear(texture(DiffuseColorTex, TexCoord));
+	//glossiness is stored in the w channel.
+	if((HasTexturesFlag&SpecularColorTexBit)!=0) R.m_SpecularColor *= SRGBToLinear(texture(SpecularColorTex, TexCoord));
+
+	return R;
+}
+
+vec4 doSpecularGlossiness(Light L, LightResults LR, SpecularGlossMat Mat){
+	const float pi = 3.1415926535897932384626433832795f;
+	float Roughness = (1.0f-Mat.m_SpecularColor.w);
+	float A = Roughness*Roughness;
+	float A2 = A*A;
+	float m = max(max(Mat.m_SpecularColor.x, Mat.m_SpecularColor.y), Mat.m_SpecularColor.z);
+	
+	vec4 CDiff = Mat.m_DiffuseColor*(1.0f-m);
+	vec4 CSpec = vec4(Mat.m_SpecularColor.xyz, 0.0f);
+	
+	float Reflectance = clamp(max(max(CSpec.r, CSpec.g), CSpec.b)*50.0f, 0.0f, 1.0f);
+	vec4 Spec0 = CSpec;
+	vec4 Spec90 = vec4(Reflectance);
+	vec4 F = Spec0+(Spec90-Spec0)*pow(clamp(1.0f-LR.VdotH, 0.0f, 1.0f), 5.0f);
+	
+    float GGXV = LR.NdotL*sqrt(LR.NdotV * LR.NdotV * (1.0 - A2) +A2);
+    float GGXL = LR.NdotV*sqrt(LR.NdotL * LR.NdotL * (1.0 - A2) +A2);
+	float G = max(GGXV+GGXL, 0.0f);
+	if(G>0.0f) G = 0.5f/G;
+	
+	float K = (LR.NdotH*A2-LR.NdotH)*LR.NdotH+1.0;
+	float D = A2/(pi*K*K);
+	
+	vec4 fSpecular = F*G*D;
+	vec4 fDiffuse = (1.0f-F)*(CDiff/pi);
+	return vec4(L.m_Color.xyz, 1.0f)*L.m_Color.w*LR.Att*LR.NdotL*(fSpecular+fDiffuse);
+}

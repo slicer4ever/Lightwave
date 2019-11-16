@@ -1,0 +1,54 @@
+#module Pixel DirectX11_1
+
+cbuffer Data{
+   float4 Color;
+   float4x4 Matrix;
+};
+
+struct Pixel{
+  float4 Position : SV_POSITION;
+  float4 TexCoord : TEXCOORD0;
+};
+
+Texture2D Tex;
+SamplerState TexSampler;
+
+float4 main(Pixel In) : SV_TARGET{
+  return Color*Tex.Sample(TexSampler, In.TexCoord.xy);
+}
+
+#module Pixel OpenGL3_3 OpenGL4_5
+#version 330
+layout(std140) uniform Data{
+   vec4 Color;
+   mat4 Matrix;
+};
+uniform sampler2D Tex;
+in vec4 pTexCoord;
+out vec4 p_Color;
+void main(void){
+	p_Color = texture(Tex, pTexCoord.xy)*Color;
+}
+
+
+#module Pixel OpenGL2_1
+struct DataS{
+	vec4 Color;
+	mat4 Matrix;
+};
+uniform DataS Data;
+uniform sampler2D Tex;
+varying vec4 pTexCoord;
+void main(void){
+	gl_FragColor = texture2D(Tex, pTexCoord.xy)*Data.Color;
+}
+
+#module Pixel OpenGLES2
+#block Uniform
+uniform lowp vec4 Color;
+uniform highp mat4 Matrix;
+uniform sampler2D Tex;
+varying lowp vec2 pTexCoord;
+void main(void){
+	gl_FragColor = texture2D(Tex, pTexCoord)*Color;
+}

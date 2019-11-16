@@ -1,0 +1,232 @@
+#module Vertex DirectX11_1
+static const int MaxShadows = 8;
+cbuffer ListData{
+	float4x4 ProjViewMatrix;
+	float4x4 ShadowProjViewMatrix[MaxShadows];
+	float4 FrustumPoints[6];
+	float4 ViewPosition;
+	float2 ScreenSize;
+	int2 ThreadDimensions;
+	int2 TileSize;
+	int LightCount;
+};
+
+cbuffer ModelData{
+   float4x4 TransformMatrix;
+   float4x4 BoneMatrixs[64];
+};
+
+struct Vertex{
+  float4 Position : POSITION;
+  float4 TexCoord : TEXCOORD;
+  float4 Tangent : TANGENT;
+  float4 Normal : NORMAL;
+  float4 BoneWeight : BLENDWEIGHT;
+  int4 BoneIndices : BLENDINDICES;
+#ifdef POINT
+	uint InstanceID : SV_InstanceID;
+#endif
+};
+
+struct Pixel{
+  float4 Position : SV_POSITION;
+  float4 WPosition : POSITION0;
+  float4 SPosition[MaxShadows] : POSITION1;
+  float4 TexCoord : TEXCOORD0;
+  float3x3 TBN : NORMAL0;
+#ifdef POINT	
+  float Clip : SV_ClipDistance0;
+#endif
+
+};
+
+
+#ifdef POINT
+float4 Project(float4 Pos, uint InstanceID){	
+	const float iT = 1.0f/3.0f;
+	const float3x3 PointMatrixs[6] = {float3x3(float3( 1.0f, 0.0f, 0.0f), float3(0.0f, 1.0f, 0.0f), float3(0.0f, 0.0f, 1.0f)),
+									  float3x3(float3( 1.0f, 0.0f, 0.0f), float3(0.0f, 1.0f, 0.0f), float3(0.0f, 0.0f,-1.0f)),
+									  float3x3(float3( 1.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 1.0f), float3(0.0f, 1.0f, 0.0f)),
+									  float3x3(float3( 1.0f, 0.0f, 0.0f), float3(0.0f, 0.0f, 1.0f), float3(0.0f,-1.0f, 0.0f)),
+									  float3x3(float3(0.0f, 0.0f, 1.0f), float3(0.0f, 1.0f, 0.0f), float3( 1.0f, 0.0f, 0.0f)),
+									  float3x3(float3(0.0f, 0.0f, 1.0f), float3(0.0f, 1.0f, 0.0f), float3(-1.0f, 0.0f, 0.0f))
+									  }; 
+	const float2 PointOffset[6] = {float2(-1.0f+iT, 0.5f),
+								   float2(-1.0f+iT,-0.5f),
+								   float2(-1.0f+(iT*3.0f), 0.5f),
+								   float2(-1.0f+(iT*3.0f),-0.5f),
+								   float2(-1.0f+(iT*5.0f), 0.5f),
+								   float2(-1.0f+(iT*5.0f),-0.5f)};
+
+	float3 P = Pos.xyz;
+	float3 N = mul(PointMatrixs[InstanceID], normalize(P));
+	float2 R = float2(N.x, N.y);
+	float L = length(R);
+	R = R + (normalize(R)*(1.0f-L))*step(0.0f, N.z);
+	R = R*float2(iT, 0.5f)+PointOffset[InstanceID];
+	return float4(R.x, R.y, length(P), -N.z);
+}
+#endif
+
+#ifdef SKELETON
+
+float4x4 BlendMatrix(float4 BoneWeight, int4 BoneIdxs){
+	float4x4 Mat = mul(BoneMatrixs[BoneIdxs.x], BoneWeight.x)+
+				   mul(BoneMatrixs[BoneIdxs.y], BoneWeight.y)+ 
+				   mul(BoneMatrixs[BoneIdxs.z], BoneWeight.z)+
+				   mul(BoneMatrixs[BoneIdxs.w], BoneWeight.w);
+	return Mat;
+}
+
+float4x4 GetTransformMatrix(Vertex In){
+	return mul(TransformMatrix, BlendMatrix(In.BoneWeight, In.BoneIndices));
+}
+#else
+float4x4 GetTransformMatrix(Vertex In){
+	return TransformMatrix;
+}
+#endif
+
+Pixel main(Vertex In){
+  Pixel O;
+  float4x4 Transform = GetTransformMatrix(In);
+  
+  O.WPosition = mul(Transform, In.Position);
+#ifdef POINT
+  O.Position = Project(mul(ProjViewMatrix, O.WPosition), In.InstanceID);
+  O.Clip = O.Position.w;
+  O.Position.w = 1.0f;
+#else
+  O.Position = mul(ProjViewMatrix, O.WPosition);
+#endif
+  O.TexCoord = In.TexCoord;
+  
+  float3 Tangent = normalize(mul(Transform, In.Tangent).xyz);
+  float3 Normal = normalize(mul(Transform, In.Normal).xyz);
+  Tangent = normalize(Tangent - dot(Tangent, Normal)*Normal);
+  float3 BiTangent = cross(Normal, Tangent)*In.Tangent.w;
+  O.TBN = (float3x3(Tangent, BiTangent, Normal));
+  
+  [fastopt]
+  for(int i=0;i<MaxShadows;i++){
+	O.SPosition[i] = mul(ShadowProjViewMatrix[i], O.WPosition);
+  }
+  return O;
+}
+#module Vertex OpenGL4_5
+#version 440
+const int MaxShadows = 8;
+layout(std140) uniform ListData{
+	mat4 ProjViewMatrix;
+	mat4 ShadowProjViewMatrix[MaxShadows];
+	vec4 FrustumPoints[6];
+	vec4 ViewPosition;
+	vec2 ScreenSize;
+	ivec2 ThreadDimensions;
+	ivec2 TileSize;
+	int LightCount;
+};
+
+layout(std140) uniform ModelData{
+   mat4 TransformMatrix;
+   mat4 BoneMatrixs[64];
+};
+
+
+in vec4 vPosition;
+in vec4 vTexCoord;
+in vec4 vTangent;
+in vec4 vNormal;
+in vec4 vBoneWeight;
+in ivec4 vBoneIndices;
+
+out gl_PerVertex {
+	vec4 gl_Position;
+	float gl_PointSize;
+	float gl_ClipDistance[];
+};
+out VertexData{
+  vec4 WPosition;
+  vec4 SPosition[MaxShadows];
+  vec4 TexCoord;
+  mat3 TBN;
+}p;
+
+
+#ifdef POINT
+vec4 Project(vec4 Pos){	
+	const float iT = 1.0f/3.0f;
+	const mat3 PointMatrixs[6] = {mat3(vec3(1.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), vec3(0.0f, 0.0f, 1.0f)),
+								  mat3(vec3(1.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f), vec3(0.0f, 0.0f,-1.0f)),
+								  
+								  mat3(vec3(1.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, 1.0f, 0.0f)), 
+								  mat3(vec3(1.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 1.0f), vec3(0.0f,-1.0f, 0.0f)),
+								  
+								  mat3(vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, 1.0f, 0.0f), vec3( 1.0f, 0.0f, 0.0f)),
+								  mat3(vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, 1.0f, 0.0f), vec3(-1.0f, 0.0f, 0.0f))
+								  };
+								  
+	const vec2 PointOffset[6] = {vec2(-1.0f+iT, 0.5f),
+								   vec2(-1.0f+iT,-0.5f),
+								   vec2(-1.0f+(iT*3.0f), 0.5f),
+								   vec2(-1.0f+(iT*3.0f),-0.5f),
+								   vec2(-1.0f+(iT*5.0f), 0.5f),
+								   vec2(-1.0f+(iT*5.0f),-0.5f)};
+
+	vec3 P = Pos.xyz;
+	vec3 N = normalize(P)*PointMatrixs[gl_InstanceID];
+	vec2 R = vec2(N.x, N.y);
+	float L = length(R);
+	R = R + (normalize(R)*(1.0f-L))*step(0.0f, N.z);
+	R = R*vec2(iT, 0.5f)+PointOffset[gl_InstanceID];
+	return vec4(R.x, R.y, length(P), -N.z);
+}
+#endif
+
+#ifdef SKELETON
+
+mat4 BlendMatrix(vec4 BoneWeight, ivec4 BoneIdxs){
+	mat4 Mat = BoneMatrixs[BoneIdxs.x]*BoneWeight.x+
+			   BoneMatrixs[BoneIdxs.y]*BoneWeight.y+ 
+			   BoneMatrixs[BoneIdxs.z]*BoneWeight.z+
+			   BoneMatrixs[BoneIdxs.w]*BoneWeight.w;
+	return Mat;
+}
+
+mat4 GetTransformMatrix(vec4 BoneWeight, ivec4 BoneIndices){
+	return TransformMatrix * BlendMatrix(BoneWeight, BoneIndices);
+}
+
+#else
+
+mat4 GetTransformMatrix(vec4 BoneWeight, ivec4 BoneIndices){
+	return TransformMatrix;
+}
+
+#endif
+
+
+
+void main(void){
+  mat4 Transform = GetTransformMatrix(vBoneWeight, vBoneIndices);
+  
+  p.WPosition = Transform*vPosition;
+#ifdef POINT
+  gl_Position = Project(ProjViewMatrix*p.WPosition);
+  gl_ClipDistance[0] = gl_Position.w;
+  gl_Position.w = 1.0f;
+#else
+  gl_Position = ProjViewMatrix*p.WPosition;
+#endif
+  p.TexCoord = vTexCoord;
+  
+  vec3 Tangent = normalize((Transform*vTangent).xyz);
+  vec3 Normal = normalize((Transform*vNormal).xyz);
+  Tangent = normalize(Tangent - dot(Tangent, Normal)*Normal);
+  vec3 BiTangent = cross(Normal, Tangent)*vTangent.w;// * -1.0f;//vTangent.w;
+  p.TBN = (mat3(Tangent, BiTangent, Normal));
+  for(int i=0;i<MaxShadows;i++){
+	p.SPosition[i] = ShadowProjViewMatrix[i]*p.WPosition;
+  }
+  return;
+}

@@ -1,0 +1,63 @@
+#module Vertex DirectX11_1
+
+cbuffer Data{
+   float4 Color;
+   float4x4 Matrix;
+};
+
+struct Vertex{
+  float4 Position : POSITION;
+  float4 TexCoord : TEXCOORD;
+};
+struct Pixel{
+  float4 Position : SV_POSITION;
+  float4 TexCoord : TEXCOORD0;
+};
+
+Pixel main(Vertex In){
+  Pixel O;
+  O.Position = mul(Matrix, In.Position);
+  O.TexCoord = In.TexCoord;
+  return O;
+}
+#module Vertex OpenGL3_3 OpenGL4_5
+#version 330
+
+layout(std140)uniform Data{
+   vec4 Color;
+   mat4 Matrix;
+};
+in vec4 Position;
+in vec4 TexCoord;
+out vec4 pTexCoord;
+void main(void){
+	gl_Position=Position*Matrix;
+	pTexCoord = TexCoord;
+}
+#module Vertex OpenGL2_1
+struct DataS{
+	vec4 Color;
+	mat4 Matrix;
+};
+
+attribute vec4 Position;
+attribute vec4 TexCoord;
+varying vec4 pTexCoord;
+uniform DataS Data;
+
+void main(void){
+	gl_Position=Data.Matrix*Position;
+	pTexCoord = TexCoord;
+}
+#module Vertex OpenGLES2
+attribute highp vec4 Position;
+attribute lowp vec4 TexCoord;
+varying lowp vec4 pTexCoord;
+#block Uniform
+uniform lowp vec4 Color;
+uniform highp mat4 Matrix;
+
+void main(void){
+	gl_Position=Position*Matrix;
+	pTexCoord = TexCoord;
+}

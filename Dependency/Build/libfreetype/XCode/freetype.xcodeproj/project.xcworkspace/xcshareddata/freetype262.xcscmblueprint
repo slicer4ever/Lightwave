@@ -1,0 +1,25 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "2f14aa8a-193b-46ae-826f-e65b721daacb",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+    "2f14aa8a-193b-46ae-826f-e65b721daacb" : {
+
+    }
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "2f14aa8a-193b-46ae-826f-e65b721daacb" : 0
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "3FF644BF-2E23-4F8C-B8CE-156EBE6EDFCA",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "2f14aa8a-193b-46ae-826f-e65b721daacb" : "Lightwave\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "freetype262",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "Dependency\/Build\/freetype262\/XCode\/freetype262.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/liquidgames.org\/svn\/Lightwave",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Subversion",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "2f14aa8a-193b-46ae-826f-e65b721daacb"
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+#module Pixel DirectX11_1
+static const uint BaseColorTexBit = 0x8;
+static const uint MetallicRoughnessTexBit = 0x10;
+
+struct PBRMaterial{
+	float4 m_BaseColor;
+	float4 m_MetallicRoughnessFactor;
+};
+
+Texture2D BaseColorTex;
+Texture2D MetallicRoughnessTex;
+SamplerState BaseColorSmp;
+SamplerState MetallicRoughnessSmp;
+
+PBRMaterial PrepareMaterial(float2 TexCoord, uint HasTexturesFlag, float4 BaseColorFactor, float4 MetallicRoughnessFactor){
+	PBRMaterial R;
+	R.m_BaseColor = BaseColorFactor;
+	R.m_MetallicRoughnessFactor = MetallicRoughnessFactor;
+	if((HasTexturesFlag&BaseColorTexBit)!=0) R.m_BaseColor *= SRGBToLinear(BaseColorTex.Sample(BaseColorSmp, TexCoord));
+	
+	//Metallic is stored in the g channel, roughness in the blue channel.
+	if((HasTexturesFlag&MetallicRoughnessTexBit)!=0) R.m_MetallicRoughnessFactor.xy *= MetallicRoughnessTex.Sample(MetallicRoughnessSmp, TexCoord).bg;
+
+	return R;
+}
+
+float4 doMetallicRoughness(Light L, LightResults LR, PBRMaterial Mat){
+	const float pi = 3.1415926535897932384626433832795f;
+	const float4 F0 = float4(0.04f, 0.04f, 0.04f, 0.04f);
+	const float4 black = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	
+	float Metallic = Mat.m_MetallicRoughnessFactor.x;
+	float Roughness = Mat.m_MetallicRoughnessFactor.y;
+	float A = Roughness*Roughness;
+	float A2 = A*A;
+	
+	float4 CDiff = lerp(Mat.m_BaseColor*(1.0f-F0), black, Metallic);
+	float4 CSpec = lerp(F0, Mat.m_BaseColor, Metallic);
+	
+	float Reflectance = saturate(max(max(CSpec.r, CSpec.g), CSpec.b)*50.0f);
+	float4 Spec0 = CSpec;
+	float4 Spec90 = float4(Reflectance, Reflectance, Reflectance, Reflectance);
+	float4 F = Spec0+(Spec90-Spec0)*pow(clamp(1.0f-LR.VdotH, 0.0f, 1.0f), 5.0f);
+	
+    float GGXV = LR.NdotL*sqrt(LR.NdotV * LR.NdotV * (1.0 - A2) +A2);
+    float GGXL = LR.NdotV*sqrt(LR.NdotL * LR.NdotL * (1.0 - A2) +A2);
+	float G = max(GGXV+GGXL, 0.0f);
+	if(G>0.0f) G = 0.5f/G;
+	
+	float K = (LR.NdotH*A2-LR.NdotH)*LR.NdotH+1.0;
+	float D = A2/(pi*K*K);
+	
+	float4 fSpecular = F*G*D;
+	float4 fDiffuse = (1.0f-F)*(CDiff/pi);
+	return float4(L.m_Color.xyz, 1.0f)*L.m_Color.w*LR.Att*LR.NdotL*(fSpecular+fDiffuse);
+}
+
+#module Pixel OpenGL4_5
+const uint BaseColorTexBit = 0x8;
+const uint MetallicRoughnessTexBit = 0x10;
+
+struct PBRMaterial{
+	vec4 m_BaseColor;
+	vec4 m_MetallicRoughnessFactor;
+};
+
+uniform sampler2D BaseColorTex;
+uniform sampler2D MetallicRoughnessTex;
+PBRMaterial PrepareMaterial(vec2 TexCoord, uint HasTexturesFlag, vec4 BaseColorFactor, vec4 MetallicRoughnessFactor){
+	PBRMaterial R;
+	R.m_BaseColor = BaseColorFactor;
+	R.m_MetallicRoughnessFactor = MetallicRoughnessFactor;
+	if((HasTexturesFlag&BaseColorTexBit)!=0) R.m_BaseColor *= SRGBToLinear(texture(BaseColorTex, TexCoord));
+	if((HasTexturesFlag&MetallicRoughnessTexBit)!=0) R.m_MetallicRoughnessFactor.xy *= texture(MetallicRoughnessTex, TexCoord).bg;
+	return R;
+}
+
+vec4 doMetallicRoughness(Light L, LightResults LR, PBRMaterial Mat){
+	const float pi = 3.1415926535897932384626433832795f;
+	const vec4 F0 = vec4(0.04f);
+	const vec4 black = vec4(0.0f);
+	
+	float Metallic = Mat.m_MetallicRoughnessFactor.x;
+	float Roughness = Mat.m_MetallicRoughnessFactor.y;
+	float A = Roughness*Roughness;
+	float A2 = A*A;
+	
+	vec4 CDiff = mix(Mat.m_BaseColor*(1.0f-F0), black, Metallic);
+	vec4 CSpec = mix(F0, Mat.m_BaseColor, Metallic);
+	
+	float Reflectance = max(max(CSpec.r, CSpec.g), CSpec.b);
+	vec4 Spec0 = CSpec;
+	vec4 Spec90 = vec4(clamp(Reflectance*50.0f, 0.0f, 1.0f));
+	vec4 F = Spec0+(Spec90-Spec0)*pow(clamp(1.0f-LR.VdotH, 0.0f, 1.0f), 5.0f);
+	
+    float GGXV = LR.NdotL*sqrt(LR.NdotV * LR.NdotV * (1.0 - A2) +A2);
+    float GGXL = LR.NdotV*sqrt(LR.NdotL * LR.NdotL * (1.0 - A2) +A2);
+	float G = max(GGXV+GGXL, 0.0f);
+	if(G>0.0f) G = 0.5f/G;
+	
+	float K = (LR.NdotH*A2-LR.NdotH)*LR.NdotH+1.0;
+	float D = A2/(pi*K*K);
+	
+	vec4 fSpecular = F*G*D;
+	vec4 fDiffuse = (1.0f-F)*(CDiff/pi);
+	return vec4(L.m_Color.xyz, 1.0f)*L.m_Color.w*LR.Att*LR.NdotL*(fSpecular+fDiffuse);
+}

@@ -1,0 +1,207 @@
+#module Compute DirectX11_1
+static const int MaxShadows = 8;
+struct Light{
+	float4 m_Position;
+	float4 m_Direction;
+	float4 m_Color;
+	uint4 m_ShadowIndex;
+};
+
+struct Frustum{
+	float4 m_Planes[6];
+};
+
+cbuffer ListData{
+	float4x4 ProjViewMatrix;
+	float4x4 ShadowProjViewMatrix[MaxShadows];
+	float4 FrustumPoints[6]; //Near TL, TR, BL.  Far TL, TR, BL.
+	float4 ViewPosition;
+	float2 ScreenSize;
+	int2 ThreadDimensions;
+	int2 TileSize;
+	int LightCount;
+};
+
+StructuredBuffer<Light> Lights;
+RWStructuredBuffer<uint> LightArray;
+
+Frustum MakeFrustum(uint3 GroupIdx){
+	float2 fg = float2(GroupIdx.x, GroupIdx.y);
+	float2 ft = ScreenSize/TileSize;
+	float2 fr = 1.0f/ft;	
+	float2 ftl = fg*fr;
+	float3 NX = FrustumPoints[1].xyz-FrustumPoints[0].xyz;
+	float3 NY = FrustumPoints[2].xyz-FrustumPoints[0].xyz;
+	float3 FX = FrustumPoints[4].xyz-FrustumPoints[3].xyz;
+	float3 FY = FrustumPoints[5].xyz-FrustumPoints[3].xyz;
+	float3 NTL = FrustumPoints[0].xyz + NX*ftl.x        + NY*ftl.y;
+	float3 NTR = FrustumPoints[0].xyz + NX*(ftl.x+fr.x) + NY*ftl.y;
+	float3 NBL = FrustumPoints[0].xyz + NX*ftl.x        + NY*(ftl.y+fr.y);
+	float3 NBR = FrustumPoints[0].xyz + NX*(ftl.x+fr.x) + NY*(ftl.y+fr.y);
+	float3 FTL = FrustumPoints[3].xyz + FX*ftl.x        + FY*ftl.y;
+	float3 FTR = FrustumPoints[3].xyz + FX*(ftl.x+fr.x) + FY*ftl.y;
+	float3 FBL = FrustumPoints[3].xyz + FX*ftl.x        + FY*(ftl.y+fr.y);
+	float3 FBR = FrustumPoints[3].xyz + FX*(ftl.x+fr.x) + FY*(ftl.y+fr.y);
+
+	Frustum R;
+	R.m_Planes[0] = float4(normalize(cross(NTR - NTL, NBL - NTL)), FrustumPoints[0].w); //Near
+	R.m_Planes[1] = float4(normalize(cross(FBL - FTL, FTR - FTL)), FrustumPoints[1].w); //Far
+	R.m_Planes[2] = float4(normalize(cross(NBL - NTL, FTL - NTL)), 0.0f); //Left
+	R.m_Planes[3] = float4(normalize(cross(FTR - NTR, NBR - NTR)), 0.0f);
+	R.m_Planes[4] = float4(normalize(cross(NBR - NBL, FBL - NBL)), 0.0f);
+	R.m_Planes[5] = float4(normalize(cross(FTL - NTL, NTR - NTL)), 0.0f);
+	return R;	
+}
+
+bool SphereInFrustum(Frustum F, float4 Position, float Radius){
+	float4 P = float4(Position.xyz-ViewPosition.xyz, 1.0f);
+	float d0 = dot(F.m_Planes[0], P);
+	float d1 = dot(F.m_Planes[1], P);
+	float d2 = dot(F.m_Planes[2], P);
+	float d3 = dot(F.m_Planes[3], P);
+	float d4 = dot(F.m_Planes[4], P);
+	float d5 = dot(F.m_Planes[5], P);
+	float m = min(min(min(d0, d1), min(d2, d3)), min(d4, d5));
+	return m >= -Radius;
+}
+
+bool ConeInFrustum(Frustum F, float4 Position, float3 Direction, float Length, float Theta){
+	float4 P = float4(Position.xyz-ViewPosition.xyz, 1.0f);
+	float Radi = tan(Theta)*Length;
+	for(int i=0;i<6;i++){
+		float3 M = normalize(cross(cross(F.m_Planes[i].xyz, Direction), Direction));
+		float3 Q = P.xyz + Direction*Length - M*Radi;
+		float md = dot(float4(Q, 1.0f), F.m_Planes[i]);
+		float qd = dot(P, F.m_Planes[i]);
+		if(md<0.0f && qd<0.0f) return false;
+	}
+	return true;
+}
+
+[numthreads(32, 32, 1)]
+void main(uint3 gid : SV_DispatchThreadID){
+	const uint MaxLights = 64;
+	Frustum F = MakeFrustum(gid);
+	uint ThreadIndex = gid.x+gid.y*(ThreadDimensions.x*32);
+	uint offset = ThreadIndex*MaxLights;
+	uint count = 0;
+	for(uint i=0;i<LightCount;i++){
+		bool Has = false;
+		if(Lights[i].m_Position.w<=0.0f) Has = true;
+		if(Lights[i].m_Position.w==1.0f) Has = SphereInFrustum(F, Lights[i].m_Position, Lights[i].m_Direction.y + Lights[i].m_Direction.x);
+		if(Lights[i].m_Position.w>1.0f) Has = ConeInFrustum(F, Lights[i].m_Position, Lights[i].m_Direction.xyz, Lights[i].m_Direction.w, Lights[i].m_Position.w-1.0f);
+		if(Has){
+			LightArray[offset+count++]=i;
+			if(count>=MaxLights) break;
+		}
+	}
+	if(count!=MaxLights) LightArray[offset+count] = -1;
+}
+#module Compute OpenGL4_5
+#version 440
+layout(local_size_x = 32, local_size_y=32) in;
+const int MaxShadows = 8;
+struct Light{
+	vec4 m_Position;
+	vec4 m_Direction;
+	vec4 m_Color;
+	uvec4 m_ShadowIndex;
+};
+
+struct Frustum{
+	vec4 m_Planes[6];
+};
+
+
+layout(std140) uniform ListData{
+	mat4 ProjViewMatrix;
+	mat4 ShadowProjViewMatrix[MaxShadows];
+	vec4 FrustumPoints[6];
+	vec4 ViewPosition;
+	vec2 ScreenSize;
+	ivec2 ThreadDimensions;
+ 	ivec2 TileSize;
+	int LightCount;
+};
+
+layout(std430, binding=0) buffer Lights{
+	Light LightsD[];
+};
+
+layout(std430, binding=1) buffer LightArray{
+	uint LightArrayD[];
+};
+
+Frustum MakeFrustum(uvec3 GroupIdx){
+	vec2 fg = vec2(GroupIdx.x, GroupIdx.y);
+	vec2 ft = ScreenSize/TileSize;
+	vec2 fr = 1.0f/ft;	
+	vec2 ftl = fg*fr;
+	vec3 NX = FrustumPoints[1].xyz-FrustumPoints[0].xyz;
+	vec3 NY = FrustumPoints[2].xyz-FrustumPoints[0].xyz;
+	vec3 FX = FrustumPoints[4].xyz-FrustumPoints[3].xyz;
+	vec3 FY = FrustumPoints[5].xyz-FrustumPoints[3].xyz;
+	vec3 NTL = FrustumPoints[0].xyz + NX*ftl.x        + NY*ftl.y;
+	vec3 NTR = FrustumPoints[0].xyz + NX*(ftl.x+fr.x) + NY*ftl.y;
+	vec3 NBL = FrustumPoints[0].xyz + NX*ftl.x        + NY*(ftl.y+fr.y);
+	vec3 NBR = FrustumPoints[0].xyz + NX*(ftl.x+fr.x) + NY*(ftl.y+fr.y);
+	vec3 FTL = FrustumPoints[3].xyz + FX*ftl.x        + FY*ftl.y;
+	vec3 FTR = FrustumPoints[3].xyz + FX*(ftl.x+fr.x) + FY*ftl.y;
+	vec3 FBL = FrustumPoints[3].xyz + FX*ftl.x        + FY*(ftl.y+fr.y);
+	vec3 FBR = FrustumPoints[3].xyz + FX*(ftl.x+fr.x) + FY*(ftl.y+fr.y);
+
+	Frustum R;
+	R.m_Planes[0] = vec4(normalize(cross(NTR - NTL, NBL - NTL)), FrustumPoints[0].w); //Near
+	R.m_Planes[1] = vec4(normalize(cross(FBL - FTL, FTR - FTL)), FrustumPoints[1].w); //Far
+	R.m_Planes[2] = vec4(normalize(cross(NBL - NTL, FTL - NTL)), 0.0f); //Left
+	R.m_Planes[3] = vec4(normalize(cross(FTR - NTR, NBR - NTR)), 0.0f);
+	R.m_Planes[4] = vec4(normalize(cross(NBR - NBL, FBL - NBL)), 0.0f);
+	R.m_Planes[5] = vec4(normalize(cross(FTL - NTL, NTR - NTL)), 0.0f);
+	return R;
+}
+
+bool SphereInFrustum(Frustum F, vec4 Position, float Radius){
+	vec4 P = vec4(Position.xyz-ViewPosition.xyz, 1.0f);
+	float d0 = dot(F.m_Planes[0], P);
+	float d1 = dot(F.m_Planes[1], P);
+	float d2 = dot(F.m_Planes[2], P);
+	float d3 = dot(F.m_Planes[3], P);
+	float d4 = dot(F.m_Planes[4], P);
+	float d5 = dot(F.m_Planes[5], P);
+	float m = min(min(min(d0, d1), min(d2, d3)), min(d4, d5));
+	return m >= -Radius;
+}
+
+
+bool ConeInFrustum(Frustum F, vec4 Position, vec3 Direction, float Length, float Theta){
+	vec4 P = vec4(Position.xyz-ViewPosition.xyz, 1.0f);
+	float Radi = tan(Theta)*Length;
+	for(int i=0;i<6;i++){
+		vec3 M = normalize(cross(cross(F.m_Planes[i].xyz, Direction), Direction));
+		vec3 Q = P.xyz + Direction*Length - M*Radi;
+		float md = dot(vec4(Q, 1.0f), F.m_Planes[i]);
+		float qd = dot(P, F.m_Planes[i]);
+		if(md<0.0f && qd<0.0f) return false;
+	}
+	return true;
+}
+
+void main(void){
+	const uint MaxLights = 64;
+	uvec3 gid = gl_GlobalInvocationID;
+	Frustum F = MakeFrustum(gid);
+	uint ThreadIndex = gid.x+gid.y*(ThreadDimensions.x*32);
+	uint offset = ThreadIndex*MaxLights;
+	uint count = 0;
+	for(uint i=0;i<LightCount;i++){
+		bool Has = false;
+		if(LightsD[i].m_Position.w<=0.0f) Has = true;
+		if(LightsD[i].m_Position.w==1.0f) Has = SphereInFrustum(F, LightsD[i].m_Position, LightsD[i].m_Direction.y + LightsD[i].m_Direction.x);
+		if(LightsD[i].m_Position.w>1.0f) Has = ConeInFrustum(F, LightsD[i].m_Position, LightsD[i].m_Direction.xyz, LightsD[i].m_Direction.w, LightsD[i].m_Position.w-1.0f);
+		if(Has){
+			LightArrayD[offset+count++]=i;
+			if(count>=MaxLights) break;
+		}
+	}
+	if(count!=MaxLights) LightArrayD[offset+count] = -1;	
+}

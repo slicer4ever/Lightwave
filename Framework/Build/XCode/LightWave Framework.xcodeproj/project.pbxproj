@@ -1,0 +1,1574 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		183AEAEC1A6E0F1100ABD02F /* LWAllocator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 183AEAE41A6E0F0700ABD02F /* LWAllocator.cpp */; };
+		183AEAED1A6E0F1100ABD02F /* LWAllocator_Default.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 183AEAE61A6E0F0700ABD02F /* LWAllocator_Default.cpp */; };
+		183AEAEE1A6E0F1100ABD02F /* LWAllocator_LocalCircular.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 183AEAE71A6E0F0700ABD02F /* LWAllocator_LocalCircular.cpp */; };
+		183AEAEF1A6E0F1100ABD02F /* LWAllocator_LocalHeap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 183AEAE81A6E0F0700ABD02F /* LWAllocator_LocalHeap.cpp */; };
+		183AEAF01A6E0F1100ABD02F /* LWByteBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 183AEAE91A6E0F0700ABD02F /* LWByteBuffer.cpp */; };
+		183AEAF11A6E0F1100ABD02F /* LWText.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 183AEAEA1A6E0F0700ABD02F /* LWText.cpp */; };
+		183AEAF21A6E0F1100ABD02F /* LWTimer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 183AEAEB1A6E0F0700ABD02F /* LWTimer.cpp */; };
+		1897DC1B1A7462BE006971A4 /* LWVideoDriver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1897DC061A746293006971A4 /* LWVideoDriver.cpp */; };
+		189822231A70532D0026FF0D /* LWDirectory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1898221B1A704FB60026FF0D /* LWDirectory.cpp */; };
+		189822241A70532D0026FF0D /* LWFileStream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1898221C1A704FB60026FF0D /* LWFileStream.cpp */; };
+		189822251A70532D0026FF0D /* LWInputDevice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1898221D1A704FB60026FF0D /* LWInputDevice.cpp */; };
+		189822261A70532D0026FF0D /* LWVideoMode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1898221E1A704FB60026FF0D /* LWVideoMode.cpp */; };
+		221246A11C545B5B006CB2EA /* LWCrypto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D6445C1C28A4F7001F7AE0 /* LWCrypto.cpp */; };
+		221246A21C545B5B006CB2EA /* LWAllocator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 183AEAE41A6E0F0700ABD02F /* LWAllocator.cpp */; };
+		221246A31C545B5B006CB2EA /* LWAllocator_Default.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 183AEAE61A6E0F0700ABD02F /* LWAllocator_Default.cpp */; };
+		221246A41C545B5B006CB2EA /* LWAllocator_LocalCircular.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 183AEAE71A6E0F0700ABD02F /* LWAllocator_LocalCircular.cpp */; };
+		221246A51C545B5B006CB2EA /* LWAllocator_LocalHeap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 183AEAE81A6E0F0700ABD02F /* LWAllocator_LocalHeap.cpp */; };
+		221246A61C545B5B006CB2EA /* LWByteBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 183AEAE91A6E0F0700ABD02F /* LWByteBuffer.cpp */; };
+		221246A71C545B5B006CB2EA /* LWText.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 183AEAEA1A6E0F0700ABD02F /* LWText.cpp */; };
+		221246A81C545B5B006CB2EA /* LWTimer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 183AEAEB1A6E0F0700ABD02F /* LWTimer.cpp */; };
+		221246AF1C545B7C006CB2EA /* LWApplication_iOS.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 221246A91C545B7C006CB2EA /* LWApplication_iOS.cpp */; };
+		221246B01C545B7C006CB2EA /* LWDirectory_iOS.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 221246AA1C545B7C006CB2EA /* LWDirectory_iOS.cpp */; };
+		221246B11C545B7C006CB2EA /* LWFileStream_iOS.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 221246AB1C545B7C006CB2EA /* LWFileStream_iOS.cpp */; };
+		221246B21C545B7C006CB2EA /* LWInputDevice_iOS.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 221246AC1C545B7C006CB2EA /* LWInputDevice_iOS.cpp */; };
+		221246B31C545B7C006CB2EA /* LWVideoMode_iOS.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 221246AD1C545B7C006CB2EA /* LWVideoMode_iOS.cpp */; };
+		221246B41C545B7C006CB2EA /* LWWindow_iOS.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 221246AE1C545B7C006CB2EA /* LWWindow_iOS.cpp */; };
+		221246B51C545B9F006CB2EA /* LWDirectory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1898221B1A704FB60026FF0D /* LWDirectory.cpp */; };
+		221246B61C545B9F006CB2EA /* LWFileStream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1898221C1A704FB60026FF0D /* LWFileStream.cpp */; };
+		221246B71C545B9F006CB2EA /* LWInputDevice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1898221D1A704FB60026FF0D /* LWInputDevice.cpp */; };
+		221246B81C545B9F006CB2EA /* LWVideoMode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1898221E1A704FB60026FF0D /* LWVideoMode.cpp */; };
+		221246BA1C545EAD006CB2EA /* LWPlatform.h in Headers */ = {isa = PBXBuildFile; fileRef = 221246B91C545EAD006CB2EA /* LWPlatform.h */; };
+		221246BC1C545F0E006CB2EA /* LWPlatform_iOS.h in Headers */ = {isa = PBXBuildFile; fileRef = 221246BB1C545F0E006CB2EA /* LWPlatform_iOS.h */; };
+		221246BE1C545F64006CB2EA /* LWVideoDriver_OpenGLES2_iOS.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 221246BD1C545F64006CB2EA /* LWVideoDriver_OpenGLES2_iOS.cpp */; };
+		221246C11C545F89006CB2EA /* LWVideoDriver_OpenGL2_1_Null.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 221246BF1C545F89006CB2EA /* LWVideoDriver_OpenGL2_1_Null.cpp */; };
+		221246C21C545F89006CB2EA /* LWVideoDriver_OpenGL3_2_Null.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 221246C01C545F89006CB2EA /* LWVideoDriver_OpenGL3_2_Null.cpp */; };
+		221246C31C545FA9006CB2EA /* LWVideoDriver_DirectX11_1_Null.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8F61C2A1A58002EED17 /* LWVideoDriver_DirectX11_1_Null.cpp */; };
+		221246C41C545FA9006CB2EA /* LWVideoDriver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1897DC061A746293006971A4 /* LWVideoDriver.cpp */; };
+		221246C51C545FA9006CB2EA /* LWFont.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22338C0D1C4F17C200E44C29 /* LWFont.cpp */; };
+		221246C61C545FA9006CB2EA /* LWFrameBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8E41C2A1A0D002EED17 /* LWFrameBuffer.cpp */; };
+		221246C71C545FA9006CB2EA /* LWImage.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8E51C2A1A0D002EED17 /* LWImage.cpp */; };
+		221246C81C545FA9006CB2EA /* LWMesh.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8E61C2A1A0D002EED17 /* LWMesh.cpp */; };
+		221246C91C545FA9006CB2EA /* LWShader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8E71C2A1A0D002EED17 /* LWShader.cpp */; };
+		221246CA1C545FA9006CB2EA /* LWTexture.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8E81C2A1A0D002EED17 /* LWTexture.cpp */; };
+		221246CB1C545FA9006CB2EA /* LWVideoBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8E91C2A1A0D002EED17 /* LWVideoBuffer.cpp */; };
+		221246CC1C545FA9006CB2EA /* LWVideoState.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8EA1C2A1A0D002EED17 /* LWVideoState.cpp */; };
+		2212472D1C54672E006CB2EA /* LWFileStream_Windows_X11_Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D353FE1C2C6405003030C3 /* LWFileStream_Windows_X11_Mac.cpp */; };
+		221247611C546C92006CB2EA /* LWVideoDriver_OpenGLES2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 221247601C546C92006CB2EA /* LWVideoDriver_OpenGLES2.cpp */; };
+		2221D822216FDF5E001E3A64 /* LWThread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2221D821216FDF5E001E3A64 /* LWThread.cpp */; };
+		2221D823216FDF5E001E3A64 /* LWThread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2221D821216FDF5E001E3A64 /* LWThread.cpp */; };
+		22338C0F1C4F17D800E44C29 /* LWFont.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22338C0D1C4F17C200E44C29 /* LWFont.cpp */; };
+		225C3D3D1C503F1C00D40C6E /* LWVideoDriver_OpenGL3_2_Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225C3D3C1C503F1C00D40C6E /* LWVideoDriver_OpenGL3_2_Mac.cpp */; };
+		225FFE7E1CC2D69E00E1D00D /* LWAudioDriver_iOS.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225FFE7C1CC2D68200E1D00D /* LWAudioDriver_iOS.cpp */; };
+		225FFE911CC2D70500E1D00D /* LWProtocolManager_Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225FFE891CC2D6CB00E1D00D /* LWProtocolManager_Mac.cpp */; };
+		225FFE921CC2D70500E1D00D /* LWSocket_Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225FFE8A1CC2D6CB00E1D00D /* LWSocket_Mac.cpp */; };
+		225FFE931CC2D70500E1D00D /* LWPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225FFE7F1CC2D6BA00E1D00D /* LWPacket.cpp */; };
+		225FFE941CC2D70500E1D00D /* LWPacketManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225FFE801CC2D6BA00E1D00D /* LWPacketManager.cpp */; };
+		225FFE951CC2D70500E1D00D /* LWProtocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225FFE811CC2D6BA00E1D00D /* LWProtocol.cpp */; };
+		225FFE961CC2D70500E1D00D /* LWProtocolManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225FFE821CC2D6BA00E1D00D /* LWProtocolManager.cpp */; };
+		225FFE971CC2D70500E1D00D /* LWSocket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225FFE831CC2D6BA00E1D00D /* LWSocket.cpp */; };
+		225FFEC41CC2FA6C00E1D00D /* LWProtocolManager_iOS.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225FFE8D1CC2D6FC00E1D00D /* LWProtocolManager_iOS.cpp */; };
+		225FFEC51CC2FA6C00E1D00D /* LWSocket_iOS.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225FFE8E1CC2D6FC00E1D00D /* LWSocket_iOS.cpp */; };
+		225FFEC61CC2FA6C00E1D00D /* LWPacket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225FFE7F1CC2D6BA00E1D00D /* LWPacket.cpp */; };
+		225FFEC71CC2FA6C00E1D00D /* LWPacketManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225FFE801CC2D6BA00E1D00D /* LWPacketManager.cpp */; };
+		225FFEC81CC2FA6C00E1D00D /* LWProtocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225FFE811CC2D6BA00E1D00D /* LWProtocol.cpp */; };
+		225FFEC91CC2FA6C00E1D00D /* LWProtocolManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225FFE821CC2D6BA00E1D00D /* LWProtocolManager.cpp */; };
+		225FFECA1CC2FA6C00E1D00D /* LWSocket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225FFE831CC2D6BA00E1D00D /* LWSocket.cpp */; };
+		22A8C5BF1C53E92900EF1714 /* LWPlatform_Mac.h in Headers */ = {isa = PBXBuildFile; fileRef = 22A8C5BE1C53E92900EF1714 /* LWPlatform_Mac.h */; };
+		22AB052B1CC2B0EB0012A40C /* LWAudioStream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22AB05291CC2B0DB0012A40C /* LWAudioStream.cpp */; };
+		22AB05391CC2C9920012A40C /* LWAudioStream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22AB05291CC2B0DB0012A40C /* LWAudioStream.cpp */; };
+		22AB053C1CC2C9920012A40C /* LWAudioDriver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D96DC51C557BFD00B76A74 /* LWAudioDriver.cpp */; };
+		22AB053D1CC2C9920012A40C /* LWSound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D96DC61C557BFD00B76A74 /* LWSound.cpp */; };
+		22D353F01C2C6385003030C3 /* LWVideoDriver_OpenGL2_1_Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D353EE1C2C6385003030C3 /* LWVideoDriver_OpenGL2_1_Mac.cpp */; };
+		22D353F81C2C63A9003030C3 /* LWApplication_Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D353F21C2C63A9003030C3 /* LWApplication_Mac.cpp */; };
+		22D353F91C2C63A9003030C3 /* LWDirectory_Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D353F31C2C63A9003030C3 /* LWDirectory_Mac.cpp */; };
+		22D353FA1C2C63A9003030C3 /* LWFileStream_Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D353F41C2C63A9003030C3 /* LWFileStream_Mac.cpp */; };
+		22D353FB1C2C63A9003030C3 /* LWInputDevice_Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D353F51C2C63A9003030C3 /* LWInputDevice_Mac.cpp */; };
+		22D353FC1C2C63A9003030C3 /* LWVideoMode_Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D353F61C2C63A9003030C3 /* LWVideoMode_Mac.cpp */; };
+		22D353FD1C2C63A9003030C3 /* LWWindow_Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D353F71C2C63A9003030C3 /* LWWindow_Mac.cpp */; };
+		22D353FF1C2C6405003030C3 /* LWFileStream_Windows_X11_Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D353FE1C2C6405003030C3 /* LWFileStream_Windows_X11_Mac.cpp */; };
+		22D6445D1C28A4F7001F7AE0 /* LWCrypto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D6445C1C28A4F7001F7AE0 /* LWCrypto.cpp */; };
+		22D7A8EB1C2A1A0D002EED17 /* LWFrameBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8E41C2A1A0D002EED17 /* LWFrameBuffer.cpp */; };
+		22D7A8EC1C2A1A0D002EED17 /* LWImage.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8E51C2A1A0D002EED17 /* LWImage.cpp */; };
+		22D7A8ED1C2A1A0D002EED17 /* LWMesh.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8E61C2A1A0D002EED17 /* LWMesh.cpp */; };
+		22D7A8EE1C2A1A0D002EED17 /* LWShader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8E71C2A1A0D002EED17 /* LWShader.cpp */; };
+		22D7A8EF1C2A1A0D002EED17 /* LWTexture.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8E81C2A1A0D002EED17 /* LWTexture.cpp */; };
+		22D7A8F01C2A1A0D002EED17 /* LWVideoBuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8E91C2A1A0D002EED17 /* LWVideoBuffer.cpp */; };
+		22D7A8F11C2A1A0D002EED17 /* LWVideoState.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8EA1C2A1A0D002EED17 /* LWVideoState.cpp */; };
+		22D7A8F41C2A1A38002EED17 /* LWVideoDriver_OpenGL2_1.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8F21C2A1A38002EED17 /* LWVideoDriver_OpenGL2_1.cpp */; };
+		22D7A8F51C2A1A38002EED17 /* LWVideoDriver_OpenGL3_2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8F31C2A1A38002EED17 /* LWVideoDriver_OpenGL3_2.cpp */; };
+		22D7A8F81C2A1A58002EED17 /* LWVideoDriver_DirectX11_1_Null.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8F61C2A1A58002EED17 /* LWVideoDriver_DirectX11_1_Null.cpp */; };
+		22D7A8F91C2A1A58002EED17 /* LWVideoDriver_OpenGLES2_Null.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D7A8F71C2A1A58002EED17 /* LWVideoDriver_OpenGLES2_Null.cpp */; };
+		22D96DC71C557BFD00B76A74 /* LWAudioDriver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D96DC51C557BFD00B76A74 /* LWAudioDriver.cpp */; };
+		22D96DC81C557BFD00B76A74 /* LWSound.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D96DC61C557BFD00B76A74 /* LWSound.cpp */; };
+		22D96DCA1C557C7500B76A74 /* LWAudioDriver_Mac.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22D96DC91C557C7500B76A74 /* LWAudioDriver_Mac.cpp */; };
+		22D96DCE1C557E6400B76A74 /* LWPlatform_Windows.h in Headers */ = {isa = PBXBuildFile; fileRef = 22D96DCD1C557E6400B76A74 /* LWPlatform_Windows.h */; };
+		22E84F1E216EEC78000612BA /* LWMath.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22E84F1D216EEC78000612BA /* LWMath.cpp */; };
+		22E84F1F216EEC78000612BA /* LWMath.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22E84F1D216EEC78000612BA /* LWMath.cpp */; };
+		22FD434321A1DB1000CBE95C /* LWAllocator_ConcurrentCircular.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22FD434121A1DB1000CBE95C /* LWAllocator_ConcurrentCircular.cpp */; };
+		22FD434421A1DB1000CBE95C /* LWAllocator_DefaultDebug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22FD434221A1DB1000CBE95C /* LWAllocator_DefaultDebug.cpp */; };
+		22FD434521A1E26B00CBE95C /* LWAllocator_ConcurrentCircular.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22FD434121A1DB1000CBE95C /* LWAllocator_ConcurrentCircular.cpp */; };
+		22FD434621A1E27200CBE95C /* LWAllocator_DefaultDebug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22FD434221A1DB1000CBE95C /* LWAllocator_DefaultDebug.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2212467C1C5459E3006CB2EA /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		221246891C5459FB006CB2EA /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		221246961C545A14006CB2EA /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		225FFEB91CC2F9F000E1D00D /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		22AB052E1CC2C8A80012A40C /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		183AEAD01A6E08B100ABD02F /* libLWCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLWCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		183AEAE41A6E0F0700ABD02F /* LWAllocator.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWAllocator.cpp; sourceTree = "<group>"; };
+		183AEAE61A6E0F0700ABD02F /* LWAllocator_Default.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWAllocator_Default.cpp; sourceTree = "<group>"; };
+		183AEAE71A6E0F0700ABD02F /* LWAllocator_LocalCircular.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWAllocator_LocalCircular.cpp; sourceTree = "<group>"; };
+		183AEAE81A6E0F0700ABD02F /* LWAllocator_LocalHeap.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWAllocator_LocalHeap.cpp; sourceTree = "<group>"; };
+		183AEAE91A6E0F0700ABD02F /* LWByteBuffer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWByteBuffer.cpp; sourceTree = "<group>"; };
+		183AEAEA1A6E0F0700ABD02F /* LWText.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWText.cpp; sourceTree = "<group>"; };
+		183AEAEB1A6E0F0700ABD02F /* LWTimer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWTimer.cpp; sourceTree = "<group>"; };
+		1897DC061A746293006971A4 /* LWVideoDriver.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWVideoDriver.cpp; path = "../../Source/C++11/LWVideo/LWVideoDriver.cpp"; sourceTree = "<group>"; };
+		1897DC1A1A7462B0006971A4 /* libLWVideo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLWVideo.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		189822171A704AEE0026FF0D /* libLWPlatform.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLWPlatform.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		1898221B1A704FB60026FF0D /* LWDirectory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LWDirectory.cpp; path = "../../Source/C++11/LWPlatform/LWDirectory.cpp"; sourceTree = "<group>"; };
+		1898221C1A704FB60026FF0D /* LWFileStream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LWFileStream.cpp; path = "../../Source/C++11/LWPlatform/LWFileStream.cpp"; sourceTree = "<group>"; };
+		1898221D1A704FB60026FF0D /* LWInputDevice.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWInputDevice.cpp; path = "../../Source/C++11/LWPlatform/LWInputDevice.cpp"; sourceTree = "<group>"; };
+		1898221E1A704FB60026FF0D /* LWVideoMode.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWVideoMode.cpp; path = "../../Source/C++11/LWPlatform/LWVideoMode.cpp"; sourceTree = "<group>"; };
+		2212467E1C5459E3006CB2EA /* libLWCorei.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLWCorei.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		2212468B1C5459FB006CB2EA /* libLWPlatformi.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLWPlatformi.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		221246981C545A14006CB2EA /* libLWVideoi.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLWVideoi.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		221246A91C545B7C006CB2EA /* LWApplication_iOS.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWApplication_iOS.cpp; path = ../../Source/iOS/LWPlatform/LWApplication_iOS.cpp; sourceTree = "<group>"; };
+		221246AA1C545B7C006CB2EA /* LWDirectory_iOS.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWDirectory_iOS.cpp; path = ../../Source/iOS/LWPlatform/LWDirectory_iOS.cpp; sourceTree = "<group>"; };
+		221246AB1C545B7C006CB2EA /* LWFileStream_iOS.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWFileStream_iOS.cpp; path = ../../Source/iOS/LWPlatform/LWFileStream_iOS.cpp; sourceTree = "<group>"; };
+		221246AC1C545B7C006CB2EA /* LWInputDevice_iOS.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWInputDevice_iOS.cpp; path = ../../Source/iOS/LWPlatform/LWInputDevice_iOS.cpp; sourceTree = "<group>"; };
+		221246AD1C545B7C006CB2EA /* LWVideoMode_iOS.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWVideoMode_iOS.cpp; path = ../../Source/iOS/LWPlatform/LWVideoMode_iOS.cpp; sourceTree = "<group>"; };
+		221246AE1C545B7C006CB2EA /* LWWindow_iOS.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWWindow_iOS.cpp; path = ../../Source/iOS/LWPlatform/LWWindow_iOS.cpp; sourceTree = "<group>"; };
+		221246B91C545EAD006CB2EA /* LWPlatform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LWPlatform.h; path = "../../Includes/C++11/LWPlatform/LWPlatform.h"; sourceTree = "<group>"; };
+		221246BB1C545F0E006CB2EA /* LWPlatform_iOS.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LWPlatform_iOS.h; path = "../../Includes/C++11/LWPlatform/LWPlatform_iOS.h"; sourceTree = "<group>"; };
+		221246BD1C545F64006CB2EA /* LWVideoDriver_OpenGLES2_iOS.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWVideoDriver_OpenGLES2_iOS.cpp; path = ../../Source/iOS/LWVideo/LWVideoDrivers/LWVideoDriver_OpenGLES2_iOS.cpp; sourceTree = "<group>"; };
+		221246BF1C545F89006CB2EA /* LWVideoDriver_OpenGL2_1_Null.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWVideoDriver_OpenGL2_1_Null.cpp; path = ../../Source/Null/LWVideo/LWVideoDriver/LWVideoDriver_OpenGL2_1_Null.cpp; sourceTree = "<group>"; };
+		221246C01C545F89006CB2EA /* LWVideoDriver_OpenGL3_2_Null.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWVideoDriver_OpenGL3_2_Null.cpp; path = ../../Source/Null/LWVideo/LWVideoDriver/LWVideoDriver_OpenGL3_2_Null.cpp; sourceTree = "<group>"; };
+		221247601C546C92006CB2EA /* LWVideoDriver_OpenGLES2.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWVideoDriver_OpenGLES2.cpp; path = "../../Source/C++11/LWVideo/LWVideoDriver/LWVideoDriver_OpenGLES2.cpp"; sourceTree = "<group>"; };
+		2221D821216FDF5E001E3A64 /* LWThread.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWThread.cpp; path = "../../Source/C++11/LWPlatform/LWThread.cpp"; sourceTree = "<group>"; };
+		22338C0D1C4F17C200E44C29 /* LWFont.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LWFont.cpp; path = "../../Source/C++11/LWVideo/LWFont.cpp"; sourceTree = "<group>"; };
+		225C3D3C1C503F1C00D40C6E /* LWVideoDriver_OpenGL3_2_Mac.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWVideoDriver_OpenGL3_2_Mac.cpp; path = ../../Source/Mac/LWVideo/LWVideoDriver/LWVideoDriver_OpenGL3_2_Mac.cpp; sourceTree = "<group>"; };
+		225FFE701CC2D62800E1D00D /* libLWNetwork.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLWNetwork.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		225FFE7C1CC2D68200E1D00D /* LWAudioDriver_iOS.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWAudioDriver_iOS.cpp; path = ../../../Source/iOS/LWAudio/LWAudioDriver_iOS.cpp; sourceTree = "<group>"; };
+		225FFE7F1CC2D6BA00E1D00D /* LWPacket.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWPacket.cpp; path = "../../Source/C++11/LWNetwork/LWPacket.cpp"; sourceTree = "<group>"; };
+		225FFE801CC2D6BA00E1D00D /* LWPacketManager.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWPacketManager.cpp; path = "../../Source/C++11/LWNetwork/LWPacketManager.cpp"; sourceTree = "<group>"; };
+		225FFE811CC2D6BA00E1D00D /* LWProtocol.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWProtocol.cpp; path = "../../Source/C++11/LWNetwork/LWProtocol.cpp"; sourceTree = "<group>"; };
+		225FFE821CC2D6BA00E1D00D /* LWProtocolManager.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWProtocolManager.cpp; path = "../../Source/C++11/LWNetwork/LWProtocolManager.cpp"; sourceTree = "<group>"; };
+		225FFE831CC2D6BA00E1D00D /* LWSocket.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWSocket.cpp; path = "../../Source/C++11/LWNetwork/LWSocket.cpp"; sourceTree = "<group>"; };
+		225FFE891CC2D6CB00E1D00D /* LWProtocolManager_Mac.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWProtocolManager_Mac.cpp; path = ../../Source/Mac/LWNetwork/LWProtocolManager_Mac.cpp; sourceTree = "<group>"; };
+		225FFE8A1CC2D6CB00E1D00D /* LWSocket_Mac.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWSocket_Mac.cpp; path = ../../Source/Mac/LWNetwork/LWSocket_Mac.cpp; sourceTree = "<group>"; };
+		225FFE8D1CC2D6FC00E1D00D /* LWProtocolManager_iOS.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWProtocolManager_iOS.cpp; path = ../../Source/iOS/LWNetwork/LWProtocolManager_iOS.cpp; sourceTree = "<group>"; };
+		225FFE8E1CC2D6FC00E1D00D /* LWSocket_iOS.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWSocket_iOS.cpp; path = ../../Source/iOS/LWNetwork/LWSocket_iOS.cpp; sourceTree = "<group>"; };
+		225FFEBB1CC2F9F000E1D00D /* libLWNetworki.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLWNetworki.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		22A8C5BE1C53E92900EF1714 /* LWPlatform_Mac.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LWPlatform_Mac.h; path = "../../Includes/C++11/LWPlatform/LWPlatform_Mac.h"; sourceTree = "<group>"; };
+		22AB05291CC2B0DB0012A40C /* LWAudioStream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LWAudioStream.cpp; path = "../../../Source/C++11/LWAudio/LWAudioStream.cpp"; sourceTree = "<group>"; };
+		22AB05301CC2C8A80012A40C /* libLWAudioi.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLWAudioi.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		22D353EE1C2C6385003030C3 /* LWVideoDriver_OpenGL2_1_Mac.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWVideoDriver_OpenGL2_1_Mac.cpp; path = ../../Source/Mac/LWVideo/LWVideoDriver/LWVideoDriver_OpenGL2_1_Mac.cpp; sourceTree = "<group>"; };
+		22D353F21C2C63A9003030C3 /* LWApplication_Mac.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWApplication_Mac.cpp; path = ../../Source/Mac/LWPlatform/LWApplication_Mac.cpp; sourceTree = "<group>"; };
+		22D353F31C2C63A9003030C3 /* LWDirectory_Mac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LWDirectory_Mac.cpp; path = ../../Source/Mac/LWPlatform/LWDirectory_Mac.cpp; sourceTree = "<group>"; };
+		22D353F41C2C63A9003030C3 /* LWFileStream_Mac.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWFileStream_Mac.cpp; path = ../../Source/Mac/LWPlatform/LWFileStream_Mac.cpp; sourceTree = "<group>"; };
+		22D353F51C2C63A9003030C3 /* LWInputDevice_Mac.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWInputDevice_Mac.cpp; path = ../../Source/Mac/LWPlatform/LWInputDevice_Mac.cpp; sourceTree = "<group>"; };
+		22D353F61C2C63A9003030C3 /* LWVideoMode_Mac.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWVideoMode_Mac.cpp; path = ../../Source/Mac/LWPlatform/LWVideoMode_Mac.cpp; sourceTree = "<group>"; };
+		22D353F71C2C63A9003030C3 /* LWWindow_Mac.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWWindow_Mac.cpp; path = ../../Source/Mac/LWPlatform/LWWindow_Mac.cpp; sourceTree = "<group>"; };
+		22D353FE1C2C6405003030C3 /* LWFileStream_Windows_X11_Mac.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LWFileStream_Windows_X11_Mac.cpp; path = ../../Source/Shared/LWPlatform/LWFileStream_Windows_X11_Mac.cpp; sourceTree = "<group>"; };
+		22D6445C1C28A4F7001F7AE0 /* LWCrypto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LWCrypto.cpp; sourceTree = "<group>"; };
+		22D7A8E41C2A1A0D002EED17 /* LWFrameBuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LWFrameBuffer.cpp; path = "../../Source/C++11/LWVideo/LWFrameBuffer.cpp"; sourceTree = "<group>"; };
+		22D7A8E51C2A1A0D002EED17 /* LWImage.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LWImage.cpp; path = "../../Source/C++11/LWVideo/LWImage.cpp"; sourceTree = "<group>"; };
+		22D7A8E61C2A1A0D002EED17 /* LWMesh.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LWMesh.cpp; path = "../../Source/C++11/LWVideo/LWMesh.cpp"; sourceTree = "<group>"; };
+		22D7A8E71C2A1A0D002EED17 /* LWShader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LWShader.cpp; path = "../../Source/C++11/LWVideo/LWShader.cpp"; sourceTree = "<group>"; };
+		22D7A8E81C2A1A0D002EED17 /* LWTexture.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LWTexture.cpp; path = "../../Source/C++11/LWVideo/LWTexture.cpp"; sourceTree = "<group>"; };
+		22D7A8E91C2A1A0D002EED17 /* LWVideoBuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LWVideoBuffer.cpp; path = "../../Source/C++11/LWVideo/LWVideoBuffer.cpp"; sourceTree = "<group>"; };
+		22D7A8EA1C2A1A0D002EED17 /* LWVideoState.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LWVideoState.cpp; path = "../../Source/C++11/LWVideo/LWVideoState.cpp"; sourceTree = "<group>"; };
+		22D7A8F21C2A1A38002EED17 /* LWVideoDriver_OpenGL2_1.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWVideoDriver_OpenGL2_1.cpp; path = "../../Source/C++11/LWVideo/LWVideoDriver/LWVideoDriver_OpenGL2_1.cpp"; sourceTree = "<group>"; };
+		22D7A8F31C2A1A38002EED17 /* LWVideoDriver_OpenGL3_2.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWVideoDriver_OpenGL3_2.cpp; path = "../../Source/C++11/LWVideo/LWVideoDriver/LWVideoDriver_OpenGL3_2.cpp"; sourceTree = "<group>"; };
+		22D7A8F61C2A1A58002EED17 /* LWVideoDriver_DirectX11_1_Null.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWVideoDriver_DirectX11_1_Null.cpp; path = ../../Source/Null/LWVideo/LWVideoDriver/LWVideoDriver_DirectX11_1_Null.cpp; sourceTree = "<group>"; };
+		22D7A8F71C2A1A58002EED17 /* LWVideoDriver_OpenGLES2_Null.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWVideoDriver_OpenGLES2_Null.cpp; path = ../../Source/Null/LWVideo/LWVideoDriver/LWVideoDriver_OpenGLES2_Null.cpp; sourceTree = "<group>"; };
+		22D96D361C556AAC00B76A74 /* libLWAudio.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLWAudio.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		22D96DC51C557BFD00B76A74 /* LWAudioDriver.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWAudioDriver.cpp; path = "../../../Source/C++11/LWAudio/LWAudioDriver.cpp"; sourceTree = "<group>"; };
+		22D96DC61C557BFD00B76A74 /* LWSound.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWSound.cpp; path = "../../../Source/C++11/LWAudio/LWSound.cpp"; sourceTree = "<group>"; };
+		22D96DC91C557C7500B76A74 /* LWAudioDriver_Mac.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWAudioDriver_Mac.cpp; path = ../../../Source/Mac/LWAudio/LWAudioDriver_Mac.cpp; sourceTree = "<group>"; };
+		22D96DCD1C557E6400B76A74 /* LWPlatform_Windows.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LWPlatform_Windows.h; path = "../../Includes/C++11/LWPlatform/LWPlatform_Windows.h"; sourceTree = "<group>"; };
+		22E84F1D216EEC78000612BA /* LWMath.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LWMath.cpp; sourceTree = "<group>"; };
+		22E84F20216EEDD6000612BA /* LWPlatform_Web.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = LWPlatform_Web.h; path = "../../Includes/C++11/LWPlatform/LWPlatform_Web.h"; sourceTree = "<group>"; };
+		22FD434121A1DB1000CBE95C /* LWAllocator_ConcurrentCircular.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LWAllocator_ConcurrentCircular.cpp; sourceTree = "<group>"; };
+		22FD434221A1DB1000CBE95C /* LWAllocator_DefaultDebug.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LWAllocator_DefaultDebug.cpp; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		183AEACD1A6E08B100ABD02F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1897DC151A7462B0006971A4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		189822121A704AEE0026FF0D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2212467B1C5459E3006CB2EA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		221246881C5459FB006CB2EA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		221246951C545A14006CB2EA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		225FFE6D1CC2D62800E1D00D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		225FFEB81CC2F9F000E1D00D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		22AB052D1CC2C8A80012A40C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		22D96D331C556AAC00B76A74 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		183AEAAC1A6E066300ABD02F = {
+			isa = PBXGroup;
+			children = (
+				225FFE7B1CC2D65800E1D00D /* LWNetwork */,
+				1897DC051A746275006971A4 /* LWVideo */,
+				1898221A1A704F8D0026FF0D /* LWPlatform */,
+				183AEAE31A6E0F0700ABD02F /* LWCore */,
+				22D96D371C556AAC00B76A74 /* LWAudio */,
+				183AEAB61A6E066400ABD02F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		183AEAB61A6E066400ABD02F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				183AEAD01A6E08B100ABD02F /* libLWCore.a */,
+				189822171A704AEE0026FF0D /* libLWPlatform.a */,
+				1897DC1A1A7462B0006971A4 /* libLWVideo.a */,
+				2212467E1C5459E3006CB2EA /* libLWCorei.a */,
+				2212468B1C5459FB006CB2EA /* libLWPlatformi.a */,
+				221246981C545A14006CB2EA /* libLWVideoi.a */,
+				22D96D361C556AAC00B76A74 /* libLWAudio.a */,
+				22AB05301CC2C8A80012A40C /* libLWAudioi.a */,
+				225FFE701CC2D62800E1D00D /* libLWNetwork.a */,
+				225FFEBB1CC2F9F000E1D00D /* libLWNetworki.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		183AEAE31A6E0F0700ABD02F /* LWCore */ = {
+			isa = PBXGroup;
+			children = (
+				22E84F1D216EEC78000612BA /* LWMath.cpp */,
+				22D6445E1C28A500001F7AE0 /* LWConcurrent */,
+				22D6445C1C28A4F7001F7AE0 /* LWCrypto.cpp */,
+				183AEAE41A6E0F0700ABD02F /* LWAllocator.cpp */,
+				183AEAE51A6E0F0700ABD02F /* LWAllocators */,
+				183AEAE91A6E0F0700ABD02F /* LWByteBuffer.cpp */,
+				183AEAEA1A6E0F0700ABD02F /* LWText.cpp */,
+				183AEAEB1A6E0F0700ABD02F /* LWTimer.cpp */,
+			);
+			name = LWCore;
+			path = "../../Source/C++11/LWCore";
+			sourceTree = "<group>";
+		};
+		183AEAE51A6E0F0700ABD02F /* LWAllocators */ = {
+			isa = PBXGroup;
+			children = (
+				22FD434121A1DB1000CBE95C /* LWAllocator_ConcurrentCircular.cpp */,
+				22FD434221A1DB1000CBE95C /* LWAllocator_DefaultDebug.cpp */,
+				183AEAE61A6E0F0700ABD02F /* LWAllocator_Default.cpp */,
+				183AEAE71A6E0F0700ABD02F /* LWAllocator_LocalCircular.cpp */,
+				183AEAE81A6E0F0700ABD02F /* LWAllocator_LocalHeap.cpp */,
+			);
+			path = LWAllocators;
+			sourceTree = "<group>";
+		};
+		1897DC051A746275006971A4 /* LWVideo */ = {
+			isa = PBXGroup;
+			children = (
+				221246BF1C545F89006CB2EA /* LWVideoDriver_OpenGL2_1_Null.cpp */,
+				221246C01C545F89006CB2EA /* LWVideoDriver_OpenGL3_2_Null.cpp */,
+				221246BD1C545F64006CB2EA /* LWVideoDriver_OpenGLES2_iOS.cpp */,
+				225C3D3C1C503F1C00D40C6E /* LWVideoDriver_OpenGL3_2_Mac.cpp */,
+				22D353EE1C2C6385003030C3 /* LWVideoDriver_OpenGL2_1_Mac.cpp */,
+				22D7A8F61C2A1A58002EED17 /* LWVideoDriver_DirectX11_1_Null.cpp */,
+				22D7A8F21C2A1A38002EED17 /* LWVideoDriver_OpenGL2_1.cpp */,
+				22D7A8F31C2A1A38002EED17 /* LWVideoDriver_OpenGL3_2.cpp */,
+				22D7A8F71C2A1A58002EED17 /* LWVideoDriver_OpenGLES2_Null.cpp */,
+				1897DC061A746293006971A4 /* LWVideoDriver.cpp */,
+				22338C0D1C4F17C200E44C29 /* LWFont.cpp */,
+				22D7A8E41C2A1A0D002EED17 /* LWFrameBuffer.cpp */,
+				22D7A8E51C2A1A0D002EED17 /* LWImage.cpp */,
+				22D7A8E61C2A1A0D002EED17 /* LWMesh.cpp */,
+				22D7A8E71C2A1A0D002EED17 /* LWShader.cpp */,
+				22D7A8E81C2A1A0D002EED17 /* LWTexture.cpp */,
+				22D7A8E91C2A1A0D002EED17 /* LWVideoBuffer.cpp */,
+				22D7A8EA1C2A1A0D002EED17 /* LWVideoState.cpp */,
+				221247601C546C92006CB2EA /* LWVideoDriver_OpenGLES2.cpp */,
+			);
+			name = LWVideo;
+			sourceTree = "<group>";
+		};
+		1898221A1A704F8D0026FF0D /* LWPlatform */ = {
+			isa = PBXGroup;
+			children = (
+				2221D821216FDF5E001E3A64 /* LWThread.cpp */,
+				22E84F20216EEDD6000612BA /* LWPlatform_Web.h */,
+				22D96DCD1C557E6400B76A74 /* LWPlatform_Windows.h */,
+				221246BB1C545F0E006CB2EA /* LWPlatform_iOS.h */,
+				221246B91C545EAD006CB2EA /* LWPlatform.h */,
+				221246A91C545B7C006CB2EA /* LWApplication_iOS.cpp */,
+				221246AA1C545B7C006CB2EA /* LWDirectory_iOS.cpp */,
+				221246AB1C545B7C006CB2EA /* LWFileStream_iOS.cpp */,
+				221246AC1C545B7C006CB2EA /* LWInputDevice_iOS.cpp */,
+				221246AD1C545B7C006CB2EA /* LWVideoMode_iOS.cpp */,
+				221246AE1C545B7C006CB2EA /* LWWindow_iOS.cpp */,
+				22A8C5BE1C53E92900EF1714 /* LWPlatform_Mac.h */,
+				22D353FE1C2C6405003030C3 /* LWFileStream_Windows_X11_Mac.cpp */,
+				22D353F21C2C63A9003030C3 /* LWApplication_Mac.cpp */,
+				22D353F31C2C63A9003030C3 /* LWDirectory_Mac.cpp */,
+				22D353F41C2C63A9003030C3 /* LWFileStream_Mac.cpp */,
+				22D353F51C2C63A9003030C3 /* LWInputDevice_Mac.cpp */,
+				22D353F61C2C63A9003030C3 /* LWVideoMode_Mac.cpp */,
+				22D353F71C2C63A9003030C3 /* LWWindow_Mac.cpp */,
+				1898221B1A704FB60026FF0D /* LWDirectory.cpp */,
+				1898221C1A704FB60026FF0D /* LWFileStream.cpp */,
+				1898221D1A704FB60026FF0D /* LWInputDevice.cpp */,
+				1898221E1A704FB60026FF0D /* LWVideoMode.cpp */,
+			);
+			name = LWPlatform;
+			sourceTree = "<group>";
+		};
+		225FFE7B1CC2D65800E1D00D /* LWNetwork */ = {
+			isa = PBXGroup;
+			children = (
+				225FFE8D1CC2D6FC00E1D00D /* LWProtocolManager_iOS.cpp */,
+				225FFE8E1CC2D6FC00E1D00D /* LWSocket_iOS.cpp */,
+				225FFE891CC2D6CB00E1D00D /* LWProtocolManager_Mac.cpp */,
+				225FFE8A1CC2D6CB00E1D00D /* LWSocket_Mac.cpp */,
+				225FFE7F1CC2D6BA00E1D00D /* LWPacket.cpp */,
+				225FFE801CC2D6BA00E1D00D /* LWPacketManager.cpp */,
+				225FFE811CC2D6BA00E1D00D /* LWProtocol.cpp */,
+				225FFE821CC2D6BA00E1D00D /* LWProtocolManager.cpp */,
+				225FFE831CC2D6BA00E1D00D /* LWSocket.cpp */,
+			);
+			name = LWNetwork;
+			sourceTree = "<group>";
+		};
+		22D6445E1C28A500001F7AE0 /* LWConcurrent */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = LWConcurrent;
+			sourceTree = "<group>";
+		};
+		22D96D371C556AAC00B76A74 /* LWAudio */ = {
+			isa = PBXGroup;
+			children = (
+				225FFE7C1CC2D68200E1D00D /* LWAudioDriver_iOS.cpp */,
+				22AB05291CC2B0DB0012A40C /* LWAudioStream.cpp */,
+				22D96DC91C557C7500B76A74 /* LWAudioDriver_Mac.cpp */,
+				22D96DC51C557BFD00B76A74 /* LWAudioDriver.cpp */,
+				22D96DC61C557BFD00B76A74 /* LWSound.cpp */,
+			);
+			path = LWAudio;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		183AEACE1A6E08B100ABD02F /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				221246BA1C545EAD006CB2EA /* LWPlatform.h in Headers */,
+				221246BC1C545F0E006CB2EA /* LWPlatform_iOS.h in Headers */,
+				22A8C5BF1C53E92900EF1714 /* LWPlatform_Mac.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1897DC161A7462B0006971A4 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		189822131A704AEE0026FF0D /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		225FFE6E1CC2D62800E1D00D /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		22D96D341C556AAC00B76A74 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				22D96DCE1C557E6400B76A74 /* LWPlatform_Windows.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		183AEACF1A6E08B100ABD02F /* LWCore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 183AEAD11A6E08B200ABD02F /* Build configuration list for PBXNativeTarget "LWCore" */;
+			buildPhases = (
+				183AEACC1A6E08B100ABD02F /* Sources */,
+				183AEACD1A6E08B100ABD02F /* Frameworks */,
+				183AEACE1A6E08B100ABD02F /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LWCore;
+			productName = LWCore;
+			productReference = 183AEAD01A6E08B100ABD02F /* libLWCore.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		1897DC0D1A7462B0006971A4 /* LWVideo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1897DC171A7462B0006971A4 /* Build configuration list for PBXNativeTarget "LWVideo" */;
+			buildPhases = (
+				1897DC0E1A7462B0006971A4 /* Sources */,
+				1897DC151A7462B0006971A4 /* Frameworks */,
+				1897DC161A7462B0006971A4 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LWVideo;
+			productName = LWCore;
+			productReference = 1897DC1A1A7462B0006971A4 /* libLWVideo.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		189822091A704AEE0026FF0D /* LWPlatform */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 189822141A704AEE0026FF0D /* Build configuration list for PBXNativeTarget "LWPlatform" */;
+			buildPhases = (
+				1898220A1A704AEE0026FF0D /* Sources */,
+				189822121A704AEE0026FF0D /* Frameworks */,
+				189822131A704AEE0026FF0D /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LWPlatform;
+			productName = LWCore;
+			productReference = 189822171A704AEE0026FF0D /* libLWPlatform.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		2212467D1C5459E3006CB2EA /* LWCorei */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 221246861C5459E3006CB2EA /* Build configuration list for PBXNativeTarget "LWCorei" */;
+			buildPhases = (
+				2212467A1C5459E3006CB2EA /* Sources */,
+				2212467B1C5459E3006CB2EA /* Frameworks */,
+				2212467C1C5459E3006CB2EA /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LWCorei;
+			productName = LWCorei;
+			productReference = 2212467E1C5459E3006CB2EA /* libLWCorei.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		2212468A1C5459FB006CB2EA /* LWPlatformi */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 221246911C5459FC006CB2EA /* Build configuration list for PBXNativeTarget "LWPlatformi" */;
+			buildPhases = (
+				221246871C5459FB006CB2EA /* Sources */,
+				221246881C5459FB006CB2EA /* Frameworks */,
+				221246891C5459FB006CB2EA /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LWPlatformi;
+			productName = LWPlatformi;
+			productReference = 2212468B1C5459FB006CB2EA /* libLWPlatformi.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		221246971C545A14006CB2EA /* LWVideoi */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2212469E1C545A14006CB2EA /* Build configuration list for PBXNativeTarget "LWVideoi" */;
+			buildPhases = (
+				221246941C545A14006CB2EA /* Sources */,
+				221246951C545A14006CB2EA /* Frameworks */,
+				221246961C545A14006CB2EA /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LWVideoi;
+			productName = LWVideoi;
+			productReference = 221246981C545A14006CB2EA /* libLWVideoi.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		225FFE6F1CC2D62800E1D00D /* LWNetwork */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 225FFE7A1CC2D62800E1D00D /* Build configuration list for PBXNativeTarget "LWNetwork" */;
+			buildPhases = (
+				225FFE6C1CC2D62800E1D00D /* Sources */,
+				225FFE6D1CC2D62800E1D00D /* Frameworks */,
+				225FFE6E1CC2D62800E1D00D /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LWNetwork;
+			productName = LWNetwork;
+			productReference = 225FFE701CC2D62800E1D00D /* libLWNetwork.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		225FFEBA1CC2F9F000E1D00D /* LWNetworki */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 225FFEC11CC2F9F000E1D00D /* Build configuration list for PBXNativeTarget "LWNetworki" */;
+			buildPhases = (
+				225FFEB71CC2F9F000E1D00D /* Sources */,
+				225FFEB81CC2F9F000E1D00D /* Frameworks */,
+				225FFEB91CC2F9F000E1D00D /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LWNetworki;
+			productName = LWNetworki;
+			productReference = 225FFEBB1CC2F9F000E1D00D /* libLWNetworki.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		22AB052F1CC2C8A80012A40C /* LWAudioi */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 22AB05361CC2C8A80012A40C /* Build configuration list for PBXNativeTarget "LWAudioi" */;
+			buildPhases = (
+				22AB052C1CC2C8A80012A40C /* Sources */,
+				22AB052D1CC2C8A80012A40C /* Frameworks */,
+				22AB052E1CC2C8A80012A40C /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LWAudioi;
+			productName = LWAudioi;
+			productReference = 22AB05301CC2C8A80012A40C /* libLWAudioi.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		22D96D351C556AAC00B76A74 /* LWAudio */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 22D96D401C556AAC00B76A74 /* Build configuration list for PBXNativeTarget "LWAudio" */;
+			buildPhases = (
+				22D96D321C556AAC00B76A74 /* Sources */,
+				22D96D331C556AAC00B76A74 /* Frameworks */,
+				22D96D341C556AAC00B76A74 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LWAudio;
+			productName = LWAudio;
+			productReference = 22D96D361C556AAC00B76A74 /* libLWAudio.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		183AEAAD1A6E066300ABD02F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0720;
+				ORGANIZATIONNAME = "LiquidWater Games";
+				TargetAttributes = {
+					2212467D1C5459E3006CB2EA = {
+						CreatedOnToolsVersion = 7.2;
+					};
+					2212468A1C5459FB006CB2EA = {
+						CreatedOnToolsVersion = 7.2;
+					};
+					221246971C545A14006CB2EA = {
+						CreatedOnToolsVersion = 7.2;
+					};
+					225FFE6F1CC2D62800E1D00D = {
+						CreatedOnToolsVersion = 7.2;
+					};
+					225FFEBA1CC2F9F000E1D00D = {
+						CreatedOnToolsVersion = 7.2;
+					};
+					22AB052F1CC2C8A80012A40C = {
+						CreatedOnToolsVersion = 7.2;
+					};
+					22D96D351C556AAC00B76A74 = {
+						CreatedOnToolsVersion = 7.2;
+					};
+				};
+			};
+			buildConfigurationList = 183AEAB01A6E066300ABD02F /* Build configuration list for PBXProject "LightWave Framework" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 183AEAAC1A6E066300ABD02F;
+			productRefGroup = 183AEAB61A6E066400ABD02F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				183AEACF1A6E08B100ABD02F /* LWCore */,
+				189822091A704AEE0026FF0D /* LWPlatform */,
+				1897DC0D1A7462B0006971A4 /* LWVideo */,
+				22D96D351C556AAC00B76A74 /* LWAudio */,
+				225FFE6F1CC2D62800E1D00D /* LWNetwork */,
+				2212467D1C5459E3006CB2EA /* LWCorei */,
+				2212468A1C5459FB006CB2EA /* LWPlatformi */,
+				221246971C545A14006CB2EA /* LWVideoi */,
+				22AB052F1CC2C8A80012A40C /* LWAudioi */,
+				225FFEBA1CC2F9F000E1D00D /* LWNetworki */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		183AEACC1A6E08B100ABD02F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				183AEAEC1A6E0F1100ABD02F /* LWAllocator.cpp in Sources */,
+				22D6445D1C28A4F7001F7AE0 /* LWCrypto.cpp in Sources */,
+				183AEAED1A6E0F1100ABD02F /* LWAllocator_Default.cpp in Sources */,
+				183AEAEE1A6E0F1100ABD02F /* LWAllocator_LocalCircular.cpp in Sources */,
+				183AEAEF1A6E0F1100ABD02F /* LWAllocator_LocalHeap.cpp in Sources */,
+				22FD434421A1DB1000CBE95C /* LWAllocator_DefaultDebug.cpp in Sources */,
+				183AEAF01A6E0F1100ABD02F /* LWByteBuffer.cpp in Sources */,
+				22E84F1E216EEC78000612BA /* LWMath.cpp in Sources */,
+				183AEAF11A6E0F1100ABD02F /* LWText.cpp in Sources */,
+				22FD434321A1DB1000CBE95C /* LWAllocator_ConcurrentCircular.cpp in Sources */,
+				183AEAF21A6E0F1100ABD02F /* LWTimer.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1897DC0E1A7462B0006971A4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				225C3D3D1C503F1C00D40C6E /* LWVideoDriver_OpenGL3_2_Mac.cpp in Sources */,
+				22338C0F1C4F17D800E44C29 /* LWFont.cpp in Sources */,
+				22D7A8F11C2A1A0D002EED17 /* LWVideoState.cpp in Sources */,
+				22D7A8EF1C2A1A0D002EED17 /* LWTexture.cpp in Sources */,
+				22D7A8EE1C2A1A0D002EED17 /* LWShader.cpp in Sources */,
+				22D7A8F01C2A1A0D002EED17 /* LWVideoBuffer.cpp in Sources */,
+				22D7A8EB1C2A1A0D002EED17 /* LWFrameBuffer.cpp in Sources */,
+				22D7A8ED1C2A1A0D002EED17 /* LWMesh.cpp in Sources */,
+				22D7A8F91C2A1A58002EED17 /* LWVideoDriver_OpenGLES2_Null.cpp in Sources */,
+				1897DC1B1A7462BE006971A4 /* LWVideoDriver.cpp in Sources */,
+				22D7A8F41C2A1A38002EED17 /* LWVideoDriver_OpenGL2_1.cpp in Sources */,
+				22D7A8F81C2A1A58002EED17 /* LWVideoDriver_DirectX11_1_Null.cpp in Sources */,
+				22D7A8F51C2A1A38002EED17 /* LWVideoDriver_OpenGL3_2.cpp in Sources */,
+				22D7A8EC1C2A1A0D002EED17 /* LWImage.cpp in Sources */,
+				22D353F01C2C6385003030C3 /* LWVideoDriver_OpenGL2_1_Mac.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1898220A1A704AEE0026FF0D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				189822231A70532D0026FF0D /* LWDirectory.cpp in Sources */,
+				22D353FB1C2C63A9003030C3 /* LWInputDevice_Mac.cpp in Sources */,
+				22D353FD1C2C63A9003030C3 /* LWWindow_Mac.cpp in Sources */,
+				189822241A70532D0026FF0D /* LWFileStream.cpp in Sources */,
+				2221D822216FDF5E001E3A64 /* LWThread.cpp in Sources */,
+				22D353FA1C2C63A9003030C3 /* LWFileStream_Mac.cpp in Sources */,
+				22D353F91C2C63A9003030C3 /* LWDirectory_Mac.cpp in Sources */,
+				22D353F81C2C63A9003030C3 /* LWApplication_Mac.cpp in Sources */,
+				189822251A70532D0026FF0D /* LWInputDevice.cpp in Sources */,
+				189822261A70532D0026FF0D /* LWVideoMode.cpp in Sources */,
+				22D353FC1C2C63A9003030C3 /* LWVideoMode_Mac.cpp in Sources */,
+				22D353FF1C2C6405003030C3 /* LWFileStream_Windows_X11_Mac.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2212467A1C5459E3006CB2EA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				221246A11C545B5B006CB2EA /* LWCrypto.cpp in Sources */,
+				221246A21C545B5B006CB2EA /* LWAllocator.cpp in Sources */,
+				221246A31C545B5B006CB2EA /* LWAllocator_Default.cpp in Sources */,
+				221246A41C545B5B006CB2EA /* LWAllocator_LocalCircular.cpp in Sources */,
+				221246A51C545B5B006CB2EA /* LWAllocator_LocalHeap.cpp in Sources */,
+				22FD434621A1E27200CBE95C /* LWAllocator_DefaultDebug.cpp in Sources */,
+				221246A61C545B5B006CB2EA /* LWByteBuffer.cpp in Sources */,
+				22E84F1F216EEC78000612BA /* LWMath.cpp in Sources */,
+				221246A71C545B5B006CB2EA /* LWText.cpp in Sources */,
+				22FD434521A1E26B00CBE95C /* LWAllocator_ConcurrentCircular.cpp in Sources */,
+				221246A81C545B5B006CB2EA /* LWTimer.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		221246871C5459FB006CB2EA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2212472D1C54672E006CB2EA /* LWFileStream_Windows_X11_Mac.cpp in Sources */,
+				221246B51C545B9F006CB2EA /* LWDirectory.cpp in Sources */,
+				221246B61C545B9F006CB2EA /* LWFileStream.cpp in Sources */,
+				221246B71C545B9F006CB2EA /* LWInputDevice.cpp in Sources */,
+				2221D823216FDF5E001E3A64 /* LWThread.cpp in Sources */,
+				221246B81C545B9F006CB2EA /* LWVideoMode.cpp in Sources */,
+				221246B01C545B7C006CB2EA /* LWDirectory_iOS.cpp in Sources */,
+				221246B31C545B7C006CB2EA /* LWVideoMode_iOS.cpp in Sources */,
+				221246B11C545B7C006CB2EA /* LWFileStream_iOS.cpp in Sources */,
+				221246AF1C545B7C006CB2EA /* LWApplication_iOS.cpp in Sources */,
+				221246B41C545B7C006CB2EA /* LWWindow_iOS.cpp in Sources */,
+				221246B21C545B7C006CB2EA /* LWInputDevice_iOS.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		221246941C545A14006CB2EA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				221246C31C545FA9006CB2EA /* LWVideoDriver_DirectX11_1_Null.cpp in Sources */,
+				221246C41C545FA9006CB2EA /* LWVideoDriver.cpp in Sources */,
+				221246C51C545FA9006CB2EA /* LWFont.cpp in Sources */,
+				221246C61C545FA9006CB2EA /* LWFrameBuffer.cpp in Sources */,
+				221247611C546C92006CB2EA /* LWVideoDriver_OpenGLES2.cpp in Sources */,
+				221246C71C545FA9006CB2EA /* LWImage.cpp in Sources */,
+				221246C81C545FA9006CB2EA /* LWMesh.cpp in Sources */,
+				221246C91C545FA9006CB2EA /* LWShader.cpp in Sources */,
+				221246CA1C545FA9006CB2EA /* LWTexture.cpp in Sources */,
+				221246CB1C545FA9006CB2EA /* LWVideoBuffer.cpp in Sources */,
+				221246CC1C545FA9006CB2EA /* LWVideoState.cpp in Sources */,
+				221246C11C545F89006CB2EA /* LWVideoDriver_OpenGL2_1_Null.cpp in Sources */,
+				221246BE1C545F64006CB2EA /* LWVideoDriver_OpenGLES2_iOS.cpp in Sources */,
+				221246C21C545F89006CB2EA /* LWVideoDriver_OpenGL3_2_Null.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		225FFE6C1CC2D62800E1D00D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				225FFE931CC2D70500E1D00D /* LWPacket.cpp in Sources */,
+				225FFE911CC2D70500E1D00D /* LWProtocolManager_Mac.cpp in Sources */,
+				225FFE971CC2D70500E1D00D /* LWSocket.cpp in Sources */,
+				225FFE951CC2D70500E1D00D /* LWProtocol.cpp in Sources */,
+				225FFE941CC2D70500E1D00D /* LWPacketManager.cpp in Sources */,
+				225FFE961CC2D70500E1D00D /* LWProtocolManager.cpp in Sources */,
+				225FFE921CC2D70500E1D00D /* LWSocket_Mac.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		225FFEB71CC2F9F000E1D00D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				225FFEC91CC2FA6C00E1D00D /* LWProtocolManager.cpp in Sources */,
+				225FFECA1CC2FA6C00E1D00D /* LWSocket.cpp in Sources */,
+				225FFEC61CC2FA6C00E1D00D /* LWPacket.cpp in Sources */,
+				225FFEC41CC2FA6C00E1D00D /* LWProtocolManager_iOS.cpp in Sources */,
+				225FFEC81CC2FA6C00E1D00D /* LWProtocol.cpp in Sources */,
+				225FFEC71CC2FA6C00E1D00D /* LWPacketManager.cpp in Sources */,
+				225FFEC51CC2FA6C00E1D00D /* LWSocket_iOS.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		22AB052C1CC2C8A80012A40C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				225FFE7E1CC2D69E00E1D00D /* LWAudioDriver_iOS.cpp in Sources */,
+				22AB05391CC2C9920012A40C /* LWAudioStream.cpp in Sources */,
+				22AB053C1CC2C9920012A40C /* LWAudioDriver.cpp in Sources */,
+				22AB053D1CC2C9920012A40C /* LWSound.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		22D96D321C556AAC00B76A74 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				22D96DC81C557BFD00B76A74 /* LWSound.cpp in Sources */,
+				22D96DC71C557BFD00B76A74 /* LWAudioDriver.cpp in Sources */,
+				22D96DCA1C557C7500B76A74 /* LWAudioDriver_Mac.cpp in Sources */,
+				22AB052B1CC2B0EB0012A40C /* LWAudioStream.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		183AEAB71A6E066400ABD02F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		183AEAB81A6E066400ABD02F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		183AEAD21A6E08B200ABD02F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(EFFECTIVE_PLATFORM_NAME)";
+				CONFIGURATION_TEMP_DIR = "$(PROJECT_TEMP_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				EXECUTABLE_PREFIX = lib;
+				GCC_C_LANGUAGE_STANDARD = c11;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				HEADER_SEARCH_PATHS = "../../Includes/C++11/";
+				OBJROOT = "$(CONFIGURATION)";
+				PRIVATE_HEADERS_FOLDER_PATH = /usr/local/include;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Debug;
+		};
+		183AEAD31A6E08B200ABD02F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(EFFECTIVE_PLATFORM_NAME)";
+				CONFIGURATION_TEMP_DIR = "$(PROJECT_TEMP_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				EXECUTABLE_PREFIX = lib;
+				GCC_C_LANGUAGE_STANDARD = c11;
+				HEADER_SEARCH_PATHS = "../../Includes/C++11/";
+				OBJROOT = "$(CONFIGURATION)";
+				PRIVATE_HEADERS_FOLDER_PATH = /usr/local/include;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Release;
+		};
+		1897DC181A7462B0006971A4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(EFFECTIVE_PLATFORM_NAME)";
+				CONFIGURATION_TEMP_DIR = "$(PROJECT_TEMP_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				EXECUTABLE_PREFIX = lib;
+				GCC_C_LANGUAGE_STANDARD = c11;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				HEADER_SEARCH_PATHS = (
+					"../../Includes/C++11/",
+					/usr/local/include/freetype2/,
+					/usr/local/include/libpng16/,
+				);
+				OBJROOT = "$(CONFIGURATION)";
+				OTHER_LDFLAGS = "-DGLEW_STATIC";
+				PRIVATE_HEADERS_FOLDER_PATH = /usr/local/include;
+				PRODUCT_NAME = LWVideo;
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Debug;
+		};
+		1897DC191A7462B0006971A4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(EFFECTIVE_PLATFORM_NAME)";
+				CONFIGURATION_TEMP_DIR = "$(PROJECT_TEMP_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				EXECUTABLE_PREFIX = lib;
+				GCC_C_LANGUAGE_STANDARD = c11;
+				HEADER_SEARCH_PATHS = (
+					"../../Includes/C++11/",
+					/usr/local/include/freetype2/,
+					/usr/local/include/libpng16/,
+				);
+				OBJROOT = "$(CONFIGURATION)";
+				OTHER_LDFLAGS = "-DGLEW_STATIC";
+				PRIVATE_HEADERS_FOLDER_PATH = /usr/local/include;
+				PRODUCT_NAME = LWVideo;
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Release;
+		};
+		189822151A704AEE0026FF0D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_MODULES = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(EFFECTIVE_PLATFORM_NAME)";
+				CONFIGURATION_TEMP_DIR = "$(PROJECT_TEMP_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				EXECUTABLE_PREFIX = lib;
+				GCC_C_LANGUAGE_STANDARD = c11;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				HEADER_SEARCH_PATHS = "../../Includes/C++11/";
+				OBJROOT = "$(CONFIGURATION)";
+				PRIVATE_HEADERS_FOLDER_PATH = /usr/local/include;
+				PRODUCT_NAME = LWPlatform;
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Debug;
+		};
+		189822161A704AEE0026FF0D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_MODULES = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(EFFECTIVE_PLATFORM_NAME)";
+				CONFIGURATION_TEMP_DIR = "$(PROJECT_TEMP_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				EXECUTABLE_PREFIX = lib;
+				GCC_C_LANGUAGE_STANDARD = c11;
+				HEADER_SEARCH_PATHS = "../../Includes/C++11/";
+				OBJROOT = "$(CONFIGURATION)";
+				PRIVATE_HEADERS_FOLDER_PATH = /usr/local/include;
+				PRODUCT_NAME = LWPlatform;
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Release;
+		};
+		221246841C5459E3006CB2EA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = "../../Includes/C++11/";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OBJROOT = "$(CONFIGURATION)";
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				USER_HEADER_SEARCH_PATHS = "";
+				VALID_ARCHS = "arm64 armv7 armv7s";
+			};
+			name = Debug;
+		};
+		221246851C5459E3006CB2EA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = "../../Includes/C++11/";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OBJROOT = "$(CONFIGURATION)";
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				USER_HEADER_SEARCH_PATHS = "";
+				VALIDATE_PRODUCT = YES;
+				VALID_ARCHS = "arm64 armv7 armv7s";
+			};
+			name = Release;
+		};
+		221246921C5459FC006CB2EA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = "../../Includes/C++11/";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OBJROOT = "$(CONFIGURATION)";
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Debug;
+		};
+		221246931C5459FC006CB2EA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = "../../Includes/C++11/";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OBJROOT = "$(CONFIGURATION)";
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				USER_HEADER_SEARCH_PATHS = "";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		2212469F1C545A14006CB2EA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = (
+					"../../Includes/C++11/",
+					../../../Dependency/libpng/,
+					../../../Dependency/libfreetype/include/,
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OBJROOT = "$(CONFIGURATION)";
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Debug;
+		};
+		221246A01C545A14006CB2EA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = (
+					"../../Includes/C++11/",
+					../../../Dependency/libpng/,
+					../../../Dependency/libfreetype/include/,
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OBJROOT = "$(CONFIGURATION)";
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				USER_HEADER_SEARCH_PATHS = "";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		225FFE781CC2D62800E1D00D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				EXECUTABLE_PREFIX = lib;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = "../../Includes/C++11/";
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OBJROOT = "$(CONFIGURATION)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+			};
+			name = Debug;
+		};
+		225FFE791CC2D62800E1D00D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				EXECUTABLE_PREFIX = lib;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = "../../Includes/C++11/";
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OBJROOT = "$(CONFIGURATION)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+			};
+			name = Release;
+		};
+		225FFEC21CC2F9F000E1D00D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = "../../Includes/C++11/";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OBJROOT = "$(CONFIGURATION)";
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Debug;
+		};
+		225FFEC31CC2F9F000E1D00D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = "../../Includes/C++11/";
+				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OBJROOT = "$(CONFIGURATION)";
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				USER_HEADER_SEARCH_PATHS = "";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		22AB05371CC2C8A80012A40C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = (
+					"../../Includes/C++11/",
+					../../../Dependency/libvorbis/include/,
+					../../../Dependency/libogg/include/,
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OBJROOT = "$(CONFIGURATION)";
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Debug;
+		};
+		22AB05381CC2C8A80012A40C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = (
+					"../../Includes/C++11/",
+					../../../Dependency/libvorbis/include/,
+					../../../Dependency/libogg/include/,
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OBJROOT = "$(CONFIGURATION)";
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				USER_HEADER_SEARCH_PATHS = "";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		22D96D3E1C556AAC00B76A74 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_MODULES = NO;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				EXECUTABLE_PREFIX = lib;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = (
+					"../../Includes/C++11/",
+					/usr/local/include/,
+				);
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OBJROOT = "$(CONFIGURATION)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+			};
+			name = Debug;
+		};
+		22D96D3F1C556AAC00B76A74 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_ENABLE_MODULES = NO;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				EXECUTABLE_PREFIX = lib;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				HEADER_SEARCH_PATHS = (
+					"../../Includes/C++11/",
+					/usr/local/include/,
+				);
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OBJROOT = "$(CONFIGURATION)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		183AEAB01A6E066300ABD02F /* Build configuration list for PBXProject "LightWave Framework" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				183AEAB71A6E066400ABD02F /* Debug */,
+				183AEAB81A6E066400ABD02F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		183AEAD11A6E08B200ABD02F /* Build configuration list for PBXNativeTarget "LWCore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				183AEAD21A6E08B200ABD02F /* Debug */,
+				183AEAD31A6E08B200ABD02F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1897DC171A7462B0006971A4 /* Build configuration list for PBXNativeTarget "LWVideo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1897DC181A7462B0006971A4 /* Debug */,
+				1897DC191A7462B0006971A4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		189822141A704AEE0026FF0D /* Build configuration list for PBXNativeTarget "LWPlatform" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				189822151A704AEE0026FF0D /* Debug */,
+				189822161A704AEE0026FF0D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		221246861C5459E3006CB2EA /* Build configuration list for PBXNativeTarget "LWCorei" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				221246841C5459E3006CB2EA /* Debug */,
+				221246851C5459E3006CB2EA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		221246911C5459FC006CB2EA /* Build configuration list for PBXNativeTarget "LWPlatformi" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				221246921C5459FC006CB2EA /* Debug */,
+				221246931C5459FC006CB2EA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2212469E1C545A14006CB2EA /* Build configuration list for PBXNativeTarget "LWVideoi" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2212469F1C545A14006CB2EA /* Debug */,
+				221246A01C545A14006CB2EA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		225FFE7A1CC2D62800E1D00D /* Build configuration list for PBXNativeTarget "LWNetwork" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				225FFE781CC2D62800E1D00D /* Debug */,
+				225FFE791CC2D62800E1D00D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		225FFEC11CC2F9F000E1D00D /* Build configuration list for PBXNativeTarget "LWNetworki" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				225FFEC21CC2F9F000E1D00D /* Debug */,
+				225FFEC31CC2F9F000E1D00D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		22AB05361CC2C8A80012A40C /* Build configuration list for PBXNativeTarget "LWAudioi" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				22AB05371CC2C8A80012A40C /* Debug */,
+				22AB05381CC2C8A80012A40C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		22D96D401C556AAC00B76A74 /* Build configuration list for PBXNativeTarget "LWAudio" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				22D96D3E1C556AAC00B76A74 /* Debug */,
+				22D96D3F1C556AAC00B76A74 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 183AEAAD1A6E066300ABD02F /* Project object */;
+}

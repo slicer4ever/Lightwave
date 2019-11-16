@@ -1,0 +1,49 @@
+<AssetManager>
+	<ShaderBuilder Path="Font">
+		<Shader Type="Vertex" Name="FontVertexShader" />
+		<Shader Type="Pixel" Name="FontPixelShader" />
+	</ShaderBuilder>
+	<ShaderBuilder Path="App:VertexShader.vlws">
+		<InputMap vPosition="Vec4" vTexCoord="Vec4" vTangent="Vec4" vNormal="Vec4" vBoneWeight="Vec4" vBoneIndices="Vec4" />
+		<Shader Type="Vertex" Name="StaticShader" />
+		<Shader Type="Vertex" Name="StaticPointShader" POINT />
+		<Shader Type="Vertex" Name="SkeletonShader" SKELETON />
+		<Shader Type="Vertex" Name="SkeletonPointShader" SKELETON POINT />
+	</ShaderBuilder>
+	<ShaderBuilder Path="App:PixelShader.plws">
+		<Shader Type="Pixel" Name="MetallicRoughnessShader" METALLICROUGHNESS >
+			<ResourceMap Lights LightArray DepthTex NormalTex OcclussionTex EmissiveTex BaseColorTex MetallicRoughnessTex  />
+		</Shader>
+		<Shader Type="Pixel" Name="SpecularGlossinessShader" SPECULARGLOSSINESS >
+			<ResourceMap Lights LightArray DepthTex NormalTex OcclussionTex EmissiveTex DiffuseColorTex SpecularColorTex />
+		</Shader>
+		<Shader Type="Pixel" Name="UnlitShader" UNLIT >
+			<ResourceMap Lights LightArray DepthTex NormalTex OcclussionTex EmissiveTex ColorTex />
+		</Shader>
+	</ShaderBuilder>
+	<Shader Type="Compute" Name="LightCullShader" Path="App:LightCullShader.lws">
+		<ResourceMap Lights LightArray />
+	</Shader>
+	
+	<VideoBuffer Name="ListBuffer" Type="Uniform" Usage="WriteDiscardable|LocalCopy" TypeSize="716" Length="9" Padded />
+	<VideoBuffer Name="LightsBuffer" Type="ImageBuffer" Usage="WriteDiscardable" TypeSize="64" Length="1024" />
+	<VideoBuffer Name="MaterialsBuffer" Type="Uniform" Usage="WriteDiscardable" TypeSize="52" Length="1024" Padded />
+	<VideoBuffer Name="ModelsBuffer" Type="Uniform" Usage="WriteDiscardable" TypeSize="4160" Length="1024" Padded />
+	
+	<Pipeline Vertex="FontVertexShader" Pixel="FontPixelShader" Name="FontPipeline" Flags="Blending" CullMode="CW" SourceBlendMode="SrcAlpha" DestBlendMode="OneMinusSrcAlpha" />
+	<Pipeline Vertex="StaticShader" Pixel="MetallicRoughnessShader" Name="MetallicRoughnessPipeline" Flags="DepthTest" DepthCompare="LessEqual" CullMode="CW">
+		<Resource Slot="0" Name="LightsBuffer" />
+	</Pipeline>
+	<Pipeline Vertex="StaticShader" Pixel="SpecularGlossinessShader" Name="SpecularGlossinessPipeline" Flags="DepthTest" DepthCompare="LessEqual" CullMode="CW">
+		<Resource Slot="0" Name="LightsBuffer" />
+	</Pipeline>
+	<Pipeline Vertex="StaticShader" Pixel="UnlitShader" Name="UnlitPipeline" Flags="DepthTest" DepthCompare="LessEqual" CullMode="CW">
+		<Resource Slot="0" Name="LightsBuffer" />
+	</Pipeline>
+	<Pipeline Vertex="StaticShader" Name="ShadowPipeline" Flags="DepthTest" DepthCompare="LessEqual" CullMode="CW" />
+	<Pipeline Name="LightCullPipeline" Compute="LightCullShader">
+		<Block Slot="0" Name="ListBuffer" />
+		<Resource Slot="0" Name="LightsBuffer" />
+	</Pipeline>
+	<Font Name="DefaultFont" Path="App:Junicode-Regular.ttf" Size="32" GlyphFirst="32" GlyphLength="96" />
+</AssetManager>

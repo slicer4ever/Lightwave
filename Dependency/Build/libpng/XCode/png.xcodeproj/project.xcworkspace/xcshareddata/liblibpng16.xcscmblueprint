@@ -1,0 +1,25 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "0A1139FA2CF7A59823D00B169C0CB3385DF13370",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+    "0A1139FA2CF7A59823D00B169C0CB3385DF13370" : {
+
+    }
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "0A1139FA2CF7A59823D00B169C0CB3385DF13370" : 0
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "D1A1E83A-FD8B-495E-9C48-5E3CFAFB1593",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "0A1139FA2CF7A59823D00B169C0CB3385DF13370" : "Lightwave\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "liblibpng16",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "Dependency\/Build\/libpng\/XCode\/liblibpng16.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/liquidgames.org\/svn\/Lightwave",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Subversion",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "0A1139FA2CF7A59823D00B169C0CB3385DF13370"
+    }
+  ]
+}

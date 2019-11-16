@@ -1,0 +1,53 @@
+#include "LWVideo/LWTexture.h"
+
+LWTexture &LWTexture::SetTextureState(uint32_t TextureState){
+	if (TextureState == m_TextureState) return *this;
+	m_TextureState = TextureState | LWTexture::Dirty;
+	return *this;
+}
+
+bool LWTexture::isDirty(void) const {
+	return (m_TextureState&Dirty);
+}
+
+LWTexture &LWTexture::ClearDirty(void){
+	m_TextureState &= ~Dirty;
+	return *this;
+}
+
+uint32_t LWTexture::GetTextureState(void) const{
+	return m_TextureState;
+}
+
+uint32_t LWTexture::GetMipmapCount(void) const {
+	return m_MipmapCount;
+}
+
+uint32_t LWTexture::GetType(void) const{
+	return m_Type;
+}
+uint32_t LWTexture::GetPackType(void) const{
+	return m_PackType;
+}
+
+uint32_t LWTexture::Get1DSize(void) const {
+	return m_Size.x;
+}
+
+LWVector2i LWTexture::Get2DSize(void) const {
+	return LWVector2i(m_Size.x, m_Size.y);
+}
+
+LWVector3i LWTexture::Get3DSize(void) const {
+	return m_Size;
+}
+
+uint32_t LWTexture::Get1DLayers(void) const {
+	return m_Size.y;
+}
+
+uint32_t LWTexture::Get2DLayers(void) const {
+	return m_Size.z;
+}
+
+LWTexture::LWTexture(uint32_t TextureState, uint32_t PackType, uint32_t MipmapCount, const LWVector3i &Size, uint32_t TexType) : m_TextureState(TextureState | Dirty), m_PackType(PackType), m_MipmapCount(MipmapCount), m_Type(TexType), m_Size(Size) {}

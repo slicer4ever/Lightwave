@@ -1,0 +1,452 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		225F34451E1803EC00C3C4F8 /* LWEUIComponent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225F34441E1803EC00C3C4F8 /* LWEUIComponent.cpp */; };
+		225F34461E1803EC00C3C4F8 /* LWEUIComponent.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225F34441E1803EC00C3C4F8 /* LWEUIComponent.cpp */; };
+		225F345C1E2DD09400C3C4F8 /* LWEUITextInput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225F345B1E2DD09400C3C4F8 /* LWEUITextInput.cpp */; };
+		225F345D1E2DD09D00C3C4F8 /* LWEUITextInput.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 225F345B1E2DD09400C3C4F8 /* LWEUITextInput.cpp */; };
+		2298B8161DD55B3400ABB257 /* LWEAsset.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B8151DD55B3400ABB257 /* LWEAsset.cpp */; };
+		2298B8191DD55B4200ABB257 /* LWEUIManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B8171DD55B4200ABB257 /* LWEUIManager.cpp */; };
+		2298B81A1DD55B4200ABB257 /* LWEXML.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B8181DD55B4200ABB257 /* LWEXML.cpp */; };
+		2298B8231DD55B6200ABB257 /* LWEUI.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B81C1DD55B6200ABB257 /* LWEUI.cpp */; };
+		2298B8241DD55B6200ABB257 /* LWEUIButton.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B81D1DD55B6200ABB257 /* LWEUIButton.cpp */; };
+		2298B8251DD55B6200ABB257 /* LWEUILabel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B81E1DD55B6200ABB257 /* LWEUILabel.cpp */; };
+		2298B8261DD55B6200ABB257 /* LWEUIListBox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B81F1DD55B6200ABB257 /* LWEUIListBox.cpp */; };
+		2298B8271DD55B6200ABB257 /* LWEUIRect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B8201DD55B6200ABB257 /* LWEUIRect.cpp */; };
+		2298B8281DD55B6200ABB257 /* LWEUIScrollBar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B8211DD55B6200ABB257 /* LWEUIScrollBar.cpp */; };
+		22A26E621EBE5A52008AD3C7 /* LWEUIAdvLabel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22A26E611EBE5A52008AD3C7 /* LWEUIAdvLabel.cpp */; };
+		22A26E631EBE5A56008AD3C7 /* LWEUIAdvLabel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22A26E611EBE5A52008AD3C7 /* LWEUIAdvLabel.cpp */; };
+		22A26E651EBE5A72008AD3C7 /* LWELocalization.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22A26E641EBE5A72008AD3C7 /* LWELocalization.cpp */; };
+		22A26E6E1EBE6216008AD3C7 /* LWELocalization.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22A26E641EBE5A72008AD3C7 /* LWELocalization.cpp */; };
+		22C1987C1DD7A13700D41315 /* LWEUI.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B81C1DD55B6200ABB257 /* LWEUI.cpp */; };
+		22C1987D1DD7A13700D41315 /* LWEUIButton.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B81D1DD55B6200ABB257 /* LWEUIButton.cpp */; };
+		22C1987E1DD7A13700D41315 /* LWEUILabel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B81E1DD55B6200ABB257 /* LWEUILabel.cpp */; };
+		22C1987F1DD7A13700D41315 /* LWEUIListBox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B81F1DD55B6200ABB257 /* LWEUIListBox.cpp */; };
+		22C198801DD7A13700D41315 /* LWEUIRect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B8201DD55B6200ABB257 /* LWEUIRect.cpp */; };
+		22C198811DD7A13700D41315 /* LWEUIScrollBar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B8211DD55B6200ABB257 /* LWEUIScrollBar.cpp */; };
+		22C198831DD7A13700D41315 /* LWEUIManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B8171DD55B4200ABB257 /* LWEUIManager.cpp */; };
+		22C198841DD7A13700D41315 /* LWEXML.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B8181DD55B4200ABB257 /* LWEXML.cpp */; };
+		22C198851DD7A13700D41315 /* LWEAsset.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2298B8151DD55B3400ABB257 /* LWEAsset.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		22C198711DD7A07D00D41315 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		225F34441E1803EC00C3C4F8 /* LWEUIComponent.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWEUIComponent.cpp; path = "../../../Source/C++11/LWEUI/LWEUIComponent.cpp"; sourceTree = "<group>"; };
+		225F345B1E2DD09400C3C4F8 /* LWEUITextInput.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWEUITextInput.cpp; path = "../../../Source/C++11/LWEUI/LWEUITextInput.cpp"; sourceTree = "<group>"; };
+		2298B8071DD55A6400ABB257 /* libLWEngine.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLWEngine.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		2298B8151DD55B3400ABB257 /* LWEAsset.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWEAsset.cpp; path = "../../../Source/C++11/LWEAsset.cpp"; sourceTree = "<group>"; };
+		2298B8171DD55B4200ABB257 /* LWEUIManager.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWEUIManager.cpp; path = "../../../Source/C++11/LWEUIManager.cpp"; sourceTree = "<group>"; };
+		2298B8181DD55B4200ABB257 /* LWEXML.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWEXML.cpp; path = "../../../Source/C++11/LWEXML.cpp"; sourceTree = "<group>"; };
+		2298B81C1DD55B6200ABB257 /* LWEUI.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWEUI.cpp; path = "../../../Source/C++11/LWEUI/LWEUI.cpp"; sourceTree = "<group>"; };
+		2298B81D1DD55B6200ABB257 /* LWEUIButton.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWEUIButton.cpp; path = "../../../Source/C++11/LWEUI/LWEUIButton.cpp"; sourceTree = "<group>"; };
+		2298B81E1DD55B6200ABB257 /* LWEUILabel.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWEUILabel.cpp; path = "../../../Source/C++11/LWEUI/LWEUILabel.cpp"; sourceTree = "<group>"; };
+		2298B81F1DD55B6200ABB257 /* LWEUIListBox.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWEUIListBox.cpp; path = "../../../Source/C++11/LWEUI/LWEUIListBox.cpp"; sourceTree = "<group>"; };
+		2298B8201DD55B6200ABB257 /* LWEUIRect.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWEUIRect.cpp; path = "../../../Source/C++11/LWEUI/LWEUIRect.cpp"; sourceTree = "<group>"; };
+		2298B8211DD55B6200ABB257 /* LWEUIScrollBar.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWEUIScrollBar.cpp; path = "../../../Source/C++11/LWEUI/LWEUIScrollBar.cpp"; sourceTree = "<group>"; };
+		22A26E611EBE5A52008AD3C7 /* LWEUIAdvLabel.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWEUIAdvLabel.cpp; path = "../../../Source/C++11/LWEUI/LWEUIAdvLabel.cpp"; sourceTree = "<group>"; };
+		22A26E641EBE5A72008AD3C7 /* LWELocalization.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; fileEncoding = 4; name = LWELocalization.cpp; path = "../../../Source/C++11/LWELocalization.cpp"; sourceTree = "<group>"; };
+		22C198731DD7A07D00D41315 /* libLWEnginei.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLWEnginei.a; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		2298B8041DD55A6400ABB257 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		22C198701DD7A07D00D41315 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2298B7FE1DD55A6300ABB257 = {
+			isa = PBXGroup;
+			children = (
+				2298B8091DD55A6400ABB257 /* LWEngine */,
+				2298B8081DD55A6400ABB257 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		2298B8081DD55A6400ABB257 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				2298B8071DD55A6400ABB257 /* libLWEngine.a */,
+				22C198731DD7A07D00D41315 /* libLWEnginei.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		2298B8091DD55A6400ABB257 /* LWEngine */ = {
+			isa = PBXGroup;
+			children = (
+				2298B82A1DD55B6700ABB257 /* LWEUI */,
+				2298B8171DD55B4200ABB257 /* LWEUIManager.cpp */,
+				22A26E641EBE5A72008AD3C7 /* LWELocalization.cpp */,
+				2298B8181DD55B4200ABB257 /* LWEXML.cpp */,
+				2298B8151DD55B3400ABB257 /* LWEAsset.cpp */,
+			);
+			path = LWEngine;
+			sourceTree = "<group>";
+		};
+		2298B82A1DD55B6700ABB257 /* LWEUI */ = {
+			isa = PBXGroup;
+			children = (
+				22A26E611EBE5A52008AD3C7 /* LWEUIAdvLabel.cpp */,
+				225F34441E1803EC00C3C4F8 /* LWEUIComponent.cpp */,
+				2298B81C1DD55B6200ABB257 /* LWEUI.cpp */,
+				2298B81D1DD55B6200ABB257 /* LWEUIButton.cpp */,
+				2298B81E1DD55B6200ABB257 /* LWEUILabel.cpp */,
+				2298B81F1DD55B6200ABB257 /* LWEUIListBox.cpp */,
+				2298B8201DD55B6200ABB257 /* LWEUIRect.cpp */,
+				2298B8211DD55B6200ABB257 /* LWEUIScrollBar.cpp */,
+				225F345B1E2DD09400C3C4F8 /* LWEUITextInput.cpp */,
+			);
+			name = LWEUI;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		2298B8051DD55A6400ABB257 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		2298B8061DD55A6400ABB257 /* LWEngine */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2298B8121DD55A6400ABB257 /* Build configuration list for PBXNativeTarget "LWEngine" */;
+			buildPhases = (
+				2298B8031DD55A6400ABB257 /* Sources */,
+				2298B8041DD55A6400ABB257 /* Frameworks */,
+				2298B8051DD55A6400ABB257 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LWEngine;
+			productName = LWEngine;
+			productReference = 2298B8071DD55A6400ABB257 /* libLWEngine.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		22C198721DD7A07D00D41315 /* LWEnginei */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 22C198791DD7A07D00D41315 /* Build configuration list for PBXNativeTarget "LWEnginei" */;
+			buildPhases = (
+				22C1986F1DD7A07D00D41315 /* Sources */,
+				22C198701DD7A07D00D41315 /* Frameworks */,
+				22C198711DD7A07D00D41315 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LWEnginei;
+			productName = LWEnginei;
+			productReference = 22C198731DD7A07D00D41315 /* libLWEnginei.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		2298B7FF1DD55A6300ABB257 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0730;
+				ORGANIZATIONNAME = tim;
+				TargetAttributes = {
+					2298B8061DD55A6400ABB257 = {
+						CreatedOnToolsVersion = 7.3.1;
+					};
+					22C198721DD7A07D00D41315 = {
+						CreatedOnToolsVersion = 7.3.1;
+					};
+				};
+			};
+			buildConfigurationList = 2298B8021DD55A6300ABB257 /* Build configuration list for PBXProject "LWEngine" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 2298B7FE1DD55A6300ABB257;
+			productRefGroup = 2298B8081DD55A6400ABB257 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				2298B8061DD55A6400ABB257 /* LWEngine */,
+				22C198721DD7A07D00D41315 /* LWEnginei */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2298B8031DD55A6400ABB257 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				225F34451E1803EC00C3C4F8 /* LWEUIComponent.cpp in Sources */,
+				2298B8231DD55B6200ABB257 /* LWEUI.cpp in Sources */,
+				2298B8251DD55B6200ABB257 /* LWEUILabel.cpp in Sources */,
+				2298B8271DD55B6200ABB257 /* LWEUIRect.cpp in Sources */,
+				2298B8191DD55B4200ABB257 /* LWEUIManager.cpp in Sources */,
+				2298B8241DD55B6200ABB257 /* LWEUIButton.cpp in Sources */,
+				2298B8261DD55B6200ABB257 /* LWEUIListBox.cpp in Sources */,
+				2298B8161DD55B3400ABB257 /* LWEAsset.cpp in Sources */,
+				2298B8281DD55B6200ABB257 /* LWEUIScrollBar.cpp in Sources */,
+				225F345C1E2DD09400C3C4F8 /* LWEUITextInput.cpp in Sources */,
+				2298B81A1DD55B4200ABB257 /* LWEXML.cpp in Sources */,
+				22A26E621EBE5A52008AD3C7 /* LWEUIAdvLabel.cpp in Sources */,
+				22A26E651EBE5A72008AD3C7 /* LWELocalization.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		22C1986F1DD7A07D00D41315 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				225F34461E1803EC00C3C4F8 /* LWEUIComponent.cpp in Sources */,
+				22C198801DD7A13700D41315 /* LWEUIRect.cpp in Sources */,
+				22C198851DD7A13700D41315 /* LWEAsset.cpp in Sources */,
+				22C198811DD7A13700D41315 /* LWEUIScrollBar.cpp in Sources */,
+				22C198831DD7A13700D41315 /* LWEUIManager.cpp in Sources */,
+				22C1987F1DD7A13700D41315 /* LWEUIListBox.cpp in Sources */,
+				22C1987D1DD7A13700D41315 /* LWEUIButton.cpp in Sources */,
+				22C198841DD7A13700D41315 /* LWEXML.cpp in Sources */,
+				22C1987E1DD7A13700D41315 /* LWEUILabel.cpp in Sources */,
+				22C1987C1DD7A13700D41315 /* LWEUI.cpp in Sources */,
+				225F345D1E2DD09D00C3C4F8 /* LWEUITextInput.cpp in Sources */,
+				22A26E631EBE5A56008AD3C7 /* LWEUIAdvLabel.cpp in Sources */,
+				22A26E6E1EBE6216008AD3C7 /* LWELocalization.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2298B8101DD55A6400ABB257 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		2298B8111DD55A6400ABB257 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		2298B8131DD55A6400ABB257 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(EFFECTIVE_PLATFORM_NAME)";
+				EXECUTABLE_PREFIX = lib;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				HEADER_SEARCH_PATHS = (
+					"../../../Framework/Includes/C++11/",
+					"../../Includes/c++11/",
+				);
+				LIBRARY_SEARCH_PATHS = "";
+				OBJROOT = "$(CONFIGURATION)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+			};
+			name = Debug;
+		};
+		2298B8141DD55A6400ABB257 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(EFFECTIVE_PLATFORM_NAME)";
+				EXECUTABLE_PREFIX = lib;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				HEADER_SEARCH_PATHS = (
+					"../../../Framework/Includes/C++11/",
+					"../../Includes/c++11/",
+				);
+				LIBRARY_SEARCH_PATHS = "";
+				OBJROOT = "$(CONFIGURATION)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+			};
+			name = Release;
+		};
+		22C1987A1DD7A07D00D41315 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/";
+				CONFIGURATION_TEMP_DIR = "$(PROJECT_TEMP_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				HEADER_SEARCH_PATHS = (
+					"../../Includes/C++11/",
+					"../../../Framework/Includes/C++11/",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
+				OBJROOT = "$(CONFIGURATION)";
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+			};
+			name = Debug;
+		};
+		22C1987B1DD7A07D00D41315 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/";
+				CONFIGURATION_TEMP_DIR = "$(PROJECT_TEMP_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				HEADER_SEARCH_PATHS = (
+					"../../Includes/C++11/",
+					"../../../Framework/Includes/C++11/",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
+				OBJROOT = "$(CONFIGURATION)";
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SYMROOT = "../../Binarys/$(CONFIGURATION)/$(CURRENT_ARCH)";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2298B8021DD55A6300ABB257 /* Build configuration list for PBXProject "LWEngine" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2298B8101DD55A6400ABB257 /* Debug */,
+				2298B8111DD55A6400ABB257 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2298B8121DD55A6400ABB257 /* Build configuration list for PBXNativeTarget "LWEngine" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2298B8131DD55A6400ABB257 /* Debug */,
+				2298B8141DD55A6400ABB257 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		22C198791DD7A07D00D41315 /* Build configuration list for PBXNativeTarget "LWEnginei" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				22C1987A1DD7A07D00D41315 /* Debug */,
+				22C1987B1DD7A07D00D41315 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 2298B7FF1DD55A6300ABB257 /* Project object */;
+}

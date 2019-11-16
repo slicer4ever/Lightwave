@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Note it is imparitve that activity name be changed to android.app.NativeActivity to be a pure ndk app
+     as well apply android:hasCode="false" to application-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+      package="com.LWFramework.LWIOTest"
+      android:versionCode="1"
+      android:versionName="1.0">
+    <uses-sdk android:minSdkVersion="21" />
+    <application android:label="@string/app_name"
+                 android:debuggable="true" android:hasCode="false">
+        <activity android:name="android.app.NativeActivity"
+                  android:label="@string/app_name">
+            <meta-data android:name="android.app.lib_name" android:value="LWIOTest" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest> 
