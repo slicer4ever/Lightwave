@@ -271,12 +271,8 @@ Camera &Camera::BuildCascadeCameraViews(const LWVector3f &LightDir, Camera *CamB
 			float z = LightDir.Dot(AABBPnts[i]);
 			Min.z = std::min<float>(z, Min.z);
 		}
-		//zMin = (zMin-2000.0f);// *= 20.0f; //Move the near back a bit to prevent near objects being inadvertently clipped.
 		P[0] += m_Position + LightDir * Min.z;
-		//std::cout << P[0] << " | " << xMin << " " << xMax << " | " << yMin << " " << yMax << " | " << zMin << " " << zMax << " | " << R << " | " << U << " | " << LightDir << std::endl;
 		CamBuffer[i] = Camera(P[0], LightDir, m_Up, ListOffset+i, Min.x, Max.x, Min.y, Max.y, 0.0f, Max.z - Min.z, true);
-		//std::cout << "CamPnt: " << CamBuffer[i].IsPointCamera() << std::endl;
-		//CamBuffer[i] = Camera(P[0], LightDir, m_Up, 1.0f, LW_PI_4, 1.0f, zMax-zMin);
 		CamBuffer[i].BuildFrustrum();
 	}
 	return *this;

@@ -74,6 +74,24 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWByteStream.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSVector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSVector_AVX2_Double.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSVector_AVX_Float.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSVector_AVX_Int.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSMatrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSMatrix_AVX2_Float.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWAllocator.cpp">

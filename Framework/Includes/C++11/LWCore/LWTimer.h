@@ -18,11 +18,17 @@ public:
 	/*! \brief returns the resolution time of the clock for 1 second. */
 	static uint64_t GetResolution();
 
+	/*!< \brief converts from the high resolution timer value to a floating point in seconds. */
+	static float ToSecond(uint64_t Time);
+
 	/*!< \brief converts from the high resolution timer used internally to millisecond time. */
 	static uint64_t ToMilliSecond(uint64_t Time);
 
 	/*!< \brief converts from millisecond time to the high resolution timer. */
 	static uint64_t ToHighResolution(uint64_t Time);
+
+	/*!< \brief converts from floating point seconds to a high resolution time value. */
+	static uint64_t ToHighResolution(float Time);
 
 	/*! \brief modify's the frequency used by the timer. */
 	LWTimer &SetFrequency(uint64_t Frequency);

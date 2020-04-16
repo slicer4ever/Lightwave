@@ -15,7 +15,33 @@ template<class Type>
 struct LWMatrix4{
 	LWVector4<Type> m_Rows[4]; /*!< The 4x4 matrix in row-major order. */
 
-	/*! \brief Returns an copied inverse of this matrix. */
+	/*!< \brief returns the inverse of an transformation only matrix, if the matrix is more complex then this function will return incorrect results. */
+	LWMatrix4 TransformInverse(void) const {
+		const Type E = std::numeric_limits<Type>::epsilon();
+		//Transpose matrix.
+		LWVector3<Type> A = LWVector3<Type>(m_Rows[0].x, m_Rows[1].x, m_Rows[2].x);
+		LWVector3<Type> B = LWVector3<Type>(m_Rows[0].y, m_Rows[1].y, m_Rows[2].y);
+		LWVector3<Type> C = LWVector3<Type>(m_Rows[0].z, m_Rows[1].z, m_Rows[2].z);
+
+		LWVector3<Type> sizeSq = A * A + B * B + C * C;
+		LWVector3<Type> rsizeSq = (Type)1 / sizeSq;
+		if (sizeSq.x < E) rsizeSq.x = 1.0;
+		if (sizeSq.y < E) rsizeSq.y = 1.0;
+		if (sizeSq.z < E) rsizeSq.z = 1.0;
+		A *= rsizeSq;
+		y *= rsizeSq;
+		z *= rsizeSq;
+
+		LWVector3<Type> D = -LWVector3<Type>(A*m_Rows[3].x, B*m_Rows[3].y, C*m_Rows[3].z);
+		return LWMatrix4({ A, D.x }, { B, D.y }, { C, D.z }, { 0,0,0,1 });
+	}
+
+	/*! \brief writes into Result the transform inverse of the matrix. */
+	void TransformInverse(LWMatrix4 &Result) const {
+		Result = TransformInverse();
+	}
+
+	/*! \brief Returns an copied inverse of this matrix for general matrix's. */
 	LWMatrix4 Inverse(void) const{
 		Type D = Determinant();
 		if (abs(D) <= std::numeric_limits<Type>::epsilon()) return LWMatrix4();
@@ -88,6 +114,20 @@ struct LWMatrix4{
 		return;
 	}
 	
+	/*!< \brief decomposes 4x4 matrix to get the scalar for each axis. 
+		 \param Transpose will transpose the 3x3 rotation+scale matrix before calculating the scale/rotation. */
+	LWVector3<Type> DecomposeScale(bool Transpose3x3) const {
+		LWVector3<Type> R0 = LWVector3<Type>(m_Rows[0].x, m_Rows[0].y, m_Rows[0].z);
+		LWVector3<Type> R1 = LWVector3<Type>(m_Rows[1].x, m_Rows[1].y, m_Rows[1].z);
+		LWVector3<Type> R2 = LWVector3<Type>(m_Rows[2].x, m_Rows[2].y, m_Rows[2].z);
+		if (Transpose3x3) {
+			R0 = LWVector3<Type>(m_Rows[0].x, m_Rows[1].x, m_Rows[2].x);
+			R1 = LWVector3<Type>(m_Rows[0].y, m_Rows[1].y, m_Rows[2].y);
+			R2 = LWVector3<Type>(m_Rows[0].z, m_Rows[1].z, m_Rows[2].z);
+		}
+		return LWVector3<Type>(R0.Length(), R1.Length(), R2.Length());
+	};
+
 	/*!< \brief decomposes 4x4 matrix to get scale, rotation, and translation.
 		 \param Transpose will transpose the 3x3 rotation+scale matrix before calculating the scale/rotation.*/
 	void Decompose(LWVector3<Type> &Scale, LWQuaternion<Type> &Rotation, LWVector3<Type> &Translation, bool Transpose3x3) const {
@@ -108,7 +148,8 @@ struct LWMatrix4{
 
 	/*! \brief calculates the determinant of this matrix. */
 	Type Determinant(void) const{
-		return m_Rows[0].w*m_Rows[1].z*m_Rows[2].y*m_Rows[3].x - m_Rows[0].z*m_Rows[1].w*m_Rows[2].y*m_Rows[3].x -
+		return 
+			m_Rows[0].w*m_Rows[1].z*m_Rows[2].y*m_Rows[3].x - m_Rows[0].z*m_Rows[1].w*m_Rows[2].y*m_Rows[3].x -
 			m_Rows[0].w*m_Rows[1].y*m_Rows[2].z*m_Rows[3].x + m_Rows[0].y*m_Rows[1].w*m_Rows[2].z*m_Rows[3].x +
 			m_Rows[0].z*m_Rows[1].y*m_Rows[2].w*m_Rows[3].x - m_Rows[0].y*m_Rows[1].z*m_Rows[2].w*m_Rows[3].x -
 			m_Rows[0].w*m_Rows[1].z*m_Rows[2].x*m_Rows[3].y + m_Rows[0].z*m_Rows[1].w*m_Rows[2].x*m_Rows[3].y +
@@ -845,6 +886,26 @@ struct LWMatrix4{
 		m_Rows[2] = RowC;
 		m_Rows[3] = RowD;
 	}
+
+	/*!< \brief constructs a 4x4 matrix from Scale, Rotation, Position components. */
+	LWMatrix4(const LWVector3<Type> &Scale, const LWQuaternion<Type> &Rotation, const LWVector3<Type> &Pos) {
+		const LWQuaternion<Type> &Q = Rotation;
+		Type xx = Q.x*Q.x;
+		Type xy = Q.x*Q.y;
+		Type xz = Q.x*Q.z;
+		Type xw = Q.x*Q.w;
+		Type yy = Q.y*Q.y;
+		Type yz = Q.y*Q.z;
+		Type yw = Q.y*Q.w;
+
+		Type zz = Q.z*Q.z;
+		Type zw = Q.z*Q.w;
+
+		m_Rows[0] = { (Type)(1 - 2 * (yy + zz)), (Type)(2 * (xy - zw)), (Type)(2 * (xz + yw)), (Type)0 }*Scale.x;
+		m_Rows[1] = { (Type)2 * (xy + zw), (Type)(1 - 2 * (xx + zz)), (Type)(2 * (yz - xw)), 0 }*Scale.y;
+		m_Rows[2] = { (Type)(2 * (xz - yw)), (Type)(2 * (yz + xw)), (Type)(1 - 2 * (xx + yy)), (Type)0 }*Scale.z;
+		m_Rows[3] = { (Type)Pos.x, (Type)Pos.y, (Type)Pos.z, (Type)1 };
+	};
 };
 
 /*! \brief LWMatrix3 is a 3x3 row-major matrix object.

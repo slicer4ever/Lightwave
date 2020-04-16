@@ -4,11 +4,23 @@
 
 class LWEUIScrollBar : public LWEUI {
 public:
+
+	/*!< \brief parses an scrollbar ui element, in addition to LWEUI attributes, LWEUIScrollBar also takes the following attributes:
+		 OverMaterial: The material to use when the bar is being moused over(or in navigation mode is focused).
+		 DownMaterial: The material to use when the bar is being pressed on.
+		 OffMaterial: The material to use when the bar is not being moused over or pressed on.
+		 BackgroundMaterial: The material to use for the entire scroll bar element.
+		 Scroll: The current scroll position of the bar.
+		 MaxScroll: The maximum scroll length.
+		 ScrollSize: The size of the scrollbar relative to the MaxScroll, this is then multiplied by the entire size of the scrollbar to calculate the bar's size.
+	*/
 	static LWEUIScrollBar *XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
 
-	virtual LWEUI &UpdateSelf(LWEUIManager *Manager, float Scale, uint64_t lCurrentTime);
+	virtual LWEUI &UpdateSelf(LWEUIManager &Manager, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime);
 
-	virtual LWEUI &DrawSelf(LWEUIManager *Manager, LWEUIFrame *Frame, float Scale, uint64_t lCurrentTime);
+	virtual LWEUI &DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime);
+
+	virtual void Destroy(void);
 
 	LWEUIScrollBar &SetBarOffMaterial(LWEUIMaterial *Material);
 
@@ -24,6 +36,8 @@ public:
 
 	LWEUIScrollBar &SetScrollSize(float ScrollSize);
 
+	LWEUIScrollBar &SetDirection(bool isHorizontal);
+
 	LWEUIMaterial *GetBarOffMaterial(void);
 
 	LWEUIMaterial *GetBarDownMaterial(void);
@@ -32,13 +46,17 @@ public:
 
 	LWEUIMaterial *GetBackgroundMaterial(void);
 
-	float GetScroll(void);
+	bool isHorizontal(void) const;
 
-	float GetMaxScroll(void);
+	bool isVertical(void) const;
 
-	float GetScrollSize(void);
+	float GetScroll(void) const;
 
-	LWEUIScrollBar(LWEUIMaterial *BarOffMaterial, LWEUIMaterial *BarOverMaterial, LWEUIMaterial *BarDownMaterial, LWEUIMaterial *BackgroundMaterial, float MaxScroll, float ScrollSize, const LWVector4f &Position, const LWVector4f &Size, uint32_t Flag);
+	float GetMaxScroll(void) const;
+
+	float GetScrollSize(void) const;
+
+	LWEUIScrollBar(LWEUIMaterial *BarOffMaterial, LWEUIMaterial *BarOverMaterial, LWEUIMaterial *BarDownMaterial, LWEUIMaterial *BackgroundMaterial, float MaxScroll, float ScrollSize, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag);
 
 	~LWEUIScrollBar();
 private:

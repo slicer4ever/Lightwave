@@ -287,6 +287,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2D(uint32_t TextureState, uin
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
 	};
+
 	bool MakeMipmaps = (TextureState&LWTexture::MakeMipmaps);
 	bool Compressed = LWImage::CompressedType(PackType);
 	bool DepthTex = LWImage::DepthType(PackType);
@@ -1055,7 +1056,7 @@ LWVideoDriver &LWVideoDriver_DirectX11_1::ClearDepth(float Depth) {
 		if (!Slot.m_Source) View = nullptr;
 		else View = ((LWDirectX11_1Texture*)Slot.m_Source)->GetContext().GetDepthStencilView(Slot.m_Layer, Slot.m_Face, Slot.m_Mipmap, Slot.m_Source, m_Context);
 	}
-	m_Context.m_DXDeviceContext->ClearDepthStencilView(View, D3D11_CLEAR_DEPTH, Depth, 0);
+	if(View) m_Context.m_DXDeviceContext->ClearDepthStencilView(View, D3D11_CLEAR_DEPTH, Depth, 0);
 	return *this;
 }
 
@@ -1067,7 +1068,7 @@ LWVideoDriver &LWVideoDriver_DirectX11_1::ClearStencil(uint8_t Stencil) {
 		if (!Slot.m_Source) View = nullptr;
 		else View = ((LWDirectX11_1Texture*)Slot.m_Source)->GetContext().GetDepthStencilView(Slot.m_Layer, Slot.m_Face, Slot.m_Mipmap, Slot.m_Source, m_Context);
 	}
-	m_Context.m_DXDeviceContext->ClearDepthStencilView(View, D3D11_CLEAR_STENCIL, 0.0f, Stencil);
+	if(View) m_Context.m_DXDeviceContext->ClearDepthStencilView(View, D3D11_CLEAR_STENCIL, 0.0f, Stencil);
 	return *this;
 }
 

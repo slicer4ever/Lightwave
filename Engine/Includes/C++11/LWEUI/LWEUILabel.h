@@ -4,11 +4,21 @@
 
 class LWEUILabel : public LWEUI {
 public:
+	/*!< \brief parses a label, in addition to LWEUI attributes, LWEUILabel also takes the following attributes:
+		  Font: Named font in AssetManager to use for the label.
+		  Value: the text to contain and draw.
+		  ValueSrc: Alternative value loaded from the specified file source, and appears in it's entirety.
+		  Material: Taking the color component as the default color to draw the text in(Texture component of the material is ignored.)
+		  Scale: How much to scale the font text by.
+	*/
+
 	static LWEUILabel *XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
 
-	virtual LWEUI &UpdateSelf(LWEUIManager *Manager, float Scale, uint64_t lCurrentTime);
+	virtual LWEUI &UpdateSelf(LWEUIManager &Manager, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime);
 
-	virtual LWEUI &DrawSelf(LWEUIManager *Manager, LWEUIFrame *Frame, float Scale, uint64_t lCurrentTime);
+	virtual LWEUI &DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime);
+
+	virtual void Destroy(void);
 
 	LWEUILabel &SetText(const LWText &Text);
 
@@ -28,7 +38,7 @@ public:
 
 	const LWText &GetText(void) const;
 
-	LWEUILabel(const LWText &Text, LWFont *Font, LWAllocator &Allocator, LWEUIMaterial *Material, const LWVector4f &Position, const LWVector4f &Size, uint32_t Flag);
+	LWEUILabel(const LWText &Text, LWFont *Font, LWAllocator &Allocator, LWEUIMaterial *Material, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag);
 
 	LWEUILabel();
 
@@ -37,6 +47,7 @@ private:
 	LWText m_Text;
 	LWFont *m_Font;
 	LWEUIMaterial *m_Material;
+	LWVector2f m_TextSize;
 	float m_FontScale;
 	float m_UnderHang;
 

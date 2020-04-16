@@ -20,7 +20,7 @@ struct Joint {
 
 class Skeleton {
 public:
-	Skeleton &BuildFrame(uint64_t AnimTime, bool Loop, ModelData &Mdl);
+	Skeleton &BuildFrame(float AnimTime, bool Loop, ModelData &Mdl);
 
 	Skeleton &BuildBindFrame(ModelData &Mdl);
 
@@ -34,7 +34,7 @@ public:
 
 	uint32_t GetJointCount(void) const;
 
-	uint64_t GetTotalTime(void) const;
+	float GetTotalTime(void) const;
 
 	LWMatrix4f GetRootMatrix(void) const;
 
@@ -43,9 +43,9 @@ public:
 	Skeleton() = default;
 private:
 	LWMatrix4f m_RootMatrix;
-	LWMatrix4f m_InvRootScaleMatrix;
+	//LWMatrix4f m_InvRootScaleMatrix;
 	std::vector<Joint> m_JointList;
-	uint64_t m_TotalTIme = 0;
+	float m_TotalTIme = 0.0f;
 };
 
 #endif

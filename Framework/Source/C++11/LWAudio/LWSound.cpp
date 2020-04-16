@@ -50,6 +50,10 @@ LWSound &LWSound::SeekTo(uint32_t SeekPos) {
 	return *this;
 }
 
+LWSound &LWSound::SeekTo(float Time) {
+	return SeekTo((uint32_t)(Time*m_AudioStream->GetSampleRate()));
+}
+
 bool LWSound::Release(void) {
 	return m_AudioDriver->PushEvent(this, LWAudioDriver::Event_Release);
 }

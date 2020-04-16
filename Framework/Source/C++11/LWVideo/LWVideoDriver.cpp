@@ -4,6 +4,7 @@
 #include "LWVideo/LWVideoDrivers/LWVideoDriver_OpenGL3_3.h"
 #include "LWVideo/LWVideoDrivers/LWVideoDriver_OpenGL2_1.h"
 #include "LWVideo/LWVideoDrivers/LWVideoDriver_OpenGLES2.h"
+#include "LWVideo/LWVideoDrivers/LWVideoDriver_Vulkan.h"
 #include "LWVideo/LWMesh.h"
 #include "LWVideo/LWFrameBuffer.h"
 #include "LWVideo/LWPipeline.h"
@@ -70,12 +71,15 @@ uint32_t LWVideoDriver::FindModule(const char *ShaderCode, const char *Environme
 				if (*C) C += LWText::UTF8ByteSize(C);
 				uint32_t SplitCnt = LWText::SplitWords(LineBuffer, WordList, WordBufferLength, WordBufferCount, Longest);
 				if(SplitCnt<1 || DefinedCount>=MaxDefines) continue;
-				DefineNameHash[DefinedCount] = LWText::MakeHash(WordList[0]);
-				*DefineValues[DefinedCount] = '\0';
-				uint32_t r = 0;
-				for (uint32_t i = 1; i < SplitCnt; i++) {
-					if (i == 1) r += snprintf(DefineValues[DefinedCount] + r, WordBufferLength - r, "%s", WordList[i]);
-					else r += snprintf(DefineValues[DefinedCount] + r, WordBufferLength - r, " %s", WordList[i]);
+				if (WriteInDefineTable[DefineTablePosition - 1]) {
+					DefineNameHash[DefinedCount] = LWText::MakeHash(WordList[0]);
+					*DefineValues[DefinedCount] = '\0';
+					uint32_t r = 0;
+					for (uint32_t i = 1; i < SplitCnt; i++) {
+						if (i == 1) r += snprintf(DefineValues[DefinedCount] + r, WordBufferLength - r, "%s", WordList[i]);
+						else r += snprintf(DefineValues[DefinedCount] + r, WordBufferLength - r, " %s", WordList[i]);
+					}
+					DefinedCount++;
 				}
 			} else if (LWText::Compare(C, "#ifdef", 6)) {
 				C = LWText::CopyToTokens(C + 6, LineBuffer, sizeof(LineBuffer), "\n\r\0");
@@ -89,7 +93,7 @@ uint32_t LWVideoDriver::FindModule(const char *ShaderCode, const char *Environme
 				WriteInDefineTable[DefineTablePosition] = isDefined && WriteInDefineTable[DefineTablePosition - 1];
 				DefineTablePosition++;
 			} else if (LWText::Compare(C, "#ifndef", 7)) {
-				C = LWText::CopyToTokens(C + 6, LineBuffer, sizeof(LineBuffer), "\n\r\0");
+				C = LWText::CopyToTokens(C + 7, LineBuffer, sizeof(LineBuffer), "\n\r\0");
 				if (*C) C += LWText::UTF8ByteSize(C);
 				uint32_t SplitCnt = LWText::SplitWords(LineBuffer, WordList, WordBufferLength, WordBufferCount, Longest);
 				if (SplitCnt < 1) continue;
@@ -236,43 +240,43 @@ LWVideoDriver *LWVideoDriver::MakeVideoDriver(LWWindow *Window, uint32_t Type) {
 	LWVideoDriver *Driver = nullptr;
 	if ((Type&DirectX12) && !Driver) {
 		LWMatrix4_UseDXOrtho = true;
-		Driver = LWVideoDriver_DirectX12::MakeVideoDriver(Window);
+		Driver = LWVideoDriver_DirectX12::MakeVideoDriver(Window, Type);
 	}
-	if ((Type&OpenGLVulkan) && !Driver) {
-		LWMatrix4_UseDXOrtho = false;
-		Driver = LWVideoDriver_OpenGLVulkan::MakeVideoDriver(Window);
+	if ((Type&Vulkan) && !Driver) {
+		LWMatrix4_UseDXOrtho = true;
+		Driver = LWVideoDriver_Vulkan::MakeVideoDriver(Window, Type);
 	}
 	if ((Type&Metal) && !Driver) {
 		LWMatrix4_UseDXOrtho = false;
-		Driver = LWVideoDriver_Metal::MakeVideoDriver(Window);
+		Driver = LWVideoDriver_Metal::MakeVideoDriver(Window, Type);
 	}
 	if ((Type&DirectX11_1) && !Driver) {
 		LWMatrix4_UseDXOrtho = true;
-		Driver = LWVideoDriver_DirectX11_1::MakeVideoDriver(Window);
+		Driver = LWVideoDriver_DirectX11_1::MakeVideoDriver(Window, Type);
 	}
 	if ((Type&OpenGL4_5) && !Driver) {
 		LWMatrix4_UseDXOrtho = false;
-		Driver = LWVideoDriver_OpenGL4_5::MakeVideoDriver(Window);
+		Driver = LWVideoDriver_OpenGL4_5::MakeVideoDriver(Window, Type);
 	}
 	if ((Type&OpenGLES3) && !Driver) {
 		LWMatrix4_UseDXOrtho = false;
-		Driver = LWVideoDriver_OpenGLES3::MakeVideoDriver(Window);
+		Driver = LWVideoDriver_OpenGLES3::MakeVideoDriver(Window, Type);
 	}
 	if ((Type&OpenGL3_3) && !Driver) {
 		LWMatrix4_UseDXOrtho = false;
-		Driver = LWVideoDriver_OpenGL3_3::MakeVideoDriver(Window);
+		Driver = LWVideoDriver_OpenGL3_3::MakeVideoDriver(Window, Type);
 	}
 	if ((Type&DirectX9C) && !Driver) {
 		LWMatrix4_UseDXOrtho = true;
-		Driver = LWVideoDriver_DirectX9C::MakeVideoDriver(Window);
+		Driver = LWVideoDriver_DirectX9C::MakeVideoDriver(Window, Type);
 	}
 	if ((Type&OpenGL2_1) && !Driver) {
 		LWMatrix4_UseDXOrtho = false;
-		Driver = LWVideoDriver_OpenGL2_1::MakeVideoDriver(Window);
+		Driver = LWVideoDriver_OpenGL2_1::MakeVideoDriver(Window, Type);
 	}
 	if ((Type&OpenGLES2) && !Driver) {
 		LWMatrix4_UseDXOrtho = false;
-		Driver = LWVideoDriver_OpenGLES2::MakeVideoDriver(Window);
+		Driver = LWVideoDriver_OpenGLES2::MakeVideoDriver(Window, Type);
 	}
 	return Driver;
 }
@@ -287,10 +291,11 @@ uint32_t LWVideoDriver::MakeRasterStateHash(uint64_t RasterFlags, float Bias, fl
 
 
 bool LWVideoDriver::DestroyVideoDriver(LWVideoDriver *Driver) {
+	if (!Driver) return true;
 	uint32_t Type = Driver->GetDriverType();
 	Driver->ClearPipelines();
 	if (Type == DirectX12) return LWVideoDriver_DirectX12::DestroyVideoContext((LWVideoDriver_DirectX12*)Driver);
-	else if (Type == OpenGLVulkan) return LWVideoDriver_OpenGLVulkan::DestroyVideoContext((LWVideoDriver_OpenGLVulkan*)Driver);
+	else if (Type == Vulkan) return LWVideoDriver_Vulkan::DestroyVideoContext((LWVideoDriver_Vulkan*)Driver);
 	else if (Type == Metal) return LWVideoDriver_Metal::DestroyVideoContext((LWVideoDriver_Metal*)Driver);
 	else if (Type == DirectX11_1) return LWVideoDriver_DirectX11_1::DestroyVideoContext((LWVideoDriver_DirectX11_1*)Driver);
 	else if (Type == OpenGL4_5) return LWVideoDriver_OpenGL4_5::DestroyVideoContext((LWVideoDriver_OpenGL4_5*)Driver);
@@ -515,7 +520,6 @@ float LWVideoDriver::GetBias(void) const {
 float LWVideoDriver::GetSlopedBias(void) const {
 	return m_ActiveSlopedBias;
 }
-
 
 uint32_t LWVideoDriver::GetDriverID(void) const {
 	return (uint32_t)(log(m_DriverType) / log(2));

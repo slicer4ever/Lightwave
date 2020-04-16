@@ -42,9 +42,6 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUI.h">
       <Filter>Header Files\LWEUI</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUIAdvLabel.h">
-      <Filter>Header Files\LWEUI</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUIButton.h">
       <Filter>Header Files\LWEUI</Filter>
     </ClInclude>
@@ -114,6 +111,12 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWEGLTFParser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUITreeList.h">
+      <Filter>Header Files\LWEUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUIRichLabel.h">
+      <Filter>Header Files\LWEUI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\C++11\LWEAsset.cpp">
@@ -126,9 +129,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUI.cpp">
-      <Filter>Source Files\LWEUI</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIAdvLabel.cpp">
       <Filter>Source Files\LWEUI</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIButton.cpp">
@@ -193,6 +193,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\C++11\LWEGLTFParser.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUITreeList.cpp">
+      <Filter>Source Files\LWEUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIRichLabel.cpp">
+      <Filter>Source Files\LWEUI</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

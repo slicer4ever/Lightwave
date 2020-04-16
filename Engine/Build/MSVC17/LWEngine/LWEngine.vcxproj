@@ -146,7 +146,7 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWETypes.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEUIManager.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUI.h" />
-    <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUIAdvLabel.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUIRichLabel.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUIButton.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUIComponent.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUILabel.h" />
@@ -154,6 +154,7 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUIRect.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUIScrollBar.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUITextInput.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUITreeList.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEVideoDecoder.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEVideoDecoderIVF.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEVideoDecoderWEBM.h" />
@@ -175,7 +176,7 @@
     <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolWebSocketSecure.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEUIManager.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUI.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIAdvLabel.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIRichLabel.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIButton.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIComponent.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUILabel.cpp" />
@@ -183,6 +184,7 @@
     <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIRect.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIScrollBar.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUITextInput.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUITreeList.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEVideoDecoderIVF.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEVideoDecoderWEBM.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>

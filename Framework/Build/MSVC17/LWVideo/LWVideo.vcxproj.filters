@@ -66,6 +66,9 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWVideoDrivers\LWVideoDriver_OpenGL4_5.h">
       <Filter>Header Files\LWVideoDrivers</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWVideoDrivers\LWVideoDriver_Vulkan.h">
+      <Filter>Header Files\LWVideoDrivers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWVideoDriver\LWVideoDriver_OpenGL2_1.cpp">
@@ -138,6 +141,12 @@
       <Filter>Source Files\LWVideoDrivers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\Windows\LWVideo\LWVideoDrivers\LWVideoDriver_OpenGL4_5_Windows.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWVideoDriver\LWVideoDriver_Vulkan.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Windows\LWVideo\LWVideoDrivers\LWVideoDriver_Vulkan_Windows.cpp">
       <Filter>Source Files\LWVideoDrivers</Filter>
     </ClCompile>
   </ItemGroup>

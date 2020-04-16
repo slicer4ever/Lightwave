@@ -615,7 +615,7 @@ uint32_t LWFont::CharacterAt(const LWText &Text, float Width, uint32_t CharCount
 		if (P) Kern = GetKernBetween(P->m_Character, G->m_Character)*Scale;
 		P = G;
 		Pos.x += (G->m_Advance.x*Scale + Kern);
-		if (Pos.x > Width+(G->m_Advance.x*0.5f)) return i;
+		if (Pos.x > Width + (G->m_Advance.x*Scale*0.5f)) return i;
 	}
 	return i;
 }

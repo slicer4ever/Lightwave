@@ -114,6 +114,18 @@ public:
 	/*!< \brief searches for the specified Named uniform and set's the uniform block buffer if the named block is found. */
 	LWPipeline &SetUniformBlock(const LWText &Name, LWVideoBuffer *Buffer, uint32_t Offset = 0);
 
+	/*!< \brief set's the index of the uniform block to the specified video buffer, and calculates the padded offset for the specified type. */
+	template<class Type>
+	LWPipeline &SetPaddedUniformBlock(uint32_t i, LWVideoBuffer *Buffer, uint32_t Offset, LWVideoDriver *Driver) {
+		return SetUniformBlock(i, Buffer, Driver->GetUniformBlockOffset<Type>(Offset));
+	}
+
+	/*!< \brief set's the named block of the uniform block to the specified video buffer, and calculates the padded offset for the specified type. */
+	template<class Type>
+	LWPipeline &SetPaddedUniformBlock(const LWText &Name, LWVideoBuffer *Buffer, uint32_t Offset, LWVideoDriver *Driver) {
+		return SetUniformBlock(Name, Buffer, Driver->GetUniformBlockOffset<Type>(Offset));
+	}
+
 	/*!< \brief Set's the mapped index of the resource to the specified video buffer(uniform buffers/texturebuffers/std430 buffers). */
 	LWPipeline &SetResource(uint32_t i, LWVideoBuffer *Buffer, uint32_t Offset = 0);
 

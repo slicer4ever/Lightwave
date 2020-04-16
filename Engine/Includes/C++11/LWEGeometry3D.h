@@ -2,6 +2,8 @@
 #define LWEGEOMETRY3D_H
 #include <LWCore/LWTypes.h>
 #include <LWCore/LWVector.h>
+#include <LWCore/LWMatrix.h>
+
 class LWEGeometry3D{
 public:
 	static bool RayRayIntersect(const LWVector3f &aRayStart, const LWVector3f &aRayEnd, const LWVector3f &bRayStart, const LWVector3f &bRayEnd, LWVector3f *IntersectPoint);
@@ -36,6 +38,17 @@ public:
 	/*!< \brief the method of collision detection between a convex hull and a sphere.    in order to conform with other convex hulls tests, the convex hull is represented in the same manner as the intersection function(half symmetrical planes). */
 	static bool SphereConvexHullIntersect(const LWVector3f &CircCenterPnt, float Radius, const LWVector3f &ConvexHullCenterPoint, const LWVector4f *Planes, uint32_t PlaneCnt, LWVector3f *IntersectNrm);
 
+	/*!< \brief Constructs a new AABB from the transform matrix applied to the passed in aabb's. (If TransformMatrix is not a standard scale/rotation/translation matrix then this method will produce incorrect results.) */
+	static void TransformAABB(const LWVector3f &AAMin, const LWVector3f &AAMax, const LWMatrix4f &TransformMatrix, LWVector3f &AAMinResult, LWVector3f &AAMaxResult);
+
+	/*!< \brief returns true if a sphere is inside the frustum(a frustum is 6 vec4 planes.) */
+	static bool SphereInFrustum(const LWVector3f &Position, float Radius, const LWVector3f &FrustumPosition, const LWVector4f *Frustum);
+
+	/*!< \brief returns true if the aabb is inside the frustum, this function turns the aabb into the largest sphere, which will produce some incorrect results. */
+	static bool AABBInFrustum(const LWVector3f &AABBMin, const LWVector3f &AABBMax, const LWVector3f &FrustumPosition, const LWVector4f *Frustum);
+
+	/*!< \brief returns true if a cone is inside the frustum, the cone is defined as a point, direction that expands out at theta upto length size. */
+	static bool ConeInFrustum(const LWVector3f &Position, const LWVector3f &Direction, float Theta, float Length, const LWVector3f &FrustumPosition, const LWVector4f *Frustum);
 };
 
 

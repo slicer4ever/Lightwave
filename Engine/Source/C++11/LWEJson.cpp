@@ -3,6 +3,7 @@
 #include <LWPlatform/LWPlatform.h>
 #include <LWCore/LWAllocator.h>
 #include <LWCore/LWQuaternion.h>
+#include <LWPlatform/LWFileStream.h>
 #include <LWCore/LWMatrix.h>
 #include <cstring>
 #include <functional>
@@ -443,6 +444,18 @@ uint32_t LWEJson::UnEscapeString(const char *String, char *Buffer, uint32_t Buff
 	o++;
 	return o;
 }
+
+bool LWEJson::LoadFile(LWEJson &Json, const LWText &Path, LWAllocator &Allocator, LWEJObject *Parent, LWFileStream *ExistingStream) {
+	LWFileStream Stream;
+	if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::BinaryMode | LWFileStream::ReadMode, Allocator, ExistingStream)) return false;
+	uint32_t Len = Stream.Length() + 1;
+	char *B = Allocator.AllocateArray<char>(Len);
+	Stream.ReadText(B, Len);
+	bool Res = Parse(Json, B, Parent);
+	LWAllocator::Destroy(B);
+	return Res;
+}
+
 
 bool LWEJson::Parse(LWEJson &JSon, const char *Buffer, LWEJObject *Parent) {
 	char StaticDataBuffer[1024 * 32];

@@ -3,7 +3,7 @@
 #include "LWPlatform/LWWindow.h"
 #import <Cocoa/Cocoa.h>
 
-LWVideoDriver_OpenGL2_1 *LWVideoDriver_OpenGL2_1::MakeVideoDriver(LWWindow *Window) {
+LWVideoDriver_OpenGL2_1 *LWVideoDriver_OpenGL2_1::MakeVideoDriver(LWWindow *Window, uint32_t Type) {
 	LWWindowContext WinCon = Window->GetContext();
 	LWOpenGL2_1Context Context;
 

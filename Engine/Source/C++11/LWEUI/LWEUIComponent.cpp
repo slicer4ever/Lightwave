@@ -4,46 +4,66 @@
 #include <algorithm>
 #include <iostream>
 
-LWEUIComponent &LWEUIComponent::PushComponent(LWEUI *UI) {
-	if (m_ComponentCount >= MaxComponents) return *this;
-	m_ComponentList[m_ComponentCount++] = UI;
+LWEUI &LWEUIComponent::UpdateSelf(LWEUIManager &Manager, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime) {
+	bool AutoWidth = (m_Flag&NoAutoWidthSize) == 0;
+	bool AutoHeight = (m_Flag&NoAutoHeightSize) == 0;
+	bool ScaleSize = (m_Flag&NoScaleSize) == 0;
+	if (!AutoWidth && !AutoHeight) return *this;
+	if (m_VisibleBounds.x == 0.0f && m_VisibleBounds.y == 0.0f && m_VisibleBounds.z == 0.0f && m_VisibleBounds.w == 0.0f) return *this;
+	LWVector4f CBounds = LWVector4f(VisiblePos, VisiblePos + VisibleSize);;
+
+	for (uint32_t i = 0; i < m_ComponentCount; i++) {
+		LWVector2f CVisPos = m_ComponentList[i]->GetVisiblePosition();
+		LWVector2f CVisSize = m_ComponentList[i]->GetVisibleSize();
+		CBounds = MakeNewBounds(CBounds, LWVector4f(CVisPos, CVisPos+CVisSize));
+	}
+	float iScale = ScaleSize ? 1.0f / Scale : 1.0f;
+	LWVector4f Size = m_Size;
+	if(AutoWidth) Size.z = (CBounds.z - CBounds.x)*iScale;
+	if(AutoHeight) Size.w = (CBounds.w - CBounds.y)*iScale;
+	LWVector4f Bounds = MakeVisibleBounds(m_Flag, ParentVisiblePos, ParentVisibleSize, Manager, m_Position, Size, Scale);
+	VisiblePos = Bounds.xy();
+	VisibleSize = Bounds.zw();
 	return *this;
 }
 
-LWEUI &LWEUIComponent::UpdateSelf(LWEUIManager *Manager, float Scale, uint64_t lCurrentTime) {
-	auto CalculateBounds = [](LWEUI *UI, LWVector4f &Bounds, bool First) {
-		LWVector4f VisBounds = UI->GetVisibleBounds();
-		if (First) Bounds = VisBounds;
-		else {
-			Bounds.x = std::min<float>(Bounds.x, VisBounds.x);
-			Bounds.y = std::min<float>(Bounds.y, VisBounds.y);
-			Bounds.z = std::max<float>(Bounds.z, VisBounds.x);
-			Bounds.w = std::max<float>(Bounds.w, VisBounds.y);
-		}
+LWEUI &LWEUIComponent::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime) {
+	bool AutoWidth = (m_Flag&NoAutoWidthSize) == 0;
+	bool AutoHeight = (m_Flag&NoAutoHeightSize) == 0;
+	bool ScaleSize = (m_Flag&NoScaleSize) == 0;
+
+	if (!AutoWidth && !AutoHeight) return *this;
+	if (m_VisibleBounds.x == 0.0f && m_VisibleBounds.y == 0.0f && m_VisibleBounds.z == 0.0f && m_VisibleBounds.w == 0.0f) return *this;
+	LWVector4f CBounds = LWVector4f(VisiblePos, VisiblePos + VisibleSize);
+	for (uint32_t i = 0; i < m_ComponentCount; i++) {
+		LWVector2f CVisPos = m_ComponentList[i]->GetVisiblePosition();
+		LWVector2f CVisSize = m_ComponentList[i]->GetVisibleSize();
+		CBounds = MakeNewBounds(CBounds, LWVector4f(CVisPos, CVisPos+CVisSize));
+	}
+	float iScale = ScaleSize ? 1.0f / Scale : 1.0f;
+	LWVector4f Size = m_Size;
+	if (AutoWidth) Size.z = (CBounds.z - CBounds.x)*iScale;
+	if (AutoHeight) Size.w = (CBounds.w - CBounds.y)*iScale;
+	LWVector4f Bounds = MakeVisibleBounds(m_Flag, ParentVisiblePos, ParentVisibleSize, Manager, m_Position, Size, Scale);
+	VisiblePos = Bounds.xy();
+	VisibleSize = Bounds.zw();
 	
-	};
-	if ((m_Flag&NoAutoSize) != 0) return *this;
-	
-	LWVector4f Bounds;
-	for (uint32_t i = 0; i < m_ComponentCount; i++) CalculateBounds(m_ComponentList[i], Bounds, i == 0);
-	float IScale = (m_Flag&NoScaleSize) ? 1.0f : 1.0f / Scale;
-	m_Size.z = (Bounds.z - Bounds.x)*IScale;
-	m_Size.w = (Bounds.w - Bounds.y)*IScale;
 	return *this;
 }
 
-LWEUI &LWEUIComponent::DrawSelf(LWEUIManager *Manager, LWEUIFrame *Frame, float Scale, uint64_t lCurrentTime) {
-	return *this;
+void LWEUIComponent::Destroy(void) {
+	LWAllocator::Destroy(this);
+	return;
 }
 
-LWEUI *LWEUIComponent::GetComponent(uint32_t i) {
-	return m_ComponentList[i];
+bool LWEUIComponent::PushComponent(LWEUI *Component) {
+	if (m_ComponentCount >= MaxComponentCount) return false;
+	m_ComponentList[m_ComponentCount] = Component;
+	m_ComponentCount++;
+	return true;
 }
 
-uint32_t LWEUIComponent::GetComponentCount(void) {
-	return 0;
-}
 
-LWEUIComponent::LWEUIComponent(const LWVector4f &Position, const LWVector4f &Size, uint32_t Flag) : LWEUI(Position, Size, Flag), m_ComponentCount(0) {}
+LWEUIComponent::LWEUIComponent(const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : LWEUI(Position, Size, Flag) {}
 
-LWEUIComponent::LWEUIComponent() : LWEUI(LWVector4f(), LWVector4f(), 0), m_ComponentCount(0) {}
+LWEUIComponent::LWEUIComponent() : LWEUI(LWVector4f(), LWVector4f(), 0) {}

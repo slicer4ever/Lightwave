@@ -39,6 +39,12 @@ struct LWVertexUI{
 
 	/*!< \brief constructs a mesh object for working with. */
 	static LWMesh<LWVertexUI> *MakeMesh(LWAllocator &Allocator, LWVideoBuffer *VertexBuffer, uint32_t CurrentVertexCount);
+
+	/*!< \brief constructor for a LWVertexUI object. */
+	LWVertexUI(const LWVector4f &Position, const LWVector4f &Color, const LWVector4f &TexCoord);
+
+	/*!< \brief default construct for LWVertexUI. */
+	LWVertexUI() = default;
 };
 
 /*!< \brief simple positional vertex, with a number of of helper functions. */
@@ -64,6 +70,12 @@ struct LWVertexPosition{
 
 	/*!< \brief constructs a mesh object for working with. */
 	static LWMesh<LWVertexPosition> *MakeMesh(LWAllocator &Allocator, LWVideoBuffer *VertexBuffer, uint32_t CurrentVertexCount);
+
+	/*!< \brief constructs a LWVertexPosition object. */
+	LWVertexPosition(const LWVector4f &Position);
+
+	/*!< \brief default constructor for LWVertexPosition. */
+	LWVertexPosition() = default;
 };
 
 /*!< \brief simple positional and color vertex. */
@@ -94,6 +106,12 @@ struct LWVertexColor{
 
 	/*!< \brief constructs a mesh object for working with. */
 	static LWMesh<LWVertexColor> *MakeMesh(LWAllocator &Allocator, LWVideoBuffer *VertexBuffer, uint32_t CurrentVertexCount);
+
+	/*!< \brief constructs a LWVertexColor object. */
+	LWVertexColor(const LWVector4f &Position, const LWVector4f &Color);
+
+	/*!< \brief default LWVertexColor constructor. */
+	LWVertexColor() = default;
 };
 
 /*!< \brief simple position, and texture coordinate vertex. */
@@ -112,6 +130,12 @@ struct LWVertexTexture{
 
 	/*!< \brief constructs a mesh object for working with. */
 	static LWMesh<LWVertexTexture> *MakeMesh(LWAllocator &Allocator, LWVideoBuffer *VertexBuffer, uint32_t CurrentVertexCount);
+
+	/*!< \brief constructs a vertexTexture. */
+	LWVertexTexture(const LWVector4f &Position, const LWVector4f &TexCoord);
+
+	/*!< \brief default constructor. */
+	LWVertexTexture() = default;
 };
 
 /*!< \brief the base mesh object, which handles all the buffer operations. this object should never be created by itself. */

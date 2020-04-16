@@ -1,7 +1,28 @@
 #include "LWVideo/LWVideoDrivers/LWVideoDriver_OpenGL4_5.h"
 #include "LWPlatform/LWWindow.h"
+#include <iostream>
 
-LWVideoDriver_OpenGL4_5 *LWVideoDriver_OpenGL4_5::MakeVideoDriver(LWWindow *Window) {
+LWVideoDriver_OpenGL4_5 *LWVideoDriver_OpenGL4_5::MakeVideoDriver(LWWindow *Window, uint32_t Type) {
+	auto DebugOutput = [](GLenum Source, GLenum Type, GLuint ID, GLenum Severity, GLsizei Length, const char *Message, const void *UserDAta) {
+		const GLenum SourceEnums[] = { GL_DEBUG_SOURCE_API, GL_DEBUG_SOURCE_WINDOW_SYSTEM, GL_DEBUG_SOURCE_SHADER_COMPILER, GL_DEBUG_SOURCE_THIRD_PARTY, GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_SOURCE_OTHER };
+		const GLenum TypeEnums[] = { GL_DEBUG_TYPE_ERROR, GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR, GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR, GL_DEBUG_TYPE_PORTABILITY, GL_DEBUG_TYPE_PERFORMANCE, GL_DEBUG_TYPE_MARKER, GL_DEBUG_TYPE_PUSH_GROUP, GL_DEBUG_TYPE_POP_GROUP, GL_DEBUG_TYPE_OTHER };
+		const GLenum SeverityEnums[] = { GL_DEBUG_SEVERITY_HIGH, GL_DEBUG_SEVERITY_MEDIUM, GL_DEBUG_SEVERITY_LOW, GL_DEBUG_SEVERITY_NOTIFICATION };
+		const char *SourceNames[] = { "API", "Window System", "Shader Compiler", "Third Party", "Application", "Other" };
+		const char *TypeNames[] = { "Error", "Deprecated behavior", "Undefined behavior", "Portability", "Performance", "Marker", "Push Group", "Pop Group", "Other" };
+		const char *SeverityNames[] = { "High", "Medium", "Low", "Notification" };
+		const uint32_t SourceCnt = sizeof(SourceEnums) / sizeof(GLenum);
+		const uint32_t TypeCnt = sizeof(TypeEnums) / sizeof(GLenum);
+		const uint32_t SeverityCnt = sizeof(SeverityEnums) / sizeof(GLenum);
+		uint32_t SourceID = 0;
+		uint32_t TypeID = 0;
+		uint32_t SeverityID = 0;
+		for (; SourceID < SourceCnt && SourceEnums[SourceID] != Source; SourceID++) {}
+		for (; TypeID < TypeCnt && TypeEnums[TypeID] != Type; TypeID++) {}
+		for (; SeverityID < SeverityCnt && SeverityEnums[SeverityID] != Severity; SeverityID++) {}
+		std::cout << "(" << SourceNames[SourceID] << "," << TypeNames[TypeID] << "," << SeverityNames[SeverityID] << "," << ID << "): '" << Message << "'" << std::endl;
+		return;
+	};
+
 	LWWindowContext WinCon = Window->GetContext();
 	int32_t PixelFormat;
 	PIXELFORMATDESCRIPTOR pfd = { sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0 };
@@ -21,10 +42,14 @@ LWVideoDriver_OpenGL4_5 *LWVideoDriver_OpenGL4_5::MakeVideoDriver(LWWindow *Wind
 			wglDeleteContext(GLContext);
 			wglMakeCurrent(Context.m_DC, Context.m_GLRC);
 			int32_t UniformBlockSize = 0;
-			int32_t BinaryFormatCnt = 0;
 			glGenVertexArrays(1, &Context.m_VAOID);
 			glBindVertexArray(Context.m_VAOID);
 			glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &UniformBlockSize);
+			if ((Type&DebugLayer) != 0) {
+				glEnable(GL_DEBUG_OUTPUT);
+				glDebugMessageCallback(DebugOutput, nullptr);
+				glDebugMessageInsert(GL_DEBUG_SOURCE_THIRD_PARTY, GL_DEBUG_TYPE_OTHER, 0, GL_DEBUG_SEVERITY_NOTIFICATION, (GLsizei)strlen("DebugLayer Initiated."), "DebugLayer Initiated.");
+			}
 			Driver = Window->GetAllocator()->Allocate<LWVideoDriver_OpenGL4_5>(Window, Context, (uint32_t)UniformBlockSize);
 		}
 	}

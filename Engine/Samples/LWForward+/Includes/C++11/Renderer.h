@@ -204,7 +204,7 @@ private:
 	LWMesh<Vertice> *m_DebugCube = nullptr;;
 	LWMesh<Vertice> *m_DebugPoint = nullptr;
 	LWMesh<Vertice> *m_DebugCone = nullptr;
-	LWMesh<LWVertexTexture> *m_DebugRect = nullptr;
+	LWMesh<LWVertexUI> *m_DebugRect = nullptr;
 
 	LWShader *m_StaticShader = nullptr;
 	LWShader *m_StaticPointShader = nullptr;

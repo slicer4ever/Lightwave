@@ -9,9 +9,10 @@
 #endif
 
 #module Pixel DirectX11_1
-static const uint NormalTexBit = 0x4;
-static const uint OcclussionTexBit = 0x8;
-static const uint EmissiveTexBit = 0x10;
+static const uint NormalTexBit = 0x1;
+static const uint OcclussionTexBit = 0x2;
+static const uint EmissiveTexBit = 0x4;
+static const uint ULColorTexBit = 0x8;
 
 cbuffer ListData{
 	float4x4 ProjViewMatrix;
@@ -83,7 +84,7 @@ float4 main(Pixel In) : SV_TARGET{
 	float Transparency = GlossMat.m_DiffuseColor.a+Emissive.a;
 #elif UNLIT
 	oColor = MaterialColorA;
-	if((HasTexturesFlag&0x8)!=0) oColor *= ColorTex.Sample(ColorSmp, In.TexCoord.xy);
+	if((HasTexturesFlag&ULColorTexBit)!=0) oColor *= ColorTex.Sample(ColorSmp, In.TexCoord.xy);
 	float Transparency = oColor.a+Emissive.a;
 	if(Transparency<0.01f) discard;
 	return Emissive+oColor;
@@ -110,6 +111,8 @@ float4 main(Pixel In) : SV_TARGET{
 const uint NormalTexBit = 0x1;
 const uint OcclussionTexBit = 0x2;
 const uint EmissiveTexBit = 0x4;
+const uint ULColorTexBit = 0x8;
+
 layout(std140) uniform ListData{
 	mat4 ProjViewMatrix;
 	mat4 ShadowProjViewMatrix[MaxShadows];
@@ -173,7 +176,7 @@ void main(void){
 	float Transparency = GlossMat.m_DiffuseColor.a+Emissive.a;
 #elif UNLIT
 	oColor = MaterialColorA;
-	if((HasTexturesFlag&0x8)!=0) oColor *= texture(ColorTex, p.TexCoord.xy);
+	if((HasTexturesFlag&ULColorTexBit)!=0) oColor *= texture(ColorTex, p.TexCoord.xy);
 	float Transparency = oColor.a+Emissive.a;
 	if(Transparency<0.01f) discard;
 	oColor = Emissive+oColor;

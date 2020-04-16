@@ -86,7 +86,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../../Includes/C++11/;../../../../Dependency/libfreetype/include/;../../../../Dependency/libpng/;../../../../Dependency/libGLEW/include/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Includes/C++11/;../../../../Dependency/libfreetype/include/;../../../../Dependency/libpng/;../../../../Dependency/libGLEW/include/;C:\VulkanSDK\1.2.131.2\Include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -95,7 +95,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../../Includes/C++11/;../../../../Dependency/libfreetype/include/;../../../../Dependency/libpng/;../../../../Dependency/libGLEW/include/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Includes/C++11/;../../../../Dependency/libfreetype/include/;../../../../Dependency/libpng/;../../../../Dependency/libGLEW/include/;C:\VulkanSDK\1.2.131.2\Include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -106,7 +106,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../../Includes/C++11/;../../../../Dependency/libfreetype/include/;../../../../Dependency/libpng/;../../../../Dependency/libGLEW/include/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Includes/C++11/;../../../../Dependency/libfreetype/include/;../../../../Dependency/libpng/;../../../../Dependency/libGLEW/include/;C:\VulkanSDK\1.2.131.2\Include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -121,7 +121,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../../Includes/C++11/;../../../../Dependency/libfreetype/include/;../../../../Dependency/libpng/;../../../../Dependency/libGLEW/include/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Includes/C++11/;../../../../Dependency/libfreetype/include/;../../../../Dependency/libpng/;../../../../Dependency/libGLEW/include/;C:\VulkanSDK\1.2.131.2\Include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -140,6 +140,7 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWTypes.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWVideoBuffer.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWVideoDriver.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWVideoDrivers\LWVideoDriver_Vulkan.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWVideoDrivers\LWVideoDriver_DirectX11_1.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWVideoDrivers\LWVideoDriver_OpenGL2_1.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWVideoDrivers\LWVideoDriver_OpenGL3_3.h" />
@@ -193,6 +194,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWVideoDriver\LWVideoDriver_Vulkan.cpp" />
     <ClCompile Include="..\..\..\Source\Mac\LWVideo\LWVideoDriver\LWVideoDriver_OpenGL2_1_Mac.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -248,6 +250,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\Windows\LWVideo\LWVideoDrivers\LWVideoDriver_Vulkan_Windows.cpp" />
     <ClCompile Include="..\..\..\Source\X11\LWVideo\LWVideoDriver\LWVideoDriver_OpenGL2_1_X11.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

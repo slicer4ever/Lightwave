@@ -16,6 +16,10 @@ LWTimer &LWTimer::SetFrequency(uint64_t Frequency){
 	return *this;
 }
 
+float LWTimer::ToSecond(uint64_t Time) {
+	return (float)Time / GetResolution();
+}
+
 uint64_t LWTimer::ToMilliSecond(uint64_t Time) {	
 	std::chrono::high_resolution_clock::duration c(Time);
 	std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(c);
@@ -26,6 +30,10 @@ uint64_t LWTimer::ToHighResolution(uint64_t Time) {
 	std::chrono::milliseconds ms(Time);
 	std::chrono::high_resolution_clock::duration c = std::chrono::duration_cast<std::chrono::high_resolution_clock::duration>(ms);
 	return c.count();
+}
+
+uint64_t LWTimer::ToHighResolution(float Time) {
+	return (uint64_t)(Time*GetResolution());
 }
 
 LWTimer &LWTimer::Play(uint64_t Current){

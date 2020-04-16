@@ -36,11 +36,20 @@ struct LWVector4{
 		return;
 	}
 
+	/*!< \brief returns the min element of all vec4 components. */
+	Type Min(void) const {
+		return std::min<Type>(std::min<Type>(std::min<Type>(x, y), z), w);
+	}
+
 	/*!< \brief returns the min of each component between this vector4 and A vector4 */
-	LWVector4<Type> Min(const LWVector4<Type> &A) {
+	LWVector4<Type> Min(const LWVector4<Type> &A) const {
 		return LWVector4<Type>(std::min<Type>(x, A.x), std::min<Type>(y, A.y), std::min<Type>(z, A.z), std::min<Type>(w, A.w));
 	}
 
+	/*!< \brief Required to be compatible with LWSVector4 in the case that LW_NOSIMD is specified during compilation. */
+	LWVector4<Type> AsVec4(void) const {
+		return *this;
+	}
 
 	/*!< \brief writes into result the min of each component between this vector4 and A vector4 */
 	void Min(const LWVector4<Type> &A, const LWVector4<Type> &Result) const {
@@ -48,8 +57,13 @@ struct LWVector4{
 		return;
 	}
 
+	/*!< \brief returns the max element of all vec4 components. */
+	Type Max(void) const {
+		return std::max<Type>(std::max<Type>(std::max<Type>(x, y), z), w);
+	}
+
 	/*!< \brief returns the max of each component between this vector4 and A vector4 */
-	LWVector4<Type> Max(const LWVector4<Type> &A) {
+	LWVector4<Type> Max(const LWVector4<Type> &A) const {
 		return LWVector4<Type>(std::max<Type>(x, A.x), std::max<Type>(y, A.y), std::max<Type>(z, A.z), std::max<Type>(w, A.w));
 	}
 
@@ -179,7 +193,8 @@ struct LWVector4{
 	}
 
 	bool operator == (const LWVector4<Type> &Rhs) const{
-		return x == Rhs.x && y == Rhs.y && z == Rhs.z && w == Rhs.w;
+		const Type e = std::numeric_limits<Type>::epsilon();
+		return (Type)abs(x - Rhs.x) <= e && (Type)abs(y - Rhs.y) <= e && (Type)abs(z - Rhs.z) <= e && (Type)abs(w - Rhs.w) <= e;
 	}
 
 	bool operator != (const LWVector4<Type> &Rhs) const{
@@ -1649,8 +1664,13 @@ struct LWVector3{
 		return;
 	}
 
+	/*!< \brief returns the min of all components of the vec3. */
+	Type Min(void) const {
+		return std::min<Type>(std::min<Type>(x, y), z);
+	}
+
 	/*!< \brief returns the min of each component between this vector3 and A vector3 */
-	LWVector3<Type> Min(const LWVector3<Type> &A) {
+	LWVector3<Type> Min(const LWVector3<Type> &A) const {
 		return LWVector3<Type>(std::min<Type>(x, A.x), std::min<Type>(y, A.y), std::min<Type>(z, A.z));
 	}
 
@@ -1661,8 +1681,13 @@ struct LWVector3{
 		return;
 	}
 
+	/*!< \brief returns the max of all components of the vec3. */
+	Type Max(void) const {
+		return std::max<Type>(std::max<Type>(x, y), z);
+	}
+
 	/*!< \brief returns the max of each component between this vector3 and A vector3 */
-	LWVector3<Type> Max(const LWVector3<Type> &A) {
+	LWVector3<Type> Max(const LWVector3<Type> &A) const {
 		return LWVector3<Type>(std::max<Type>(x, A.x), std::max<Type>(y, A.y), std::max<Type>(z, A.z));
 	}
 
@@ -1718,7 +1743,7 @@ struct LWVector3{
 	Type Length(void) const{
 		Type L = x*x + y*y + z*z;
 		if (L < std::numeric_limits<Type>::epsilon()) return 0;
-		return sqrt(L);
+		return (Type)sqrt(L);
 	}
 
 	/*! \brief Gets the squared length of the vector4.
@@ -1822,7 +1847,8 @@ struct LWVector3{
 	}
 
 	bool operator == (const LWVector3<Type> &Rhs) const{
-		return x == Rhs.x && y == Rhs.y && z == Rhs.z;
+		const Type e = std::numeric_limits<Type>::epsilon();
+		return (Type)abs(x - Rhs.x) <= e && (Type)abs(y - Rhs.y) <= e && (Type)abs(z - Rhs.z) <= e;
 	}
 
 	bool operator != (const LWVector3<Type> &Rhs) const{
@@ -2077,6 +2103,10 @@ struct LWVector2{
 		Result = Normalize();
 		return;
 	}
+	/*!< \brief returns the min component of the Vec2. */
+	Type Min(void) const {
+		return std::min<Type>(x, y);
+	}
 
 	/*!< \brief returns the min of each component between this vector2 and A vector2. */
 	LWVector2<Type> Min(const LWVector2<Type> &A) const {
@@ -2090,8 +2120,13 @@ struct LWVector2{
 		return;
 	}
 
+	/*!< \brief returns the max component of the Vec2. */
+	Type Max(void) const {
+		return std::max<Type>(x, y);
+	}
+
 	/*!< \brief returns the max of each component between this vector2 and A vector2. */
-	LWVector2<Type> Max(const LWVector2<Type> &A) {
+	LWVector2<Type> Max(const LWVector2<Type> &A) const {
 		return LWVector2<Type>(std::max<Type>(x, A.x), std::max<Type>(y, A.y));
 	}
 
@@ -2233,7 +2268,8 @@ struct LWVector2{
 	}
 
 	bool operator == (const LWVector2<Type> &Rhs) const{
-		return x == Rhs.x && y == Rhs.y;
+		const Type e = std::numeric_limits<Type>::epsilon();
+		return (Type)abs(x - Rhs.x) <= e && (Type)abs(y - Rhs.y) <= e;
 	}
 
 	bool operator != (const LWVector2<Type> &Rhs) const{

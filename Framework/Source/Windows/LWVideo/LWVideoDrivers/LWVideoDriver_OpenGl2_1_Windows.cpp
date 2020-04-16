@@ -1,7 +1,7 @@
 #include "LWVideo/LWVideoDrivers/LWVideoDriver_OpenGL2_1.h"
 #include "LWPlatform/LWWindow.h"
 
-LWVideoDriver_OpenGL2_1 *LWVideoDriver_OpenGL2_1::MakeVideoDriver(LWWindow *Window) {	
+LWVideoDriver_OpenGL2_1 *LWVideoDriver_OpenGL2_1::MakeVideoDriver(LWWindow *Window, uint32_t Type) {
 	
 	LWWindowContext WinCon = Window->GetContext();
 	int32_t PixelFormat;

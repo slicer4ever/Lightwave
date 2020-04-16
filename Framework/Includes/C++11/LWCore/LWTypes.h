@@ -46,6 +46,15 @@ struct LWMatrix2;
 template<class Type>
 struct LWQuaternion;
 
+template<class Type>
+struct LWSVector4;
+
+template<class Type>
+struct LWSMatrix4;
+
+template<class Type>
+struct LWSQuaternion;
+
 class LWAllocator;
 
 class LWAllocator_Default;
@@ -120,6 +129,30 @@ typedef LWMatrix2<float> LWMatrix2f;
 
 /*! \brief defined int32 version of the Matrix2 class. */
 typedef LWMatrix2<int32_t> LWMatrix2i;
+
+/*!< \brief defined float variant of simd vector4 class. */
+typedef LWSVector4<float> LWSVector4f;
+
+/*!< \brief defined double variant of simd vector4 class. */
+typedef LWSVector4<double> LWSVector4d;
+
+/*!< \brief defined int32 version of the simd vector4 class. */
+typedef LWSVector4<int32_t> LWSVector4i;
+
+/*!< \brief defined float variant of simd matrix4 class. */
+typedef LWSMatrix4<float> LWSMatrix4f;
+
+/*!< \brief defined double variant of simd matrix4 class. */
+typedef LWSMatrix4<double> LWSMatrix4d;
+
+/*!< \brief defined int32 version of the simd matrix4 class. */
+typedef LWSMatrix4<int32_t> LWSMatrix4i;
+
+/*!< \brief defined float variant of simd quaternion class. */
+typedef LWSQuaternion<float> LWSQuaternionf;
+
+/*!< \brief defined double variant of the simd quaternion class. */
+typedef LWSQuaternion<double> LWSQuaterniond;
 
 /*!< \brief internal variable for Matrix4's ortho function, this will automatically be set depending on which video driver object is last created.  Side note: i really hate that i had to implement this, but I could not think of any reasonable solution since OpenGL and directX use different depth NDC ranges.) */
 extern bool LWMatrix4_UseDXOrtho;

@@ -1,6 +1,7 @@
 #include "LWEXML.h"
 #include <LWCore/LWText.h>
 #include <LWCore/LWAllocator.h>
+#include <LWPlatform/LWFileStream.h>
 #include <iostream>
 #include <functional>
 #include <cstdarg>
@@ -20,6 +21,19 @@ bool LWEXMLNode::PushAttributef(const char *Name, const char *ValueFmt, ...) {
 	vsnprintf(ValueBuffer, sizeof(ValueBuffer), ValueFmt, lst);
 	va_end(lst);
 	return PushAttribute(Name, ValueBuffer);
+}
+
+bool LWEXMLNode::RemoveAttribute(uint32_t i) {
+	if (i >= m_AttributeCount) return false;
+	std::copy(m_Attributes + i + 1, m_Attributes + m_AttributeCount, m_Attributes + i);
+	m_AttributeCount--;
+	return true;
+}
+
+bool LWEXMLNode::RemoveAttribute(LWXMLAttribute *Attr) {
+	uint32_t i = 0;
+	for (; i < m_AttributeCount; i++) if (Attr == &m_Attributes[i]) break;
+	return RemoveAttribute(i);
 }
 
 LWEXMLNode &LWEXMLNode::SetName(const char *Name) {
@@ -48,6 +62,29 @@ LWXMLAttribute *LWEXMLNode::FindAttribute(const LWText &Name) {
 		if (NameHash == LWText::MakeHash(A->m_Name)) return A;
 	}
 	return nullptr;
+}
+
+bool LWEXML::LoadFile(LWEXML &XML, LWAllocator &Allocator, const LWText &Path, bool StripFormatting, LWEXMLNode *Parent, LWEXMLNode *Prev, LWFileStream *ExistingStream) {
+	LWFileStream Stream;
+	if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::BinaryMode | LWFileStream::ReadMode, Allocator, ExistingStream)) return false;
+	uint32_t Len = Stream.Length() + 1;
+	char *B = Allocator.AllocateArray<char>(Len);
+	Stream.ReadText(B, Len);
+	bool Res = ParseBuffer(XML, Allocator, B, StripFormatting, Parent, Prev);
+	LWAllocator::Destroy(B);
+	return Res;
+}
+
+bool LWEXML::LoadFile(LWEXML &XML, LWAllocator &Allocator, const LWText &Path, bool StripFormatting, LWFileStream *ExistingStream) {
+	LWFileStream Stream;
+	if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::BinaryMode | LWFileStream::ReadMode, Allocator, ExistingStream)) return false;
+	uint32_t Len = Stream.Length() + 1;
+	char *B = Allocator.AllocateArray<char>(Len);
+	Stream.ReadText(B, Len);
+	bool Res = ParseBuffer(XML, Allocator, B, StripFormatting);
+	LWAllocator::Destroy(B);
+	return Res;
+
 }
 
 bool LWEXML::ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const char *Buffer, bool StripFormatting, LWEXMLNode *Parent, LWEXMLNode *Prev) {

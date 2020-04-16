@@ -720,6 +720,32 @@ LWText &LWText::Set(const uint8_t *Text, LWAllocator &Allocator) {
 	return *this;
 }
 
+LWText &LWText::Reserve(uint32_t Length) {
+	if (m_BufferLength >= Length) return *this;
+	if (!m_TextBuffer) return *this;
+	LWAllocator *Alloc = LWAllocator::GetAllocator(m_TextBuffer);
+	uint8_t *oBuffer = m_TextBuffer;
+	uint8_t *nBuffer = Alloc->AllocateArray<uint8_t>(Length);
+	std::copy(m_TextBuffer, m_TextBuffer + m_BufferLength, nBuffer);
+	m_TextBuffer = nBuffer;
+	m_ReadBuffer = nBuffer;
+	m_BufferLength = Length;
+	LWAllocator::Destroy(oBuffer);
+	return *this;
+}
+
+LWText &LWText::Reserve(uint32_t Length, LWAllocator &Allocator) {
+	if (m_BufferLength >= Length) return *this;
+	uint8_t *oBuffer = m_TextBuffer;
+	uint8_t *nBuffer = Allocator.AllocateArray<uint8_t>(Length);
+	std::copy(m_TextBuffer, m_TextBuffer + m_BufferLength, nBuffer);
+	m_TextBuffer = nBuffer;
+	m_ReadBuffer = nBuffer;
+	m_BufferLength = Length;
+	LWAllocator::Destroy(oBuffer);
+	return *this;
+}
+
 LWText &LWText::Set(const char *Text, LWAllocator &Allocator){
 	return Set((const uint8_t*)Text, Allocator);
 }
@@ -939,6 +965,10 @@ LWText::LWText(LWText &&Other) : m_TextBuffer(Other.m_TextBuffer), m_ReadBuffer(
 
 LWText::LWText(const LWText &Other) : m_TextBuffer(nullptr), m_ReadBuffer(nullptr), m_TextLength(0), m_BufferLength(0), m_Hash(0){
 	Set(Other.GetCharacters(), *Other.GetAllocator());
+}
+
+LWText::LWText(const LWText &Text, LWAllocator &Allocator) : m_TextBuffer(nullptr), m_ReadBuffer(nullptr), m_TextLength(0), m_BufferLength(0), m_Hash(0) {
+	Set(Text.GetCharacters(), Allocator);
 }
 
 LWText::LWText(const uint8_t *Text) : m_TextBuffer(nullptr), m_ReadBuffer(nullptr), m_TextLength(0), m_BufferLength(0), m_Hash(0){

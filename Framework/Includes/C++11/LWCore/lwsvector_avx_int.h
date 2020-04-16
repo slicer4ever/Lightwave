@@ -1,0 +1,1412 @@
+#ifndef LWSVECTOR_AVX_INT_H
+#define LWSVECTOR_AVX_INT_H
+
+#include "LWSVector.h"
+#include <smmintrin.h>
+#include <emmintrin.h>
+#include <immintrin.h>
+
+template<>
+struct LWSVector4<int32_t> {
+	__m128i m_Data;
+
+	LWVector4<int32_t> AsVec4(void) const {
+		alignas(16) LWVector4<int32_t> R;
+		_mm_store_si128((__m128i*)&R.x, m_Data);
+		return R;
+	}
+
+	int32_t Min(void) const {
+		__m128i A = _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 0, 3));
+		__m128i B = _mm_min_epi32(m_Data, A);
+		A = _mm_shuffle_epi32(B, _MM_SHUFFLE(1, 0, 3, 2));
+		return _mm_cvtsi128_si32(_mm_min_epi32(B, A));
+	}
+
+	int32_t Min3(void) const {
+		__m128i A = _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 0, 2));
+		__m128i B = _mm_min_epi32(m_Data, A);
+		A = _mm_shuffle_epi32(B, _MM_SHUFFLE(3, 0, 2, 1));
+		return _mm_cvtsi128_si32(_mm_min_epi32(B, A));
+	}
+
+	int32_t Min2(void) const {
+		__m128i A = _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 0, 1));
+		return _mm_cvtsi128_si32(_mm_min_epi32(m_Data, A));
+	}
+
+	int32_t Max(void) const {
+		__m128i A = _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 0, 3));
+		__m128i B = _mm_max_epi32(m_Data, A);
+		A = _mm_shuffle_epi32(B, _MM_SHUFFLE(1, 0, 3, 2));
+		return _mm_cvtsi128_si32(_mm_max_epi32(B, A));
+	}
+
+	int32_t Max3(void) const {
+		__m128i A = _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 0, 2));
+		__m128i B = _mm_max_epi32(m_Data, A);
+		A = _mm_shuffle_epi32(B, _MM_SHUFFLE(3, 0, 2, 1));
+		return _mm_cvtsi128_si32(_mm_max_epi32(B, A));
+	}
+
+	int32_t Max2(void) const {
+		__m128i A = _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 0, 1));
+		return _mm_cvtsi128_si32(_mm_max_epi32(m_Data, A));
+	}
+
+	LWSVector4<int32_t> Min(const LWSVector4<int32_t> &A) const {
+		return _mm_min_epi32(m_Data, A.m_Data);
+	}
+
+	LWSVector4<int32_t> Max(const LWSVector4<int32_t> &A) const {
+		return _mm_max_epi32(m_Data, A.m_Data);
+	}
+
+	LWSVector4<int32_t> &operator = (const LWSVector4<int32_t> &Rhs) {
+		m_Data = Rhs.m_Data;
+		return *this;
+	}
+
+	LWSVector4<int32_t> &operator += (const LWSVector4<int32_t> &Rhs) {
+		m_Data = _mm_add_epi32(m_Data, Rhs.m_Data);
+		return *this;
+	}
+
+	LWSVector4<int32_t> &operator += (int32_t Rhs) {
+		__m128i t = _mm_set1_epi32(Rhs);
+		m_Data = _mm_add_epi32(m_Data, t);
+		return *this;
+	}
+
+	LWSVector4<int32_t> &operator -= (const LWSVector4<int32_t> &Rhs) {
+		m_Data = _mm_sub_epi32(m_Data, Rhs.m_Data);
+		return *this;
+	}
+
+	LWSVector4<int32_t> &operator -= (int32_t Rhs) {
+		__m128i t = _mm_set1_epi32(Rhs);
+		m_Data = _mm_sub_epi32(m_Data, t);
+		return *this;
+	}
+
+	LWSVector4<int32_t> &operator *= (const LWSVector4<int32_t> &Rhs) {
+		m_Data = _mm_mullo_epi32(m_Data, Rhs.m_Data);
+		return *this;
+	}
+
+	LWSVector4<int32_t> &operator *= (int32_t Rhs) {
+		__m128i t = _mm_set1_epi32(Rhs);
+		m_Data = _mm_mullo_epi32(m_Data, t);
+		return *this;
+	}
+
+	LWSVector4<int32_t> &operator /= (const LWSVector4<int32_t> &Rhs) {
+		//No integer division, cast data to float, divide, cast back to m128i
+		alignas (16) LWVector4i RiA;
+		alignas (16) LWVector4i RiB;
+		alignas (16) LWVector4f Rf;
+		_mm_store_si128((__m128i*)&RiA.x, m_Data);
+		_mm_store_si128((__m128i*)&RiB.x, Rhs.m_Data);
+		__m128 tA = _mm_set_ps((float)RiA.x, (float)RiA.y, (float)RiA.z, (float)RiA.w);
+		__m128 tB = _mm_set_ps((float)RiB.x, (float)RiB.y, (float)RiB.z, (float)RiB.w);
+		__m128 t = _mm_div_ps(tA, tB);
+		_mm_store_ps(&Rf.x, t);
+		m_Data = _mm_set_epi32((int32_t)Rf.x, (int32_t)Rf.y, (int32_t)Rf.z, (int32_t)Rf.w);
+		return *this;
+	}
+
+	LWSVector4<int32_t> &operator /= (int32_t Rhs) {
+		//No integer division, cast data to float, divide, cast back to m128i
+		alignas (16) LWVector4i RiA;
+		alignas (16) LWVector4f Rf;
+		_mm_store_si128((__m128i*)&RiA.x, m_Data);
+		__m128 tA = _mm_set_ps((float)RiA.x, (float)RiA.y, (float)RiA.z, (float)RiA.w);
+		__m128 tB = _mm_set_ps1((float)Rhs);
+		__m128 t = _mm_div_ps(tA, tB);
+		_mm_store_ps(&Rf.x, t);
+		m_Data = _mm_set_epi32((int32_t)Rf.x, (int32_t)Rf.y, (int32_t)Rf.z, (int32_t)Rf.w);
+		return *this;
+	}
+
+	friend LWSVector4<int32_t> operator + (const LWSVector4<int32_t> &Rhs) {
+		return Rhs.m_Data;
+	}
+
+	friend LWSVector4<int32_t> operator - (const LWSVector4<int32_t> &Rhs) {
+		return _mm_sign_epi32(Rhs.m_Data, _mm_set1_epi32(-1));
+	}
+
+	bool operator == (const LWSVector4<int32_t> &Rhs) {
+		return _mm_test_all_ones(_mm_cmpeq_epi32(m_Data, Rhs.m_Data));
+	}
+
+	bool operator != (const LWSVector4<int32_t> &Rhs) {
+		return !(*this == Rhs);
+	}
+
+	friend std::ostream &operator<<(std::ostream &o, const LWSVector4<int32_t> &v) {
+		alignas(16) int32_t Values[4];
+		_mm_store_si128((__m128i*)Values, v.m_Data);
+		o << Values[0] << " " << Values[1] << " " << Values[2] << " " << Values[3];
+		return o;
+	}
+
+	friend LWSVector4<int32_t> operator + (const LWSVector4<int32_t> &Lhs, const LWSVector4<int32_t> &Rhs) {
+		return _mm_add_epi32(Lhs.m_Data, Rhs.m_Data);
+	}
+
+	friend LWSVector4<int32_t> operator + (const LWSVector4<int32_t> &Lhs, int32_t Rhs) {
+		__m128i t = _mm_set1_epi32(Rhs);
+		return _mm_add_epi32(Lhs.m_Data, t);
+	}
+
+	friend LWSVector4<int32_t> operator + (int32_t Lhs, const LWSVector4<int32_t> &Rhs) {
+		__m128i t = _mm_set1_epi32(Lhs);
+		return _mm_add_epi32(t, Rhs.m_Data);
+	}
+
+	friend LWSVector4<int32_t> operator - (const LWSVector4<int32_t> &Lhs, const LWSVector4<int32_t> &Rhs) {
+		return _mm_sub_epi32(Lhs.m_Data, Rhs.m_Data);
+	}
+
+	friend LWSVector4<int32_t> operator - (const LWSVector4<int32_t> &Lhs, int32_t Rhs) {
+		__m128i t = _mm_set1_epi32(Rhs);
+		return _mm_sub_epi32(Lhs.m_Data, t);
+	}
+
+	friend LWSVector4<int32_t> operator - (int32_t Lhs, const LWSVector4<int32_t> &Rhs) {
+		__m128i t = _mm_set1_epi32(Lhs);
+		return _mm_sub_epi32(t, Rhs.m_Data);
+	}
+
+	friend LWSVector4<int32_t> operator * (const LWSVector4<int32_t> &Lhs, const LWSVector4<int32_t> &Rhs) {
+		return _mm_mullo_epi32(Lhs.m_Data, Rhs.m_Data);
+	}
+
+	friend LWSVector4<int32_t> operator * (const LWSVector4<int32_t> &Lhs, int32_t Rhs) {
+		__m128i t = _mm_set1_epi32(Rhs);
+		return _mm_mullo_epi32(Lhs.m_Data, t);
+	}
+
+	friend LWSVector4<int32_t> operator * (int32_t Lhs, const LWSVector4<int32_t> &Rhs) {
+		__m128i t = _mm_set1_epi32(Lhs);
+		return _mm_mullo_epi32(t, Rhs.m_Data);
+	}
+
+	friend LWSVector4<int32_t> operator / (const LWSVector4<int32_t> &Lhs, const LWSVector4<int32_t> &Rhs) {
+		alignas (16) LWVector4i RiA;
+		alignas (16) LWVector4i RiB;
+		alignas (16) LWVector4f Rf;
+		_mm_store_si128((__m128i*)&RiA.x, Lhs.m_Data);
+		_mm_store_si128((__m128i*)&RiB.x, Rhs.m_Data);
+		__m128 tA = _mm_set_ps((float)RiA.x, (float)RiA.y, (float)RiA.z, (float)RiA.w);
+		__m128 tB = _mm_set_ps((float)RiB.x, (float)RiB.y, (float)RiB.z, (float)RiB.w);
+		__m128 t = _mm_div_ps(tA, tB);
+		_mm_store_ps(&Rf.x, t);
+		return _mm_set_epi32((int32_t)Rf.x, (int32_t)Rf.y, (int32_t)Rf.z, (int32_t)Rf.w);
+	}
+
+	friend LWSVector4<int32_t> operator / (const LWSVector4<int32_t> &Lhs, int32_t Rhs) {
+		alignas (16) LWVector4i RiA;
+		alignas (16) LWVector4f Rf;
+		_mm_store_si128((__m128i*)&RiA.x, Lhs.m_Data);
+		__m128 tA = _mm_set_ps((float)RiA.x, (float)RiA.y, (float)RiA.z, (float)RiA.w);
+		__m128 tB = _mm_set_ps1((float)Rhs);
+		__m128 t = _mm_div_ps(tA, tB);
+		_mm_store_ps(&Rf.x, t);
+		return _mm_set_epi32((int32_t)Rf.x, (int32_t)Rf.y, (int32_t)Rf.z, (int32_t)Rf.w);
+	}
+
+	friend LWSVector4<int32_t> operator / (int32_t Lhs, const LWSVector4<int32_t> &Rhs) {
+		alignas (16) LWVector4f Rf;
+		alignas (16) LWVector4i RiB;
+		__m128 tA = _mm_set_ps1((float)Lhs);
+		__m128 tB = _mm_set_ps((float)RiB.x, (float)RiB.y, (float)RiB.z, (float)RiB.w);
+		__m128 t = _mm_div_ps(tA, tB);
+		_mm_store_ps(&Rf.x, t);
+		return _mm_set_epi32((int32_t)Rf.x, (int32_t)Rf.y, (int32_t)Rf.z, (int32_t)Rf.w);
+	}
+
+	LWSVector4<int32_t> xxxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 0, 0, 0));
+	}
+
+	LWSVector4<int32_t> xxxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 0, 0, 0));
+	}
+
+	LWSVector4<int32_t> xxxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 0, 0, 0));
+	}
+
+	LWSVector4<int32_t> xxxw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 0, 0));
+	}
+
+	LWSVector4<int32_t> xxyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 1, 0, 0));
+	}
+
+	LWSVector4<int32_t> xxyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 1, 0, 0));
+	}
+
+	LWSVector4<int32_t> xxyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 0, 0));
+	}
+	LWSVector4<int32_t> xxyw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 0, 0));
+	}
+
+	LWSVector4<int32_t> xxzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 2, 0, 0));
+	}
+
+	LWSVector4<int32_t> xxzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 2, 0, 0));
+	}
+
+	LWSVector4<int32_t> xxzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 0, 0));
+	}
+
+	LWSVector4<int32_t> xxzw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 0, 0));
+	}
+
+	LWSVector4<int32_t> xxwx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 3, 0, 0));
+	}
+
+	LWSVector4<int32_t> xxwy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 3, 0, 0));
+	}
+
+	LWSVector4<int32_t> xxwz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 3, 0, 0));
+	}
+
+	LWSVector4<int32_t> xxww(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 3, 0, 0));
+	}
+
+	LWSVector4<int32_t> xyxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 0, 1, 0));
+	}
+
+	LWSVector4<int32_t> xyxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 0, 1, 0));
+	}
+
+	LWSVector4<int32_t> xyxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 0, 1, 0));
+	}
+
+	LWSVector4<int32_t> xyxw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 1, 0));
+	}
+
+	LWSVector4<int32_t> xyyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 1, 1, 0));
+	}
+
+	LWSVector4<int32_t> xyyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 1, 1, 0));
+	}
+
+	LWSVector4<int32_t> xyyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 1, 0));
+	}
+
+	LWSVector4<int32_t> xyyw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 1, 0));
+	}
+
+	LWSVector4<int32_t> xyzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 2, 1, 0));
+	}
+
+	LWSVector4<int32_t> xyzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 2, 1, 0));
+	}
+
+	LWSVector4<int32_t> xyzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 1, 0));
+	}
+
+	LWSVector4<int32_t> xywx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 3, 1, 0));
+	}
+
+	LWSVector4<int32_t> xywy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 3, 1, 0));
+	}
+
+	LWSVector4<int32_t> xywz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 3, 1, 0));
+	}
+
+	LWSVector4<int32_t> xyww(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 3, 1, 0));
+	}
+
+	LWSVector4<int32_t> xzxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 0, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 0, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 0, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzxw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 1, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 1, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzyw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 2, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 2, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzzw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzwx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 3, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzwy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 3, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzwz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 3, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzww(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 3, 2, 0));
+	}
+
+	LWSVector4<int32_t> xwxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 0, 3, 0));
+	}
+
+	LWSVector4<int32_t> xwxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 0, 3, 0));
+	}
+
+	LWSVector4<int32_t> xwxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 0, 3, 0));
+	}
+
+	LWSVector4<int32_t> xwxw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 3, 0));
+	}
+
+	LWSVector4<int32_t> xwyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 1, 3, 0));
+	}
+
+	LWSVector4<int32_t> xwyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 1, 3, 0));
+	}
+
+	LWSVector4<int32_t> xwyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 3, 0));
+	}
+
+	LWSVector4<int32_t> xwyw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 3, 0));
+	}
+
+	LWSVector4<int32_t> xwzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 2, 3, 0));
+	}
+
+	LWSVector4<int32_t> xwzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 2, 3, 0));
+	}
+
+	LWSVector4<int32_t> xwzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 3, 0));
+	}
+
+	LWSVector4<int32_t> xwzw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 3, 0));
+	}
+
+	LWSVector4<int32_t> xwwx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 3, 3, 0));
+	}
+
+	LWSVector4<int32_t> xwwy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 3, 3, 0));
+	}
+
+	LWSVector4<int32_t> xwwz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 3, 3, 0));
+	}
+
+	LWSVector4<int32_t> xwww(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 3, 3, 0));
+	}
+
+	LWSVector4<int32_t> yxxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 0, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 0, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 0, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxxw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 1, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 1, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxyw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 2, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 2, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxzw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxwx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 3, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxwy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 3, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxwz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 3, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxww(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 3, 0, 1));
+	}
+
+	LWSVector4<int32_t> yyxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 0, 1, 1));
+	}
+
+	LWSVector4<int32_t> yyxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 0, 1, 1));
+	}
+
+	LWSVector4<int32_t> yyxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 0, 1, 1));
+	}
+
+	LWSVector4<int32_t> yyxw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 1, 1));
+	}
+
+	LWSVector4<int32_t> yyyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 1, 1, 1));
+	}
+
+	LWSVector4<int32_t> yyyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 1, 1, 1));
+	}
+
+	LWSVector4<int32_t> yyyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 1, 1));
+	}
+
+	LWSVector4<int32_t> yyyw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 1, 1));
+	}
+
+	LWSVector4<int32_t> yyzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 2, 1, 1));
+	}
+
+	LWSVector4<int32_t> yyzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 2, 1, 1));
+	}
+
+	LWSVector4<int32_t> yyzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 1, 1));
+	}
+
+	LWSVector4<int32_t> yyzw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 1, 1));
+	}
+
+	LWSVector4<int32_t> yywx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 3, 1, 1));
+	}
+
+	LWSVector4<int32_t> yywy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 3, 1, 1));
+	}
+
+	LWSVector4<int32_t> yywz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 3, 1, 1));
+	}
+
+	LWSVector4<int32_t> yyww(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 3, 1, 1));
+	}
+
+	LWSVector4<int32_t> yzxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 0, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 0, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 0, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzxw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 1, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 1, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzyw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 2, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 2, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzzw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzwx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 3, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzwy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 3, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzwz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 3, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzww(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 3, 2, 1));
+	}
+
+	LWSVector4<int32_t> ywxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 0, 3, 1));
+	}
+
+	LWSVector4<int32_t> ywxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 0, 3, 1));
+	}
+
+	LWSVector4<int32_t> ywxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 0, 3, 1));
+	}
+
+	LWSVector4<int32_t> ywxw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 3, 1));
+	}
+
+	LWSVector4<int32_t> ywyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 1, 3, 1));
+	}
+
+	LWSVector4<int32_t> ywyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 1, 3, 1));
+	}
+
+	LWSVector4<int32_t> ywyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 3, 1));
+	}
+
+	LWSVector4<int32_t> ywyw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 3, 1));
+	}
+
+	LWSVector4<int32_t> ywzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 2, 3, 1));
+	}
+
+	LWSVector4<int32_t> ywzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 2, 3, 1));
+	}
+
+	LWSVector4<int32_t> ywzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 3, 1));
+	}
+
+	LWSVector4<int32_t> ywzw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 3, 1));
+	}
+
+	LWSVector4<int32_t> ywwx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 3, 3, 1));
+	}
+
+	LWSVector4<int32_t> ywwy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 3, 3, 1));
+	}
+
+	LWSVector4<int32_t> ywwz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 3, 3, 1));
+	}
+
+	LWSVector4<int32_t> ywww(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 3, 3, 1));
+	}
+
+	LWSVector4<int32_t> zxxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 0, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 0, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 0, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxxw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 1, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 1, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxyw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 2, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 2, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxzw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxwx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 3, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxwy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 3, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxwz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 3, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxww(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 3, 0, 2));
+	}
+
+	LWSVector4<int32_t> zyxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 0, 1, 2));
+	}
+
+	LWSVector4<int32_t> zyxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 0, 1, 2));
+	}
+
+	LWSVector4<int32_t> zyxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 0, 1, 2));
+	}
+
+	LWSVector4<int32_t> zyxw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 1, 2));
+	}
+
+	LWSVector4<int32_t> zyyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 1, 1, 2));
+	}
+
+	LWSVector4<int32_t> zyyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 1, 1, 2));
+	}
+
+	LWSVector4<int32_t> zyyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 1, 2));
+	}
+
+	LWSVector4<int32_t> zyyw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 1, 2));
+	}
+
+	LWSVector4<int32_t> zyzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 2, 1, 2));
+	}
+
+	LWSVector4<int32_t> zyzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 2, 1, 2));
+	}
+
+	LWSVector4<int32_t> zyzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 1, 2));
+	}
+
+	LWSVector4<int32_t> zyzw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 1, 2));
+	}
+
+	LWSVector4<int32_t> zywx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 3, 1, 2));
+	}
+
+	LWSVector4<int32_t> zywy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 3, 1, 2));
+	}
+
+	LWSVector4<int32_t> zywz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 3, 1, 2));
+	}
+
+	LWSVector4<int32_t> zyww(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 3, 1, 2));
+	}
+
+	LWSVector4<int32_t> zzxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 0, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 0, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 0, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzxw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 1, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 1, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzyw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 2, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 2, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzzw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzwx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 3, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzwy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 3, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzwz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 3, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzww(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 3, 2, 2));
+	}
+
+	LWSVector4<int32_t> zwxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 0, 3, 2));
+	}
+
+	LWSVector4<int32_t> zwxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 0, 3, 2));
+	}
+
+	LWSVector4<int32_t> zwxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 0, 3, 2));
+	}
+
+	LWSVector4<int32_t> zwxw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 3, 2));
+	}
+
+	LWSVector4<int32_t> zwyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 1, 3, 2));
+	}
+
+	LWSVector4<int32_t> zwyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 1, 3, 2));
+	}
+
+	LWSVector4<int32_t> zwyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 3, 2));
+	}
+
+	LWSVector4<int32_t> zwyw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 3, 2));
+	}
+
+	LWSVector4<int32_t> zwzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 2, 3, 2));
+	}
+
+	LWSVector4<int32_t> zwzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 2, 3, 2));
+	}
+
+	LWSVector4<int32_t> zwzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 3, 2));
+	}
+
+	LWSVector4<int32_t> zwzw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 3, 2));
+	}
+
+	LWSVector4<int32_t> zwwx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 3, 3, 2));
+	}
+
+	LWSVector4<int32_t> zwwy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 3, 3, 2));
+	}
+
+	LWSVector4<int32_t> zwwz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 3, 3, 2));
+	}
+
+	LWSVector4<int32_t> zwww(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 3, 3, 2));
+	}
+
+	LWSVector4<int32_t> wxxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 0, 0, 3));
+	}
+
+	LWSVector4<int32_t> wxxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 0, 0, 3));
+	}
+
+	LWSVector4<int32_t> wxxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 0, 0, 3));
+	}
+
+	LWSVector4<int32_t> wxxw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 0, 3));
+	}
+
+	LWSVector4<int32_t> wxyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 1, 0, 3));
+	}
+
+	LWSVector4<int32_t> wxyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 1, 0, 3));
+	}
+
+	LWSVector4<int32_t> wxyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 0, 3));
+	}
+
+	LWSVector4<int32_t> wxyw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 0, 3));
+	}
+
+	LWSVector4<int32_t> wxzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 2, 0, 3));
+	}
+
+	LWSVector4<int32_t> wxzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 2, 0, 3));
+	}
+
+	LWSVector4<int32_t> wxzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 0, 3));
+	}
+
+	LWSVector4<int32_t> wxzw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 0, 3));
+	}
+
+	LWSVector4<int32_t> wxwx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 3, 0, 3));
+	}
+
+	LWSVector4<int32_t> wxwy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 3, 0, 3));
+	}
+
+	LWSVector4<int32_t> wxwz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 3, 0, 3));
+	}
+
+	LWSVector4<int32_t> wxww(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 3, 0, 3));
+	}
+
+	LWSVector4<int32_t> wyxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 0, 1, 3));
+	}
+
+	LWSVector4<int32_t> wyxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 0, 1, 3));
+	}
+
+	LWSVector4<int32_t> wyxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 0, 1, 3));
+	}
+
+	LWSVector4<int32_t> wyxw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 1, 3));
+	}
+
+	LWSVector4<int32_t> wyyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 1, 1, 3));
+	}
+
+	LWSVector4<int32_t> wyyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 1, 1, 3));
+	}
+
+	LWSVector4<int32_t> wyyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 1, 3));
+	}
+
+	LWSVector4<int32_t> wyyw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 1, 3));
+	}
+
+	LWSVector4<int32_t> wyzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 2, 1, 3));
+	}
+
+	LWSVector4<int32_t> wyzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 2, 1, 3));
+	}
+
+	LWSVector4<int32_t> wyzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 1, 3));
+	}
+
+	LWSVector4<int32_t> wyzw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 1, 3));
+	}
+
+	LWSVector4<int32_t> wywx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 3, 1, 3));
+	}
+
+	LWSVector4<int32_t> wywy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 3, 1, 3));
+	}
+
+	LWSVector4<int32_t> wywz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 3, 1, 3));
+	}
+
+	LWSVector4<int32_t> wyww(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 3, 1, 3));
+	}
+
+	LWSVector4<int32_t> wzxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 0, 2, 3));
+	}
+
+	LWSVector4<int32_t> wzxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 0, 2, 3));
+	}
+
+	LWSVector4<int32_t> wzxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 0, 2, 3));
+	}
+
+	LWSVector4<int32_t> wzxw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 2, 3));
+	}
+
+	LWSVector4<int32_t> wzyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 1, 2, 3));
+	}
+
+	LWSVector4<int32_t> wzyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 1, 2, 3));
+	}
+
+	LWSVector4<int32_t> wzyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 2, 3));
+	}
+
+	LWSVector4<int32_t> wzyw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 2, 3));
+	}
+
+	LWSVector4<int32_t> wzzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 2, 2, 3));
+	}
+
+	LWSVector4<int32_t> wzzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 2, 2, 3));
+	}
+
+	LWSVector4<int32_t> wzzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 2, 3));
+	}
+
+	LWSVector4<int32_t> wzzw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 2, 3));
+	}
+
+	LWSVector4<int32_t> wzwx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 3, 2, 3));
+	}
+
+	LWSVector4<int32_t> wzwy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 3, 2, 3));
+	}
+
+	LWSVector4<int32_t> wzwz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 3, 2, 3));
+	}
+
+	LWSVector4<int32_t> wzww(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 3, 2, 3));
+	}
+
+	LWSVector4<int32_t> wwxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 0, 3, 3));
+	}
+
+	LWSVector4<int32_t> wwxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 0, 3, 3));
+	}
+
+	LWSVector4<int32_t> wwxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 0, 3, 3));
+	}
+
+	LWSVector4<int32_t> wwxw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 3, 3));
+	}
+
+	LWSVector4<int32_t> wwyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 1, 3, 3));
+	}
+
+	LWSVector4<int32_t> wwyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 1, 3, 3));
+	}
+
+	LWSVector4<int32_t> wwyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 3, 3));
+	}
+
+	LWSVector4<int32_t> wwyw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 3, 3));
+	}
+
+	LWSVector4<int32_t> wwzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 2, 3, 3));
+	}
+
+	LWSVector4<int32_t> wwzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 2, 3, 3));
+	}
+
+	LWSVector4<int32_t> wwzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 3, 3));
+	}
+
+	LWSVector4<int32_t> wwzw(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 3, 3));
+	}
+
+	LWSVector4<int32_t> wwwx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(0, 3, 3, 3));
+	}
+
+	LWSVector4<int32_t> wwwy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(1, 3, 3, 3));
+	}
+
+	LWSVector4<int32_t> wwwz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 3, 3, 3));
+	}
+
+	LWSVector4<int32_t> wwww(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 3, 3, 3));
+	}
+
+	LWSVector4<int32_t> xxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 0, 0));
+	}
+
+	LWSVector4<int32_t> xxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 0, 0));
+	}
+
+	LWSVector4<int32_t> xxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 0, 0));
+	}
+
+	LWSVector4<int32_t> xyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 1, 0));
+	}
+
+	LWSVector4<int32_t> xyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 1, 0));
+	}
+
+	LWSVector4<int32_t> xyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 1, 0));
+	}
+
+	LWSVector4<int32_t> xzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 2, 0));
+	}
+
+	LWSVector4<int32_t> xzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 2, 0));
+	}
+
+	LWSVector4<int32_t> yxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 0, 1));
+	}
+
+	LWSVector4<int32_t> yxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 0, 1));
+	}
+
+	LWSVector4<int32_t> yyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 1, 1));
+	}
+
+	LWSVector4<int32_t> yyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 1, 1));
+	}
+
+	LWSVector4<int32_t> yyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 1, 1));
+	}
+
+	LWSVector4<int32_t> yzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 2, 1));
+	}
+
+	LWSVector4<int32_t> yzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 2, 1));
+	}
+
+	LWSVector4<int32_t> zxx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 0, 2));
+	}
+
+	LWSVector4<int32_t> zxz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 0, 2));
+	}
+
+	LWSVector4<int32_t> zyx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 1, 2));
+	}
+
+	LWSVector4<int32_t> zyy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 1, 2));
+	}
+
+	LWSVector4<int32_t> zyz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 1, 2));
+	}
+
+	LWSVector4<int32_t> zzx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 0, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 1, 2, 2));
+	}
+
+	LWSVector4<int32_t> zzz(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 2, 2));
+	}
+
+	LWSVector4<int32_t> xx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 0, 0));
+	}
+
+	LWSVector4<int32_t> xy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 1, 0));
+	}
+
+	LWSVector4<int32_t> yx(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 0, 1));
+	}
+
+	LWSVector4<int32_t> yy(void) const {
+		return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 1, 1));
+	}
+
+	int32_t x(void) const {
+		alignas(16) LWVector4<int32_t> R;
+		_mm_store_si128((__m128i*)&R.x, m_Data);
+		return R.x;
+	}
+
+	int32_t y(void) const {
+		alignas(16) LWVector4<int32_t> R;
+		_mm_store_si128((__m128i*)&R.x, m_Data);
+		return R.y;
+	}
+
+	int32_t z(void) const {
+		alignas(16) LWVector4<int32_t> R;
+		_mm_store_si128((__m128i*)&R.x, m_Data);
+		return R.z;
+	}
+
+	int32_t w(void) const {
+		alignas(16) LWVector4<int32_t> R;
+		_mm_store_si128((__m128i*)&R.x, m_Data);
+		return R.w;
+	}
+
+	LWSVector4(__m128i Data) : m_Data(Data) {}
+
+	LWSVector4(const LWVector4<int32_t> &vxyzw) : m_Data(_mm_set_epi32(vxyzw.w, vxyzw.z, vxyzw.y, vxyzw.x)) {}
+
+	LWSVector4(const LWVector3<int32_t> &vxyz, int32_t vw) : m_Data(_mm_set_epi32(vw, vxyz.z, vxyz.y, vxyz.x)) {}
+
+	LWSVector4(const LWVector2<int32_t> &vxy, const LWVector2<int32_t> &vzw) : m_Data(_mm_set_epi32(vzw.y, vzw.x, vxy.y, vxy.x)) {}
+
+	LWSVector4(const LWVector2<int32_t> &vxy, int32_t vz, int32_t vw) : m_Data(_mm_set_epi32(vw, vz, vxy.y, vxy.x)) {}
+
+	LWSVector4(int32_t vx, int32_t vy, int32_t vz, int32_t vw) : m_Data(_mm_set_epi32(vw, vz, vy, vx)) {}
+
+	LWSVector4(int32_t f) : m_Data(_mm_set1_epi32(f)) {}
+};
+
+#endif

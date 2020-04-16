@@ -317,6 +317,12 @@ public:
 	*/
 	static uint32_t CompareMultiplena(const char *Str, uint32_t CharCount, uint32_t CompareCount, const char **Strings);
 
+	/*!< \brief allocates the internal text buffer to at least length, if internal buffer is already > length then nothing happens.  If no allocator has been provided then nothing happens. */
+	LWText &Reserve(uint32_t Length);
+
+	/*!< \brief allocates the internal text buffer to at least length, if internal buffer is already > length than nothing happens.*/
+	LWText &Reserve(uint32_t Length, LWAllocator &Allocator);
+
 	/*! \brief Sets the text object to a new string.  allocated using the LWAllocator passed in the constructor. if no allocator is preset, this is treated like a const wrapped constructor. */
 	LWText &Set(const uint8_t *Text);
 
@@ -429,6 +435,9 @@ public:
 
 	/*! \brief move's the object into this object. */
 	LWText(LWText &&Other);
+
+	/*!< \brief construct that copys from Text object into this object with the specified allocator. */
+	LWText(const LWText &Text, LWAllocator &Allocator);
 
 	/*! \brief constructor that accepts a utf-8 character string and copys it into the LWText object.
 		\param Text the utf-8 encoded text.

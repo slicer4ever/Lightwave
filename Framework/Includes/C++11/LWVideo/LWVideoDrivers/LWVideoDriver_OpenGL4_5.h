@@ -8,7 +8,7 @@
 class LWVideoDriver_OpenGL4_5 : public LWVideoDriver {
 public:
 
-	static LWVideoDriver_OpenGL4_5 *MakeVideoDriver(LWWindow *Window);
+	static LWVideoDriver_OpenGL4_5 *MakeVideoDriver(LWWindow *Window, uint32_t Type);
 
 	static bool DestroyVideoContext(LWVideoDriver_OpenGL4_5 *Driver);
 

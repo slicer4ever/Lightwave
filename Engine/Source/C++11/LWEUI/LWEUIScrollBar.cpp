@@ -44,106 +44,128 @@ LWEUIScrollBar *LWEUIScrollBar::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIMan
 	return ScrollBar;
 }
 
-LWEUI &LWEUIScrollBar::UpdateSelf(LWEUIManager *Manager, float Scale, uint64_t lCurrentTime) {
-	LWWindow *Wnd = Manager->GetWindow();
+LWEUI &LWEUIScrollBar::UpdateSelf(LWEUIManager &Manager, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime) {
+	const float MinimumTouchSize = 5.0f;
+	const float TouchScale = 2.0f;
+	const float ScrollScale = 0.25f;
+	LWWindow *Wnd = Manager.GetWindow();
 	LWMouse *Mouse = Wnd->GetMouseDevice();
 	LWTouch *Touch = Wnd->GetTouchDevice();
 	LWVector2f DownPnt = LWVector2f(-100.0f, -100.0f);
 	float DownSize = 0.0f;
 	float InitScroll = m_Scroll;
-	uint32_t Flag = m_Flag;
-	m_Flag &= ~(MouseOver);
-
+	bool wasOver = (m_Flag&MouseOver) != 0;
+	bool wasLDown = (m_Flag&MouseLDown) != 0;
+	bool wasMDown = (m_Flag&MouseMDown) != 0;
+	bool wasRDown = (m_Flag&MouseRDown) != 0;
+	bool isHori = isHorizontal();
+	uint64_t Flag = (m_Flag&~(MouseOver | MouseLDown | MouseMDown | MouseRDown));
 	if (Mouse) DownPnt = Mouse->GetPositionf();
 	if (Touch) {
 		const LWGesture &Gest = Touch->GetGesture();
 		//std::cout << "Gesture: " << Gest.m_Type << std::endl;
 		if (Gest.m_Type == LWGesture::Drag || Gest.m_Type==LWGesture::PressAndDrag) {
 			DownPnt = LWVector2f((float)Gest.m_Source.x, (float)Gest.m_Source.y)+LWVector2f((float)Gest.m_Direction.x, (float)Gest.m_Direction.y);
-            DownSize = std::max<float>(Gest.m_Scale*Scale*2.0f, 5.0f); //set's minimum size for finger.
+            DownSize = std::max<float>(Gest.m_Scale*Scale*TouchScale, MinimumTouchSize); //set's minimum size for finger.
 		}
 	}
 
 	LWVector2f BarVisiblePos;
 	LWVector2f BarVisibleSize;
-	if (m_Flag&HorizontalBar) {
-		BarVisiblePos = LWVector2f(m_VisiblePosition.x + m_VisibleSize.x*(m_Scroll / m_MaxScroll), m_VisiblePosition.y);
-		BarVisibleSize = LWVector2f(m_VisibleSize.x*(m_ScrollSize / m_MaxScroll), m_VisibleSize.y);
+	if(isHori){
+		BarVisiblePos = LWVector2f(VisiblePos.x + VisibleSize.x*(m_Scroll / m_MaxScroll), VisiblePos.y);
+		BarVisibleSize = LWVector2f(VisibleSize.x*(m_ScrollSize / m_MaxScroll), VisibleSize.y);
 	} else {
-		BarVisibleSize = LWVector2f(m_VisibleSize.x, m_VisibleSize.y*(m_ScrollSize / m_MaxScroll));
-		BarVisiblePos = LWVector2f(m_VisiblePosition.x, m_VisiblePosition.y + (m_VisibleSize.y - BarVisibleSize.y) - m_VisibleSize.y*(m_Scroll / m_MaxScroll));
+		BarVisibleSize = LWVector2f(VisibleSize.x, VisibleSize.y*(m_ScrollSize / m_MaxScroll));
+		BarVisiblePos = LWVector2f(VisiblePos.x, VisiblePos.y + (VisibleSize.y - BarVisibleSize.y) - VisibleSize.y*(m_Scroll / m_MaxScroll));
 	}
-	bool OverAll = DownPnt.x+DownSize >= m_VisiblePosition.x && DownPnt.x-DownSize <= m_VisiblePosition.x + m_VisibleSize.x && DownPnt.y+DownSize >= m_VisiblePosition.y && DownPnt.y-DownSize <= m_VisiblePosition.y + m_VisibleSize.y;
-	bool OverBar = DownPnt.x+DownSize >= BarVisiblePos.x && DownPnt.x-DownSize <= BarVisiblePos.x + BarVisibleSize.x && DownPnt.y+DownSize >= BarVisiblePos.y && DownPnt.y-DownSize <= BarVisiblePos.y + BarVisibleSize.y;
 
-	if (OverBar) m_Flag |= MouseOver;
+	bool OverAll = PointInside(DownPnt, DownSize, VisiblePos, VisibleSize);
+	bool OverBar = PointInside(DownPnt, DownSize, BarVisiblePos, BarVisibleSize) || wasLDown || wasRDown || wasMDown;
+	if (OverBar) Flag |= MouseOver;
+	bool isOver = OverBar;
 
 	if (Mouse) {
 		if (OverAll) {
-			if (Mouse->GetScroll() > 0) SetScroll(m_Scroll - m_ScrollSize*0.25f);
-			else if (Mouse->GetScroll() < 0) SetScroll(m_Scroll + m_ScrollSize*0.25f);
-		}
-
-		if (Mouse->ButtonDown(LWMouseKey::Left)) {
-			if (m_Flag&MouseOver) {
-				m_Flag |= MouseDown;
+			int32_t Scroll = Mouse->GetScroll();
+			if (Scroll != 0) {
+				if (Scroll > 0) SetScroll(m_Scroll - m_ScrollSize * ScrollScale);
+				else SetScroll(m_Scroll + m_ScrollSize * ScrollScale);
 			}
-		} else m_Flag &= ~MouseDown;
+		}
+		if (Mouse->ButtonDown(LWMouseKey::Left)) Flag |= ((wasLDown && OverAll) || isOver) ? MouseLDown : 0;
+		if (Mouse->ButtonDown(LWMouseKey::Right)) Flag |= ((wasRDown && OverAll) || isOver) ? MouseRDown : 0;
+		if (Mouse->ButtonDown(LWMouseKey::Middle)) Flag |= ((wasMDown && OverAll) || isOver) ? MouseMDown : 0;
 	}
-	if (Touch) {
-		if (OverBar) m_Flag |= MouseDown;
-		else m_Flag &= ~MouseDown;
-	}
-
-	if (OverAll) Manager->DispatchEvent(this, Event_TempOverInc);
-	if (m_Flag&MouseOver && (Flag&MouseOver) == 0) Manager->DispatchEvent(this, Event_MouseOver);
-	if ((m_Flag&MouseOver) == 0 && Flag&MouseOver) Manager->DispatchEvent(this, Event_MouseOff);
-	if ((m_Flag&(MouseDown | MouseOver)) == MouseOver && Flag&MouseDown) {
-		Manager->DispatchEvent(this, Event_Released);
-		m_InitialScroll = m_Scroll;
-		if (m_Flag&FocusAble) Manager->SetFocused(this);
-	}
-	if ((m_Flag&(MouseDown | MouseOver)) == (MouseDown | MouseOver) && (Flag&MouseDown) == 0) {
-		Manager->DispatchEvent(this, Event_Pressed);
-	}
-	if (m_Flag&MouseDown) {
-		float BarPos = (m_Flag&HorizontalBar ? (DownPnt.x - m_VisiblePosition.x) : ((m_VisiblePosition.y + m_VisibleSize.y) - DownPnt.y));
-		if (fabs(((m_Flag&HorizontalBar) ? (DownPnt.y - m_VisiblePosition.y) : (DownPnt.x - m_VisiblePosition.x))) > ((m_Flag&HorizontalBar) ? m_VisibleSize.y*4.0f+DownSize : m_VisibleSize.x*4.0f+DownSize)) {
-			SetScroll(m_InitialScroll);
+	if (Touch) Flag |= ((wasLDown && OverAll) || isOver) ? MouseLDown : 0;
+	bool isLDown = (Flag&MouseLDown) != 0;
+	bool isRDown = (Flag&MouseRDown) != 0;
+	bool isMDown = (Flag&MouseMDown) != 0;
+	bool isFocusable = (Flag&FocusAble) != 0;
+	m_Flag = Flag;
+	if(isLDown || isRDown || isMDown){
+		float t = 0.0f;
+		if (isHori) {
+			t = (DownPnt.x - VisiblePos.x);
+			if (fabs(DownPnt.y - VisiblePos.y) > VisibleSize.y*4.0f+DownSize){
+				SetScroll(m_InitialScroll);
+			} else {
+				SetScroll((t - BarVisibleSize.x*0.5f)*(m_MaxScroll / VisibleSize.x));
+			}
 		} else {
-			SetScroll(((m_Flag&HorizontalBar) ? (BarPos - BarVisibleSize.x*0.5f) * (m_MaxScroll / m_VisibleSize.x) : (BarPos - BarVisibleSize.y*0.5f) * (m_MaxScroll / (m_VisibleSize.y))));
+			t = ((VisiblePos.y + VisibleSize.y) - DownPnt.y);
+			if (fabs(DownPnt.x - VisiblePos.x) > VisibleSize.x*4.0f + DownSize) {
+				SetScroll(m_InitialScroll);
+			} else {
+				SetScroll((t - BarVisibleSize.y*0.5f)*(m_MaxScroll / VisibleSize.y));
+			}			
 		}
 	}
-	if (m_Scroll != InitScroll) Manager->DispatchEvent(this, Event_Changed);
+
+	Manager.DispatchEvent(this, Event_MouseOver, isOver && !wasOver);
+	Manager.DispatchEvent(this, Event_MouseOff, !isOver && wasOver);
+	Manager.DispatchEvent(this, Event_Changed, InitScroll!=m_Scroll);
+	Manager.DispatchEvent(this, Event_Pressed, isOver && isLDown && !wasLDown);
+	Manager.DispatchEvent(this, Event_RPressed, isOver && isRDown && !wasRDown);
+	Manager.DispatchEvent(this, Event_MPressed, isOver && isMDown && !wasMDown);
+	if (Manager.DispatchEvent(this, Event_Released, isOver && !isLDown && wasLDown)) {
+		m_InitialScroll = m_Scroll;
+		if (isFocusable) Manager.SetFocused(this);
+	}
+	if (Manager.DispatchEvent(this, Event_RReleased, isOver && !isRDown && wasRDown)) {
+		m_InitialScroll = m_Scroll;
+		if (isFocusable) Manager.SetFocused(this);
+	}
+	if (Manager.DispatchEvent(this, Event_MReleased, isOver && !isMDown && wasMDown)) {
+		m_InitialScroll = m_Scroll;
+		if (isFocusable) Manager.SetFocused(this);
+	}
 	return *this;
 }
 
-LWEUI &LWEUIScrollBar::DrawSelf(LWEUIManager *Manager, LWEUIFrame *Frame, float Scale, uint64_t lCurrentTime) {
-	auto DrawRect = [](LWEUIMaterial *Mat, const LWVector2f &Pos, const LWVector2f &Size, LWEUIFrame *F)->bool {
-		if (!Mat) return false;
-		if (!F->SetActiveTexture(Mat->m_Texture, false)) return false;
-		LWVector4f SubRegion = Mat->m_SubRegion;
-
-		uint32_t c = LWVertexUI::WriteRectangle(F->m_Mesh, Pos + LWVector2f(0.0f, Size.y), Pos + LWVector2f(Size.x, 0.0f), Mat->m_Color, LWVector2f(SubRegion.x, SubRegion.y), LWVector2f(SubRegion.z, SubRegion.w));
-		F->m_VertexCount[F->m_TextureCount - 1] += c;
-		return c != 0;
-	};
-
+LWEUI &LWEUIScrollBar::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime) {
 	LWEUIMaterial *ActiveMaterial = m_BarOffMaterial;
-	if (m_Flag&MouseOver) ActiveMaterial = (m_Flag&MouseDown) ? m_BarDownMaterial : m_BarOverMaterial;
-	DrawRect(m_BackgroundMaterial, m_VisiblePosition, m_VisibleSize, Frame);
+	bool isOver = (m_Flag&MouseOver) != 0;
+	bool isDown = (m_Flag&(MouseLDown|MouseMDown|MouseRDown)) != 0;
+	if (isOver) ActiveMaterial = isDown ? m_BarDownMaterial : (isOver ? m_BarOverMaterial : m_BarOffMaterial);
+	Frame.WriteRect(m_BackgroundMaterial, VisiblePos, VisibleSize);
 
 	LWVector2f BarVisiblePos;
 	LWVector2f BarVisibleSize;
 	if (m_Flag&HorizontalBar) {
-		BarVisiblePos = LWVector2f(m_VisiblePosition.x + m_VisibleSize.x*(m_Scroll / m_MaxScroll), m_VisiblePosition.y);
-		BarVisibleSize = LWVector2f(m_VisibleSize.x*(m_ScrollSize / m_MaxScroll), m_VisibleSize.y);
+		BarVisiblePos = LWVector2f(VisiblePos.x + VisibleSize.x*(m_Scroll / m_MaxScroll), VisiblePos.y);
+		BarVisibleSize = LWVector2f(VisibleSize.x*(m_ScrollSize / m_MaxScroll), VisibleSize.y);
 	} else {
-		BarVisibleSize = LWVector2f(m_VisibleSize.x, m_VisibleSize.y*(m_ScrollSize / m_MaxScroll));
-		BarVisiblePos = LWVector2f(m_VisiblePosition.x, m_VisiblePosition.y + (m_VisibleSize.y - BarVisibleSize.y) - m_VisibleSize.y*(m_Scroll / m_MaxScroll));
+		BarVisibleSize = LWVector2f(VisibleSize.x, VisibleSize.y*(m_ScrollSize / m_MaxScroll));
+		BarVisiblePos = LWVector2f(VisiblePos.x, VisiblePos.y + (VisibleSize.y - BarVisibleSize.y) - VisibleSize.y*(m_Scroll / m_MaxScroll));
 	}
-	DrawRect(ActiveMaterial, BarVisiblePos, BarVisibleSize, Frame);
+	Frame.WriteRect(ActiveMaterial, BarVisiblePos, BarVisibleSize);
 	return *this;
+}
+
+void LWEUIScrollBar::Destroy(void) {
+	LWAllocator::Destroy(this);
+	return;
 }
 
 LWEUIScrollBar &LWEUIScrollBar::SetBarOffMaterial(LWEUIMaterial *Material) {
@@ -181,6 +203,11 @@ LWEUIScrollBar &LWEUIScrollBar::SetScrollSize(float ScrollSize) {
 	return SetScroll(m_Scroll);
 }
 
+LWEUIScrollBar &LWEUIScrollBar::SetDirection(bool isHorizontal) {
+	m_Flag = (m_Flag&~HorizontalBar) | (isHorizontal ? HorizontalBar : 0);
+	return *this;
+}
+
 LWEUIMaterial *LWEUIScrollBar::GetBarOffMaterial(void) {
 	return m_BarOffMaterial;
 }
@@ -197,18 +224,26 @@ LWEUIMaterial *LWEUIScrollBar::GetBackgroundMaterial(void) {
 	return m_BackgroundMaterial;
 }
 
-float LWEUIScrollBar::GetScroll(void) {
+float LWEUIScrollBar::GetScroll(void) const {
 	return m_Scroll;
 }
 
-float LWEUIScrollBar::GetMaxScroll(void) {
+float LWEUIScrollBar::GetMaxScroll(void) const {
 	return m_MaxScroll;
 }
 
-float LWEUIScrollBar::GetScrollSize(void) {
+float LWEUIScrollBar::GetScrollSize(void) const {
 	return m_ScrollSize;
 }
 
-LWEUIScrollBar::LWEUIScrollBar(LWEUIMaterial *BarOffMaterial, LWEUIMaterial *BarOverMaterial, LWEUIMaterial *BarDownMaterial, LWEUIMaterial *BackgroundMaterial, float MaxScroll, float ScrollSize, const LWVector4f &Position, const LWVector4f &Size, uint32_t Flag) : LWEUI(Position, Size, Flag), m_BackgroundMaterial(BackgroundMaterial), m_BarOffMaterial(BarOffMaterial), m_BarOverMaterial(BarOverMaterial), m_BarDownMaterial(BarDownMaterial), m_Scroll(0.0f), m_MaxScroll(MaxScroll), m_ScrollSize(ScrollSize) {}
+bool LWEUIScrollBar::isHorizontal(void) const {
+	return (m_Flag&HorizontalBar) != 0;
+}
+
+bool LWEUIScrollBar::isVertical(void) const {
+	return (m_Flag&HorizontalBar) == 0;
+}
+
+LWEUIScrollBar::LWEUIScrollBar(LWEUIMaterial *BarOffMaterial, LWEUIMaterial *BarOverMaterial, LWEUIMaterial *BarDownMaterial, LWEUIMaterial *BackgroundMaterial, float MaxScroll, float ScrollSize, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : LWEUI(Position, Size, Flag), m_BackgroundMaterial(BackgroundMaterial), m_BarOffMaterial(BarOffMaterial), m_BarOverMaterial(BarOverMaterial), m_BarDownMaterial(BarDownMaterial), m_Scroll(0.0f), m_MaxScroll(MaxScroll), m_ScrollSize(ScrollSize) {}
 
 LWEUIScrollBar::~LWEUIScrollBar() {}

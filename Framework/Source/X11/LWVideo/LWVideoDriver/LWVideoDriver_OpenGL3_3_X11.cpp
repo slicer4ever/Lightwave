@@ -2,7 +2,7 @@
 #include "LWPlatform/LWPlatform.h"
 #include "LWPlatform/LWWindow.h"
 
-LWVideoDriver_OpenGL3_3 *LWVideoDriver_OpenGL3_3::MakeVideoDriver(LWWindow *Window) {
+LWVideoDriver_OpenGL3_3 *LWVideoDriver_OpenGL3_3::MakeVideoDriver(LWWindow *Window, uint32_t Type) {
 	LWWindowContext WinCon = Window->GetContext();
 	LWVideoDriver *Driver = nullptr;
 	LWOpenGL3_3Context GLContext = { nullptr };

@@ -7,7 +7,11 @@
 #include <LWCore/LWByteStream.h>
 #include <LWCore/LWMath.h>
 #include <LWCore/LWVector.h>
+#include <LWCore/LWSVector.h>
 #include <LWCore/LWMatrix.h>
+#include <LWCore/LWSMatrix.h>
+#include <LWCore/LWQuaternion.h>
+#include <LWCore/LWSQuaternion.h>
 #include <LWCore/LWText.h>
 #include <LWCore/LWTimer.h>
 #include <LWCore/LWAllocators/LWAllocator_Default.h>
@@ -35,10 +39,19 @@ bool PerformTest(const char *FunctionName, Func F, float ExpectedResult, bool Re
 
 template<typename Func>
 bool PerformTest(const char *FunctionName, Func F, double ExpectedResult, bool ResultHex = false){
+	double e = (double)std::numeric_limits<float>::epsilon(); //uses float epsilon instead of double as double epsilon precision is too high for some of the tests.
 	double R = F();
 	if (ResultHex) std::cout << std::hex << "Test: '" << FunctionName << "' Expected: 0x" << ExpectedResult << " Received: 0x" << R << std::dec << std::endl;
 	else           std::cout << "Test: '" << FunctionName << "' Expected: " << ExpectedResult << " Received: " << R << std::endl;
-	return std::abs(R - ExpectedResult) < std::numeric_limits<double>::epsilon();
+	
+	return std::abs(R - ExpectedResult) < e;
+}
+
+template<typename Func>
+bool PerformTest(const char *FunctionName, Func F, bool ExpectedResult, bool ResultHex = false) {
+	bool R = F();
+	std::cout << "Test: '" << FunctionName << "' Expected: " << (ExpectedResult ? "True" : "False") << " Received: " << (R ? "True" : "False") << std::endl;
+	return R == ExpectedResult;
 }
 
 template<class Type>
@@ -168,6 +181,207 @@ bool PerformLWAllocatorTest(void){
 	if (!PerformAllocatorTest("LWAllocator_Default", Default)) return false;
 	return true;
 }
+
+bool PerformLWSVectorTest(void) {
+	std::cout << "Testing LWSVector4f." << std::endl;
+	auto SumValuesf = [](const LWSVector4f &t) {
+		LWVector4f V = t.AsVec4();
+		return V.x + V.y + V.z + V.w;
+	};
+
+	auto SumValues3f = [](const LWSVector4f &t) {
+		LWVector4f V = t.AsVec4();
+		return V.x + V.y + V.z;
+	};
+
+	auto SumValues2f = [](const LWSVector4f &t) {
+		LWVector4f V = t.AsVec4();
+		return V.x + V.y;
+	};
+
+	LWSVector4f Testf(1.0f);
+	if (!PerformTest("LWSVector4f<Construct>", std::bind(SumValuesf, Testf), 4.0f)) return false;
+	Testf += LWSVector4f(2.0f, 3.0f, 4.0f, 5.0f);
+	if (!PerformTest("LWSVector4f<Add>", std::bind(SumValuesf, Testf), 18.0f)) return false;
+	Testf += 1.0f;
+	if (!PerformTest("LWSVector4f<Add>", std::bind(SumValuesf, Testf), 22.0f)) return false;
+	Testf = Testf + 2.0f;
+	if (!PerformTest("LWSVector4f<Add>", std::bind(SumValuesf, Testf), 30.0f)) return false;
+	Testf = 2.0f + Testf;
+	if (!PerformTest("LWSVector4f<Add>", std::bind(SumValuesf, Testf), 38.0f)) return false;
+	Testf -= 1.0f;
+	if (!PerformTest("LWSVector4f<Sub>", std::bind(SumValuesf, Testf), 34.0f)) return false;
+	Testf = Testf - 2.0f;
+	if (!PerformTest("LWSVector4f<Sub>", std::bind(SumValuesf, Testf), 26.0f)) return false;
+	Testf = 2.0f - Testf; //-3 -4 -5 -6
+	if (!PerformTest("LWSVector4f<Sub>", std::bind(SumValuesf, Testf), -18.0f)) return false;
+	Testf = LWSVector4f(1.0f)*2.0f;
+	if (!PerformTest("LWSVector4f<Mul>", std::bind(SumValuesf, Testf), 8.0f)) return false;
+	Testf *= 2.0f;
+	if (!PerformTest("LWSVector4f<Mul>", std::bind(SumValuesf, Testf), 16.0f)) return false;
+	Testf = 2.0f*LWSVector4f(1.0f);
+	if (!PerformTest("LWSVector4f<Mul>", std::bind(SumValuesf, Testf), 8.0f)) return false;
+	Testf = LWSVector4f(2.0f) / 2.0f;
+	if (!PerformTest("LWSVector4f<Div>", std::bind(SumValuesf, Testf), 4.0f)) return false;
+	Testf /= 2.0f;
+	if (!PerformTest("LWSVector4f<Div>", std::bind(SumValuesf, Testf), 2.0f)) return false;
+	Testf = 2.0f / LWSVector4f(4.0f);
+	if (!PerformTest("LWSVector4f<Div>", std::bind(SumValuesf, Testf), 2.0f)) return false;
+	if (!PerformTest("LWSVector4f<==>", []()->bool {return LWVector4f(1.0f) == LWVector4f(1.0f); }, true)) return false;
+	if (!PerformTest("LWSVector4f<!=>", []()->bool {return LWVector4f(2.0f) != LWVector4f(1.0f); }, true)) return false;
+	LWSVector4f Test4f = LWSVector4f(0.0f, 0.0f, 1.0f, 1.0f).Normalize();
+	LWSVector4f Test3f = LWSVector4f(0.0f, 0.0f, 1.0f, 1.0f).Normalize3();
+	LWSVector4f Test2f = LWSVector4f(0.0f, 0.0f, 1.0f, 1.0f).Normalize2();
+	
+	if (!PerformTest("LWSVector4f<Normalize>", std::bind(SumValuesf, Test4f), 1.41421356f)) return false;
+	if (!PerformTest("LWSVector4f<Normalize3>", std::bind(SumValues3f, Test3f), 1.0f)) return false;
+	if (!PerformTest("LWSVector4f<Normalize2>", std::bind(SumValues2f, Test2f), 0.0f)) return false;
+	if (!PerformTest("LWSVector4f<Length>", std::bind(&LWSVector4f::Length, &Test4f), 1.0f)) return false;
+	if (!PerformTest("LWSVector4f<Length3>", std::bind(&LWSVector4f::Length3, &Test3f), 1.0f)) return false;
+	if (!PerformTest("LWSVector4f<Length2>", std::bind(&LWSVector4f::Length2, &Test2f), 0.0f)) return false;
+	if (!PerformTest("LWSVector4f<LengthSq>", std::bind(&LWSVector4f::LengthSquared, &Test4f), 1.0f)) return false;
+	if (!PerformTest("LWSVector4f<LengthSq3>", std::bind(&LWSVector4f::LengthSquared3, &Test3f), 1.0f)) return false;
+	if (!PerformTest("LWSVector4f<LengthSq2>", std::bind(&LWSVector4f::LengthSquared2, &Test2f), 0.0f)) return false;
+	Test4f = LWSVector4f(0.0f, 0.0f, 0.0f, 1.0f);
+	Test3f = LWSVector4f(0.0f, 0.0f, 1.0f, 1.0f);
+	Test2f = LWSVector4f(0.0f, 0.0f, 1.0f, 1.0f);
+	if (!PerformTest("LWSVector4f<Distance>", std::bind(&LWSVector4f::Distance, &Test4f, LWSVector4f(0.0f, 0.0f, 0.0f, 2.0f)), 1.0f)) return false;
+	if (!PerformTest("LWSVector4f<Distance3>", std::bind(&LWSVector4f::Distance3, &Test3f, LWSVector4f(0.0f, 0.0f, 2.0f, 2.0f)), 1.0f)) return false;
+	if (!PerformTest("LWSVector4f<Distance2>", std::bind(&LWSVector4f::Distance2, &Test2f, LWSVector4f(0.0f, 1.0f, 2.0f, 2.0f)), 1.0f)) return false;
+	Test4f = LWSVector4f(0.0f, 0.0f, 0.0f, 2.0f);
+	Test3f = LWSVector4f(0.0f, 0.0f, 2.0f, 2.0f);
+	Test2f = LWSVector4f(0.0f, 0.0f, 2.0f, 2.0f);
+	if (!PerformTest("LWSVector4f<DistanceSq>", std::bind(&LWSVector4f::DistanceSquared, &Test4f, LWSVector4f(0.0f, 0.0f, 0.0f, 4.0f)), 4.0f)) return false;
+	if (!PerformTest("LWSVector4f<DistanceSq3>", std::bind(&LWSVector4f::DistanceSquared3, &Test3f, LWSVector4f(0.0f, 0.0f, 4.0f, 4.0f)), 4.0f)) return false;
+	if (!PerformTest("LWSVector4f<DistanceSq2>", std::bind(&LWSVector4f::DistanceSquared2, &Test2f, LWSVector4f(0.0f, 0.0f, 4.0f, 4.0f)), 0.0f)) return false;
+	Test4f = LWSVector4f(0.0f, 0.0f, 0.0f, 1.0f);
+	Test3f = LWSVector4f(0.0f, 0.0f, 1.0f, 1.0f);
+	Test2f = LWSVector4f(0.0f, 0.0f, 1.0f, 1.0f);
+	if (!PerformTest("LWSVector4f<Dot>", std::bind(&LWSVector4f::Dot, &Test4f, LWSVector4f(0.0f, 0.0f, 1.0f, 0.0f)), 0.0f)) return false;
+	if (!PerformTest("LWSVector4f<Dot3>", std::bind(&LWSVector4f::Dot3, &Test3f, LWSVector4f(0.0f, 0.0f, 1.0f, 0.0f)), 1.0f)) return false;
+	if (!PerformTest("LWSVector4f<Dot2>", std::bind(&LWSVector4f::Dot2, &Test2f, LWSVector4f(0.0f, 1.0f, 0.0f, 0.0f)), 0.0f)) return false;
+
+	//Test doubles
+	std::cout << "Testing LWSVector4d." << std::endl;
+
+	auto SumValuesd = [](const LWSVector4d &t) {
+		LWVector4d V = t.AsVec4();
+		return V.x + V.y + V.z + V.w;
+	};
+
+	auto SumValues3d = [](const LWSVector4d &t) {
+		LWVector4d V = t.AsVec4();
+		return V.x + V.y + V.z;
+	};
+
+	auto SumValues2d = [](const LWSVector4d &t) {
+		LWVector4d V = t.AsVec4();
+		return V.x + V.y;
+	};
+
+	LWSVector4d Testd(1.0);
+	if (!PerformTest("LWSVector4d<Construct>", std::bind(SumValuesd, Testd), 4.0)) return false;
+	Testd += LWSVector4d(2.0, 3.0, 4.0, 5.0);
+	if (!PerformTest("LWSVector4d<Add>", std::bind(SumValuesd, Testd), 18.0)) return false;
+	Testd += 1.0;
+	if (!PerformTest("LWSVector4d<Add>", std::bind(SumValuesd, Testd), 22.0)) return false;
+	Testd = Testd + 2.0;
+	if (!PerformTest("LWSVector4d<Add>", std::bind(SumValuesd, Testd), 30.0)) return false;
+	Testd = 2.0 + Testd;
+	if (!PerformTest("LWSVector4d<Add>", std::bind(SumValuesd, Testd), 38.0)) return false;
+	Testd -= 1.0;
+	if (!PerformTest("LWSVector4d<Sub>", std::bind(SumValuesd, Testd), 34.0)) return false;
+	Testd = Testd - 2.0;
+	if (!PerformTest("LWSVector4d<Sub>", std::bind(SumValuesd, Testd), 26.0)) return false;
+	Testd = 2.0 - Testd; //-3 -4 -5 -6
+	if (!PerformTest("LWSVector4d<Sub>", std::bind(SumValuesd, Testd), -18.0)) return false;
+	Testd = LWSVector4d(1.0)*2.0;
+	if (!PerformTest("LWSVector4d<Mul>", std::bind(SumValuesd, Testd), 8.0)) return false;
+	Testd *= 2.0;
+	if (!PerformTest("LWSVector4d<Mul>", std::bind(SumValuesd, Testd), 16.0)) return false;
+	Testd = 2.0*LWSVector4d(1.0);
+	if (!PerformTest("LWSVector4d<Mul>", std::bind(SumValuesd, Testd), 8.0)) return false;
+	Testd = LWSVector4d(2.0) / 2.0;
+	if (!PerformTest("LWSVector4d<Div>", std::bind(SumValuesd, Testd), 4.0)) return false;
+	Testd /= 2.0;
+	if (!PerformTest("LWSVector4d<Div>", std::bind(SumValuesd, Testd), 2.0)) return false;
+	Testd = 2.0 / LWSVector4d(4.0);
+	if (!PerformTest("LWSVector4d<Div>", std::bind(SumValuesd, Testd), 2.0)) return false;
+	if (!PerformTest("LWSVector4d<==>", []()->bool {return LWVector4d(1.0) == LWVector4d(1.0); }, true)) return false;
+	if (!PerformTest("LWSVector4d<!=>", []()->bool {return LWVector4d(2.0) != LWVector4d(1.0); }, true)) return false;
+	LWSVector4d Test4d = LWSVector4d(0.0, 0.0, 1.0, 1.0).Normalize();
+	LWSVector4d Test3d = LWSVector4d(0.0, 0.0, 1.0, 1.0).Normalize3();
+	LWSVector4d Test2d = LWSVector4d(0.0, 0.0, 1.0, 1.0).Normalize2();
+	if (!PerformTest("LWSVector4d<Normalize>", std::bind(SumValuesd, Test4d), 1.4142135623730949)) return false;
+	if (!PerformTest("LWSVector4d<Normalize3>", std::bind(SumValues3d, Test3d), 1.0)) return false;
+	if (!PerformTest("LWSVector4d<Normalize2>", std::bind(SumValues2d, Test2d), 0.0)) return false;
+	if (!PerformTest("LWSVector4d<Length>", std::bind(&LWSVector4d::Length, &Test4d), 1.0)) return false;
+	if (!PerformTest("LWSVector4d<Length3>", std::bind(&LWSVector4d::Length3, &Test3d), 1.0)) return false;
+	if (!PerformTest("LWSVector4d<Length2>", std::bind(&LWSVector4d::Length2, &Test2d), 0.0)) return false;
+	if (!PerformTest("LWSVector4d<LengthSq>", std::bind(&LWSVector4d::LengthSquared, &Test4d), 1.0)) return false;
+	if (!PerformTest("LWSVector4d<LengthSq3>", std::bind(&LWSVector4d::LengthSquared3, &Test3d), 1.0)) return false;
+	if (!PerformTest("LWSVector4d<LengthSq2>", std::bind(&LWSVector4d::LengthSquared2, &Test2d), 0.0)) return false;
+	Test4d = LWSVector4d(0.0, 0.0, 0.0, 1.0);
+	Test3d = LWSVector4d(0.0, 0.0, 1.0, 1.0);
+	Test2d = LWSVector4d(0.0, 0.0, 1.0, 1.0);
+	if (!PerformTest("LWSVector4d<Distance>", std::bind(&LWSVector4d::Distance, &Test4d, LWSVector4d(0.0, 0.0, 0.0, 2.0)), 1.0)) return false;
+	if (!PerformTest("LWSVector4d<Distance3>", std::bind(&LWSVector4d::Distance3, &Test3d, LWSVector4d(0.0, 0.0, 2.0, 2.0)), 1.0)) return false;
+	if (!PerformTest("LWSVector4d<Distance2>", std::bind(&LWSVector4d::Distance2, &Test2d, LWSVector4d(0.0, 1.0, 2.0, 2.0)), 1.0)) return false;
+	Test4d = LWSVector4d(0.0, 0.0, 0.0, 2.0);
+	Test3d = LWSVector4d(0.0, 0.0, 2.0, 2.0);
+	Test2d = LWSVector4d(0.0, 0.0, 2.0, 2.0);
+	if (!PerformTest("LWSVector4d<DistanceSq>", std::bind(&LWSVector4d::DistanceSquared, &Test4d, LWSVector4d(0.0, 0.0, 0.0, 4.0)), 4.0)) return false;
+	if (!PerformTest("LWSVector4d<DistanceSq3>", std::bind(&LWSVector4d::DistanceSquared3, &Test3d, LWSVector4d(0.0, 0.0, 4.0, 4.0)), 4.0)) return false;
+	if (!PerformTest("LWSVector4d<DistanceSq2>", std::bind(&LWSVector4d::DistanceSquared2, &Test2d, LWSVector4d(0.0, 0.0, 4.0, 4.0)), 0.0)) return false;
+	Test4d = LWSVector4d(0.0, 0.0, 0.0, 1.0);
+	Test3d = LWSVector4d(0.0, 0.0, 1.0, 1.0);
+	Test2d = LWSVector4d(0.0, 0.0, 1.0, 1.0);
+	if (!PerformTest("LWSVector4d<Dot>", std::bind(&LWSVector4d::Dot, &Test4d, LWSVector4d(0.0, 0.0, 1.0, 0.0)), 0.0)) return false;
+	if (!PerformTest("LWSVector4d<Dot3>", std::bind(&LWSVector4d::Dot3, &Test3d, LWSVector4d(0.0, 0.0, 1.0, 0.0)), 1.0)) return false;
+	if (!PerformTest("LWSVector4d<Dot2>", std::bind(&LWSVector4d::Dot2, &Test2d, LWSVector4d(0.0, 1.0, 0.0, 0.0)), 0.0)) return false;
+
+
+	//Test int32_t
+	std::cout << "Testing LWSVector4i." << std::endl;
+
+	auto SumValuesi = [](const LWSVector4i &t) {
+		LWVector4i V = t.AsVec4();
+		return V.x + V.y + V.z + V.w;
+	};
+
+	LWSVector4i Testi(1);
+	if (!PerformTest("LWSVector4i<Construct>", std::bind(SumValuesi, Testi), 4.0)) return false;
+	Testi += LWSVector4i(2, 3, 4, 5);
+	if (!PerformTest("LWSVector4i<Add>", std::bind(SumValuesi, Testi), 18)) return false;
+	Testi += 1;
+	if (!PerformTest("LWSVector4i<Add>", std::bind(SumValuesi, Testi), 22)) return false;
+	Testi = Testi + 2;
+	if (!PerformTest("LWSVector4i<Add>", std::bind(SumValuesi, Testi), 30)) return false;
+	Testi = 2 + Testi;
+	if (!PerformTest("LWSVector4i<Add>", std::bind(SumValuesi, Testi), 38)) return false;
+	Testi -= 1;
+	if (!PerformTest("LWSVector4i<Sub>", std::bind(SumValuesi, Testi), 34)) return false;
+	Testi = Testi - 2;
+	if (!PerformTest("LWSVector4i<Sub>", std::bind(SumValuesi, Testi), 26)) return false;
+	Testi = 2 - Testi; //-3 -4 -5 -6
+	if (!PerformTest("LWSVector4i<Sub>", std::bind(SumValuesi, Testi), -18)) return false;
+	Testi = LWSVector4i(1)*2;
+	if (!PerformTest("LWSVector4i<Mul>", std::bind(SumValuesi, Testi), 8)) return false;
+	Testi *= 2;
+	if (!PerformTest("LWSVector4i<Mul>", std::bind(SumValuesi, Testi), 16)) return false;
+	Testi = 2*LWSVector4i(1);
+	if (!PerformTest("LWSVector4i<Mul>", std::bind(SumValuesi, Testi), 8)) return false;
+	Testi = LWSVector4i(2) / 2;
+	if (!PerformTest("LWSVector4i<Div>", std::bind(SumValuesi, Testi), 4)) return false;
+	Testi /= 2;
+	if (!PerformTest("LWSVector4i<Div>", std::bind(SumValuesi, Testi), 0)) return false;
+	Testi = 2 / LWSVector4i(4);
+	if (!PerformTest("LWSVector4i<Div>", std::bind(SumValuesi, Testi), 0)) return false;
+	if (!PerformTest("LWSVector4i<==>", []()->bool {return LWVector4i(1) == LWVector4i(1); }, true)) return false;
+	if (!PerformTest("LWSVector4i<!=>", []()->bool {return LWVector4i(2) != LWVector4i(1); }, true)) return false;
+	
+	return true;
+};
 
 bool PerformLWVectorTest(void){
 	std::cout << "Testing LWVector4." << std::endl;
@@ -1062,6 +1276,70 @@ bool PerformLWByteBufferTest(void){
 	return true;
 }
 
+bool PerformLWQuaternionTest(void) {
+	std::cout << "Performing LWQuaternion test: " << std::endl;
+	LWQuaternionf Testf;
+	if (!TestEquality("LWQuaternionf<Identity>", Testf, LWQuaternionf(1.0f, 0.0f, 0.0f, 0.0f))) return false;
+	Testf *= LWQuaternionf::FromEuler(0.0f, LW_PI, 0.0f);
+	if (!TestEquality("LWQuaternionf<Multiply>", Testf, LWQuaternionf(0.0f, 0.0f, 1.0f, 0.0f))) return false;
+	if (!TestEquality("LWQuaternionf<Conjugate>", Testf.Conjugate(), LWQuaternionf(0.0f, 0.0f, -1.0f, 0.0f))) return false;
+	if (!TestEquality("LWQuaternionf<SLERP>", LWQuaternionf::SLERP(LWQuaternionf(), Testf, 0.5f), LWQuaternionf(0.70710682f, 0.0f, -0.707106769f, 0.0f))) return false;
+	if (!TestEquality("LWQuaternionf<NLERP>", LWQuaternionf::NLERP(LWQuaternionf(), Testf, 0.5f), LWQuaternionf(0.70710682f, 0.0f,  0.707106769f, 0.0f))) return false;
+	Testf = LWQuaternionf::NLERP(LWQuaternionf(), Testf, 0.5f);
+	if (!PerformTest("LWQuaternionf<Length>", std::bind(&LWQuaternionf::Length, &Testf), 1.0f)) return false;
+	if (!PerformTest("LWQuaternionf<LengthSq>", std::bind(&LWQuaternionf::LengthSq, &Testf), 1.0f)) return false;
+	LWVector4f Pnt4f = LWVector4f(1.0f, 0.0f, 0.0f, 0.0f);
+	LWVector3f Pnt3f = LWVector3f(1.0f, 0.0f, 0.0f);
+	LWVector2f Pnt2f = LWVector2f(1.0f, 0.0f);
+	Pnt4f = Testf.RotatePoint(Pnt4f);
+	Pnt3f = Testf.RotatePoint(Pnt3f);
+	Pnt2f = Testf.RotatePoint(Pnt2f);
+	if (!TestEquality("LWQuaternionf<RotatePoint4>", Pnt4f, LWVector4f(0.0f, 0.0f, -1.0f, 0.0f))) return false;
+	if (!TestEquality("LWQuaternionf<RotatePoint3>", Pnt3f, LWVector3f(0.0f, 0.0f, -1.0f))) return false;
+	if (!TestEquality("LWQuaternionf<RotatePoint2>", Pnt2f, LWVector2f(0.0f, 0.0f))) return false;
+	if (!TestEquality("LWQuaternionf<ToEuler>", Testf.ToEuler(), LWVector3f(0.0f, LW_PI_2, 0.0f))) return false;
+	return true;
+}
+
+bool PerformLWSQuaternionTest(void) {
+	std::cout << "Performing LWSQuaternion test: " << std::endl;
+	LWSQuaternionf Testf;
+	if (!TestEquality("LWSQuaternionf<Identity>", Testf, LWSQuaternionf(1.0f, 0.0f, 0.0f, 0.0f))) return false;
+	Testf *= LWSQuaternionf::FromEuler(0.0f, LW_PI, 0.0f);
+	if (!TestEquality("LWSQuaternionf<Multiply>", Testf, LWSQuaternionf(0.0f, 0.0f, 1.0f, 0.0f))) return false;
+	if (!TestEquality("LWSQuaternionf<Conjugate>", Testf.Conjugate(), LWSQuaternionf(0.0f, 0.0f, -1.0f, 0.0f))) return false;
+	if (!TestEquality("LWSQuaternionf<SLERP>", LWSQuaternionf::SLERP(LWSQuaternionf(), Testf, 0.5f), LWQuaternionf(0.70710682f, 0.0f, -0.707106769f, 0.0f))) return false;
+	if (!TestEquality("LWSQuaternionf<NLERP>", LWSQuaternionf::NLERP(LWSQuaternionf(), Testf, 0.5f), LWQuaternionf(0.70710682f, 0.0f, 0.707106769f, 0.0f))) return false;
+	Testf = LWSQuaternionf::NLERP(LWSQuaternionf(), Testf, 0.5f);
+	if (!PerformTest("LWSQuaternionf<Length>", std::bind(&LWSQuaternionf::Length, &Testf), 1.0f)) return false;
+	if (!PerformTest("LWSQuaternionf<LengthSq>", std::bind(&LWSQuaternionf::LengthSq, &Testf), 1.0f)) return false;
+	LWSVector4f Pnt4f = LWSVector4f(1.0f, 0.0f, 0.0f, 0.0f);
+	Pnt4f = Testf.RotatePoint(Pnt4f);
+	if (!TestEquality("LWSQuaternionf<RotatePoint>", Pnt4f, LWSVector4f(0.0f, 0.0f, -1.0f, 0.0f))) return false;
+	if (!TestEquality("LWSQuaternionf<ToEuler>", Testf.ToEuler(), LWVector3f(0.0f, LW_PI_2, 0.0f))) return false;
+	return true;
+}
+
+bool PerformLWSMatrixTest(void) {
+	std::cout << "Performing LWSMatrix test: " << std::endl;
+	std::cout << "Testing LWSMatrix4f: " << std::endl;
+
+	float S = sinf(LW_PI*0.25f);
+	float C = cosf(LW_PI*0.25f);
+	LWSMatrix4f Mat4f = LWSMatrix4f::RotationX(LW_PI*0.25f);
+	if (!TestEquality("LWSMatrix4f::RotationX", Mat4f, LWSMatrix4f({ 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, C, -S, 0.0f }, { 0.0f, S, C, 0.0f }, { 0.0f, 0.0f, 0.0f, 1.0f }))) return false;
+	Mat4f = LWSMatrix4f::RotationY(LW_PI*0.25f);
+	if (!TestEquality("LWSMatrix4f::RotationY", Mat4f, LWSMatrix4f({ C, 0.0f, S, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f }, { -S, 0.0f, C, 0.0f }, { 0.0f, 0.0f, 0.0f, 1.0f }))) return false;
+	Mat4f = LWSMatrix4f::RotationZ(LW_PI*0.25f);
+	LWSVector4f Testf = LWSVector4f(1.0f, 1.0f, 1.0f, 1.0f);
+	if (!TestEquality("LWSMatrix4f::RotationZ", Mat4f, LWSMatrix4f({ C, -S, 0.0f, 0.0f }, { S, C, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 1.0f }))) return false;
+	if (!TestEquality("LWSMatrix4f<Identity>", LWSMatrix4f()*LWSMatrix4f(), LWSMatrix4f())) return false;
+	if (!TestEquality("LWSMatrix4f<Multiply>", Mat4f*LWSMatrix4f(), Mat4f)) return false;
+	if (!TestEquality("LWSMatrix4f<*LWSVector4>", LWSMatrix4f()*Testf, Testf)) return false;
+	if (!TestEquality("LWSMatrix4f<*LWSVector4>", Mat4f*Testf, LWSVector4f(Mat4f.AsMat4()*Testf.AsVec4()))) return false;
+	return true;
+}
+
 bool PerformLWMatrixTest(void){
 	std::cout << "Performing LWMatrix test: " << std::endl;
 	std::cout << "Testing LWMatrix4: " << std::endl;
@@ -1259,7 +1537,6 @@ bool PerformLWConcurrentTest(void){
 	return true;
 }
 
-
 bool PerformLWCryptoTest(void){
 	std::cout << "beginning LWCrypto Test" << std::endl;
 	char BufferA[256];
@@ -1310,17 +1587,21 @@ bool PerformLWCryptoTest(void){
 
 int main(int, char **){
 	std::cout << "Testing LWFramework core features." << std::endl;
-	
-	
-	if (!PerformLWAllocatorTest()) std::cout << "Error with LWAllocator test." << std::endl;
+
+
+	/*if (!PerformLWAllocatorTest()) std::cout << "Error with LWAllocator test." << std::endl;
 	else if (!PerformLWVectorTest()) std::cout << "Error with LWVector test." << std::endl;
+	else if (!PerformLWSVectorTest()) std::cout << "Error with LWSVector test." << std::endl;
 	else if (!PerformLWByteBufferTest()) std::cout << "Error with LWByteBuffer Test." << std::endl;
 	else if (!PerformLWByteStreamTest()) std::cout << "Error with LWByteStream test." << std::endl;
 	else if (!PerformLWMatrixTest()) std::cout << "Error with LWMatrix Test." << std::endl;
-	else if (!PerformLWTextTest()) std::cout << "Error with LWText Test." << std::endl;
+	else if (!PerformLWSMatrixTest()) std::cout << "Error with LWSMatrix Test." << std::endl;
+	else */if (!PerformLWQuaternionTest()) std::cout << "Error with LWQuaternion Test." << std::endl;
+	/*else if (!PerformLWTextTest()) std::cout << "Error with LWText Test." << std::endl;
 	else if (!PerformLWConcurrentTest()) std::cout << "Error with LWConcurrent Test." << std::endl;
 	else if (!PerformLWTimerTest()) std::cout << "Error with LWTimer Test." << std::endl;
 	else if (!PerformLWCryptoTest()) std::cout << "Error with LWCrypto test." << std::endl;
+	*/
 	else std::cout << "LWFramework core successful test." << std::endl;
 
 	return 0;

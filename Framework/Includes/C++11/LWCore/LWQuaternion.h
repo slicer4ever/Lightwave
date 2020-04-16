@@ -12,22 +12,20 @@ struct LWQuaternion {
 	Type w; /*!< \brief real component of quaternion */
 
 	/*!< \brief constructs a quaternion for the provided yaw, pitch, and roll angles. */
-	static LWQuaternion FromEuler(Type Yaw, Type Pitch, Type Roll) {
-
-		Type ci = (Type)cos(Pitch*(Type)0.5);
-		Type cj = (Type)cos(Yaw*(Type)0.5);
-		Type ch = (Type)cos(Roll*(Type)0.5);
-		Type si = (Type)sin(Pitch*(Type)0.5);
-		Type sj = (Type)sin(Yaw*(Type)0.5);
-		Type sh = (Type)sin(Roll*(Type)0.5);
-		Type cc = ci * ch;
-		Type cs = ci * sh;
-		Type sc = si * ch;
-		Type ss = si * sh;
-		return LWQuaternion(cj*cc + sj * ss, cj*sc - sj * cs, cj*ss + sj * cc, cj*cs - sj * sc);
+	static LWQuaternion FromEuler(Type Pitch, Type Yaw, Type Roll) {
+		
+		Type c1 = (Type)cos(Yaw * (Type)0.5);
+		Type c2 = (Type)cos(Pitch * (Type)0.5);
+		Type c3 = (Type)cos(Roll * (Type)0.5);
+		Type s1 = (Type)sin(Yaw * (Type)0.5);
+		Type s2 = (Type)sin(Pitch * (Type)0.5);
+		Type s3 = (Type)sin(Roll * (Type)0.5);
+		Type c1c2 = c1 * c2;
+		Type s1s2 = s1 * s2;
+		return LWQuaternion(c1c2*c3 - s1s2 * s3, c1c2*s3 + s1s2 * c3, s1*c2*c3 + c1 * s2*s3, c1*s2*c3 - s1 * c2*s3);
 	};
 
-	/*!< \brief constructs a quaternion from the provided euler angles(x = Yaw, y = Pitch, z = Roll) */
+	/*!< \brief constructs a quaternion from the provided euler angles(x = Pitch, y = Yaw, z = Roll) */
 	static LWQuaternion FromEuler(const LWVector3<Type> &Euler) {
 		return FromEuler(Euler.x, Euler.y, Euler.z);
 	}
@@ -80,7 +78,7 @@ struct LWQuaternion {
 		return;
 	}
 
-	/*1< \brief converts the quaternion into euler angles in (yaw, pitch, roll order). */
+	/*1< \brief converts the quaternion into euler angles in (Pitch, Yaw, Roll order). */
 	LWVector3<Type> ToEuler(void) const {
 		Type sqw = w * w;
 		Type sqx = x * x;
@@ -88,13 +86,13 @@ struct LWQuaternion {
 		Type sqz = z * z;
 		Type LenSq = sqx + sqy + sqz + sqw;
 		Type Test = x * y + z * w;
-		if (Test > 0.499*LenSq) return LWVector3<Type>((Type)2 * atan2(x, w), 0, LW_PI_2);
-		if (Test < -0.499*LenSq) return LWVector3<Type>((Type)-2 * atan2(x, w), 0, -LW_PI_2);
+		if (Test > 0.499*LenSq) return LWVector3<Type>(LW_PI_2, (Type)2 * atan2(x, w), 0);
+		if (Test < -0.499*LenSq) return LWVector3<Type>(-LW_PI_2, (Type)-2 * atan2(x, w), 0);
 		Type Yaw = (Type)atan2((Type)2 * y*w - (Type)2 * x*z, sqx - sqy - sqz + sqw);
 		Type Pitch = (Type)asin((Type)2 * Test / LenSq);
 		Type Roll = (Type)atan2((Type)2 * x*w - (Type)2 * y*z, -sqx + sqy - sqz + sqw);
+		return LWVector3<Type>(Pitch, Yaw, Roll);
 
-		return LWVector3<Type>(Yaw, Roll, Pitch);
 	}
 
 	/*!< \brief normalizes the quaternion to unit length, returns the result without affecting this object. */
@@ -138,7 +136,7 @@ struct LWQuaternion {
 
 	/*!< \brief returns the inverse of the quaternion. */
 	LWQuaternion Inverse(void) const {
-		float iLenSq = 1.0f / LengthSq();
+		Type iLenSq = (Type)1.0 / LengthSq();
 		return LWQuaternion(w*iLenSq, -x*iLenSq, -y*iLenSq, -z*iLenSq);
 	}
 
@@ -148,36 +146,34 @@ struct LWQuaternion {
 		return;
 	}
 
-	template<class VecType>
-	LWVector2<VecType> RotatePoint(const LWVector2<VecType> Pnt) const {
-		LWVector3<VecType> u = LWVector3<VecType>(x, y, z);
-		LWVector3<VecType> v = LWVector3<VecType>(Pnt.x,Pnt.y, 0);
-		float dA = u.Dot(Pnt);
+	LWVector2<Type> RotatePoint(const LWVector2<Type> Pnt) const {
+		LWVector3<Type> u = LWVector3<Type>(x, y, z);
+		LWVector3<Type> v = LWVector3<Type>(Pnt.x,Pnt.y, 0);
+		float dA = u.Dot(v);
 		float dB = u.Dot(u);
-		LWVector3<VecType> r = (VecType)2 * dA*u + (w*w - dB)*Pnt + (VecType)2 * w*u.Cross(Pnt);
-		return LWVector2<VecType>(r.x, r.y);
+		LWVector3<Type> r = (Type)2 * dA*u + (w*w - dB)*v + (Type)2 * w*u.Cross(v);
+		return LWVector2<Type>(r.x, r.y);
 	}
 
-	template<class VecType>
-	LWVector3<VecType> RotatePoint(const LWVector3<VecType> Pnt) const {
-		LWVector3<VecType> u = LWVector3<VecType>(x, y, z);
-		LWVector3<VecType> v = Pnt;
+	LWVector3<Type> RotatePoint(const LWVector3<Type> Pnt) const {
+		LWVector3<Type> u = LWVector3<Type>(x, y, z);
+		LWVector3<Type> v = Pnt;
 		float dA = u.Dot(Pnt);
 		float dB = u.Dot(u);
-		return (VecType)2 * dA*u + (w*w - dB)*Pnt + (VecType)2 * w*u.Cross(Pnt);
+		return (Type)2 * dA*u + (w*w - dB)*v + (Type)2 * w*u.Cross(v);
 	}
 
-	template<class VecType>
-	LWVector4<VecType> RotatePoint(const LWVector4<VecType> Pnt) const {
-		LWVector3<VecType> u = LWVector3<VecType>(x, y, z);
-		LWVector3<VecType> v = LWVector3<VecType>(Pnt.x, Pnt.y, Pnt.z);
-		float dA = u.Dot(Pnt);
+	LWVector4<Type> RotatePoint(const LWVector4<Type> Pnt) const {
+		LWVector3<Type> u = LWVector3<Type>(x, y, z);
+		LWVector3<Type> v = LWVector3<Type>(Pnt.x, Pnt.y, Pnt.z);
+		float dA = u.Dot(v);
 		float dB = u.Dot(u);
-		return LWVector4<VecType>((VecType)2 * dA*u + (w*w - dB)*Pnt + (VecType)2 * w*u.Cross(Pnt), Pnt.w);
+		return LWVector4<Type>((Type)2 * dA*u + (w*w - dB)*v + (Type)2 * w*u.Cross(v), Pnt.w);
 	}
 
 	bool operator == (const LWQuaternion<Type> &Rhs) const {
-		return x == Rhs.x && y == Rhs.y && z==Rhs.z && w==Rhs.w;
+		const Type e = std::numeric_limits<Type>::epsilon();
+		return (Type)abs(x - Rhs.x) <= e && (Type)abs(y - Rhs.y) <= e && (Type)abs(z - Rhs.z) <= e && (Type)abs(w - Rhs.w) <= e;
 	}
 
 	bool operator != (const LWQuaternion<Type> &Rhs) const {
@@ -254,49 +250,56 @@ struct LWQuaternion {
 	LWQuaternion(Type w, Type x, Type y, Type z) : w(w), x(x), y(y), z(z){}
 
 	LWQuaternion(const LWMatrix3<Type> &Mat) {
-		Type tr = Mat.m_Rows[0].x + Mat.m_Rows[1].y + Mat.m_Rows[2].z;
+		LWVector3<Type> R0 = Mat.m_Rows[0];
+		LWVector3<Type> R1 = Mat.m_Rows[1];
+		LWVector3<Type> R2 = Mat.m_Rows[2];
+		Type tr = R0.x + R1.y + R2.z;
 		if (tr > (Type)0) {
 			Type s = (Type)sqrt(tr + (Type)1.0)*(Type)2.0;
 			Type iS = (Type)1 / s;
-			*this = LWQuaternion((Type)0.25*s, (Mat.m_Rows[2].y - Mat.m_Rows[1].z)*iS, (Mat.m_Rows[0].z - Mat.m_Rows[2].x)*iS, (Mat.m_Rows[1].x - Mat.m_Rows[0].y)*iS).Normalize();
+			*this = LWQuaternion((Type)0.25*s, (R2.y - R1.z)*iS, (R0.z - R2.x)*iS, (R1.x - R0.y)*iS).Normalize();
 			return;
-		} else if (Mat.m_Rows[0].x > Mat.m_Rows[1].y && Mat.m_Rows[0].x > Mat.m_Rows[2].z) {
-			Type s = (Type)sqrt(1.0 + Mat.m_Rows[0].x - Mat.m_Rows[1].y - Mat.m_Rows[2].z) * 2;
+		} else if (R0.x > R1.y && R0.x > R2.z) {
+			Type s = (Type)sqrt(1.0 + R0.x - R1.y - R2.z) * 2;
 			Type iS = (Type)1 / s;
-			*this = LWQuaternion((Mat.m_Rows[2].y - Mat.m_Rows[1].z)*iS, (Type)0.25*s, (Mat.m_Rows[0].y + Mat.m_Rows[1].x)*iS, (Mat.m_Rows[0].z + Mat.m_Rows[2].x)*iS).Normalize();
+			*this = LWQuaternion((R2.y - R1.z)*iS, (Type)0.25*s, (R0.y + R1.x)*iS, (R0.z + R2.x)*iS).Normalize();
 			return;
-		} else if (Mat.m_Rows[1].y > Mat.m_Rows[2].z) {
-			Type s = (Type)sqrt(1.0 + Mat.m_Rows[1].y - Mat.m_Rows[0].x - Mat.m_Rows[2].z) * 2;
+		} else if (R1.y > R2.z) {
+			Type s = (Type)sqrt(1.0 + R1.y - R0.x - R2.z) * 2;
 			Type iS = (Type)1 / s;
-			*this = LWQuaternion((Mat.m_Rows[0].z - Mat.m_Rows[2].x)*iS, (Mat.m_Rows[0].y + Mat.m_Rows[1].x)*iS, (Type)0.25*s , (Mat.m_Rows[1].z + Mat.m_Rows[2].y)*iS).Normalize();
+			*this = LWQuaternion((R0.z - R2.x)*iS, (R0.y + R1.x)*iS, (Type)0.25*s , (R1.z + R2.y)*iS).Normalize();
 			return;
 		}
-		Type s = (Type)sqrt(1.0 + Mat.m_Rows[2].z - Mat.m_Rows[0].x - Mat.m_Rows[1].y) * 2;
+		Type s = (Type)sqrt(1.0 + R2.z - R0.x - R1.y) * 2;
 		Type iS = (Type)1 / s;
-		*this = LWQuaternion((Mat.m_Rows[1].x - Mat.m_Rows[0].y)*iS, (Mat.m_Rows[0].z + Mat.m_Rows[2].x)*iS, (Mat.m_Rows[1].z + Mat.m_Rows[2].y)*iS, (Type)0.25*s).Normalize();
+		*this = LWQuaternion((R1.x - R0.y)*iS, (R0.z + R2.x)*iS, (R1.z + R2.y)*iS, (Type)0.25*s).Normalize();
 	}
 
 	LWQuaternion(const LWMatrix4<Type> &Mat) {
-		Type tr = Mat.m_Rows[0].x + Mat.m_Rows[1].y + Mat.m_Rows[2].z;
+		LWVector4<Type> R0 = Mat.m_Rows[0];
+		LWVector4<Type> R1 = Mat.m_Rows[1];
+		LWVector4<Type> R2 = Mat.m_Rows[2];
+		LWVector4<Type> R3 = Mat.m_Rows[3];
+		Type tr = R0.x + R1.y + R2.z;
 		if (tr > (Type)0) {
 			Type s = (Type)sqrt(tr + (Type)1.0)*(Type)2.0;
 			Type iS = (Type)1 / s;
-			*this = LWQuaternion((Type)0.25*s, (Mat.m_Rows[2].y - Mat.m_Rows[1].z)*iS, (Mat.m_Rows[0].z - Mat.m_Rows[2].x)*iS, (Mat.m_Rows[1].x - Mat.m_Rows[0].y)*iS).Normalize();
+			*this = LWQuaternion((Type)0.25*s, (R2.y - R1.z)*iS, (R0.z - R2.x)*iS, (R1.x - R0.y)*iS).Normalize();
 			return;
-		} else if (Mat.m_Rows[0].x > Mat.m_Rows[1].y && Mat.m_Rows[0].x > Mat.m_Rows[2].z) {
-			Type s = (Type)sqrt(1.0 + Mat.m_Rows[0].x - Mat.m_Rows[1].y - Mat.m_Rows[2].z) * 2;
+		} else if (R0.x > R1.y && R0.x > R2.z) {
+			Type s = (Type)sqrt(1.0 + R0.x - R1.y - R2.z) * 2;
 			Type iS = (Type)1 / s;
-			*this = LWQuaternion((Mat.m_Rows[2].y - Mat.m_Rows[1].z)*iS, (Type)0.25*s, (Mat.m_Rows[0].y + Mat.m_Rows[1].x)*iS, (Mat.m_Rows[0].z + Mat.m_Rows[2].x)*iS).Normalize();
+			*this = LWQuaternion((R2.y - R1.z)*iS, (Type)0.25*s, (R0.y + R1.x)*iS, (R0.z + R2.x)*iS).Normalize();
 			return;
-		} else if (Mat.m_Rows[1].y > Mat.m_Rows[2].z) {
-			Type s = (Type)sqrt(1.0 + Mat.m_Rows[1].y - Mat.m_Rows[0].x - Mat.m_Rows[2].z) * 2;
+		} else if (R1.y > R2.z) {
+			Type s = (Type)sqrt(1.0 + R1.y - R0.x - R2.z) * 2;
 			Type iS = (Type)1 / s;
-			*this = LWQuaternion((Mat.m_Rows[0].z - Mat.m_Rows[2].x)*iS, (Mat.m_Rows[0].y + Mat.m_Rows[1].x)*iS, (Type)0.25*s, (Mat.m_Rows[1].z + Mat.m_Rows[2].y)*iS).Normalize();
+			*this = LWQuaternion((R0.z - R2.x)*iS, (R0.y + R1.x)*iS, (Type)0.25*s, (R1.z + R2.y)*iS).Normalize();
 			return;
 		}
-		Type s = (Type)sqrt(1.0 + Mat.m_Rows[2].z - Mat.m_Rows[0].x - Mat.m_Rows[1].y) * 2;
+		Type s = (Type)sqrt(1.0 + R2.z - R0.x - R1.y) * 2;
 		Type iS = (Type)1 / s;
-		*this = LWQuaternion((Mat.m_Rows[1].x - Mat.m_Rows[0].y)*iS, (Mat.m_Rows[0].z + Mat.m_Rows[2].x)*iS, (Mat.m_Rows[1].z + Mat.m_Rows[2].y)*iS, (Type)0.25*s).Normalize();
+		*this = LWQuaternion((R1.x - R0.y)*iS, (R0.z + R2.x)*iS, (R1.z + R2.y)*iS, (Type)0.25*s).Normalize();
 	}
 
 	/*!< \brief constructs a unit identity quaternion. */

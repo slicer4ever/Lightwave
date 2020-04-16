@@ -1,7 +1,7 @@
 #include "LWVideo/LWVideoDrivers/LWVideoDriver_OpenGL3_3.h"
 #include "LWPlatform/LWWindow.h"
 
-LWVideoDriver_OpenGL3_3 *LWVideoDriver_OpenGL3_3::MakeVideoDriver(LWWindow *Window) {
+LWVideoDriver_OpenGL3_3 *LWVideoDriver_OpenGL3_3::MakeVideoDriver(LWWindow *Window, uint32_t Type) {
 	LWWindowContext WinCon = Window->GetContext();
 	int32_t PixelFormat;
 	PIXELFORMATDESCRIPTOR pfd = { sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0 };

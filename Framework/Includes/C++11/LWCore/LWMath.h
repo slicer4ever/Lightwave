@@ -2,11 +2,11 @@
 #define LWMATH_H
 #include "LWTypes.h"
 
-#define LW_PI   3.141592f //180
-#define LW_PI_2 1.570796f //90
-#define LW_2PI  6.283185f //360
-#define LW_PI_4 0.785398f //45
-#define LW_PI_8 0.392699f //22.5
+#define LW_PI   3.14159265358979f //180
+#define LW_PI_2 1.57079632679489f //90
+#define LW_2PI  6.28318530717958f //360
+#define LW_PI_4 0.78539816339744f //45
+#define LW_PI_8 0.39269908169872f //22.5
 #define LW_DEGTORAD  0.01745329251994f
 #define LW_RADTODEG 57.29577951308232f
 

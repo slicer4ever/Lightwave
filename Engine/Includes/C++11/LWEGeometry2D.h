@@ -20,6 +20,8 @@ public:
 
 	static bool PlanePlaneIntersect(const LWVector3f &aPlane, const LWVector3f &bPlane, LWVector2f *IntersectPnt);
 
+	static bool PointInsideAABB(const LWVector2f &Point, const LWVector2f &AABBMin, const LWVector2f &AABBMax);
+
 	static bool PointInsidePlanes(const LWVector2f &Point, const LWVector3f *Planes, uint32_t PlaneCnt);
 	
 	/*!< \brief the method of collision detection between two convex hulls is likely to be different in lightwave than in other engines.  a convex hull to lightwave is described by a set of intersecting planes, this implementation of collision detection for the convex hull requires that both hulls are perfectly symetrical along all axis's.  to ensure this is true the collision system tests both the positive and negative of each plane, in other words the passed in planes should only describe half of the convex hull and this algorithm will deduce the other half.  it is fine to pass in all sides of the convex hull, but planes which don't have a symetrical opposite will be duplicated and may cause incorrect collision behavior.

@@ -9,7 +9,7 @@
 class LWVideoDriver_OpenGLES2 : public LWVideoDriver {
 public:
 
-	static LWVideoDriver_OpenGLES2 *MakeVideoDriver(LWWindow *Window);
+	static LWVideoDriver_OpenGLES2 *MakeVideoDriver(LWWindow *Window, uint32_t Type);
 
 	static bool DestroyVideoContext(LWVideoDriver_OpenGLES2 *Driver);
 

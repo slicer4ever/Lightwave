@@ -4,9 +4,9 @@
 
 Joint::Joint(const LWMatrix4f &InvBindMatrix, const LWMatrix4f &TransformMatrix, uint32_t ChildIdx, uint32_t NextIdx) : m_InvBindMatrix(InvBindMatrix), m_BindMatrix(InvBindMatrix.Inverse()), m_TransformMatrix(TransformMatrix), m_ChildIdx(ChildIdx), m_NextIdx(NextIdx) {}
 
-Skeleton &Skeleton::BuildFrame(uint64_t AnimTime, bool Loop, ModelData &Mdl) {
+Skeleton &Skeleton::BuildFrame(float AnimTime, bool Loop, ModelData &Mdl) {
 
-	std::function<void(uint64_t, ModelData &, uint32_t, const LWMatrix4f &)> BuildJoint = [this, &BuildJoint, &Loop](uint64_t Time, ModelData &Mdl, uint32_t Index, const LWMatrix4f &ParentMatrix) {
+	std::function<void(float, ModelData &, uint32_t, const LWMatrix4f &)> BuildJoint = [this, &BuildJoint, &Loop](float Time, ModelData &Mdl, uint32_t Index, const LWMatrix4f &ParentMatrix) {
 		Joint &J = m_JointList[Index];
 		LWMatrix4f JMatrix = J.m_Animation.GetFrame(Time, Loop);
 		JMatrix *= ParentMatrix;
@@ -16,7 +16,6 @@ Skeleton &Skeleton::BuildFrame(uint64_t AnimTime, bool Loop, ModelData &Mdl) {
 		if (J.m_NextIdx != -1) BuildJoint(Time, Mdl, J.m_NextIdx, ParentMatrix);
 		return;
 	};
-
 	BuildJoint(AnimTime, Mdl, 0, m_RootMatrix);
 	return *this;
 }
@@ -53,7 +52,7 @@ Joint &Skeleton::GetJoint(uint32_t i) {
 
 bool Skeleton::PushJoint(Joint &J) {
 	//std::cout << m_JointList.size() << ": " << J.m_InvBindMatrix << std::endl << J.m_BindMatrix << std::endl;
-	m_TotalTIme = std::max<uint64_t>(J.m_Animation.GetTotalTime(), m_TotalTIme);
+	m_TotalTIme = std::max<float>(J.m_Animation.GetTotalTime(), m_TotalTIme);
 	m_JointList.push_back(std::move(J));
 	return true;
 }
@@ -62,7 +61,7 @@ LWMatrix4f Skeleton::GetRootMatrix(void) const {
 	return m_RootMatrix;
 }
 
-uint64_t Skeleton::GetTotalTime(void) const {
+float Skeleton::GetTotalTime(void) const {
 	return m_TotalTIme;
 }
 
@@ -72,6 +71,6 @@ uint32_t Skeleton::GetJointCount(void) const {
 
 Skeleton::Skeleton(uint32_t JointCnt, const LWMatrix4f &RootMatrix) : m_RootMatrix(RootMatrix) {
 	LWVector3f iScale = 1.0f / LWVector3f(m_RootMatrix.m_Rows[0].Length(), m_RootMatrix.m_Rows[1].Length(), m_RootMatrix.m_Rows[2].Length());
-	m_InvRootScaleMatrix = LWMatrix4f(iScale.x, iScale.y, iScale.z, 1.0f);
+	//m_InvRootScaleMatrix = LWMatrix4f(iScale.x, iScale.y, iScale.z, 1.0f);
 	m_JointList.reserve(JointCnt);
 }

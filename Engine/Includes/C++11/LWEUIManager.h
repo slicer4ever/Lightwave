@@ -8,36 +8,94 @@
 #include <LWVideo/LWMesh.h>
 #include <unordered_map>
 #include <map>
-#include <functional>
 #include "LWEXML.h"
 #include "LWETypes.h"
 #include "LWEUI/LWEUI.h"
-#include "LWEUI/LWEUIButton.h"
-#include "LWEUI/LWEUILabel.h"
-#include "LWEUI/LWEUIRect.h"
-#include "LWEUI/LWEUIListBox.h"
-#include "LWEUI/LWEUIScrollBar.h"
-#include "LWEUI/LWEUITextInput.h"
-#include "LWEUI/LWEUIComponent.h"
-#include "LWEUI/LWEUIAdvLabel.h"
 #include <cstdlib>
 
+/*!< \brief LWEUI's tooltip decoration. parsing the xmltag Tooltip has the following attributes:
+	 Font: Named LWEAssetManager font for the tooltip ui to use.
+	 FontMaterial: Colored material to use for the font.
+	 BorderMaterial: Material to use for the border around the tooltip.
+	 BackgroundMaterial: Material to use for the background.
+	 BorderSize: The size of the border around the tooltip.
+	 FontScale: The scale for the font of the tooltip.
+*/
+struct LWEUITooltip {
+	LWFont *m_Font = nullptr;
+	LWEUIMaterial *m_FontMaterial = nullptr;
+	LWEUIMaterial *m_BorderMaterial = nullptr;
+	LWEUIMaterial *m_BackgroundMaterial = nullptr;
+	LWEUI *m_TempTooltipedUI = nullptr;
+	LWEUI *m_TooltipedUI = nullptr;
+	LWVector2f m_TooltipSize;
+	float m_UnderHang = 0.0f;
+	float m_BorderSize = 1.0f;
+	float m_FontScale = 1.0f;
+
+	LWEUITooltip &Draw(LWEUIFrame &Frame, LWEUIManager &UIMan, float Scale, uint64_t lCurrentTime);
+
+	LWEUITooltip &Update(float Scale);
+
+	LWEUITooltip() = default;
+};
+
+struct LWEUINavigation {
+	static const uint32_t GamepadEnabled = 0x1;
+	static const uint32_t KeyboardEnabled = 0x2;
+	static const uint32_t Pressed = 0x4;
+	static const uint32_t Back = 0x8;
+
+	uint32_t m_Flag = 0;
+	LWVector2f m_Center;
+	LWVector2f m_Direction;
+	LWVector2f m_PerpDirection;
+	float m_ClosestD = 0.0f;
+	LWEUI *m_ClosestUI = nullptr;
+	
+	bool isPressed(void) const;
+
+	bool isBack(void) const;
+
+	bool isEnabled(void) const;
+
+	LWEUINavigation &ProcessUI(LWEUI *UI, const LWVector2f &VisiblePosition, const LWVector2f &VisibleSize,LWEUIManager &UIManager);
+
+	LWEUINavigation &Update(LWWindow *Window, LWEUIManager &UIManager);
+
+	LWEUINavigation() = default;
+};
+
 struct LWEUIMaterial {
-	LWVector4f m_Color;
-	LWTexture *m_Texture;
-	LWVector4f m_SubRegion; /*!< \brief Subregion, x,y is top left, z,w is bottom right of texture. */
+	static const uint32_t FillFull = 0; //XML Fill="Full"
+	static const uint32_t FillGradient = 1; //XML Fill="Gradient"
+	static const uint32_t FillVGradient = 2; //XML Fill="VGradient" (Vertical Gradient)
+
+	uint32_t m_FillType = FillFull;
+	LWVector4f m_ColorA = LWVector4f(1.0f);
+	LWVector4f m_ColorB = LWVector4f(1.0f);
+	LWTexture *m_Texture = nullptr;
+	LWVector4f m_SubRegion = LWVector4f(0.0f, 0.0f, 1.0f, 1.0f); /*!< \brief Subregion, x,y is top left, z,w is bottom right of texture. */
+
+	/*!< \brief generates the fill type's color for each quadrant. */
+	LWEUIMaterial &MakeColors(LWVector4f &TLColor, LWVector4f &BLColor, LWVector4f &TRColor, LWVector4f &BRColor);
+
+	LWEUIMaterial &MakeClippedColors(LWVector4f &TLColor, LWVector4f &BLColor, LWVector4f &TRColor, LWVector4f &BRColor, const LWVector4f &ClipRatios);
 
 	LWEUIMaterial(const LWVector4f &Color);
 
+	LWEUIMaterial(const LWVector4f &ColorA, const LWVector4f &ColorB, uint32_t FillType);
+
 	LWEUIMaterial(const LWVector4f &Color, LWTexture *Tex, const LWVector4f &SubRegion);
+
+	LWEUIMaterial(const LWVector4f &ColorA, const LWVector4f &ColorB, uint32_t FillType, LWTexture *Tex, const LWVector4f &SubRegion);
 
 	LWEUIMaterial() = default;
 };
 
 struct LWEUIFrame {
-	enum {
-		MaxTextures = 256
-	};
+	static const uint32_t MaxTextures = 256;
+	static const uint32_t ExhaustedTextures = -1;
 	LWTexture *m_Textures[MaxTextures];
 	uint32_t m_VertexCount[MaxTextures];
 	bool m_FontTexture[MaxTextures];
@@ -45,9 +103,26 @@ struct LWEUIFrame {
 	uint32_t m_FirstVertex;
 	uint32_t m_TextureCount;
 	
-	bool SetActiveTexture(LWTexture *Texture, bool FontTexture);
+	uint32_t SetActiveTexture(LWTexture *Texture, bool FontTexture);
+
+	//x = Left Ratio, y = BottomRatio, z = Right Ratio, w = Top Ratio);
+	bool MakeClipRatios(LWVector4f &RatioRes, const LWVector2f &Pos, const LWVector2f &Size, const LWVector4f &AABB);
+
+	LWEUIFrame &ApplyClipRatios(LWVector2f &TopLeft, LWVector2f &BtmLeft, LWVector2f &TopRight, LWVector2f &BtmRight, const LWVector2f &Pos, const LWVector2f &Size, const LWVector4f &Ratio);
 
 	bool WriteFontGlyph(LWTexture *Texture, const LWVector2f &Position, const LWVector2f &Size, const LWVector4f &TexCoord, const LWVector4f &Color);
+
+	bool WriteClippedRect(LWEUIMaterial *Mat, const LWVector2f &Pos, const LWVector2f &Size, const LWVector4f &AABB);
+
+	bool WriteClippedText(LWEUIMaterial *Mat, const LWText &Text, LWFont *Fnt, const LWVector2f &Pos, float Scale, const LWVector4f &AABB);
+
+	bool WriteRect(LWEUIMaterial *Mat, const LWVector2f &Pos, const LWVector2f &Size);
+
+	bool WriteRect(LWEUIMaterial *Mat, const LWVector2f &Pos, const LWVector2f &Size, float Theta);
+
+	bool WriteLine(LWEUIMaterial *Mat, const LWVector2f &APos, const LWVector2f &BPos, float Thickness);
+
+	bool WriteClippedLine(LWEUIMaterial *Mat, const LWVector2f &APos, const LWVector2f &BPos, float Thickness, const LWVector4f &AABB);
 
 	uint32_t WriteVertices(uint32_t VertexCount);
 
@@ -96,9 +171,9 @@ public:
 
 	LWEUIManager &Update(uint64_t lCurrentTime);
 
-	LWEUIManager &Draw(LWEUIFrame *Frame, float Scale, uint64_t lCurrentTime);
+	LWEUIManager &Draw(LWEUIFrame &Frame, float Scale, uint64_t lCurrentTime);
 
-	LWEUIManager &Draw(LWEUIFrame *Frame, uint64_t lCurrentTime);
+	LWEUIManager &Draw(LWEUIFrame &Frame, uint64_t lCurrentTime);
 
 	LWEUI *GetNext(LWEUI *Current, bool SkipChildren = false);
 
@@ -106,9 +181,11 @@ public:
 
 	LWEUIManager &RemoveUI(LWEUI *UI, bool Destroy=true);
 
-	bool RegisterEvent(LWEUI *UI, uint32_t EventCode, std::function<void(LWEUI*, uint32_t, void*)> Callback, void *UserData);
+	LWEUIManager &SetNavigationMode(bool Enabled, bool GamepadEnabled = true, bool KeyboardEnabled = true);
 
-	bool RegisterEvent(const LWText &UIName, uint32_t EventCode, std::function<void(LWEUI *, uint32_t, void*)> Callback, void *UserData);
+	bool RegisterEvent(LWEUI *UI, uint32_t EventCode, LWEUIEventCallback Callback, void *UserData);
+
+	bool RegisterEvent(const LWText &UIName, uint32_t EventCode, LWEUIEventCallback Callback, void *UserData);
 
 	template<class T, class Y>
 	bool RegisterMethodEvent(LWEUI *UI, uint32_t EventCode, Y CallBack, T* Object, void *UserData) {
@@ -124,11 +201,11 @@ public:
 
 	bool UnregisterEvent(const LWText &UIName, uint32_t EventCode);
 
-	LWEUIManager &DispatchEvent(LWEUI *Dispatchee, uint32_t EventCode);
+	bool DispatchEvent(LWEUI *Dispatchee, uint32_t EventCode, bool DoDispatch = true);
 
-	LWEUIManager &DispatchEvent(const char *DispatcheeName, uint32_t EventCode);
+	bool DispatchEvent(const char *DispatcheeName, uint32_t EventCode, bool DoDispatch = true);
 
-	LWEUIManager &DispatchEventf(const char *DispathceeNameFmt, uint32_t EventCode, ...);
+	bool DispatchEventf(const char *DispathceeNameFmt, uint32_t EventCode, bool DoDispatch, ...);
 
 	LWEUIManager &SetFocused(LWEUI *UI);
 
@@ -146,7 +223,7 @@ public:
 
 	LWEUI *GetNamedUIf(const char *Format, ...);
 
-	LWEUIMaterial *InsertMaterial(const LWText &Name, const LWVector4f &Color, LWTexture *Texture, const LWVector4f &SubRegion);
+	LWEUIMaterial *InsertMaterial(const LWText &Name, const LWVector4f &ColorA, const LWVector4f &ColorB, uint32_t FillMode, LWTexture *Texture, const LWVector4f &SubRegion);
 
 	LWEUIMaterial *GetMaterial(const LWText &Name);
 
@@ -158,6 +235,10 @@ public:
 
 	LWELocalization *GetLocalization(void);
 
+	LWEUITooltip &GetTooltipDecoration(void);
+
+	LWEUINavigation &GetNavigator(void);
+
 	LWAllocator *GetAllocator(void);
 
 	LWWindow *GetWindow(void);
@@ -167,6 +248,8 @@ public:
 	LWEUI *GetLastUI(void);
 
 	LWEUI *GetFocusedUI(void);
+
+	bool isNavigationModeEnabled(void) const;
 
 	float GetLastScale(void) const;
 	
@@ -184,6 +267,8 @@ private:
 	std::unordered_map<uint32_t, LWEUIMaterial*> m_MatTable;
 	LWEUIScreenScale m_ResScaleMap[MaxScreenScales];
 	LWEUIDPIScale m_DPIScaleMap[MaxDPIScales];
+	LWEUITooltip m_Tooltip;
+	LWEUINavigation m_Navigator;
 	LWVector2f m_VisibleSize;
 	LWVector2f m_VisiblePosition;
 	LWAllocator *m_Allocator;

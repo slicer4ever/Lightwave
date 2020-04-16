@@ -39,66 +39,73 @@ LWEUIButton *LWEUIButton::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *
 	return Button;
 }
 
-LWEUI &LWEUIButton::UpdateSelf(LWEUIManager *Manager, float Scale, uint64_t lCurrentTime) {
-	LWWindow *Wnd = Manager->GetWindow();
+LWEUI &LWEUIButton::UpdateSelf(LWEUIManager &Manager, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime) {
+	LWWindow *Wnd = Manager.GetWindow();
+	LWEUINavigation &Navigator = Manager.GetNavigator();
+	bool isNavigationEnabled = Navigator.isEnabled();
+	bool isFocused = Manager.GetFocusedUI() == this;
 
 	LWMouse *Mouse = Wnd->GetMouseDevice();
 	LWTouch *Touch = Wnd->GetTouchDevice();
 
-	uint32_t Flag = m_Flag;
-	m_Flag &= ~(MouseOver | MouseDown);
+	bool wasOver = (m_Flag&MouseOver);
+	bool wasLDown = (m_Flag&MouseLDown);
+	bool wasRDown = (m_Flag&MouseRDown);
+	bool wasMDown = (m_Flag&MouseMDown);
+	uint64_t Flag = (m_Flag&~(MouseOver | MouseLDown | MouseRDown | MouseMDown)) | (m_TimeOver ? MouseOver : 0);
+	bool isOver = (Flag&MouseOver);
+
+	if (isNavigationEnabled) {
+		if (isFocused) Flag |= (Navigator.isPressed() ? MouseLDown : 0);
+	}
 
 	if (Mouse) {
-		LWVector2i MP = Mouse->GetPosition();
-		LWVector2f MousePnt = LWVector2f((float)MP.x, (float)MP.y);
-		if (MousePnt.x >= m_VisiblePosition.x && MousePnt.x <= m_VisiblePosition.x + m_VisibleSize.x && MousePnt.y >= m_VisiblePosition.y && MousePnt.y <= m_VisiblePosition.y + m_VisibleSize.y) m_Flag |= MouseOver;
-		if (m_Flag&MouseOver) {
-			Manager->DispatchEvent(this, Event_TempOverInc);
-			if (Mouse->ButtonDown(LWMouseKey::Left)) m_Flag |= MouseDown;
-		}
+		if (Mouse->ButtonDown(LWMouseKey::Left)) Flag |= isOver ? MouseLDown : 0;
+		if (Mouse->ButtonDown(LWMouseKey::Right)) Flag |= isOver ? MouseRDown : 0;
+		if (Mouse->ButtonDown(LWMouseKey::Middle)) Flag |= isOver ? MouseMDown : 0;
 	}
-
 	if (Touch) {
-		for (uint32_t i = 0; i < Touch->GetPointCount(); i++) {
-			auto Pnt = Touch->GetPoint(i);
-			LWVector2f TouchPnt = LWVector2f((float)Pnt->m_Position.x, (float)Pnt->m_Position.y);
-            float TouchSize = Pnt->m_Size*Scale;
-			bool Over = TouchPnt.x + TouchSize >= m_VisiblePosition.x && TouchPnt.x - TouchSize <= m_VisiblePosition.x + m_VisibleSize.x && TouchPnt.y + TouchSize >= m_VisiblePosition.y && TouchPnt.y - TouchSize <= m_VisiblePosition.y + m_VisibleSize.y;
-			if (Over) {
-				m_Flag |= MouseOver;
-				Manager->DispatchEvent(this, Event_TempOverInc | (i << Event_OverOffset));
-				if (Pnt->m_State != LWTouchPoint::UP) m_Flag |= MouseDown;
-			}
+		uint32_t TouchCnt = Touch->GetPointCount();
+		for (uint32_t i = 0; i < TouchCnt; i++) {
+			const LWTouchPoint &T = Touch->GetPoint(i);
+			bool Over = PointInside(T.m_Position.CastTo<float>(), T.m_Size*Scale);
+			if (T.m_State != LWTouchPoint::UP) Flag |= Over ? MouseLDown : 0;
 		}
 	}
-	if (m_Flag&MouseOver && (Flag&MouseOver) == 0) Manager->DispatchEvent(this, Event_MouseOver);
-	if ((m_Flag&MouseOver) == 0 && Flag&MouseOver) Manager->DispatchEvent(this, Event_MouseOff);
-	if ((m_Flag&(MouseDown | MouseOver)) == MouseOver && Flag&MouseDown) {
-		Manager->DispatchEvent(this, Event_Released);
-		if (m_Flag&FocusAble) Manager->SetFocused(this);
+	bool isLDown = (Flag&MouseLDown);
+	bool isRDown = (Flag&MouseRDown);
+	bool isMDown = (Flag&MouseMDown);
+	bool isFocusable = (m_Flag&FocusAble);
+	m_Flag = Flag;
+	Manager.DispatchEvent(this, Event_MouseOver, isOver && !wasOver);
+	Manager.DispatchEvent(this, Event_MouseOff, !isOver && wasOver);
+	Manager.DispatchEvent(this, Event_Released, isOver && (!isLDown && wasLDown));
+	Manager.DispatchEvent(this, Event_RReleased, isOver && (!isRDown && wasRDown));
+	Manager.DispatchEvent(this, Event_MReleased, isOver && (!isMDown && wasMDown));
+	if (Manager.DispatchEvent(this, Event_Pressed, isOver && isLDown && !wasLDown)) {
+		if (isFocusable) Manager.SetFocused(this);
 	}
-	if ((m_Flag&(MouseDown | MouseOver)) == (MouseDown | MouseOver) && (Flag&MouseDown) == 0) {
-		Manager->DispatchEvent(this, Event_Pressed);
+	if (Manager.DispatchEvent(this, Event_RPressed, isOver && isRDown && !wasRDown)) {
+		if (isFocusable) Manager.SetFocused(this);
+	}
+	if (Manager.DispatchEvent(this, Event_MPressed, isOver && isMDown && !wasMDown)) {
+		if (isFocusable) Manager.SetFocused(this);
 	}
 	return *this;
 }
 
-LWEUI &LWEUIButton::DrawSelf(LWEUIManager *Manager, LWEUIFrame *Frame, float Scale, uint64_t lCurrentTime) {
-	auto DrawRect = [](LWEUIMaterial *Mat, const LWVector2f &Pos, const LWVector2f &Size, LWEUIFrame *F)->bool {
-		if (!Mat) return false;
-		if (!F->SetActiveTexture(Mat->m_Texture, false)) return false;
-		LWVector4f SubRegion = Mat->m_SubRegion;
-
-		uint32_t c = LWVertexUI::WriteRectangle(F->m_Mesh, Pos + LWVector2f(0.0f, Size.y), Pos + LWVector2f(Size.x, 0.0f), Mat->m_Color, LWVector2f(SubRegion.x, SubRegion.y), LWVector2f(SubRegion.z, SubRegion.w));
-		F->m_VertexCount[F->m_TextureCount - 1] += c;
-		return c != 0;
-	};
-
-	LWEUIMaterial *ActiveMaterial = m_OffMaterial;
-	if (m_Flag&MouseOver) ActiveMaterial = (m_Flag&MouseDown) ? m_DownMaterial : m_OverMaterial;
-	DrawRect(ActiveMaterial, m_VisiblePosition, m_VisibleSize, Frame);
-
+LWEUI &LWEUIButton::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime) {
+	bool isOver = (m_Flag&MouseOver) != 0;
+	bool isDown = (m_Flag&(MouseLDown | MouseMDown | MouseRDown)) != 0;
+	LWEUIMaterial *Material = m_OffMaterial;
+	if (isOver) Material = isDown ? m_DownMaterial : m_OverMaterial;
+	Frame.WriteRect(Material, VisiblePos, VisibleSize);
 	return *this;
+}
+
+void LWEUIButton::Destroy(void) {
+	LWAllocator::Destroy(this);
+	return;
 }
 
 LWEUIButton &LWEUIButton::SetOverMaterial(LWEUIMaterial *OverMaterial) {
@@ -128,6 +135,6 @@ LWEUIMaterial *LWEUIButton::GetDownMaterial(void) {
 	return m_DownMaterial;
 }
 
-LWEUIButton::LWEUIButton(LWEUIMaterial *OverMaterial, LWEUIMaterial *OffMaterial, LWEUIMaterial *DownMaterial, const LWVector4f &Position, const LWVector4f &Size, uint32_t Flag) : LWEUI(Position, Size, Flag), m_OverMaterial(OverMaterial), m_OffMaterial(OffMaterial), m_DownMaterial(DownMaterial) {}
+LWEUIButton::LWEUIButton(LWEUIMaterial *OverMaterial, LWEUIMaterial *OffMaterial, LWEUIMaterial *DownMaterial, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : LWEUI(Position, Size, Flag), m_OverMaterial(OverMaterial), m_OffMaterial(OffMaterial), m_DownMaterial(DownMaterial) {}
 
 LWEUIButton::~LWEUIButton() {}

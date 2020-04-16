@@ -1,5 +1,6 @@
 #ifndef LWETYPES_H
 #define LWETYPES_H 
+#include <functional>
 
 class LWEAsset;
 
@@ -11,7 +12,7 @@ class LWEUI;
 
 class LWEUILabel;
 
-class LWEUIAdvLabel;
+class LWEUIRichLabel;
 
 class LWEUIRect;
 
@@ -49,8 +50,12 @@ class LWEGeometry3D;
 
 class LWEGeometry2D;
 
+class LWEGLTFParser;
+
 class LWEVideoPlayer;
 
 class LWEVideoDecoder;
+
+typedef std::function<void(LWEUI*, uint32_t, void*)> LWEUIEventCallback;
 
 #endif

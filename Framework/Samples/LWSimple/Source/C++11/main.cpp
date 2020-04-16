@@ -123,9 +123,9 @@ public:
 		}
 		if (TD) {
 			for (uint32_t i = 0; i < TD->GetPointCount(); i++) {
-				const LWTouchPoint *Pnt = TD->GetPoint(i);
-				std::cout << "Point: " << Pnt->m_Position.x << " " << Pnt->m_Position.y << " State: " << Pnt->m_State << " Init: " << Pnt->m_InitPosition.x << " " << Pnt->m_InitPosition.y << " DownTime: " << Pnt->m_DownTime << " Size: " << Pnt->m_Size << std::endl;
-				if (Pnt->m_State == LWTouchPoint::DOWN) m_UseSDF = !m_UseSDF;
+				const LWTouchPoint &Pnt = TD->GetPoint(i);
+				std::cout << "Point: " << Pnt.m_Position.x << " " << Pnt.m_Position.y << " State: " << Pnt.m_State << " Init: " << Pnt.m_InitPosition.x << " " << Pnt.m_InitPosition.y << " DownTime: " << Pnt.m_DownTime << " Size: " << Pnt.m_Size << std::endl;
+				if (Pnt.m_State == LWTouchPoint::DOWN) m_UseSDF = !m_UseSDF;
 			}
 			const LWGesture &Gest = TD->GetGesture();
 			if (Gest.m_Type != LWGesture::None) {
@@ -244,8 +244,9 @@ public:
 			SetFinished("Error creating window!");
 			return;
 		}
+		uint32_t TargetDriver = LWVideoDriver::Vulkan | LWVideoDriver::DebugLayer;
 		std::cout << "Window created: " << m_Window->GetSize().x << " " << m_Window->GetSize().y << std::endl;
-		m_Driver = LWVideoDriver::MakeVideoDriver(m_Window, LWVideoDriver::OpenGL3_3);
+		m_Driver = LWVideoDriver::MakeVideoDriver(m_Window, TargetDriver);
 		if (!m_Driver) {
 			SetFinished("Error: Creating video driver.");
 			return;

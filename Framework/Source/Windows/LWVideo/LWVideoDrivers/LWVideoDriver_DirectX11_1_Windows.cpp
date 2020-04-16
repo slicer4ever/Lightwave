@@ -10,15 +10,14 @@
 #include <algorithm> 
 
 
-LWVideoDriver_DirectX11_1 *LWVideoDriver_DirectX11_1::MakeVideoDriver(LWWindow *Window) {
+LWVideoDriver_DirectX11_1 *LWVideoDriver_DirectX11_1::MakeVideoDriver(LWWindow *Window, uint32_t Type) {
 	LWDirectX11_1Context Context;
 	LWWindowContext WinCon = Window->GetContext();
 	DXGI_SWAP_CHAIN_DESC scd = { { 0, 0,{ 0, 0 }, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED, DXGI_MODE_SCALING_UNSPECIFIED },{ 4, 0 }, DXGI_USAGE_RENDER_TARGET_OUTPUT, 1, WinCon.m_WND, (Window->GetFlag()&LWWindow::Fullscreen) == 0, DXGI_SWAP_EFFECT_DISCARD, 0 };
 	D3D_FEATURE_LEVEL Level = D3D_FEATURE_LEVEL_11_1;
 	uint32_t Flag = 0;
-#ifdef _DEBUG
-	Flag |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
+	if((Type&DebugLayer)!=0) Flag |= D3D11_CREATE_DEVICE_DEBUG;
+
 	HRESULT Res = D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, Flag, &Level, 1, D3D11_SDK_VERSION, &scd, &Context.m_DXSwapChain, (ID3D11Device**)&Context.m_DXDevice, nullptr, (ID3D11DeviceContext**)&Context.m_DXDeviceContext);
 	if (Res != S_OK) {
 		std::cout << "Error: 'D3D11CreateDeviceAndSwapChain: " << std::hex << Res << std::dec << "'" << std::endl;

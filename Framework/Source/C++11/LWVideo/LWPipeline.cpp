@@ -182,12 +182,8 @@ uint32_t LWPipeline::FindInput(const LWText &Name) {
 LWPipeline &LWPipeline::BuildMappings(void) {
 	uint32_t ResourceNameList[LWShader::MaxResources];
 	uint32_t BlockNameList[LWShader::MaxBlocks];
-	bool isResourceMapped[LWShader::MaxResources];
-	bool isBlockMapped[LWShader::MaxBlocks];
 	uint32_t ResourceCount = 0;
 	uint32_t BlockCount = 0;
-	std::fill(isResourceMapped, isResourceMapped + LWShader::MaxResources, false);
-	std::fill(isBlockMapped, isBlockMapped + LWShader::MaxBlocks, false);
 
 	auto InsertList = [](uint32_t NameHash, uint32_t *List, uint32_t &Cnt) {
 		for (uint32_t i = 0; i < Cnt; i++) {
@@ -237,27 +233,23 @@ LWPipeline &LWPipeline::BuildMappings(void) {
 		if (GS) InsertStage(GS);
 		if (PS) InsertStage(PS);
 	}
-	for (uint32_t i = 0; i < m_ResourceCount; i++) {
-		for (uint32_t n = 0; n < ResourceCount; n++) {
+	for (uint32_t n = 0; n < ResourceCount; n++) {
+		uint32_t i = 0;
+		for (; i < m_ResourceCount; i++) {
 			if (ResourceNameList[n] != m_ResourceList[i].m_NameHash) continue;
-			isResourceMapped[n] = true;
 			m_ResourceMap[n] = i;
 			break;
 		}
+		if (i >= m_ResourceCount) m_ResourceMap[n] = m_ResourceCount;
 	}
-	for (uint32_t n = 0; n < ResourceCount; n++) {
-		if (!isResourceMapped[n]) m_ResourceMap[n] = m_ResourceCount;
-	}
-	for (uint32_t i = 0; i < m_BlockCount; i++) {
-		for (uint32_t n = 0; n < BlockCount; n++) {
-			if (BlockNameList[n] == m_BlockList[i].m_NameHash) continue;
-			isBlockMapped[n] = true;
+	for (uint32_t n = 0; n < BlockCount; n++) {
+		uint32_t i = 0;
+		for (; i < m_BlockCount; i++) {
+			if (BlockNameList[n] != m_BlockList[i].m_NameHash) continue;
 			m_BlockMap[n] = i;
 			break;
 		}
-	}
-	for (uint32_t n = 0; n < BlockCount; n++) {
-		if (!isBlockMapped[n]) m_BlockMap[n] = m_BlockCount;
+		if (i >= m_BlockCount) m_BlockMap[n] = m_BlockCount;
 	}
 	return *this;
 }

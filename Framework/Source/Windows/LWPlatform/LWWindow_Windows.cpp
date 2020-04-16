@@ -57,21 +57,23 @@ bool LWWindow::MakeSaveFileDialog(const LWText &Filter, char *Buffer, uint32_t B
 }
 
 bool LWWindow::MakeLoadFileDialog(const LWText &Filter, char *Buffer, uint32_t BufferLen) {
-	COMDLG_FILTERSPEC Filters[32];
+	const uint32_t MaxFilters = 32;
+	const uint32_t WBufferSize = 256;
+	COMDLG_FILTERSPEC Filters[MaxFilters];
 	uint32_t FilterCnt = 0;
-	uint16_t WBuffer[256];
+	uint16_t WBuffer[WBufferSize];
 	uint32_t o = 0;
 	FILEOPENDIALOGOPTIONS Options = 0;
 	IShellItem *Result;
-	for (const uint8_t *C = LWText::FirstCharacter(Filter.GetCharacters()); C;) {
-		uint32_t ALen = LWText::MakeUTF8To16(C, WBuffer + o, sizeof(WBuffer)/sizeof(uint16_t) - o);
+
+	for (const uint8_t *C = LWText::FirstCharacter(Filter.GetCharacters()); C && FilterCnt<MaxFilters;) {
+		uint32_t ALen = LWText::MakeUTF8To16(C, WBuffer + o, WBufferSize - o);
 		C = LWText::FirstCharacter(C + ALen + 1);
-		uint32_t BLen = LWText::MakeUTF8To16(C, WBuffer + o + ALen+1, sizeof(WBuffer) / sizeof(uint16_t) - (o+ALen+1));
+		uint32_t BLen = LWText::MakeUTF8To16(C, WBuffer + o + ALen+1, WBufferSize - (o+ALen+1));
 		C = LWText::FirstCharacter(C + BLen + 1);
 		Filters[FilterCnt].pszSpec = (const wchar_t*)WBuffer + o;
 		Filters[FilterCnt].pszName = (const wchar_t*)WBuffer + (o + ALen + 1);
 		FilterCnt++;
-		if (FilterCnt == 32) break;
 		o += BLen + ALen+2;
 	}
 	IFileOpenDialog *Dialog;
@@ -89,6 +91,52 @@ bool LWWindow::MakeLoadFileDialog(const LWText &Filter, char *Buffer, uint32_t B
 	if(ResultStr) LWText::MakeUTF16To8((uint16_t*)ResultStr, (uint8_t*)Buffer, BufferLen);
 	Result->Release();
 	return ResultStr!=nullptr;
+}
+
+
+uint32_t LWWindow::MakeLoadFileMultipleDialog(const LWText &Filter, char **Bufer, uint32_t BufferLen, uint32_t BufferCount) {
+	const uint32_t MaxFilters = 32;
+	const uint32_t WBufferSize = 256;
+	COMDLG_FILTERSPEC Filters[MaxFilters];
+	uint32_t FilterCnt = 0;
+	uint16_t WBuffer[WBufferSize];
+	uint32_t o = 0;
+	FILEOPENDIALOGOPTIONS Options = 0;
+	IShellItemArray *Result;
+
+	for (const uint8_t *C = LWText::FirstCharacter(Filter.GetCharacters()); C && FilterCnt < MaxFilters;) {
+		uint32_t ALen = LWText::MakeUTF8To16(C, WBuffer + o, WBufferSize - o);
+		C = LWText::FirstCharacter(C + ALen + 1);
+		uint32_t BLen = LWText::MakeUTF8To16(C, WBuffer + o + ALen + 1, WBufferSize - (o + ALen + 1));
+		C = LWText::FirstCharacter(C + BLen + 1);
+		Filters[FilterCnt].pszSpec = (const wchar_t*)WBuffer + o;
+		Filters[FilterCnt].pszName = (const wchar_t*)WBuffer + (o + ALen + 1);
+		FilterCnt++;
+		o += BLen + ALen + 2;
+	}
+	IFileOpenDialog *Dialog;
+	CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL, IID_IFileOpenDialog, (void**)&Dialog);
+	Dialog->GetOptions(&Options);
+	Dialog->SetOptions(FOS_NOCHANGEDIR | Options | FOS_ALLOWMULTISELECT);
+	Dialog->SetFileTypes(FilterCnt, Filters);
+	HRESULT Res = Dialog->Show(nullptr); //Calling Dialog->Release() crashs when the program switch's context and back.
+	if (FAILED(Res)) {
+		return 0;
+	}
+	Dialog->GetResults(&Result);
+	DWORD Cnt = 0;
+	Result->GetCount(&Cnt);
+	Cnt = std::min<uint32_t>((uint32_t)Cnt, BufferCount);
+	for (uint32_t i = 0; i < Cnt; i++) {
+		IShellItem *pItem = nullptr;
+		Result->GetItemAt(i, &pItem);
+		PWSTR ResultStr = nullptr;
+		pItem->GetDisplayName(SIGDN_FILESYSPATH, &ResultStr);
+		if (ResultStr) LWText::MakeUTF16To8((uint16_t*)ResultStr, (uint8_t*)Bufer[i], BufferLen);
+		pItem->Release();
+	}
+	Result->Release();
+	return Cnt;
 }
 
 bool LWWindow::WriteClipboardText(const LWText &Text) {
@@ -398,6 +446,10 @@ LWAllocator *LWWindow::GetAllocator(void) const{
 	return m_Allocator;
 }
 
+bool LWWindow::isFinished(void) const {
+	return (m_Flag&Terminate) != 0;
+}
+
 bool LWWindow::isFocused(void) const {
 	return (m_Flag&Focused) != 0;
 }
@@ -416,6 +468,10 @@ bool LWWindow::FocusUpdated(void) const {
 
 bool LWWindow::isVisible(void) const {
 	return (m_Flag&Visible) != 0;
+}
+
+bool LWWindow::isVirtualKeyboardPresent(void) const {
+	return (m_Flag&KeyboardPresent) != 0;
 }
 
 LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocator, uint32_t Flag, const LWVector2i &Position, const LWVector2i &Size) : m_Title(LWText(Title.GetCharacters(), Allocator)), m_Name(LWText(Name.GetCharacters(), Allocator)), m_Allocator(&Allocator), m_FirstDevice(nullptr), m_Position(Position), m_Size(Size), m_Flag(Flag){

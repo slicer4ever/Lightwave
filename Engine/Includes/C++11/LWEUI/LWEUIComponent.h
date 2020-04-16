@@ -4,25 +4,23 @@
 
 class LWEUIComponent : public LWEUI {
 public:
-	enum {
-		MaxComponents = 32
-	};
-	LWEUIComponent &PushComponent(LWEUI *UI);
+	static const uint32_t MaxComponentCount = 16;
 
-	virtual LWEUI &UpdateSelf(LWEUIManager *Manager, float Scale, uint64_t lCurrentTime);
+	virtual LWEUI &UpdateSelf(LWEUIManager &Manager, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime);
 
-	virtual LWEUI &DrawSelf(LWEUIManager *Manager, LWEUIFrame *Frame, float Scale, uint64_t lCurrentTime);
+	virtual LWEUI &DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime);
 
-	LWEUI *GetComponent(uint32_t i);
+	virtual void Destroy(void);
 
-	uint32_t GetComponentCount(void);
+	bool PushComponent(LWEUI *Component);
 
-	LWEUIComponent(const LWVector4f &Position, const LWVector4f &Size, uint32_t Flag);
+	LWEUIComponent(const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag);
 
 	LWEUIComponent();
 private:
-	LWEUI *m_ComponentList[MaxComponents];
-	uint32_t m_ComponentCount;
+
+	LWEUI *m_ComponentList[MaxComponentCount];
+	uint32_t m_ComponentCount = 0;
 };
 
 
