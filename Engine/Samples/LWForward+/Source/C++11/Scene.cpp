@@ -229,6 +229,8 @@ uint32_t Scene::DrawScene(uint64_t lCurrentTime, const LWMatrix4f &SceneTransfor
 	if (!m_StartTime) m_StartTime = lCurrentTime;
 	float Elapsed = LWTimer::ToMilliSecond(lCurrentTime - m_StartTime) / 1000.0f;
 	float T = Elapsed * LW_DEGTORAD*3.0f;
+	float r = 100.0f;
+	m_LightList[1].m_Position = LWVector4f(cos(T)*r, 20.0f, sinf(T)*r, 1.0f);
 	uint32_t TotalVertices = 0;
 	uint32_t MatOffset = F.m_MaterialCount;
 	struct ShadowedLights {

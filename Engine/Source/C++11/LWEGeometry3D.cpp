@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iostream>
 
+
 bool LWEGeometry3D::RayRayIntersect(const LWVector3f &aRayStart, const LWVector3f &aRayEnd, const LWVector3f &bRayStart, const LWVector3f &bRayEnd, LWVector3f *IntersectPoint) {
 	return false;
 }
@@ -230,3 +231,53 @@ bool LWEGeometry3D::SphereConvexHullIntersect(const LWVector3f &CircCenterPnt, f
 	if (IntersectNrm) *IntersectNrm = LowNrm*Lowest;
 	return true;
 }
+
+void LWEGeometry3D::TransformAABB(const LWVector3f &AAMin, const LWVector3f &AAMax, const LWMatrix4f &TransformMatrix, LWVector3f &AAMinResult, LWVector3f &AAMaxResult) {
+	LWVector3f xAxisA = TransformMatrix.m_Rows[0].xyz()*AAMin.x;
+	LWVector3f xAxisB = TransformMatrix.m_Rows[0].xyz()*AAMax.x;
+
+	LWVector3f yAxisA = TransformMatrix.m_Rows[1].xyz()*AAMin.y;
+	LWVector3f yAxisB = TransformMatrix.m_Rows[1].xyz()*AAMax.y;
+
+	LWVector3f zAxisA = TransformMatrix.m_Rows[2].xyz()*AAMin.z;
+	LWVector3f zAxisB = TransformMatrix.m_Rows[2].xyz()*AAMax.z;
+
+	AAMinResult = xAxisA.Min(xAxisB) + yAxisA.Min(yAxisB) + zAxisA.Min(zAxisB) + TransformMatrix.m_Rows[3].xyz();
+	AAMaxResult = xAxisA.Max(xAxisB) + yAxisA.Max(yAxisB) + zAxisA.Max(zAxisB) + TransformMatrix.m_Rows[3].xyz();
+	return;
+}
+
+bool LWEGeometry3D::SphereInFrustum(const LWVector3f &Position, float Radius, const LWVector3f &FrustumPosition, const LWVector4f *Frustum) {
+	LWVector4f P = LWVector4f(Position - FrustumPosition, 1.0f);
+	float d0 = Frustum[0].Dot(P);
+	float d1 = Frustum[1].Dot(P);
+	float d2 = Frustum[2].Dot(P);
+	float d3 = Frustum[3].Dot(P);
+	float d4 = Frustum[4].Dot(P);
+	float d5 = Frustum[5].Dot(P);
+	float m = std::min<float>(std::min<float>(std::min<float>(d0, d1), std::min<float>(d2, d3)), std::min<float>(d4, d5));
+	return m >= -Radius;
+}
+
+bool LWEGeometry3D::AABBInFrustum(const LWVector3f &AABBMin, const LWVector3f &AABBMax, const LWVector3f &FrustumPosition, const LWVector4f *Frustum) {
+	LWVector3f hLen = (AABBMax - AABBMin)*0.5f;
+	LWVector3f Pos = AABBMin + hLen;
+	return SphereInFrustum(Pos, hLen.Max()*1.5f, FrustumPosition, Frustum);
+}
+
+bool LWEGeometry3D::ConeInFrustum(const LWVector3f &Position, const LWVector3f &Direction, float Theta, float Length, const LWVector3f &FrustumPosition, const LWVector4f *Frustum) {
+	auto ConeInPlane = [](const LWVector4f &Plane, const LWVector3f &Pos, const LWVector3f &Dir, float Len, float Radius) {
+		LWVector3f M = LWVector3f(Plane.x, Plane.y, Plane.z).Cross(Dir).Cross(Dir).Normalize();
+		LWVector3f Q = Pos + Dir * Len - M * Radius;
+		float md = LWVector4f(Pos, 1.0f).Dot(Plane);
+		float mq = LWVector4f(Q, 1.0f).Dot(Plane);
+		return mq >= 0.0f || md >= 0.0f;
+	};
+	LWVector3f P = Position - FrustumPosition;
+	float Radi = tanf(Theta)*Length;
+	for (uint32_t i = 0; i < 6; i++) {
+		if (!ConeInPlane(Frustum[i], P, Direction, Length, Radi)) return false;
+	}
+	return true;
+}
+

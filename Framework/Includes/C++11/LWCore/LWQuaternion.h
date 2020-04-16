@@ -11,11 +11,6 @@ struct LWQuaternion {
 	Type z; /*!< \brief imaginary z component of quaternion */
 	Type w; /*!< \brief real component of quaternion */
 
-	/*!< \brief returns a simd-quaternion quaternion. */
-	LWSQuaternion<Type> AsSQuaternion(void) const {
-		return LWSQuaternion<Type>(w, x, y, z);
-	}
-
 	/*!< \brief constructs a quaternion for the provided yaw, pitch, and roll angles. */
 	static LWQuaternion FromEuler(Type Pitch, Type Yaw, Type Roll) {
 		
@@ -68,7 +63,7 @@ struct LWQuaternion {
 	};
 
 	/*!< \brief performs a linear interpolation between two quaternions, t is between 0 and 1. */
-	static LWQuaternion NLERP(const LWQuaternion<Type> &A, const LWQuaternion<Type> &B, Type t) {
+	static LWQuaternion NLERP(const LWQuaternion<Type> &A, const LWQuaternion<Type> &B, float t) {
 		return (A + (B - A)*t).Normalize();
 	}
 
@@ -171,8 +166,8 @@ struct LWQuaternion {
 	LWVector4<Type> RotatePoint(const LWVector4<Type> Pnt) const {
 		LWVector3<Type> u = LWVector3<Type>(x, y, z);
 		LWVector3<Type> v = LWVector3<Type>(Pnt.x, Pnt.y, Pnt.z);
-		Type dA = u.Dot(v);
-		Type dB = u.Dot(u);
+		float dA = u.Dot(v);
+		float dB = u.Dot(u);
 		return LWVector4<Type>((Type)2 * dA*u + (w*w - dB)*v + (Type)2 * w*u.Cross(v), Pnt.w);
 	}
 
@@ -204,6 +199,7 @@ struct LWQuaternion {
 	LWQuaternion operator*(Type rhs) const {
 		return LWQuaternion(w*rhs, x*rhs, y*rhs, z*rhs);
 	}
+
 
 	friend std::ostream &operator<<(std::ostream &o, const LWQuaternion<Type> &q) {
 		o << q.w << " " << q.x << " " << q.y << " " << q.z;
@@ -249,22 +245,6 @@ struct LWQuaternion {
 
 	LWQuaternion operator-() const {
 		return LWQuaternion(-w, -x, -y, -z);
-	}
-
-	friend LWQuaternion operator * (Type Lhs, const LWQuaternion &Rhs) {
-		return LWQuaternion(Lhs * Rhs.w, Lhs * Rhs.x, Lhs * Rhs.y, Lhs * Rhs.z);
-	}
-
-	friend LWQuaternion operator + (Type Lhs, const LWQuaternion &Rhs) {
-		return LWQuaternion(Lhs + Rhs.w, Lhs + Rhs.x, Lhs + Rhs.y, Lhs + Rhs.z);
-	}
-
-	friend LWQuaternion operator - (Type Lhs, const LWQuaternion &Rhs) {
-		return LWQuaternion(Lhs - Rhs.w, Lhs - Rhs.x, Lhs - Rhs.y, Lhs - Rhs.z);
-	}
-
-	friend LWQuaternion operator / (Type Lhs, const LWQuaternion &Rhs) {
-		return LWQuaternion(Lhs / Rhs.w, Lhs / Rhs.x, Lhs / Rhs.y, Lhs / Rhs.z);
 	}
 
 	LWQuaternion(Type w, Type x, Type y, Type z) : w(w), x(x), y(y), z(z){}

@@ -7,15 +7,17 @@
 #include <functional>
 
 #pragma region LWEGLTFANIMTWEEN
+
 LWMatrix4f LWEGLTFAnimTween::GetFrame(float Time, bool Loop) {
 	if (Loop) {
 		float Total = GetTotalTime();
 		if (Total>0.0f) Time = (float)fmodf(Time,Total);
 	}
 	LWVector3f Trans = m_Translation.GetValue(Time);
-	LWVector3f Scale = m_Scale.GetValue(Time, LWVector3f(1.0f));
+	LWVector3f Scale = m_Scale.GetValue(Time);
 	LWQuaternionf Rot = m_Rotation.GetValue(Time);
 	LWMatrix4f Mat = (LWMatrix4f(Scale.x, Scale.y, Scale.z, 1.0f) * LWMatrix4f(Rot) * LWMatrix4f::Translation(Trans)).Transpose3x3();
+	//std::cout << "Scale: " << Scale << " | " << Trans <<" " << " " << Rot << " " <<  Mat << std::endl;
 	return Mat;
 }
 

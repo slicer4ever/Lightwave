@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #ifndef LWSMATRIX_AVX2_FLOAT_H
 #define LWSMATRIX_AVX2_FLOAT_H
 #include "LWSMatrix.h"
@@ -135,4 +136,17 @@ struct LWSMatrix4<float> {
 	LWSMatrix4(const LWSVector4<float>& Scale, const LWSQuaternion<float>& Rotation, const LWSVector4<float>& Pos);
 };
 
+=======
+#ifndef LWSMATRIX_AVX2_FLOAT_H
+#define LWSMATRIX_AVX2_FLOAT_H
+#include "LWSMatrix.h"
+
+/*
+template<>
+struct LWSMatrix4<float> {
+	__m256 m_Data;
+
+};*/
+
+>>>>>>> Added initial inroads for vulkan support(this is far from complete and not usable yet).
 #endif

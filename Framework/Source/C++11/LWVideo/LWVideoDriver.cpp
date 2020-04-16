@@ -57,7 +57,7 @@ uint32_t LWVideoDriver::FindModule(const char *ShaderCode, const char *Environme
 		if (*C == '#') {
 			if (LWText::Compare(C, "#module", 7)) {
 				C = LWText::CopyToTokens(C + 7, LineBuffer, sizeof(LineBuffer), "\n\r\0");
-				if (!*C) C--;
+				if (*C) C += LWText::UTF8ByteSize(C);
 				uint32_t SplitCnt = LWText::SplitWords(LineBuffer, WordList, WordBufferLength, WordBufferCount, Longest);
 				InTargetModule = false;
 				if (SplitCnt < 1) continue;
@@ -68,7 +68,7 @@ uint32_t LWVideoDriver::FindModule(const char *ShaderCode, const char *Environme
 				for (uint32_t i = 1; i < SplitCnt && !InTargetModule; i++) InTargetModule = EnvironmentHash == LWText::MakeHash(WordList[i]);
 			}else if(LWText::Compare(C, "#define", 7)){
 				C = LWText::CopyToTokens(C + 7, LineBuffer, sizeof(LineBuffer), "\n\r\0");
-				if (!*C) C--;
+				if (*C) C += LWText::UTF8ByteSize(C);
 				uint32_t SplitCnt = LWText::SplitWords(LineBuffer, WordList, WordBufferLength, WordBufferCount, Longest);
 				if(SplitCnt<1 || DefinedCount>=MaxDefines) continue;
 				if (WriteInDefineTable[DefineTablePosition - 1]) {
@@ -83,7 +83,7 @@ uint32_t LWVideoDriver::FindModule(const char *ShaderCode, const char *Environme
 				}
 			} else if (LWText::Compare(C, "#ifdef", 6)) {
 				C = LWText::CopyToTokens(C + 6, LineBuffer, sizeof(LineBuffer), "\n\r\0");
-				if (!*C) C--;
+				if (*C) C += LWText::UTF8ByteSize(C);
 				uint32_t SplitCnt = LWText::SplitWords(LineBuffer, WordList, WordBufferLength, WordBufferCount, Longest);
 				if(SplitCnt<1) continue;
 
@@ -94,7 +94,7 @@ uint32_t LWVideoDriver::FindModule(const char *ShaderCode, const char *Environme
 				DefineTablePosition++;
 			} else if (LWText::Compare(C, "#ifndef", 7)) {
 				C = LWText::CopyToTokens(C + 7, LineBuffer, sizeof(LineBuffer), "\n\r\0");
-				if (!*C) C--;
+				if (*C) C += LWText::UTF8ByteSize(C);
 				uint32_t SplitCnt = LWText::SplitWords(LineBuffer, WordList, WordBufferLength, WordBufferCount, Longest);
 				if (SplitCnt < 1) continue;
 				bool isDefined = false;
@@ -104,17 +104,17 @@ uint32_t LWVideoDriver::FindModule(const char *ShaderCode, const char *Environme
 				DefineTablePosition++;
 			} else if (LWText::Compare(C, "#endif", 6)) {
 				C = LWText::CopyToTokens(C + 6, LineBuffer, sizeof(LineBuffer), "\n\r\0");
-				if (!*C) C--;
+				if (*C) C += LWText::UTF8ByteSize(C);
 				DefineTablePosition = DefineTablePosition == 1 ? 1 : DefineTablePosition - 1;
 			} else if (LWText::Compare(C, "#else", 5)) {
 				C = LWText::CopyToTokens(C + 5, LineBuffer, sizeof(LineBuffer), "\n\r\0");
-				if (!*C) C--;
+				if (*C) C += LWText::UTF8ByteSize(C);
 				if (DefineTablePosition > 1) {
 					WriteInDefineTable[DefineTablePosition - 1] = WriteInDefineTable[DefineTablePosition - 2] && !WriteInDefineTable[DefineTablePosition - 1];
 				}
 			} else if (LWText::Compare(C, "#elifn", 6)) {
 				C = LWText::CopyToTokens(C + 6, LineBuffer, sizeof(LineBuffer), "\n\r\0");
-				if (!*C) C--;
+				if (*C) C += LWText::UTF8ByteSize(C);
 				uint32_t SplitCnt = LWText::SplitWords(LineBuffer, WordList, WordBufferLength, WordBufferCount, Longest);
 				if (SplitCnt < 1) continue;
 
@@ -126,7 +126,7 @@ uint32_t LWVideoDriver::FindModule(const char *ShaderCode, const char *Environme
 				}
 			} else if (LWText::Compare(C, "#elif", 5)) {
 				C = LWText::CopyToTokens(C + 5, LineBuffer, sizeof(LineBuffer), "\n\r\0");
-				if (!*C) C--;
+				if (*C) C += LWText::UTF8ByteSize(C);
 				uint32_t SplitCnt = LWText::SplitWords(LineBuffer, WordList, WordBufferLength, WordBufferCount, Longest);
 				if (SplitCnt < 1) continue;
 
@@ -164,9 +164,6 @@ uint32_t LWVideoDriver::FindModule(const char *ShaderCode, const char *Environme
 	if (ModuleBufferLen) {
 		if (o == ModuleBufferLen) o--;
 		ModuleBuffer[o] = '\0';
-	}
-	if (DefineTablePosition != 1) {
-		std::cout << "Error Shader preprocessor if statement was left open." << std::endl;
 	}
 	return o;
 }

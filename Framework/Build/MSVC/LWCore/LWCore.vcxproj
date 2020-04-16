@@ -22,32 +22,32 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{8E9BDDA8-EBF9-4609-8F12-AA6682C05B8E}</ProjectGuid>
     <RootNamespace>LWCore</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -140,11 +140,7 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWMatrix.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWQuaternion.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSMatrix.h" />
-    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSMatrix_AVX2_Double.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSMatrix_AVX2_Float.h" />
-    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSQuaternion.h" />
-    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSQuaternion_AVX2_Double.h" />
-    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSQuaternion_AVX_Float.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSVector.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSVector_AVX2_Double.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSVector_AVX_Float.h" />
@@ -165,13 +161,6 @@
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWByteStream.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWCrypto.cpp" />
     <ClCompile Include="..\..\..\Source\c++11\LWCore\LWMath.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSMatrix_AVX2_Double.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSMatrix_AVX2_Float.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSQuaternion_AVX2_Double.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSQuaternion_AVX_Float.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSVector_AVX2_Double.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSVector_AVX_Float.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSVector_AVX_Int.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWText.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWTimer.cpp" />
   </ItemGroup>
