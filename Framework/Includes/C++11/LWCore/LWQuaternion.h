@@ -63,7 +63,7 @@ struct LWQuaternion {
 	};
 
 	/*!< \brief performs a linear interpolation between two quaternions, t is between 0 and 1. */
-	static LWQuaternion NLERP(const LWQuaternion<Type> &A, const LWQuaternion<Type> &B, float t) {
+	static LWQuaternion NLERP(const LWQuaternion<Type> &A, const LWQuaternion<Type> &B, Type t) {
 		return (A + (B - A)*t).Normalize();
 	}
 

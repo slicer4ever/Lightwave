@@ -4,7 +4,7 @@
 #include <smmintrin.h>
 #include <emmintrin.h>
 #include <immintrin.h>
-#include <iostream>
+
 template<>
 struct LWSVector4<double> {
 	__m256d m_Data;
@@ -21,7 +21,6 @@ struct LWSVector4<double> {
 		//Do dot product:
 		__m256d t = _mm256_mul_pd(m_Data, m_Data);
 		t = _mm256_hadd_pd(t, t); //xy, xy, zw, zw
-		t = _mm256_permute4x64_pd(t, _MM_SHUFFLE(3, 1, 2, 0));
 		t = _mm256_hadd_pd(t, t);
 		if (_mm256_test_all_ones(_mm256_castpd_si256(_mm256_cmp_pd(t, eps, _CMP_LE_OS)))) return _mm256_set1_pd(0.0);
 		return _mm256_div_pd(m_Data, _mm256_sqrt_pd(t));
@@ -33,7 +32,6 @@ struct LWSVector4<double> {
 		__m256d t = _mm256_mul_pd(m_Data, _mm256_set_pd(0.0, 1.0, 1.0, 1.0));
 		t = _mm256_mul_pd(t, t);
 		t = _mm256_hadd_pd(t, t);
-		t = _mm256_permute4x64_pd(t, _MM_SHUFFLE(3, 1, 2, 0));
 		t = _mm256_hadd_pd(t, t);
 		if (_mm256_test_all_ones(_mm256_castpd_si256(_mm256_cmp_pd(t, eps, _CMP_LE_OS)))) return _mm256_set1_pd(0.0);
 		return _mm256_div_pd(m_Data, _mm256_sqrt_pd(t));
@@ -52,7 +50,6 @@ struct LWSVector4<double> {
 	double Dot(const LWSVector4<double> &O) const {
 		__m256d t = _mm256_mul_pd(m_Data, O.m_Data);
 		t = _mm256_hadd_pd(t, t);
-		t = _mm256_permute4x64_pd(t, _MM_SHUFFLE(3, 1, 2, 0));
 		t = _mm256_hadd_pd(t, t);
 		return _mm256_cvtsd_f64(t);
 	}
@@ -61,15 +58,35 @@ struct LWSVector4<double> {
 		__m256d t = _mm256_set_pd(0.0, 1.0, 1.0, 1.0f);
 		t = _mm256_mul_pd(_mm256_mul_pd(m_Data, t), _mm256_mul_pd(O.m_Data, t));
 		t = _mm256_hadd_pd(t, t);
-		t = _mm256_permute4x64_pd(t, _MM_SHUFFLE(3, 1, 2, 0));
 		t = _mm256_hadd_pd(t, t);
 		return _mm256_cvtsd_f64(t);
 	}
 
 	double Dot2(const LWSVector4<double> &O) const {
-		__m256d t = _mm256_set_pd(0.0, 0.0, 1.0, 1.0);
-		t = _mm256_mul_pd(_mm256_mul_pd(m_Data, t), _mm256_mul_pd(O.m_Data, t));
+		__m256d t = _mm256_mul_pd(m_Data, O.m_Data);
+		return _mm256_cvtsd_f64(_mm256_hadd_pd(t, t));
+	}
+
+	LWSVector4<double> Sum(void) const {
+		__m256d t = _mm256_hadd_pd(m_Data, m_Data);
+		return _mm256_hadd_pd(t, t);
+	}
+
+	double Sum4(void) const {
+		__m256d t = _mm256_hadd_pd(m_Data, m_Data);
 		t = _mm256_hadd_pd(t, t);
+		return _mm256_cvtsd_f64(t);
+	}
+
+	double Sum3(void) const {
+		__m256d t = _mm256_mul_pd(m_Data, _mm256_set_pd(0.0, 1.0, 1.0, 1.0));
+		t = _mm256_hadd_pd(t, t);
+		t = _mm256_hadd_pd(t, t);
+		return _mm256_cvtsd_f64(t);
+	}
+
+	double Sum2(void) const {
+		__m256d t = _mm256_hadd_pd(m_Data, m_Data);
 		return _mm256_cvtsd_f64(t);
 	}
 
@@ -122,7 +139,6 @@ struct LWSVector4<double> {
 	double Length(void) const {
 		__m256d t = _mm256_mul_pd(m_Data, m_Data);
 		t = _mm256_hadd_pd(t, t);
-		t = _mm256_permute4x64_pd(t, _MM_SHUFFLE(3, 1, 2, 0));
 		t = _mm256_hadd_pd(t, t);
 		return _mm256_cvtsd_f64(_mm256_sqrt_pd(t));
 	}
@@ -131,7 +147,6 @@ struct LWSVector4<double> {
 		__m256d t = _mm256_mul_pd(m_Data, _mm256_set_pd(0.0, 1.0, 1.0, 1.0));
 		t = _mm256_mul_pd(t, t);
 		t = _mm256_hadd_pd(t, t);
-		t = _mm256_permute4x64_pd(t, _MM_SHUFFLE(3, 1, 2, 0));
 		t = _mm256_hadd_pd(t, t);
 		return _mm256_cvtsd_f64(_mm256_sqrt_pd(t));
 	}
@@ -145,7 +160,6 @@ struct LWSVector4<double> {
 	double LengthSquared(void) const {
 		__m256d t = _mm256_mul_pd(m_Data, m_Data);
 		t = _mm256_hadd_pd(t, t);
-		t = _mm256_permute4x64_pd(t, _MM_SHUFFLE(3, 1, 2, 0));
 		t = _mm256_hadd_pd(t, t);
 		return _mm256_cvtsd_f64(t);
 	}
@@ -153,7 +167,6 @@ struct LWSVector4<double> {
 	double LengthSquared3(void) const {
 		__m256d t = _mm256_mul_pd(m_Data, _mm256_set_pd(0.0, 1.0, 1.0, 1.0));
 		t = _mm256_hadd_pd(t, t);
-		t = _mm256_permute4x64_pd(t, _MM_SHUFFLE(3, 1, 2, 0));
 		t = _mm256_hadd_pd(t, t);
 		return _mm256_cvtsd_f64(t);
 	}
@@ -168,7 +181,6 @@ struct LWSVector4<double> {
 		__m256d t = _mm256_sub_pd(m_Data, O.m_Data);
 		t = _mm256_mul_pd(t, t);
 		t = _mm256_hadd_pd(t, t);
-		t = _mm256_permute4x64_pd(t, _MM_SHUFFLE(3, 1, 2, 0));
 		t = _mm256_hadd_pd(t, t);
 		return _mm256_cvtsd_f64(_mm256_sqrt_pd(t));
 	}
@@ -178,7 +190,6 @@ struct LWSVector4<double> {
 		t = _mm256_mul_pd(t, _mm256_set_pd(0.0, 1.0, 1.0, 1.0));
 		t = _mm256_mul_pd(t, t);
 		t = _mm256_hadd_pd(t, t);
-		t = _mm256_permute4x64_pd(t, _MM_SHUFFLE(3, 1, 2, 0));
 		t = _mm256_hadd_pd(t, t);
 		return _mm256_cvtsd_f64(_mm256_sqrt_pd(t));
 	}
@@ -194,7 +205,6 @@ struct LWSVector4<double> {
 		__m256d t = _mm256_sub_pd(m_Data, O.m_Data);
 		t = _mm256_mul_pd(t, t);
 		t = _mm256_hadd_pd(t, t);
-		t = _mm256_permute4x64_pd(t, _MM_SHUFFLE(3, 1, 2, 0));
 		t = _mm256_hadd_pd(t, t);
 		return _mm256_cvtsd_f64(t);
 	}
@@ -204,7 +214,6 @@ struct LWSVector4<double> {
 		t = _mm256_mul_pd(t, _mm256_set_pd(0.0, 1.0, 1.0, 1.0));
 		t = _mm256_mul_pd(t, t);
 		t = _mm256_hadd_pd(t, t);
-		t = _mm256_permute4x64_pd(t, _MM_SHUFFLE(3, 1, 2, 0));
 		t = _mm256_hadd_pd(t, t);
 		return _mm256_cvtsd_f64(t);
 	}
@@ -275,8 +284,11 @@ struct LWSVector4<double> {
 	}
 
 	bool operator == (const LWSVector4<double> &Rhs) const {
-		__m256i t = _mm256_castpd_si256(_mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_EQ_OQ));
-		return _mm256_test_all_ones(t);
+		__m256d e = _mm256_set1_pd(std::numeric_limits<double>::epsilon());
+		__m256d t = _mm256_sub_pd(m_Data, Rhs.m_Data);
+		t = _mm256_andnot_pd(_mm256_set1_pd(-0.0), t); //Get absolute value of difference.
+		t = _mm256_cmp_pd(t, e, _CMP_LE_OS);
+		return _mm256_test_all_ones(_mm256_castpd_si256(t));
 	}
 
 	bool operator != (const LWSVector4<double> &Rhs) const {
@@ -344,6 +356,62 @@ struct LWSVector4<double> {
 	friend LWSVector4<double> operator / (double Lhs, const LWSVector4<double> &Rhs) {
 		__m256d t = _mm256_set1_pd(Lhs);
 		return _mm256_div_pd(t, Rhs.m_Data);
+	}
+
+	LWSVector4<double> AAAB(const LWSVector4<double> &B) const {
+		return _mm256_blend_pd(m_Data, B.m_Data, 0x8);
+	}
+
+	LWSVector4<double> AABA(const LWSVector4<double> &B) const {
+		return _mm256_blend_pd(m_Data, B.m_Data, 0x4);
+	}
+
+	LWSVector4<double> AABB(const LWSVector4<double> &B) const {
+		return _mm256_blend_pd(m_Data, B.m_Data, 0xC);
+	}
+
+	LWSVector4<double> ABAA(const LWSVector4<double> &B) const {
+		return _mm256_blend_pd(m_Data, B.m_Data, 0x2);
+	}
+
+	LWSVector4<double> ABAB(const LWSVector4<double> &B) const {
+		return _mm256_blend_pd(m_Data, B.m_Data, 0xA);
+	}
+
+	LWSVector4<double> ABBA(const LWSVector4<double> &B) const {
+		return _mm256_blend_pd(m_Data, B.m_Data, 0x6);
+	}
+
+	LWSVector4<double> ABBB(const LWSVector4<double> &B) const {
+		return _mm256_blend_pd(m_Data, B.m_Data, 0xE);
+	}
+
+	LWSVector4<double> BAAA(const LWSVector4<double> &B) const {
+		return _mm256_blend_pd(m_Data, B.m_Data, 0x1);
+	}
+
+	LWSVector4<double> BAAB(const LWSVector4<double> &B) const {
+		return _mm256_blend_pd(m_Data, B.m_Data, 0x9);
+	}
+
+	LWSVector4<double> BABA(const LWSVector4<double> &B) const {
+		return _mm256_blend_pd(m_Data, B.m_Data, 0x5);
+	}
+
+	LWSVector4<double> BABB(const LWSVector4<double> &B) const {
+		return _mm256_blend_pd(m_Data, B.m_Data, 0xD);
+	}
+
+	LWSVector4<double> BBAA(const LWSVector4<double> &B) const {
+		return _mm256_blend_pd(m_Data, B.m_Data, 0x3);
+	}
+
+	LWSVector4<double> BBAB(const LWSVector4<double> &B) const {
+		return _mm256_blend_pd(m_Data, B.m_Data, 0xB);
+	}
+
+	LWSVector4<double> BBBA(const LWSVector4<double> &B) const {
+		return _mm256_blend_pd(m_Data, B.m_Data, 0x7);
 	}
 
 	LWSVector4<double> xxxx(void) const {
@@ -1490,27 +1558,19 @@ struct LWSVector4<double> {
 	}
 
 	double x(void) const {
-		alignas(32) LWVector4<double> R;
-		_mm256_store_pd(&R.x, m_Data);
-		return R.x;
+		return _mm256_cvtsd_f64(xxxx().m_Data);
 	}
 
 	double y(void) const {
-		alignas(32) LWVector4<double> R;
-		_mm256_store_pd(&R.x, m_Data);
-		return R.y;
+		return _mm256_cvtsd_f64(yyyy().m_Data);
 	}
 
 	double z(void) const {
-		alignas(32) LWVector4<double> R;
-		_mm256_store_pd(&R.x, m_Data);
-		return R.z;
+		return _mm256_cvtsd_f64(zzzz().m_Data);
 	}
 
 	double w(void) const {
-		alignas(32) LWVector4<double> R;
-		_mm256_store_pd(&R.x, m_Data);
-		return R.w;
+		return _mm256_cvtsd_f64(wwww().m_Data);
 	}
 
 	LWSVector4(const __m256d Data) : m_Data(Data) {}

@@ -3,7 +3,6 @@
 #include <LWCore/LWTypes.h>
 #include <LWCore/LWMatrix.h>
 #include <LWCore/LWSVector.h>
-#include <LWCore/LWSQuaternion.h>
 #include <ostream>
 
 /*!< \brief an accelerated simd matrix4 class, non-implemented or disabled sse functions default to a generic class. */
@@ -15,81 +14,168 @@ struct LWSMatrix4 {
 		return LWMatrix4<Type>(m_Rows[0].AsVec4(), m_Rows[1].AsVec4(), m_Rows[2].AsVec4(), m_Rows[3].AsVec4());
 	}
 
+	LWSMatrix4 TransformInverse(void) const {
+		const Type E = std::numeric_limits<Type>::epsilon();
+		//Transpose matrix.
+		LWSMatrix4 T3 = Transpose3x3();
+		LWSVector4<Type> A = T3.m_Rows[0];
+		LWSVector4<Type> B = T3.m_Rows[1];
+		LWSVector4<Type> C = T3.m_Rows[2];
+
+		LWSVector4<Type> One = LWSVector4<Type>(1, 1, 1, 0);
+		LWSVector4<Type> Sq = A * A + B * B + C * C;
+		LWSVector4<Type> rSq = (One / Sq).AAAB(One);
+		LWVector4<Type> SqV = Sq.AsVec4();
+		if (SqV.x < E) rSq = rSq.BAAA(One);
+		if (SqV.y < E) rSq = rSq.ABAA(One);
+		if (SqV.z < E) rSq = rSq.AABA(One);
+		A *= rSq;
+		B *= rSq;
+		C *= rSq;
+
+		LWSVector4<Type> Dx = m_Rows[3].xxxw();
+		LWSVector4<Type> Dy = m_Rows[3].yyyw();
+		LWSVector4<Type> Dz = m_Rows[3].zzzw();
+		LWSVector4<Type> D = -(A*Dx + B * Dy + C * Dz);
+		return LWSMatrix4(A, B, C, D.AAAB(m_Rows[3]));
+	}
+
 	/*! \brief Returns an copied inverse of this matrix. */
-	/*
+	
 	LWSMatrix4 Inverse(void) const {
-		Type D = Determinant();
-		
-		if (abs(D) <= std::numeric_limits<Type>::epsilon()) return LWSMatrix4();
-		D = 1.0f / D;
+		//adapted Non-simd version Found from: https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
+		LWSVector4<Type> A = m_Rows[0];
+		LWSVector4<Type> B = m_Rows[1];
+		LWSVector4<Type> C = m_Rows[2];
+		LWSVector4<Type> D = m_Rows[3];
 
+		LWSVector4<Type> Czzyy = C.zzyy();
+		LWSVector4<Type> Dwwwz = D.wwwz();
+		LWSVector4<Type> Dzzyy = D.zzyy();
+		LWSVector4<Type> Cwwwz = C.wwwz();
 
+		LWSVector4<Type> Cyxxx = C.yxxx();
+		LWSVector4<Type> Dyxxx = D.yxxx();
 
+		LWSVector4<Type> CzzBzz = C.zzzz().AABB(B.zzzz());
+		LWSVector4<Type> DwwwCw = D.wwww().AAAB(C.wwww());
+		LWSVector4<Type> CwwBww = C.wwww().AABB(B.wwww());
+		LWSVector4<Type> DzzzCz = D.zzzz().AAAB(C.zzzz());
+		LWSVector4<Type> CyyByy = C.yyyy().AABB(B.yyyy());
+		LWSVector4<Type> DyyCyy = D.yyyy().AABB(C.yyyy());
+		LWSVector4<Type> DyyyCy = D.yyyy().AAAB(C.yyyy());
+		LWSVector4<Type> CxxBxx = C.xxxx().AABB(B.xxxx());
+		LWSVector4<Type> DxxxCx = D.xxxx().AAAB(C.xxxx());
 
-		Type Ax = m_Rows[1].z*m_Rows[2].w*m_Rows[3].y - m_Rows[1].w*m_Rows[2].z*m_Rows[3].y + m_Rows[1].w*m_Rows[2].y*m_Rows[3].z - m_Rows[1].y*m_Rows[2].w*m_Rows[3].z - m_Rows[1].z*m_Rows[2].y*m_Rows[3].w + m_Rows[1].y*m_Rows[2].z*m_Rows[3].w;
-		Type Ay = m_Rows[0].w*m_Rows[2].z*m_Rows[3].y - m_Rows[0].z*m_Rows[2].w*m_Rows[3].y - m_Rows[0].w*m_Rows[2].y*m_Rows[3].z + m_Rows[0].y*m_Rows[2].w*m_Rows[3].z + m_Rows[0].z*m_Rows[2].y*m_Rows[3].w - m_Rows[0].y*m_Rows[2].z*m_Rows[3].w;
-		Type Az = m_Rows[0].z*m_Rows[1].w*m_Rows[3].y - m_Rows[0].w*m_Rows[1].z*m_Rows[3].y + m_Rows[0].w*m_Rows[1].y*m_Rows[3].z - m_Rows[0].y*m_Rows[1].w*m_Rows[3].z - m_Rows[0].z*m_Rows[1].y*m_Rows[3].w + m_Rows[0].y*m_Rows[1].z*m_Rows[3].w;
-		Type Aw = m_Rows[0].w*m_Rows[1].z*m_Rows[2].y - m_Rows[0].z*m_Rows[1].w*m_Rows[2].y - m_Rows[0].w*m_Rows[1].y*m_Rows[2].z + m_Rows[0].y*m_Rows[1].w*m_Rows[2].z + m_Rows[0].z*m_Rows[1].y*m_Rows[2].w - m_Rows[0].y*m_Rows[1].z*m_Rows[2].w;
-		Type Bx = m_Rows[1].w*m_Rows[2].z*m_Rows[3].x - m_Rows[1].z*m_Rows[2].w*m_Rows[3].x - m_Rows[1].w*m_Rows[2].x*m_Rows[3].z + m_Rows[1].x*m_Rows[2].w*m_Rows[3].z + m_Rows[1].z*m_Rows[2].x*m_Rows[3].w - m_Rows[1].x*m_Rows[2].z*m_Rows[3].w;
-		Type By = m_Rows[0].z*m_Rows[2].w*m_Rows[3].x - m_Rows[0].w*m_Rows[2].z*m_Rows[3].x + m_Rows[0].w*m_Rows[2].x*m_Rows[3].z - m_Rows[0].x*m_Rows[2].w*m_Rows[3].z - m_Rows[0].z*m_Rows[2].x*m_Rows[3].w + m_Rows[0].x*m_Rows[2].z*m_Rows[3].w;
-		Type Bz = m_Rows[0].w*m_Rows[1].z*m_Rows[3].x - m_Rows[0].z*m_Rows[1].w*m_Rows[3].x - m_Rows[0].w*m_Rows[1].x*m_Rows[3].z + m_Rows[0].x*m_Rows[1].w*m_Rows[3].z + m_Rows[0].z*m_Rows[1].x*m_Rows[3].w - m_Rows[0].x*m_Rows[1].z*m_Rows[3].w;
-		Type Bw = m_Rows[0].z*m_Rows[1].w*m_Rows[2].x - m_Rows[0].w*m_Rows[1].z*m_Rows[2].x + m_Rows[0].w*m_Rows[1].x*m_Rows[2].z - m_Rows[0].x*m_Rows[1].w*m_Rows[2].z - m_Rows[0].z*m_Rows[1].x*m_Rows[2].w + m_Rows[0].x*m_Rows[1].z*m_Rows[2].w;
-		Type Cx = m_Rows[1].y*m_Rows[2].w*m_Rows[3].x - m_Rows[1].w*m_Rows[2].y*m_Rows[3].x + m_Rows[1].w*m_Rows[2].x*m_Rows[3].y - m_Rows[1].x*m_Rows[2].w*m_Rows[3].y - m_Rows[1].y*m_Rows[2].x*m_Rows[3].w + m_Rows[1].x*m_Rows[2].y*m_Rows[3].w;
-		Type Cy = m_Rows[0].w*m_Rows[2].y*m_Rows[3].x - m_Rows[0].y*m_Rows[2].w*m_Rows[3].x - m_Rows[0].w*m_Rows[2].x*m_Rows[3].y + m_Rows[0].x*m_Rows[2].w*m_Rows[3].y + m_Rows[0].y*m_Rows[2].x*m_Rows[3].w - m_Rows[0].x*m_Rows[2].y*m_Rows[3].w;
-		Type Cz = m_Rows[0].y*m_Rows[1].w*m_Rows[3].x - m_Rows[0].w*m_Rows[1].y*m_Rows[3].x + m_Rows[0].w*m_Rows[1].x*m_Rows[3].y - m_Rows[0].x*m_Rows[1].w*m_Rows[3].y - m_Rows[0].y*m_Rows[1].x*m_Rows[3].w + m_Rows[0].x*m_Rows[1].y*m_Rows[3].w;
-		Type Cw = m_Rows[0].w*m_Rows[1].y*m_Rows[2].x - m_Rows[0].y*m_Rows[1].w*m_Rows[2].x - m_Rows[0].w*m_Rows[1].x*m_Rows[2].y + m_Rows[0].x*m_Rows[1].w*m_Rows[2].y + m_Rows[0].y*m_Rows[1].x*m_Rows[2].w - m_Rows[0].x*m_Rows[1].y*m_Rows[2].w;
-		Type Dx = m_Rows[1].z*m_Rows[2].y*m_Rows[3].x - m_Rows[1].y*m_Rows[2].z*m_Rows[3].x - m_Rows[1].z*m_Rows[2].x*m_Rows[3].y + m_Rows[1].x*m_Rows[2].z*m_Rows[3].y + m_Rows[1].y*m_Rows[2].x*m_Rows[3].z - m_Rows[1].x*m_Rows[2].y*m_Rows[3].z;
-		Type Dy = m_Rows[0].y*m_Rows[2].z*m_Rows[3].x - m_Rows[0].z*m_Rows[2].y*m_Rows[3].x + m_Rows[0].z*m_Rows[2].x*m_Rows[3].y - m_Rows[0].x*m_Rows[2].z*m_Rows[3].y - m_Rows[0].y*m_Rows[2].x*m_Rows[3].z + m_Rows[0].x*m_Rows[2].y*m_Rows[3].z;
-		Type Dz = m_Rows[0].z*m_Rows[1].y*m_Rows[3].x - m_Rows[0].y*m_Rows[1].z*m_Rows[3].x - m_Rows[0].z*m_Rows[1].x*m_Rows[3].y + m_Rows[0].x*m_Rows[1].z*m_Rows[3].y + m_Rows[0].y*m_Rows[1].x*m_Rows[3].z - m_Rows[0].x*m_Rows[1].y*m_Rows[3].z;
-		Type Dw = m_Rows[0].y*m_Rows[1].z*m_Rows[2].x - m_Rows[0].z*m_Rows[1].y*m_Rows[2].x + m_Rows[0].z*m_Rows[1].x*m_Rows[2].y - m_Rows[0].x*m_Rows[1].z*m_Rows[2].y - m_Rows[0].y*m_Rows[1].x*m_Rows[2].z + m_Rows[0].x*m_Rows[1].y*m_Rows[2].z;
-		return LWSMatrix4(LWVector4<Type>(Ax, Ay, Az, Aw), LWVector4<Type>(Bx, By, Bz, Bw), LWVector4<Type>(Cx, Cy, Cz, Cw), LWVector4<Type>(Dx, Dy, Dz, Dw))*D;
-	}*/
+		LWSVector4<Type> A2323_A2323_A1323_A1223 = Czzyy * Dwwwz - Cwwwz * Dzzyy;
+		LWSVector4<Type> A1323_A0323_A0323_A0223 = Cyxxx * Dwwwz - Cwwwz * Dyxxx;
+		LWSVector4<Type> A1223_A0223_A0123_A0123 = Cyxxx * Dzzyy - Czzyy * Dyxxx;
+
+		LWSVector4<Type> A2323_A2323_A2313_A2312 = CzzBzz * DwwwCw - CwwBww * DzzzCz;
+		LWSVector4<Type> A1323_A1323_A1313_A1312 = CyyByy * DwwwCw - CwwBww * DyyCyy;
+		LWSVector4<Type> A1223_A1223_A1213_A1212 = CyyByy * DzzzCz - CzzBzz * DyyyCy;
+		LWSVector4<Type> A0323_A0323_A0313_A0312 = CxxBxx * DwwwCw - CwwBww * DxxxCx;
+		LWSVector4<Type> A0223_A0223_A0213_A0212 = CxxBxx * DzzzCz - CzzBzz * DxxxCx;
+		LWSVector4<Type> A0123_A0123_A0113_A0112 = CxxBxx * DyyyCy - CyyByy * DxxxCx;
+			
+		LWSVector4<Type> MulA = LWSVector4<Type>(1, -1, 1, -1);
+		LWSVector4<Type> MulB = LWSVector4<Type>(-1, 1, -1, 1);
+		LWSVector4<Type> Det = ((A * (B.yxxx() * A2323_A2323_A1323_A1223 - B.zzyy() * A1323_A0323_A0323_A0223 + B.wwwy() * A1223_A0223_A0123_A0123))*MulA).Sum();
+		if (Det.x() <= std::numeric_limits<Type>::epsilon()) Det = LWSVector4<Type>(0, 0, 0, 0);
+		else Det = (Type)1 / Det;
+
+		LWSVector4<Type> ByAxxx = B.yyyy().ABBB(A.xxxx());
+		LWSVector4<Type> ByAyyy = B.yyyy().ABBB(A.yyyy());
+		LWSVector4<Type> BzAzzz = B.zzzz().ABBB(A.zzzz());
+		LWSVector4<Type> BwAwww = B.wwww().ABBB(A.wwww());
+		LWSVector4<Type> BxAxxx = B.xxxx().ABBB(A.xxxx());
+		A = (ByAyyy * A2323_A2323_A2313_A2312 - BzAzzz * A1323_A1323_A1313_A1312 + BwAwww * A1223_A1223_A1213_A1212) * MulA * Det;
+		B = (ByAxxx * A2323_A2323_A2313_A2312 - BzAzzz * A0323_A0323_A0313_A0312 + BwAwww * A0223_A0223_A0213_A0212) * MulB * Det;
+		C = (BxAxxx * A1323_A1323_A1313_A1312 - ByAyyy * A0323_A0323_A0313_A0312 + BwAwww * A0123_A0123_A0113_A0112) * MulA * Det;
+		D = (BxAxxx * A1223_A1223_A1213_A1212 - ByAyyy * A0223_A0223_A0213_A0212 + BzAzzz * A0123_A0123_A0113_A0112) * MulB * Det;
+		return LWSMatrix4(A, B, C, D);
+	}
 
 	/*!< \brief returns the specified column of the matrix. */
 	LWSVector4<Type> Column(uint32_t Index) {
-		LWMatrix4 M = AsMat4();
-		Type *Arry = &M.m_Rows[0].x;
-		return LWSVector4<Type>(Arry[Index], Arry[Index + 4], Arry[Index + 8], Arry[Index + 12]);
+		return Transpose().m_Rows[Index];
 	};
 
 	/*! \brief returns the transpose of the this matrix. */
 	LWSMatrix4 Transpose(void) const {
-		LWMatrix4<Type> M = AsMat4().Transpose();
-		return LWSMatrix4(M.m_Rows[0], M.m_Rows[1], M.m_Rows[2], M.m_Rows[3]);
+		LWSVector4<Type> A = m_Rows[0];
+		LWSVector4<Type> B = m_Rows[1];
+		LWSVector4<Type> C = m_Rows[2];
+		LWSVector4<Type> D = m_Rows[3];
+		LWSVector4<Type> Ay = A.yyyy();
+		LWSVector4<Type> Az = A.zzzz();
+		LWSVector4<Type> Aw = A.wwww();
+		LWSVector4<Type> Bx = B.xxxx();
+		LWSVector4<Type> Bz = B.zzzz();
+		LWSVector4<Type> Bw = B.wwww();
+		LWSVector4<Type> Cx = C.xxxx();
+		LWSVector4<Type> Cy = C.yyyy();
+		LWSVector4<Type> Cw = C.wwww();
+		LWSVector4<Type> Dx = D.xxxx();
+		LWSVector4<Type> Dy = D.yyyy();
+		LWSVector4<Type> Dz = D.zzzz();
+
+		return LWSMatrix4(A.ABAA(Bx).AABA(Cx).AAAB(Dx),
+						  Ay.ABAA(B).AABA(Cy).AAAB(Dy),
+						  Az.ABAA(Bz).AABA(C).AAAB(Dz),
+						  Aw.ABAA(Bw).AABA(Cw).AAAB(D));
 	}
 
 	/*!< \brief returns the upper left 3x3 matrix transposed only. */
 	LWSMatrix4 Transpose3x3(void) const {
-		LWMatrix4 M = AsMat4().Transpose3x3();
-		return LWSMatrix4(M.m_Rows[0], M.m_Rows[1], M.m_Rows[2], M.m_Rows[3]);
+		LWSVector4<Type> A = m_Rows[0];
+		LWSVector4<Type> B = m_Rows[1];
+		LWSVector4<Type> C = m_Rows[2];
+		LWSVector4<Type> Ay = A.yyyy();
+		LWSVector4<Type> Az = A.zzzz();
+		LWSVector4<Type> Bx = B.xxxx();
+		LWSVector4<Type> Bz = B.zzzz();
+		LWSVector4<Type> Cx = C.xxxx();
+		LWSVector4<Type> Cy = C.yyyy();
+
+		return LWSMatrix4(A.ABAA(Bx).AABA(Cx),
+			Ay.ABAB(B).AABA(Cy),
+			Az.ABAA(Bz).AABB(C),
+			m_Rows[3]);
 	}
 
 	/*!< \brief returns the upper left 2x2 matrix transposed only. */
 	LWSMatrix4 Transpose2x2(void) const {
-		LWMatrix4 M = AsMat4().Transpose2x2();
-		return LWSMatrix4(M.m_Rows[0], M.m_Rows[1], M.m_Rows[2], M.m_Rows[3]);
+		LWSVector4<Type> A = m_Rows[0];
+		LWSVector4<Type> B = m_Rows[1];
+		LWSVector4<Type> Ay = A.yyyy();
+		LWSVector4<Type> Bx = B.xxxx();
+		return LWSMatrix4(A.ABAA(Bx), Ay.ABBB(B), m_Rows[2], m_Rows[3]);
 	}
-
 	/*! \brief calculates the determinant of this matrix. */
-	/*
+	
 	Type Determinant(void) const {
-		
-		LWSVector4<Type> A = 
+		//adapted Non-simd version Found from: https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
+		LWSVector4<Type> A = m_Rows[0];
+		LWSVector4<Type> B = m_Rows[1];
+		LWSVector4<Type> C = m_Rows[2];
+		LWSVector4<Type> D = m_Rows[3];
 
-		return
-			m_Rows[0].w*m_Rows[1].z*m_Rows[2].y*m_Rows[3].x - m_Rows[0].z*m_Rows[1].w*m_Rows[2].y*m_Rows[3].x -
-			m_Rows[0].w*m_Rows[1].y*m_Rows[2].z*m_Rows[3].x + m_Rows[0].y*m_Rows[1].w*m_Rows[2].z*m_Rows[3].x +
-			m_Rows[0].z*m_Rows[1].y*m_Rows[2].w*m_Rows[3].x - m_Rows[0].y*m_Rows[1].z*m_Rows[2].w*m_Rows[3].x -
-			m_Rows[0].w*m_Rows[1].z*m_Rows[2].x*m_Rows[3].y + m_Rows[0].z*m_Rows[1].w*m_Rows[2].x*m_Rows[3].y +
-			m_Rows[0].w*m_Rows[1].x*m_Rows[2].z*m_Rows[3].y - m_Rows[0].x*m_Rows[1].w*m_Rows[2].z*m_Rows[3].y -
-			m_Rows[0].z*m_Rows[1].x*m_Rows[2].w*m_Rows[3].y + m_Rows[0].x*m_Rows[1].z*m_Rows[2].w*m_Rows[3].y +
-			m_Rows[0].w*m_Rows[1].y*m_Rows[2].x*m_Rows[3].z - m_Rows[0].y*m_Rows[1].w*m_Rows[2].x*m_Rows[3].z -
-			m_Rows[0].w*m_Rows[1].x*m_Rows[2].y*m_Rows[3].z + m_Rows[0].x*m_Rows[1].w*m_Rows[2].y*m_Rows[3].z +
-			m_Rows[0].y*m_Rows[1].x*m_Rows[2].w*m_Rows[3].z - m_Rows[0].x*m_Rows[1].y*m_Rows[2].w*m_Rows[3].z -
-			m_Rows[0].z*m_Rows[1].y*m_Rows[2].x*m_Rows[3].w + m_Rows[0].y*m_Rows[1].z*m_Rows[2].x*m_Rows[3].w +
-			m_Rows[0].z*m_Rows[1].x*m_Rows[2].y*m_Rows[3].w - m_Rows[0].x*m_Rows[1].z*m_Rows[2].y*m_Rows[3].w -
-			m_Rows[0].y*m_Rows[1].x*m_Rows[2].z*m_Rows[3].w + m_Rows[0].x*m_Rows[1].y*m_Rows[2].z*m_Rows[3].w;
-	}*/
+		LWSVector4<Type> Czzyy = C.zzyy();
+		LWSVector4<Type> Dwwwz = D.wwwz();
+		LWSVector4<Type> Dzzyy = D.zzyy();
+		LWSVector4<Type> Cwwwz = C.wwwz();
+
+		LWSVector4<Type> Cyxxx = C.yxxx();
+		LWSVector4<Type> Dyxxx = D.yxxx();
+
+		LWSVector4<Type> A2323_A2323_A1323_A1223 = Czzyy * Dwwwz - Cwwwz * Dzzyy;
+		LWSVector4<Type> A1323_A0323_A0323_A0223 = Cyxxx * Dwwwz - Cwwwz * Dyxxx;
+		LWSVector4<Type> A1223_A0223_A0123_A0123 = Cyxxx * Dzzyy - Czzyy * Dyxxx;
+		
+		LWSVector4<Type> Mul = LWSVector4<Type>(1, -1, 1, -1);
+		return ((A * (B.yxxx() * A2323_A2323_A1323_A1223 - B.zzyy() * A1323_A0323_A0323_A0223 + B.wwwy() * A1223_A0223_A0123_A0123))*Mul).Sum4();
+	}
 
 	/*! \cond */
 	LWSMatrix4 &operator = (const LWSMatrix4 &Rhs) {
@@ -117,31 +203,29 @@ struct LWSMatrix4 {
 	}
 
 	LWSMatrix4 &operator*= (const LWSMatrix4 &Rhs) {
-		LWSMatrix4 RhsT = Rhs.Transpose();
-
 		LWSVector4<Type> Ax = m_Rows[0].xxxx();
-		LWSVector4<Type> Ay = m_Rows[1].yyyy();
-		LWSVector4<Type> Az = m_Rows[2].zzzz();
-		LWSVector4<Type> Aw = m_Rows[3].wwww();
-		LWSVector4<Type> A = Ax * RhsT.m_Rows[0] + Ay * RhsT.m_Rows[1] + Az*RhsT.m_Rows[2] + Aw*RhsT.m_Rows[3];
+		LWSVector4<Type> Ay = m_Rows[0].yyyy();
+		LWSVector4<Type> Az = m_Rows[0].zzzz();
+		LWSVector4<Type> Aw = m_Rows[0].wwww();
+		LWSVector4<Type> A = Ax * Rhs.m_Rows[0] + Ay * Rhs.m_Rows[1] + Az*Rhs.m_Rows[2] + Aw*Rhs.m_Rows[3];
 
 		LWSVector4<Type> Bx = m_Rows[1].xxxx();
 		LWSVector4<Type> By = m_Rows[1].yyyy();
 		LWSVector4<Type> Bz = m_Rows[1].zzzz();
-		LWSVector4<Type> Bw = m_Rows[2].wwww();
-		LWSVector4<Type> B = Bx * RhsT.m_Rows[0] + By * RhsT.m_Rows[1] + Az * RhsT.m_Rows[2] + Aw * RhsT.m_Rows[3];
+		LWSVector4<Type> Bw = m_Rows[1].wwww();
+		LWSVector4<Type> B = Bx * Rhs.m_Rows[0] + By * Rhs.m_Rows[1] + Bz * Rhs.m_Rows[2] + Bw * Rhs.m_Rows[3];
 
 		LWSVector4<Type> Cx = m_Rows[2].xxxx();
 		LWSVector4<Type> Cy = m_Rows[2].yyyy();
 		LWSVector4<Type> Cz = m_Rows[2].zzzz();
 		LWSVector4<Type> Cw = m_Rows[2].wwww();
-		LWSVector4<Type> C = Cx * RhsT.m_Rows[0] + Cy * RhsT.m_Rows[1] + Cz * RhsT.m_Rows[2] + Cw * RhsT.m_Rows[3];
+		LWSVector4<Type> C = Cx * Rhs.m_Rows[0] + Cy * Rhs.m_Rows[1] + Cz * Rhs.m_Rows[2] + Cw * Rhs.m_Rows[3];
 
 		LWSVector4<Type> Dx = m_Rows[3].xxxx();
 		LWSVector4<Type> Dy = m_Rows[3].yyyy();
 		LWSVector4<Type> Dz = m_Rows[3].zzzz();
 		LWSVector4<Type> Dw = m_Rows[3].wwww();
-		LWSVector4<Type> D = Dx * RhsT.m_Rows[0] + Dy * RhsT.m_Rows[1] + Dz * RhsT.m_Rows[2] + Dw * RhsT.m_Rows[3];
+		LWSVector4<Type> D = Dx * Rhs.m_Rows[0] + Dy * Rhs.m_Rows[1] + Dz * Rhs.m_Rows[2] + Dw * Rhs.m_Rows[3];
 		
 		m_Rows[0] = A;
 		m_Rows[1] = B;
@@ -192,31 +276,29 @@ struct LWSMatrix4 {
 	}
 
 	friend LWSMatrix4 operator * (const LWSMatrix4 &Lhs, const LWSMatrix4 &Rhs) {
-		LWSMatrix4 RhsT = Rhs.Transpose();
-
 		LWSVector4<Type> Ax = Lhs.m_Rows[0].xxxx();
 		LWSVector4<Type> Ay = Lhs.m_Rows[0].yyyy();
 		LWSVector4<Type> Az = Lhs.m_Rows[0].zzzz();
 		LWSVector4<Type> Aw = Lhs.m_Rows[0].wwww();
-		LWSVector4<Type> A = Ax * RhsT.m_Rows[0] + Ay * RhsT.m_Rows[1] + Az * RhsT.m_Rows[2] + Aw * RhsT.m_Rows[3];
+		LWSVector4<Type> A = Ax * Rhs.m_Rows[0] + Ay * Rhs.m_Rows[1] + Az * Rhs.m_Rows[2] + Aw * Rhs.m_Rows[3];
 
 		LWSVector4<Type> Bx = Lhs.m_Rows[1].xxxx();
 		LWSVector4<Type> By = Lhs.m_Rows[1].yyyy();
 		LWSVector4<Type> Bz = Lhs.m_Rows[1].zzzz();
 		LWSVector4<Type> Bw = Lhs.m_Rows[1].wwww();
-		LWSVector4<Type> B = Bx * RhsT.m_Rows[0] + By * RhsT.m_Rows[1] + Az * RhsT.m_Rows[2] + Aw * RhsT.m_Rows[3];
+		LWSVector4<Type> B = Bx * Rhs.m_Rows[0] + By * Rhs.m_Rows[1] + Bz * Rhs.m_Rows[2] + Bw * Rhs.m_Rows[3];
 
 		LWSVector4<Type> Cx = Lhs.m_Rows[2].xxxx();
 		LWSVector4<Type> Cy = Lhs.m_Rows[2].yyyy();
 		LWSVector4<Type> Cz = Lhs.m_Rows[2].zzzz();
 		LWSVector4<Type> Cw = Lhs.m_Rows[2].wwww();
-		LWSVector4<Type> C = Cx * RhsT.m_Rows[0] + Cy * RhsT.m_Rows[1] + Cz * RhsT.m_Rows[2] + Cw * RhsT.m_Rows[3];
+		LWSVector4<Type> C = Cx * Rhs.m_Rows[0] + Cy * Rhs.m_Rows[1] + Cz * Rhs.m_Rows[2] + Cw * Rhs.m_Rows[3];
 
 		LWSVector4<Type> Dx = Lhs.m_Rows[3].xxxx();
 		LWSVector4<Type> Dy = Lhs.m_Rows[3].yyyy();
 		LWSVector4<Type> Dz = Lhs.m_Rows[3].zzzz();
 		LWSVector4<Type> Dw = Lhs.m_Rows[3].wwww();
-		LWSVector4<Type> D = Dx * RhsT.m_Rows[0] + Dy * RhsT.m_Rows[1] + Dz * RhsT.m_Rows[2] + Dw * RhsT.m_Rows[3];
+		LWSVector4<Type> D = Dx * Rhs.m_Rows[0] + Dy * Rhs.m_Rows[1] + Dz * Rhs.m_Rows[2] + Dw * Rhs.m_Rows[3];
 		return { A, B, C, D };
 	}
 
@@ -513,8 +595,8 @@ struct LWSMatrix4 {
 	}
 
 	/*!< \brief constructs a 4x4 rotational matrix from the specified quaternion. */
-	
-	LWSMatrix4(const LWQuaternion<Type> &Q) {
+
+	LWSMatrix4(const LWSQuaternion<Type> &Q) {
 		LWSVector4<Type> VQ = Q.AsVec4();
 		
 		LWSVector4<Type> yy_xx_xx_xx = VQ.yxxx()*VQ.yxxx();
@@ -530,9 +612,9 @@ struct LWSMatrix4 {
 		LWSVector4<Type> B = Two * (xz_xy_yz_xx + yw_zw_xw_xx);
 		LWSVector4<Type> C = Two * (xz_xy_yz_xx - yw_zw_xw_xx);
 
-		m_Rows[0] = A.xwww() + C.wyww() + B.wwxw();
-		m_Rows[1] = B.ywww() + A.wyww() + C.wwzw();
-		m_Rows[2] = C.xwww() + B.wzww() + A.wwzw();
+		m_Rows[0] = (A.ABAA(C)).AABA(B.xxxx());
+		m_Rows[1] = (B.yyww().ABAA(A)).AABA(C);
+		m_Rows[2] = (C.ABAA(C.zzzz())).AABA(A);
 		m_Rows[3] = LWSVector4<Type>(0, 0, 0, 1);
 
 	}
@@ -553,27 +635,29 @@ struct LWSMatrix4 {
 		m_Rows[2] = RowC;
 		m_Rows[3] = RowD;
 	}
+	
+	/*!< \brief constructs a 4x4 matrix from Scale, Rotation, Position components(Position should have 1 as it's w component). */
+	LWSMatrix4(const LWSVector4<Type> &Scale, const LWSQuaternion<Type> &Rotation, const LWSVector4<Type> &Pos) {
+		LWSVector4<Type> VQ = Q.AsVec4();
 
-	/*!< \brief constructs a 4x4 matrix from Scale, Rotation, Position components. */
-	/*
-	LWSMatrix4(const LWSVector4<Type> &Scale, const LWQuaternion<Type> &Rotation, const LWVector3<Type> &Pos) {
-		const LWQuaternion<Type> &Q = Rotation;
-		Type xx = Q.x*Q.x;
-		Type xy = Q.x*Q.y;
-		Type xz = Q.x*Q.z;
-		Type xw = Q.x*Q.w;
-		Type yy = Q.y*Q.y;
-		Type yz = Q.y*Q.z;
-		Type yw = Q.y*Q.w;
+		LWSVector4<Type> yy_xx_xx_xx = VQ.yxxx()*VQ.yxxx();
+		LWSVector4<Type> zz_zz_yy_xx = VQ.zzyx()*VQ.zzyx();
 
-		Type zz = Q.z*Q.z;
-		Type zw = Q.z*Q.w;
+		LWSVector4<Type> xz_xy_yz_xx = VQ.xxyx()*VQ.zyzx();
+		LWSVector4<Type> yw_zw_xw_xx = VQ.yzxx()*VQ.wwwx();
 
-		m_Rows[0] = { (Type)(1 - 2 * (yy + zz)), (Type)(2 * (xy - zw)), (Type)(2 * (xz + yw)), (Type)0 }*Scale.x;
-		m_Rows[1] = { (Type)2 * (xy + zw), (Type)(1 - 2 * (xx + zz)), (Type)(2 * (yz - xw)), 0 }*Scale.y;
-		m_Rows[2] = { (Type)(2 * (xz - yw)), (Type)(2 * (yz + xw)), (Type)(1 - 2 * (xx + yy)), (Type)0 }*Scale.z;
-		m_Rows[3] = { (Type)Pos.x, (Type)Pos.y, (Type)Pos.z, (Type)1 };
-	};*/
+		LWSVector4<Type> One = LWSVector4<Type>(1, 1, 1, 0);
+		LWSVector4<Type> Two = LWSVector4<Type>(2, 2, 2, 0);
+
+		LWSVector4<Type> A = One - Two * (yy_xx_xx_xx + zz_zz_yy_xx);
+		LWSVector4<Type> B = Two * (xz_xy_yz_xx + yw_zw_xw_xx);
+		LWSVector4<Type> C = Two * (xz_xy_yz_xx - yw_zw_xw_xx);
+
+		m_Rows[0] = ((A.ABAA(C)).AABA(B.xxxx()))*Scale.xxxw();
+		m_Rows[1] = ((B.yyww().ABAA(A)).AABA(C))*Scale.yyyw();
+		m_Rows[2] = ((C.ABAA(C.zzzz())).AABA(A))*Scale.zzzw();
+		m_Rows[3] = Pos;
+	};
 };
 
 #ifndef LW_NOAVX2

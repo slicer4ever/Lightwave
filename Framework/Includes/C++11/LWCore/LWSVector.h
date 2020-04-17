@@ -2,9 +2,7 @@
 #define LWESVECTOR_H
 #include <LWCore/LWTypes.h>
 #include <LWCore/LWVector.h>
-#include <LWCore/LWSQuaternion.h>
 #include <ostream>
-
 
 /*!< \brief an accelerated simd vector4 class, non-implemented or disabled sse functions default to a generic class. */
 template<class Type>
@@ -15,7 +13,6 @@ struct LWSVector4 {
 	LWVector4<Type> AsVec4(void) const {
 		return LWVector4<Type>(m_x, m_y, m_z, m_w);
 	}
-
 
 	/*!< \brief normalizes the vec4. */
 	LWSVector4<Type> Normalize(void) const {
@@ -54,6 +51,26 @@ struct LWSVector4 {
 	/*!< \brief gets the dot product between two vector4's as if they were vec2 object's, ignoring the w component. */
 	Type Dot2(const LWSVector4<Type> &O) const {
 		return m_x * O.m_x + m_y * O.m_y;
+	}
+	/*!< \brief returns a summed version of the SVector4 into each vec4 component. */
+	LWSVector4<Type> Sum(void) const {
+		Type S = Sum4();
+		return LWSVector4<Type>(S, S, S, S);
+	}
+
+	/*!< \brief returns the 4 component sum of the vec4. */
+	Type Sum(void) const {
+		return m_x + m_y + m_z + m_w;
+	};
+
+	/*!< \brief returns the 3 component sum of the xyz components of the vec4. */
+	Type Sum3(void) const {
+		return m_x + m_y + m_z;
+	}
+
+	/*!< \brief returns the 2 component sum of the xy components of the vec4. */
+	Type Sum2(void) const {
+		return m_x + m_y;
 	}
 
 	/*!< \brief get's the minimum value of all components. */
@@ -312,6 +329,76 @@ struct LWSVector4 {
 
 	friend LWSVector4<Type> operator / (Type Lhs, const LWSVector4<Type> &Rhs) {
 		return LWSVector4<Type>(Lhs / Rhs.m_x, Lhs / Rhs.m_y, Lhs / Rhs.m_z, Lhs / Rhs.m_w);
+	}
+
+	/*!< \brief returns xyz from A, and w from B. */
+	LWSVector4<Type> AAAB(const LWSVector4<Type> &B) const {
+		return { A.m_x, A.m_y, A.m_z, B.m_w };
+	}
+
+	/*!< \brief returns xyw from A(this), and z from B. */
+	LWSVector4<Type> AABA(const LWSVector4<Type> &B) const {
+		return { m_x, m_y, B.m_z, m_w };
+	}
+
+	/*!< \brief returns xy from A(this), and zw from B. */
+	LWSVector4<Type> AABB(const LWSVector4<Type> &B) const {
+		return { m_x, m_y, B.m_z, B.m_w };
+	}
+
+	/*!< \brief returns xzw from A(this), and y from B. */
+	LWSVector4<Type> ABAA(const LWSVector4<Type> &B) const {
+		return { m_x, B.m_y, m_z, m_w };
+	}
+
+	/*!< \brief returns xz from A(this), and yw from B. */
+	LWSVector4<Type> ABAB(const LWSVector4<Type> &B) const {
+		return { m_x, B.m_y, m_z, B.m_w };
+	}
+
+	/*!< \brief returns xw from A(this), and yz from B. */
+	LWSVector4<Type> ABBA(const LWSVector4<Type> &B) const {
+		return { m_x, B.m_y, B.m_z, m_w };
+	}
+
+	/*!< \brief returns x from A(this), and yzw from B. */
+	LWSVector4<Type> ABBB(const LWSVector4<Type> &B) const {
+		return { m_x, B.m_y, B.m_z, B.m_w };
+	}
+
+	/*!< \brief returns yzw from A(this), and x from B. */
+	LWSVector4<Type> BAAA(const LWSVector4<Type> &B) const {
+		return { B.m_w, m_y, m_z, m_w };
+	}
+
+	/*!< \brief returns yz from A(this), and xw from B. */
+	LWSVector4<Type> BAAB(const LWSVector4<Type> &B) const {
+		return { B.m_x, m_y, m_z, B.m_w };
+	}
+
+	/*!< \brief returns yw from A(this), and xz from B. */
+	LWSVector4<Type> BABA(const LWSVector4<Type> &B) const {
+		return { B.m_x, m_y, B.m_z, m_w };
+	}
+
+	/*!< \brief returns y from A(this), and xzw from B. */
+	LWSVector4<Type> BABB(const LWSVector4<Type> &B) const {
+		return { B.m_x, m_y, B.m_z, B.m_w };
+	}
+
+	/*!< \brief returns zw from A(this), and xy from B. */
+	LWSVector4<Type> BBAA(const LWSVector4<Type> &B) const {
+		return { B.m_x, B.m_y, m_z, A.m_w };
+	}
+
+	/*!< \brief returns z from A(this), and xyw from B. */
+	LWSVector4<Type> BBAB(const LWSVector4<Type> &B) const {
+		return { B.m_x, B.m_y, A.m_z, B.m_w };
+	}
+
+	/*!< \brief returns w from A(this), and xyz from B. */
+	LWSVector4<Type> BBBA(const LWSVector4<Type> &B) const {
+		return { B.m_x, B.m_y, B.m_z, A.m_w };
 	}
 
 	LWSVector4<Type> xxxx(void) const {

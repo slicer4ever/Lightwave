@@ -35,6 +35,47 @@ struct LWSVector4<int32_t> {
 		return _mm_cvtsi128_si32(_mm_min_epi32(m_Data, A));
 	}
 
+	int32_t Dot(const LWSVector4<int32_t> &O) const {
+		__m128i t = _mm_mul_epi32(m_Data, O.m_Data);
+		t = _mm_hadd_epi32(t, t);
+		t = _mm_hadd_epi32(t, t);
+		return _mm_cvtsi128_si32(t);
+	}
+
+	int32_t Dot3(const LWSVector4<int32_t> &O) const {
+		__m128i t = _mm_mul_epi32(m_Data, O.m_Data);
+		t = _mm_mul_epi32(t, _mm_set_epi32(1, 1, 1, 0));
+		t = _mm_hadd_epi32(t, t);
+		t = _mm_hadd_epi32(t, t);
+		return _mm_cvtsi128_si32(t);
+	}
+
+	int32_t Dot2(const LWSVector4<int32_t> &O) const {
+		__m128i t = _mm_mul_epi32(m_Data, O.m_Data);
+		t = _mm_hadd_epi32(t, t);
+		return _mm_cvtsi128_si32(t);
+	}
+
+	LWSVector4<int32_t> Sum(void) const {
+		__m128i t = _mm_hadd_epi32(m_Data, m_Data);
+		return _mm_hadd_epi32(t, t);
+	}
+
+	int32_t Sum4(void) const {
+		__m128i t = _mm_hadd_epi32(m_Data, m_Data);
+		return _mm_cvtsi128_si32(_mm_hadd_epi32(t, t));
+	}
+
+	int32_t Sum3(void) const {
+		__m128i t = _mm_mul_epi32(m_Data, _mm_set_epi32(1, 1, 1, 0));
+		t = _mm_hadd_epi32(t, t);
+		return _mm_cvtsi128_si32(_mm_hadd_epi32(t, t));
+	}
+
+	int32_t Sum2(void) const {
+		return _mm_cvtsi128_si32(_mm_hadd_epi32(m_Data, m_Data));
+	}
+
 	int32_t Max(void) const {
 		__m128i A = _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 0, 3));
 		__m128i B = _mm_max_epi32(m_Data, A);
@@ -136,11 +177,11 @@ struct LWSVector4<int32_t> {
 		return _mm_sign_epi32(Rhs.m_Data, _mm_set1_epi32(-1));
 	}
 
-	bool operator == (const LWSVector4<int32_t> &Rhs) {
+	bool operator == (const LWSVector4<int32_t> &Rhs) const {
 		return _mm_test_all_ones(_mm_cmpeq_epi32(m_Data, Rhs.m_Data));
 	}
 
-	bool operator != (const LWSVector4<int32_t> &Rhs) {
+	bool operator != (const LWSVector4<int32_t> &Rhs) const {
 		return !(*this == Rhs);
 	}
 
@@ -225,6 +266,62 @@ struct LWSVector4<int32_t> {
 		__m128 t = _mm_div_ps(tA, tB);
 		_mm_store_ps(&Rf.x, t);
 		return _mm_set_epi32((int32_t)Rf.x, (int32_t)Rf.y, (int32_t)Rf.z, (int32_t)Rf.w);
+	}
+
+	LWSVector4<int32_t> AAAB(const LWSVector4<int32_t> &B) const {
+		return _mm_blend_epi16(m_Data, B.m_Data, 0xC0);
+	}
+
+	LWSVector4<int32_t> AABA(const LWSVector4<int32_t> &B) const {
+		return _mm_blend_epi16(m_Data, B.m_Data, 0x30);
+	}
+
+	LWSVector4<int32_t> AABB(const LWSVector4<int32_t> &B) const {
+		return _mm_blend_epi16(m_Data, B.m_Data, 0xF0);
+	}
+
+	LWSVector4<int32_t> ABAA(const LWSVector4<int32_t> &B) const {
+		return _mm_blend_epi16(m_Data, B.m_Data, 0xC);
+	}
+
+	LWSVector4<int32_t> ABAB(const LWSVector4<int32_t> &B) const {
+		return _mm_blend_epi16(m_Data, B.m_Data, 0xCC);
+	}
+
+	LWSVector4<int32_t> ABBA(const LWSVector4<int32_t> &B) const {
+		return _mm_blend_epi16(m_Data, B.m_Data, 0x3C);
+	}
+
+	LWSVector4<int32_t> ABBB(const LWSVector4<int32_t> &B) const {
+		return _mm_blend_epi16(m_Data, B.m_Data, 0xFC);
+	}
+
+	LWSVector4<int32_t> BAAA(const LWSVector4<int32_t> &B) const {
+		return _mm_blend_epi16(m_Data, B.m_Data, 0x3);
+	}
+
+	LWSVector4<int32_t> BAAB(const LWSVector4<int32_t> &B) const {
+		return _mm_blend_epi16(m_Data, B.m_Data, 0xC3);
+	}
+
+	LWSVector4<int32_t> BABA(const LWSVector4<int32_t> &B) const {
+		return _mm_blend_epi16(m_Data, B.m_Data, 0x33);
+	}
+
+	LWSVector4<int32_t> BABB(const LWSVector4<int32_t> &B) const {
+		return _mm_blend_epi16(m_Data, B.m_Data, 0xF3);
+	}
+
+	LWSVector4<int32_t> BBAA(const LWSVector4<int32_t> &B) const {
+		return _mm_blend_epi16(m_Data, B.m_Data, 0xF);
+	}
+
+	LWSVector4<int32_t> BBAB(const LWSVector4<int32_t> &B) const {
+		return _mm_blend_epi16(m_Data, B.m_Data, 0xCF);
+	}
+
+	LWSVector4<int32_t> BBBA(const LWSVector4<int32_t> &B) const {
+		return _mm_blend_epi16(m_Data, B.m_Data, 0x3F);
 	}
 
 	LWSVector4<int32_t> xxxx(void) const {
@@ -1371,27 +1468,19 @@ struct LWSVector4<int32_t> {
 	}
 
 	int32_t x(void) const {
-		alignas(16) LWVector4<int32_t> R;
-		_mm_store_si128((__m128i*)&R.x, m_Data);
-		return R.x;
+		return _mm_extract_epi32(m_Data, 0);
 	}
 
 	int32_t y(void) const {
-		alignas(16) LWVector4<int32_t> R;
-		_mm_store_si128((__m128i*)&R.x, m_Data);
-		return R.y;
+		return _mm_extract_epi32(m_Data, 1);
 	}
 
 	int32_t z(void) const {
-		alignas(16) LWVector4<int32_t> R;
-		_mm_store_si128((__m128i*)&R.x, m_Data);
-		return R.z;
+		return _mm_extract_epi32(m_Data, 2);
 	}
 
 	int32_t w(void) const {
-		alignas(16) LWVector4<int32_t> R;
-		_mm_store_si128((__m128i*)&R.x, m_Data);
-		return R.w;
+		return _mm_extract_epi32(m_Data, 3);
 	}
 
 	LWSVector4(__m128i Data) : m_Data(Data) {}

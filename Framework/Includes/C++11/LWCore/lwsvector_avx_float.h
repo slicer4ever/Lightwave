@@ -52,6 +52,27 @@ struct LWSVector4<float> {
 		return _mm_cvtss_f32(_mm_dp_ps(m_Data, O.m_Data, 0x3F));
 	}
 
+	LWSVector4<float> Sum(void) const {
+		__m128 t = _mm_hadd_ps(m_Data, m_Data);
+		return _mm_hadd_ps(t, t);
+	}
+
+	float Sum4(void) const {
+		__m128 t = _mm_hadd_ps(m_Data, m_Data);
+		t = _mm_hadd_ps(t, t);
+		return _mm_cvtss_f32(t);
+	}
+
+	float Sum3(void) const {
+		__m128 t = _mm_mul_ps(m_Data, _mm_set_ps(0.0f, 1.0f, 1.0f, 1.0f));
+		t = _mm_hadd_ps(t, t);
+		return _mm_cvtss_f32(_mm_hadd_ps(t, t));
+	}
+
+	float Sum2(void) const {
+		return _mm_cvtss_f32(_mm_hadd_ps(m_Data, m_Data));
+	}
+
 	float Min(void) const {
 		__m128 A = _mm_permute_ps(m_Data, _MM_SHUFFLE(2, 1, 0, 3));
 		__m128 B = _mm_min_ps(m_Data, A);
@@ -229,8 +250,11 @@ struct LWSVector4<float> {
 	}
 
 	bool operator == (const LWSVector4<float> &Rhs) const {
-		__m128i t = _mm_castps_si128(_mm_cmpeq_ps(m_Data, Rhs.m_Data));
-		return _mm_test_all_ones(t);
+		__m128 e = _mm_set_ps1(std::numeric_limits<float>::epsilon());
+		__m128 t = _mm_sub_ps(m_Data, Rhs.m_Data);
+		t = _mm_andnot_ps(_mm_set_ps1(-0.0), t); //Get absolute value of difference.
+		t = _mm_cmple_ps(t, e);
+		return _mm_test_all_ones(_mm_castps_si128(t));
 	}
 
 	bool operator != (const LWSVector4<float> &Rhs) const {
@@ -298,6 +322,62 @@ struct LWSVector4<float> {
 	friend LWSVector4<float> operator / (float Lhs, const LWSVector4<float> &Rhs) {
 		__m128 t = _mm_set_ps1(Lhs);
 		return _mm_div_ps(t, Rhs.m_Data);
+	}
+
+	LWSVector4<float> AAAB(const LWSVector4<float> &B) const {
+		return _mm_blend_ps(m_Data, B.m_Data, 0x8);
+	}
+
+	LWSVector4<float> AABA(const LWSVector4<float> &B) const {
+		return _mm_blend_ps(m_Data, B.m_Data, 0x4);
+	}
+
+	LWSVector4<float> AABB(const LWSVector4<float> &B) const {
+		return _mm_blend_ps(m_Data, B.m_Data, 0xC);
+	}
+
+	LWSVector4<float> ABAA(const LWSVector4<float> &B) const {
+		return _mm_blend_ps(m_Data, B.m_Data, 0x2);
+	}
+
+	LWSVector4<float> ABAB(const LWSVector4<float> &B) const {
+		return _mm_blend_ps(m_Data, B.m_Data, 0xA);
+	}
+
+	LWSVector4<float> ABBA(const LWSVector4<float> &B) const {
+		return _mm_blend_ps(m_Data, B.m_Data, 0x6);
+	}
+
+	LWSVector4<float> ABBB(const LWSVector4<float> &B) const {
+		return _mm_blend_ps(m_Data, B.m_Data, 0xE);
+	}
+
+	LWSVector4<float> BAAA(const LWSVector4<float> &B) const {
+		return _mm_blend_ps(m_Data, B.m_Data, 0x1);
+	}
+
+	LWSVector4<float> BAAB(const LWSVector4<float> &B) const {
+		return _mm_blend_ps(m_Data, B.m_Data, 0x9);
+	}
+
+	LWSVector4<float> BABA(const LWSVector4<float> &B) const {
+		return _mm_blend_ps(m_Data, B.m_Data, 0x5);
+	}
+
+	LWSVector4<float> BABB(const LWSVector4<float> &B) const {
+		return _mm_blend_ps(m_Data, B.m_Data, 0xD);
+	}
+
+	LWSVector4<float> BBAA(const LWSVector4<float> &B) const {
+		return _mm_blend_ps(m_Data, B.m_Data, 0x3);
+	}
+
+	LWSVector4<float> BBAB(const LWSVector4<float> &B) const {
+		return _mm_blend_ps(m_Data, B.m_Data, 0xB);
+	}
+
+	LWSVector4<float> BBBA(const LWSVector4<float> &B) const {
+		return _mm_blend_ps(m_Data, B.m_Data, 0x7);
 	}
 
 	LWSVector4<float> xxxx(void) const {
@@ -1444,27 +1524,20 @@ struct LWSVector4<float> {
 	}
 
 	float x(void) const {
-		alignas(16) LWVector4<float> R;
-		_mm_store_ps(&R.x, m_Data);
-		return R.x;
+		return _mm_cvtss_f32(xxxx().m_Data);
 	}
 
 	float y(void) const {
-		alignas(16) LWVector4<float> R;
-		_mm_store_ps(&R.x, m_Data);
-		return R.y;
+		return _mm_cvtss_f32(yyyy().m_Data);
 	}
 
 	float z(void) const {
-		alignas(16) LWVector4<float> R;
-		_mm_store_ps(&R.x, m_Data);
-		return R.z;
+		return _mm_cvtss_f32(zzzz().m_Data);
+
 	}
 
 	float w(void) const {
-		alignas(16) LWVector4<float> R;
-		_mm_store_ps(&R.x, m_Data);
-		return R.w;
+		return _mm_cvtss_f32(wwww().m_Data);
 	}
 
 	LWSVector4(__m128 Data) : m_Data(Data) {}
