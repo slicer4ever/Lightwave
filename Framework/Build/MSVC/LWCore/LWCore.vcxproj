@@ -141,6 +141,8 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWQuaternion.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSMatrix.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSMatrix_AVX2_Float.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSQuaternion.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSQuaternion_AVX_Float.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSVector.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSVector_AVX2_Double.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSVector_AVX_Float.h" />

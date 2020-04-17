@@ -29,11 +29,11 @@ struct LWMatrix4{
 		if (sizeSq.y < E) rsizeSq.y = 1.0;
 		if (sizeSq.z < E) rsizeSq.z = 1.0;
 		A *= rsizeSq;
-		y *= rsizeSq;
-		z *= rsizeSq;
+		B *= rsizeSq;
+		C *= rsizeSq;
 
-		LWVector3<Type> D = -LWVector3<Type>(A*m_Rows[3].x, B*m_Rows[3].y, C*m_Rows[3].z);
-		return LWMatrix4({ A, D.x }, { B, D.y }, { C, D.z }, { 0,0,0,1 });
+		LWVector3<Type> D = -LWVector3<Type>(A*m_Rows[3].x + B*m_Rows[3].y + C*m_Rows[3].z);
+		return LWMatrix4({ A, 0 }, { B, 0 }, { C, 0 }, { D ,1 });
 	}
 
 	/*! \brief writes into Result the transform inverse of the matrix. */
@@ -43,26 +43,63 @@ struct LWMatrix4{
 
 	/*! \brief Returns an copied inverse of this matrix for general matrix's. */
 	LWMatrix4 Inverse(void) const{
-		Type D = Determinant();
-		if (abs(D) <= std::numeric_limits<Type>::epsilon()) return LWMatrix4();
-		D = 1.0f / D;
-		Type Ax = m_Rows[1].z*m_Rows[2].w*m_Rows[3].y - m_Rows[1].w*m_Rows[2].z*m_Rows[3].y + m_Rows[1].w*m_Rows[2].y*m_Rows[3].z - m_Rows[1].y*m_Rows[2].w*m_Rows[3].z - m_Rows[1].z*m_Rows[2].y*m_Rows[3].w + m_Rows[1].y*m_Rows[2].z*m_Rows[3].w;
-		Type Ay = m_Rows[0].w*m_Rows[2].z*m_Rows[3].y - m_Rows[0].z*m_Rows[2].w*m_Rows[3].y - m_Rows[0].w*m_Rows[2].y*m_Rows[3].z + m_Rows[0].y*m_Rows[2].w*m_Rows[3].z + m_Rows[0].z*m_Rows[2].y*m_Rows[3].w - m_Rows[0].y*m_Rows[2].z*m_Rows[3].w;
-		Type Az = m_Rows[0].z*m_Rows[1].w*m_Rows[3].y - m_Rows[0].w*m_Rows[1].z*m_Rows[3].y + m_Rows[0].w*m_Rows[1].y*m_Rows[3].z - m_Rows[0].y*m_Rows[1].w*m_Rows[3].z - m_Rows[0].z*m_Rows[1].y*m_Rows[3].w + m_Rows[0].y*m_Rows[1].z*m_Rows[3].w;
-		Type Aw = m_Rows[0].w*m_Rows[1].z*m_Rows[2].y - m_Rows[0].z*m_Rows[1].w*m_Rows[2].y - m_Rows[0].w*m_Rows[1].y*m_Rows[2].z + m_Rows[0].y*m_Rows[1].w*m_Rows[2].z + m_Rows[0].z*m_Rows[1].y*m_Rows[2].w - m_Rows[0].y*m_Rows[1].z*m_Rows[2].w;
-		Type Bx = m_Rows[1].w*m_Rows[2].z*m_Rows[3].x - m_Rows[1].z*m_Rows[2].w*m_Rows[3].x - m_Rows[1].w*m_Rows[2].x*m_Rows[3].z + m_Rows[1].x*m_Rows[2].w*m_Rows[3].z + m_Rows[1].z*m_Rows[2].x*m_Rows[3].w - m_Rows[1].x*m_Rows[2].z*m_Rows[3].w;
-		Type By = m_Rows[0].z*m_Rows[2].w*m_Rows[3].x - m_Rows[0].w*m_Rows[2].z*m_Rows[3].x + m_Rows[0].w*m_Rows[2].x*m_Rows[3].z - m_Rows[0].x*m_Rows[2].w*m_Rows[3].z - m_Rows[0].z*m_Rows[2].x*m_Rows[3].w + m_Rows[0].x*m_Rows[2].z*m_Rows[3].w;
-		Type Bz = m_Rows[0].w*m_Rows[1].z*m_Rows[3].x - m_Rows[0].z*m_Rows[1].w*m_Rows[3].x - m_Rows[0].w*m_Rows[1].x*m_Rows[3].z + m_Rows[0].x*m_Rows[1].w*m_Rows[3].z + m_Rows[0].z*m_Rows[1].x*m_Rows[3].w - m_Rows[0].x*m_Rows[1].z*m_Rows[3].w;
-		Type Bw = m_Rows[0].z*m_Rows[1].w*m_Rows[2].x - m_Rows[0].w*m_Rows[1].z*m_Rows[2].x + m_Rows[0].w*m_Rows[1].x*m_Rows[2].z - m_Rows[0].x*m_Rows[1].w*m_Rows[2].z - m_Rows[0].z*m_Rows[1].x*m_Rows[2].w + m_Rows[0].x*m_Rows[1].z*m_Rows[2].w;
-		Type Cx = m_Rows[1].y*m_Rows[2].w*m_Rows[3].x - m_Rows[1].w*m_Rows[2].y*m_Rows[3].x + m_Rows[1].w*m_Rows[2].x*m_Rows[3].y - m_Rows[1].x*m_Rows[2].w*m_Rows[3].y - m_Rows[1].y*m_Rows[2].x*m_Rows[3].w + m_Rows[1].x*m_Rows[2].y*m_Rows[3].w;
-		Type Cy = m_Rows[0].w*m_Rows[2].y*m_Rows[3].x - m_Rows[0].y*m_Rows[2].w*m_Rows[3].x - m_Rows[0].w*m_Rows[2].x*m_Rows[3].y + m_Rows[0].x*m_Rows[2].w*m_Rows[3].y + m_Rows[0].y*m_Rows[2].x*m_Rows[3].w - m_Rows[0].x*m_Rows[2].y*m_Rows[3].w;
-		Type Cz = m_Rows[0].y*m_Rows[1].w*m_Rows[3].x - m_Rows[0].w*m_Rows[1].y*m_Rows[3].x + m_Rows[0].w*m_Rows[1].x*m_Rows[3].y - m_Rows[0].x*m_Rows[1].w*m_Rows[3].y - m_Rows[0].y*m_Rows[1].x*m_Rows[3].w + m_Rows[0].x*m_Rows[1].y*m_Rows[3].w;
-		Type Cw = m_Rows[0].w*m_Rows[1].y*m_Rows[2].x - m_Rows[0].y*m_Rows[1].w*m_Rows[2].x - m_Rows[0].w*m_Rows[1].x*m_Rows[2].y + m_Rows[0].x*m_Rows[1].w*m_Rows[2].y + m_Rows[0].y*m_Rows[1].x*m_Rows[2].w - m_Rows[0].x*m_Rows[1].y*m_Rows[2].w;
-		Type Dx = m_Rows[1].z*m_Rows[2].y*m_Rows[3].x - m_Rows[1].y*m_Rows[2].z*m_Rows[3].x - m_Rows[1].z*m_Rows[2].x*m_Rows[3].y + m_Rows[1].x*m_Rows[2].z*m_Rows[3].y + m_Rows[1].y*m_Rows[2].x*m_Rows[3].z - m_Rows[1].x*m_Rows[2].y*m_Rows[3].z;
-		Type Dy = m_Rows[0].y*m_Rows[2].z*m_Rows[3].x - m_Rows[0].z*m_Rows[2].y*m_Rows[3].x + m_Rows[0].z*m_Rows[2].x*m_Rows[3].y - m_Rows[0].x*m_Rows[2].z*m_Rows[3].y - m_Rows[0].y*m_Rows[2].x*m_Rows[3].z + m_Rows[0].x*m_Rows[2].y*m_Rows[3].z;
-		Type Dz = m_Rows[0].z*m_Rows[1].y*m_Rows[3].x - m_Rows[0].y*m_Rows[1].z*m_Rows[3].x - m_Rows[0].z*m_Rows[1].x*m_Rows[3].y + m_Rows[0].x*m_Rows[1].z*m_Rows[3].y + m_Rows[0].y*m_Rows[1].x*m_Rows[3].z - m_Rows[0].x*m_Rows[1].y*m_Rows[3].z;
-		Type Dw = m_Rows[0].y*m_Rows[1].z*m_Rows[2].x - m_Rows[0].z*m_Rows[1].y*m_Rows[2].x + m_Rows[0].z*m_Rows[1].x*m_Rows[2].y - m_Rows[0].x*m_Rows[1].z*m_Rows[2].y - m_Rows[0].y*m_Rows[1].x*m_Rows[2].z + m_Rows[0].x*m_Rows[1].y*m_Rows[2].z;
-		return LWMatrix4(LWVector4<Type>(Ax, Ay, Az, Aw), LWVector4<Type>(Bx, By, Bz, Bw), LWVector4<Type>(Cx, Cy, Cz, Cw), LWVector4<Type>(Dx, Dy, Dz, Dw))*D;
+
+		//Found from: https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
+		LWVector4<Type> A = m_Rows[0];
+		LWVector4<Type> B = m_Rows[1];
+		LWVector4<Type> C = m_Rows[2];
+		LWVector4<Type> D = m_Rows[3];
+
+		Type A2323 = C.z * D.w - C.w * D.z; //m.m22 * m.m33 - m.m23 * m.m32;
+		Type A1323 = C.y * D.w - C.w * D.y; //m.m21 * m.m33 - m.m23 * m.m31;
+		Type A1223 = C.y * D.z - C.z * D.y; //m.m21 * m.m32 - m.m22 * m.m31;
+		Type A0323 = C.x * D.w - C.w * D.x; //m.m20 * m.m33 - m.m23 * m.m30;
+		Type A0223 = C.x * D.z - C.z * D.x; //m.m20 * m.m32 - m.m22 * m.m30;
+		Type A0123 = C.x * D.y - C.y * D.x; //m.m20 * m.m31 - m.m21 * m.m30;
+		Type A2313 = B.z * D.w - B.w * D.z; //m.m12 * m.m33 - m.m13 * m.m32;
+		Type A1313 = B.y * D.w - B.w * D.y; //m.m11 * m.m33 - m.m13 * m.m31;
+		Type A1213 = B.y * D.z - B.z * D.y; //m.m11 * m.m32 - m.m12 * m.m31;
+		Type A2312 = B.z * C.w - B.w * C.z; //m.m12 * m.m23 - m.m13 * m.m22;
+		Type A1312 = B.y * C.w - B.w * C.y; //m.m11 * m.m23 - m.m13 * m.m21;
+		Type A1212 = B.y * C.z - B.z * C.y; //m.m11 * m.m22 - m.m12 * m.m21;
+		Type A0313 = B.x * D.w - B.w * D.x; //m.m10 * m.m33 - m.m13 * m.m30;
+		Type A0213 = B.x * D.z - B.z * D.x; //m.m10 * m.m32 - m.m12 * m.m30;
+		Type A0312 = B.x * C.w - B.w * C.x; //m.m10 * m.m23 - m.m13 * m.m20;
+		Type A0212 = B.x * C.z - B.z * C.x; //m.m10 * m.m22 - m.m12 * m.m20;
+		Type A0113 = B.x * D.y - B.y * D.x; //m.m10 * m.m31 - m.m11 * m.m30;
+		Type A0112 = B.x * C.y - B.y * C.x; //m.m10 * m.m21 - m.m11 * m.m20;
+
+		Type Det = A.x * (B.y * A2323 - B.z * A1323 + B.w * A1223) -
+			A.y * (B.x * A2323 - B.z * A0323 + B.w * A0223) +
+			A.z * (B.x * A1323 - B.y * A0323 + B.w * A0123) -
+			A.w * (B.x * A1223 - B.y * A0223 + B.y * A0123);
+		Det = abs(Det) <= std::numeric_limits<Type>::epsilon() ? (Type)0 : (Type)1 / Det;
+
+		
+		Type Ax =  B.y * A2323 - B.z * A1323 + B.w * A1223;  // (m.m11 * A2323 - m.m12 * A1323 + m.m13 * A1223)
+		Type Ay =-(A.y * A2323 - A.z * A1323 + A.w * A1223); //-(m.m01 * A2323 - m.m02 * A1323 + m.m03 * A1223)
+		Type Az =  A.y * A2313 - A.z * A1313 + A.w * A1213;  // (m.m01 * A2313 - m.m02 * A1313 + m.m03 * A1213)
+		Type Aw =-(A.y * A2312 - A.z * A1312 + A.w * A1212); //-(m.m01 * A2312 - m.m02 * A1312 + m.m03 * A1212)
+
+		Type Bx =-(B.y * A2323 - B.z * A0323 + B.w * A0223); //-(m.m10 * A2323 - m.m12 * A0323 + m.m13 * A0223)
+		Type By =  A.x * A2323 - A.z * A0323 + A.w * A0223;  // (m.m00 * A2323 - m.m02 * A0323 + m.m03 * A0223)
+		Type Bz =-(A.x * A2313 - A.z * A0313 + A.w * A0213); //-(m.m00 * A2313 - m.m02 * A0313 + m.m03 * A0213);
+		Type Bw =  A.x * A2312 - A.z * A0312 + A.w * A0212;  // (m.m00 * A2312 - m.m02 * A0312 + m.m03 * A0212)
+
+		Type Cx =  B.x * A1323 - B.y * A0323 + B.w * A0123;  // (m.m10 * A1323 - m.m11 * A0323 + m.m13 * A0123)
+		Type Cy =-(A.x * A1323 - A.y * A0323 + A.w * A0123); //-(m.m00 * A1323 - m.m01 * A0323 + m.m03 * A0123)
+		Type Cz =  A.x * A1313 - A.y * A0313 + A.w * A0113;  // (m.m00 * A1313 - m.m01 * A0313 + m.m03 * A0113),
+		Type Cw =-(A.x * A1312 - A.y * A0312 + A.w * A0112); //-(m.m00 * A1312 - m.m01 * A0312 + m.m03 * A0112),
+
+		std::cout << A1323 << " " << A1323 << " " << A1313 << " " << A1312 << " | " << A0323 << " " << A0323 << " " << A0313 << "  " << A0312 << " | " << A0123 << " " << A0123 << " " << A0113 << " " << A0112 << std::endl;
+
+
+		Type Dx =-(B.x * A1223 - B.y * A0223 + B.z * A0123); //-(m.m10 * A1223 - m.m11 * A0223 + m.m12 * A0123)
+		Type Dy =  A.x * A1223 - A.y * A0223 + A.z * A0123;  // (m.m00 * A1223 - m.m01 * A0223 + m.m02 * A0123)
+		Type Dz =-(A.x * A1213 - A.y * A0213 + A.z * A0113); //-(m.m00 * A1213 - m.m01 * A0213 + m.m02 * A0113)
+		Type Dw =  A.x * A1212 - A.y * A0212 + A.z * A0112;  // (m.m00 * A1212 - m.m01 * A0212 + m.m02 * A0112)
+		return LWMatrix4({ Ax, Ay, Az, Aw }, { Bx, By, Bz, Bw }, { Cx, Cy, Cz, Cw }, { Dx, Dy, Dz, Dw })*Det;
+
 	}
 
 	/*! \brief writes into Result the inverse of the matrix. */
@@ -148,19 +185,23 @@ struct LWMatrix4{
 
 	/*! \brief calculates the determinant of this matrix. */
 	Type Determinant(void) const{
-		return 
-			m_Rows[0].w*m_Rows[1].z*m_Rows[2].y*m_Rows[3].x - m_Rows[0].z*m_Rows[1].w*m_Rows[2].y*m_Rows[3].x -
-			m_Rows[0].w*m_Rows[1].y*m_Rows[2].z*m_Rows[3].x + m_Rows[0].y*m_Rows[1].w*m_Rows[2].z*m_Rows[3].x +
-			m_Rows[0].z*m_Rows[1].y*m_Rows[2].w*m_Rows[3].x - m_Rows[0].y*m_Rows[1].z*m_Rows[2].w*m_Rows[3].x -
-			m_Rows[0].w*m_Rows[1].z*m_Rows[2].x*m_Rows[3].y + m_Rows[0].z*m_Rows[1].w*m_Rows[2].x*m_Rows[3].y +
-			m_Rows[0].w*m_Rows[1].x*m_Rows[2].z*m_Rows[3].y - m_Rows[0].x*m_Rows[1].w*m_Rows[2].z*m_Rows[3].y -
-			m_Rows[0].z*m_Rows[1].x*m_Rows[2].w*m_Rows[3].y + m_Rows[0].x*m_Rows[1].z*m_Rows[2].w*m_Rows[3].y +
-			m_Rows[0].w*m_Rows[1].y*m_Rows[2].x*m_Rows[3].z - m_Rows[0].y*m_Rows[1].w*m_Rows[2].x*m_Rows[3].z -
-			m_Rows[0].w*m_Rows[1].x*m_Rows[2].y*m_Rows[3].z + m_Rows[0].x*m_Rows[1].w*m_Rows[2].y*m_Rows[3].z +
-			m_Rows[0].y*m_Rows[1].x*m_Rows[2].w*m_Rows[3].z - m_Rows[0].x*m_Rows[1].y*m_Rows[2].w*m_Rows[3].z -
-			m_Rows[0].z*m_Rows[1].y*m_Rows[2].x*m_Rows[3].w + m_Rows[0].y*m_Rows[1].z*m_Rows[2].x*m_Rows[3].w +
-			m_Rows[0].z*m_Rows[1].x*m_Rows[2].y*m_Rows[3].w - m_Rows[0].x*m_Rows[1].z*m_Rows[2].y*m_Rows[3].w -
-			m_Rows[0].y*m_Rows[1].x*m_Rows[2].z*m_Rows[3].w + m_Rows[0].x*m_Rows[1].y*m_Rows[2].z*m_Rows[3].w;
+		//Found from: https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
+		LWVector4<Type> A = m_Rows[0];
+		LWVector4<Type> B = m_Rows[1];
+		LWVector4<Type> C = m_Rows[2];
+		LWVector4<Type> D = m_Rows[3];
+
+		Type A2323 = C.z * D.w - C.w * D.z; //m.m22 * m.m33 - m.m23 * m.m32;
+		Type A1323 = C.y * D.w - C.w * D.y; //m.m21 * m.m33 - m.m23 * m.m31;
+		Type A1223 = C.y * D.z - C.z * D.y; //m.m21 * m.m32 - m.m22 * m.m31;
+		Type A0323 = C.x * D.w - C.w * D.x; //m.m20 * m.m33 - m.m23 * m.m30;
+		Type A0223 = C.x * D.z - C.z * D.x; //m.m20 * m.m32 - m.m22 * m.m30;
+		Type A0123 = C.x * D.y - C.y * D.x; //m.m20 * m.m31 - m.m21 * m.m30;
+
+		return A.x * (B.y * A2323 - B.z * A1323 + B.w * A1223) -
+			A.y * (B.x * A2323 - B.z * A0323 + B.w * A0223) +
+			A.z * (B.x * A1323 - B.y * A0323 + B.w * A0123) -
+			A.w * (B.x * A1223 - B.y * A0223 + B.y * A0123);
 	}
 
 	/*! \cond */
