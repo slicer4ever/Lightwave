@@ -56,7 +56,7 @@
 #define LWVIDEO_IMPLEMENTED_OPENGL2_1
 #define LWVIDEO_IMPLEMENTED_OPENGL3_3
 #define LWVIDEO_IMPLEMENTED_OPENGL4_5
-#define LWVIDEO_IMPLEMENTED_VULKAN
+//#define LWVIDEO_IMPLEMENTED_VULKAN
 
 /*! \brief This context is provided here incase your application does need to access the underlying win32 window context information.  in general this information should not ever be required by an application. */
 struct LWWindowContext {
@@ -73,6 +73,7 @@ typedef std::thread LWThreadType;
 
 //Add driver contexts when necessary, please note that we want to include these only at the appropriate time, as such we do a bit of preprocessor mangling to make this work.
 #ifdef LWVIDEODRIVER_DIRECTX11_H
+#ifdef LWVIDEO_IMPLEMENTED_DIRECTX11
 #ifndef LWVIDEODRIVER_DIRECTX11_PLATFORM_H
 #define LWVIDEODRIVER_DIRECTX11_PLATFORM_H
 #include <dxgi.h>
@@ -104,8 +105,10 @@ struct LWDirectX11_1Context {
 
 #endif
 #endif
+#endif
 
 #ifdef LWVIDEODRIVER_VULKAN_H
+#ifdef LWVIDEO_IMPLEMENTED_VULKAN
 #ifndef LWVIDEODRIVER_VULKAN_PLATFORM_H
 #define LWVIDEODRIVER_VULKAN_PLATFORM_H
 #include <vulkan/vulkan.h>
@@ -131,8 +134,10 @@ struct LWVulkan_Context{
 
 #endif
 #endif
+#endif
 
 #ifdef LWVIDEODRIVER_OPENGL4_5_H
+#ifdef LWVIDEO_IMPLEMENTED_OPENGL4_5
 #ifndef LWVIDEODRIVER_OPENGL4_5_PLATFORM_H
 #define LWVIDEODRIVER_OPENGL4_5_PLATFORM_H
 #include <gl/glew.h>
@@ -147,9 +152,10 @@ struct LWOpenGL4_5Context {
 
 #endif
 #endif
-
+#endif
 
 #ifdef LWVIDEODRIVER_OPENGL3_3_H
+#ifdef LWVIDEO_IMPLEMENTED_OPENGL3_3
 #ifndef LWVIDEODRIVER_OPENGL3_3_PLATFORM_H
 #define LWVIDEODRIVER_OPENGL3_3_PLATFORM_H
 #include <gl/glew.h>
@@ -164,8 +170,10 @@ struct LWOpenGL3_3Context {
 
 #endif
 #endif
+#endif
 
 #ifdef LWVIDEODRIVER_OPENGL2_1_H
+#ifdef LWVIDEO_IMPLEMENTED_OPENGL2_1
 #ifndef LWVIDEODRIVER_OPENGL2_1_PLATFORM_H
 #define LWVIDEODRIVER_OPENGL2_1_PLATFORM_H
 #include <gl/glew.h>
@@ -176,6 +184,7 @@ struct LWOpenGL2_1Context {
 	uint32_t m_ActiveAttribs = 0; /*!< \brief the number of currently active attribute arrays. */
 };
 
+#endif
 #endif
 #endif
 

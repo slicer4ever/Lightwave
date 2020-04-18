@@ -20,6 +20,11 @@ struct LWVector4{
 	Type z; /*!< \brief z component of the Vector4 */
 	Type w; /*!< \brief w component of the Vector4 */
 
+	/*! \brief returns a simd version of this vector4. */
+	LWSVector4<Type> AsSVec4(void) const {
+		return LWSVector4<Type>(x, y, z, w);
+	}
+
 	/*! \brief returns a copy of the normalized vector4. */
 	LWVector4<Type> Normalize(void) const{
 		Type L = x*x + y*y + z*z + w*w;

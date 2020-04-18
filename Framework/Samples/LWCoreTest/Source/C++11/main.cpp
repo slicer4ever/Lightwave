@@ -234,7 +234,11 @@ bool PerformLWSVectorTest(void) {
 	LWSVector4f Test4f = LWSVector4f(0.0f, 0.0f, 1.0f, 1.0f).Normalize();
 	LWSVector4f Test3f = LWSVector4f(0.0f, 0.0f, 1.0f, 1.0f).Normalize3();
 	LWSVector4f Test2f = LWSVector4f(0.0f, 0.0f, 1.0f, 1.0f).Normalize2();
-	
+	LWSVector4f SValuesf = LWSVector4f(1.0f, 2.0f, 3.0f, 4.0f);
+	if (!PerformTest("LWSVector4<Sum>", std::bind(SumValuesf, SValuesf.Sum()), 40.0f)) return false;
+	if (!PerformTest("LWSVector4<Sum4>", std::bind(&LWSVector4f::Sum4, SValuesf), 10.0f)) return false;
+	if (!PerformTest("LWSVector4<Sum3>", std::bind(&LWSVector4f::Sum3, SValuesf), 6.0f)) return false;
+	if (!PerformTest("LWSVector4<Sum2>", std::bind(&LWSVector4f::Sum2, SValuesf), 3.0f)) return false;
 	if (!PerformTest("LWSVector4f<Normalize>", std::bind(SumValuesf, Test4f), 1.41421356f)) return false;
 	if (!PerformTest("LWSVector4f<Normalize3>", std::bind(SumValues3f, Test3f), 1.0f)) return false;
 	if (!PerformTest("LWSVector4f<Normalize2>", std::bind(SumValues2f, Test2f), 0.0f)) return false;
@@ -331,6 +335,11 @@ bool PerformLWSVectorTest(void) {
 	LWSVector4d Test4d = LWSVector4d(0.0, 0.0, 1.0, 1.0).Normalize();
 	LWSVector4d Test3d = LWSVector4d(0.0, 0.0, 1.0, 1.0).Normalize3();
 	LWSVector4d Test2d = LWSVector4d(0.0, 0.0, 1.0, 1.0).Normalize2();
+	LWSVector4d SValuesd = LWSVector4d(1.0, 2.0, 3.0, 4.0);
+	if (!PerformTest("LWSVector4d<Sum>", std::bind(SumValuesd, SValuesd.Sum()), 40.0)) return false;
+	if (!PerformTest("LWSVector4d<Sum4>", std::bind(&LWSVector4d::Sum4, SValuesd), 10.0)) return false;
+	if (!PerformTest("LWSVector4d<Sum3>", std::bind(&LWSVector4d::Sum3, SValuesd), 6.0)) return false;
+	if (!PerformTest("LWSVector4d<Sum2>", std::bind(&LWSVector4d::Sum2, SValuesd), 3.0)) return false;
 	if (!PerformTest("LWSVector4d<Normalize>", std::bind(SumValuesd, Test4d), 1.4142135623730949)) return false;
 	if (!PerformTest("LWSVector4d<Normalize3>", std::bind(SumValues3d, Test3d), 1.0)) return false;
 	if (!PerformTest("LWSVector4d<Normalize2>", std::bind(SumValues2d, Test2d), 0.0)) return false;
@@ -415,6 +424,11 @@ bool PerformLWSVectorTest(void) {
 	if (!PerformTest("LWSVector4i<Div>", std::bind(SumValuesi, Testi), 0)) return false;
 	if (!PerformTest("LWSVector4i<==>", []()->bool {return LWVector4i(1) == LWVector4i(1); }, true)) return false;
 	if (!PerformTest("LWSVector4i<!=>", []()->bool {return LWVector4i(2) != LWVector4i(1); }, true)) return false;
+	LWSVector4i SValuesi = LWSVector4i(1, 2, 3, 4);
+	if (!PerformTest("LWSVector4i<Sum>", std::bind(SumValuesi, SValuesi.Sum()), 40)) return false;
+	if (!PerformTest("LWSVector4i<Sum4>", std::bind(&LWSVector4i::Sum4, SValuesi), 10)) return false;
+	if (!PerformTest("LWSVector4i<Sum3>", std::bind(&LWSVector4i::Sum3, SValuesi), 6)) return false;
+	if (!PerformTest("LWSVector4i<Sum2>", std::bind(&LWSVector4i::Sum2, SValuesi), 3)) return false;
 	if (!TestEquality("LWSVector4i<AAAB>", Ai.AAAB(Bi), LWSVector4i(1, 2, 3, 8))) return false;
 	if (!TestEquality("LWSVector4i<AABA>", Ai.AABA(Bi), LWSVector4i(1, 2, 7, 4))) return false;
 	if (!TestEquality("LWSVector4i<AABB>", Ai.AABB(Bi), LWSVector4i(1, 2, 7, 8))) return false;
@@ -825,6 +839,8 @@ bool PerformLWByteBufferTest(void){
 
 	const uint32_t CheckEndianValue = 0x44332211;
 	const bool BigEndian = ((int8_t*)&CheckEndianValue)[0] != 0x11;
+	const uint32_t Pi32 = BigEndian ? 1078530011 : 3675212096;
+	const uint64_t Pi64 = BigEndian ? 4614256656748904448 : 416530106688;
 	std::cout << "Performing Byte Buffer class test: " << std::endl;
 	std::cout << "Is BigEndian: " << BigEndian << std::endl;
 	std::cout << "Testing Static members: " << std::endl; 
@@ -837,8 +853,8 @@ bool PerformLWByteBufferTest(void){
 	if (!PerformTest("MakeNetwork<uint32>", std::bind<uint32_t(uint32_t)> (LWByteBuffer::MakeNetwork, 0x11223344),         BigEndian ? 0x11223344 : 0x44332211, true)) return false;
 	if (!PerformTest("MakeNetwork<int64>",  std::bind<int64_t(int64_t)>   (LWByteBuffer::MakeNetwork, 0x1122334455667788), BigEndian ? 0x1122334455667788 : 0x8877665544332211, true)) return false;
 	if (!PerformTest("MakeNetwork<uint64>", std::bind<uint64_t(uint64_t)> (LWByteBuffer::MakeNetwork, 0x1122334455667788), BigEndian ? 0x1122334455667788 : 0x8877665544332211, true)) return false;
-	if (!PerformTest("MakeNetwork<float>",  std::bind<uint32_t(float)>    (LWByteBuffer::MakeNetwork, LW_PI),         (uint32_t)(BigEndian ? 1078530008 : 3624880448))) return false;
-	if (!PerformTest("MakeNetwork<double>", std::bind<uint64_t(double)>   (LWByteBuffer::MakeNetwork, (double)LW_PI), (uint64_t)(BigEndian ? 4614256655138291712 : 4213246272))) return false;
+	if (!PerformTest("MakeNetwork<float>",  std::bind<uint32_t(float)>    (LWByteBuffer::MakeNetwork, LW_PI),         Pi32)) return false;
+	if (!PerformTest("MakeNetwork<double>", std::bind<uint64_t(double)>   (LWByteBuffer::MakeNetwork, (double)LW_PI), Pi64)) return false;
 	if (!PerformTest("MakeHost<int8>",   std::bind<int8_t(int8_t)>    (LWByteBuffer::MakeHost, 0x11), 0x11, true)) return false;
 	if (!PerformTest("MakeHost<uint8>",  std::bind<uint8_t(uint8_t)>  (LWByteBuffer::MakeHost, 0x11), 0x11, true)) return false;
 	if (!PerformTest("MakeHost<int16>",  std::bind<int16_t(int16_t)>  (LWByteBuffer::MakeHost, BigEndian ? 0x1122 : 0x2211),                         0x1122, true)) return false;
@@ -847,8 +863,8 @@ bool PerformLWByteBufferTest(void){
 	if (!PerformTest("MakeHost<uint32>", std::bind<uint32_t(uint32_t)>(LWByteBuffer::MakeHost, BigEndian ? 0x11223344 : 0x44332211),                 0x11223344, true)) return false;
 	if (!PerformTest("MakeHost<int64>",  std::bind<int64_t(int64_t)>  (LWByteBuffer::MakeHost, BigEndian ? 0x1122334455667788 : 0x8877665544332211), 0x1122334455667788, true)) return false;
 	if (!PerformTest("MakeHost<uint64>", std::bind<uint64_t(uint64_t)>(LWByteBuffer::MakeHost, BigEndian ? 0x1122334455667788 : 0x8877665544332211), 0x1122334455667788, true)) return false;
-	if (!PerformTest("MakeHost<float>",  std::bind<float(uint32_t)>   (LWByteBuffer::MakeHostf, (uint32_t)(BigEndian ? 1078530008 : 3624880448)),                  LW_PI)) return false;
-	if (!PerformTest("MakeHost<double>", std::bind<double(uint64_t)>  (LWByteBuffer::MakeHostf, (uint64_t)(BigEndian ? 4614256655138291712 : 4213246272)), (double)LW_PI)) return false;
+	if (!PerformTest("MakeHost<float>",  std::bind<float(uint32_t)>   (LWByteBuffer::MakeHostf, Pi32),         LW_PI)) return false;
+	if (!PerformTest("MakeHost<double>", std::bind<double(uint64_t)>  (LWByteBuffer::MakeHostf, Pi64), (double)LW_PI)) return false;
 	
 	if (!PerformTest("Write<int8>", std::bind<int32_t(int8_t, int8_t*)>(LWByteBuffer::Write, 0x11, Buffer), 1)) return false;
 	if ((*((int8_t*)Buffer)) != 0x11) return false;
@@ -983,11 +999,11 @@ bool PerformLWByteBufferTest(void){
 	if (((uint64_t*)Result)[0] != 0x1122334455667788) return false;
 	
 	if (!PerformTest("WriteNetwork<Float>", std::bind<int32_t(float, int8_t*)>(LWByteBuffer::WriteNetwork, LW_PI, Buffer), 4)) return false;
-	if ((*((uint32_t*)Buffer)) != (uint32_t)(BigEndian ? 1078530008 : 3624880448)) return false;
+	if ((*((uint32_t*)Buffer)) != Pi32) return false;
 	if (!PerformTest("ReadNetwork<Float>", std::bind<int32_t(float*, const int8_t*)>(LWByteBuffer::ReadNetwork, ResultF, Buffer), 4)) return false;
 	if (ResultF[0] != LW_PI) return false;
 	if (!PerformTest("WriteNetwork<Double>", std::bind<int32_t(double, int8_t*)>(LWByteBuffer::WriteNetwork, LW_PI, Buffer), 8)) return false;
-	if ((*((uint64_t*)Buffer)) != (uint64_t)(BigEndian ? 4614256655138291712 : 4213246272)) return false;
+	if ((*((uint64_t*)Buffer)) != Pi64) return false;
 	if (!PerformTest("Read<Double>", std::bind<int32_t(double*, const int8_t*)>(LWByteBuffer::ReadNetwork, ResultD, Buffer), 8)) return false;
 	if (ResultD[0] != LW_PI) return false;
 	
@@ -1004,7 +1020,6 @@ bool PerformLWByteBufferTest(void){
 	if (!PerformTest("WriteNetwork<LWVector4i, 4>", std::bind<int32_t(uint32_t, const LWVector4i *, int8_t*)>(LWByteBuffer::WriteNetwork, 4, ValuesVec4i, Buffer), 64)) return false;
 	if (!PerformTest("ReadNetwork<LWVector4i, 4>", std::bind<int32_t(LWVector4i*, uint32_t, const int8_t*)>(LWByteBuffer::ReadNetwork, ResultVec4i, 4, Buffer), 64)) return false;
 	if (ResultVec4i[0] != ValuesVec4i[0] || ResultVec4i[1] != ValuesVec4i[1] || ResultVec4i[2] != ValuesVec4i[2] || ResultVec4i[3] != ValuesVec4i[3]) return false;
-
 
 
 	LWByteBuffer NormalBuf(Buffer, sizeof(Buffer), LWByteBuffer::BufferNotOwned);
@@ -1378,15 +1393,25 @@ bool PerformLWSMatrixTest(void) {
 	if (!TestEquality("LWSMatrix4f<Transpose3x3>", Trans.Transpose3x3(), LWSMatrix4f(LWSVector4f(1.0f, 5.0f, 9.0f, 4.0f), LWSVector4f(2.0f, 6.0f, 10.0f, 8.0f), LWSVector4f(3.0f, 7.0f, 11.0f, 12.0f), LWSVector4f(13.0f, 14.0f, 15.0f, 16.0f)))) return false;
 	if (!TestEquality("LWSMatrix4f<Transpose2x2>", Trans.Transpose2x2(), LWSMatrix4f(LWSVector4f(1.0f, 5.0f, 3.0f, 4.0f), LWSVector4f(2.0f, 6.0f, 7.0f, 8.0f), LWSVector4f(9.0f, 10.0f, 11.0f, 12.0f), LWSVector4f(13.0f, 14.0f, 15.0f, 16.0f)))) return false;
 	if (!TestEquality("LWSMatrix4f<Column0>", Trans.Column(0), LWSVector4f(1.0f, 5.0f, 9.0f, 13.0f))) return false;
-	if (!TestEquality("LWSMatrix4f<Column1>", Trans.Column(1), LWSVector4f(2.0f, 6.0f,10.0f, 14.0f))) return false;
-	if (!TestEquality("LWSMatrix4f<Column2>", Trans.Column(2), LWSVector4f(3.0f, 7.0f,11.0f, 15.0f))) return false;
-	if (!TestEquality("LWSMatrix4f<Column3>", Trans.Column(3), LWSVector4f(4.0f, 8.0f,12.0f, 16.0f))) return false;
+	if (!TestEquality("LWSMatrix4f<Column1>", Trans.Column(1), LWSVector4f(2.0f, 6.0f, 10.0f, 14.0f))) return false;
+	if (!TestEquality("LWSMatrix4f<Column2>", Trans.Column(2), LWSVector4f(3.0f, 7.0f, 11.0f, 15.0f))) return false;
+	if (!TestEquality("LWSMatrix4f<Column3>", Trans.Column(3), LWSVector4f(4.0f, 8.0f, 12.0f, 16.0f))) return false;
+	if (!TestEquality("LWSMatrix4f<Row0>", Trans.Row(0), LWSVector4f(1.0f, 2.0f, 3.0f, 4.0f))) return false;
+	if (!TestEquality("LWSMatrix4f<Row1>", Trans.Row(1), LWSVector4f(5.0f, 6.0f, 7.0f, 8.0f))) return false;
+	if (!TestEquality("LWSMatrix4f<Row2>", Trans.Row(2), LWSVector4f(9.0f, 10.0f, 11.0f, 12.0f))) return false;
+	if (!TestEquality("LWSMatrix4f<Row3>", Trans.Row(3), LWSVector4f(13.0f, 14.0f, 15.0f, 16.0f))) return false;
 
-	
-	float S = sinf(LW_PI*0.25f);
-	float C = cosf(LW_PI*0.25f);
+	float S = sinf(LW_PI * 0.25f);
+	float C = cosf(LW_PI * 0.25f);
 	LWSMatrix4f InvResult = LWSMatrix4f({ 0.70710682f, 0.70710682f, 0.0f, 0.0f }, { -0.70710682f, 0.70710682f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f, 0.0f }, { 0.70710682f, -2.1213204f, -3.0f, 1.0f });
+	LWSMatrix4f LookAtResult = LWSMatrix4f({ -0.7071067691f, 0.0f, 0.7071067691f, 0.0f }, { -0.4082482755f, 0.816496551f, -0.4082482755f, 0.0f }, { -0.5773502588f, -0.5773502588f, -0.5773502588f, 0.0f }, { 5.0f, 5.0f, 5.0f, 1.0f });
+	LWSMatrix4f OrthoGLResult = LWSMatrix4f({ 0.200000003f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.200000003f, 0.0f, 0.0f }, { 0.0f, 0.0f, -2.0f, 0.0f }, { -1.0f, -1.0f, -1.0f, 1.0f });
+	LWSMatrix4f OrthoDXResult = LWSMatrix4f({ 0.200000003f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.200000003f, 0.0f, 0.0f }, { 0.0f, 0.0f, -1.0f, 0.0f }, { -1.0f, -1.0f, 0.0f, 1.0f });
+	LWSMatrix4f FrustumResult = LWSMatrix4f({ 0.0f, 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, -1.0f, -1.0f }, { 0.0f, 0.0f, -0.0f, 0.0f });
+	LWSMatrix4f PerspectiveResult = LWSMatrix4f({ 2.682459354f, 0.0f, 0.0f, 0.0f }, { 0.0f, 2.414213419f, 0.0f, 0.0f }, { 0.0f, 0.0f, -1.0f, -1.0f }, { 0.0f, 0.0f, -0.0f, 0.0f });
+	
 	LWSMatrix4f Mat4f = LWSMatrix4f::RotationX(LW_PI*0.25f);
+	
 	if (!TestEquality("LWSMatrix4f::RotationX", Mat4f, LWSMatrix4f({ 1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, C, -S, 0.0f }, { 0.0f, S, C, 0.0f }, { 0.0f, 0.0f, 0.0f, 1.0f }))) return false;
 	Mat4f = LWSMatrix4f::RotationY(LW_PI*0.25f);
 	if (!TestEquality("LWSMatrix4f::RotationY", Mat4f, LWSMatrix4f({ C, 0.0f, S, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f }, { -S, 0.0f, C, 0.0f }, { 0.0f, 0.0f, 0.0f, 1.0f }))) return false;
@@ -1395,20 +1420,31 @@ bool PerformLWSMatrixTest(void) {
 	if (!TestEquality("LWSMatrix4f::RotationZ", Mat4f, LWSMatrix4f({ C, -S, 0.0f, 0.0f }, { S, C, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 1.0f }))) return false;
 	if (!TestEquality("LWSMatrix4f<Identity>", LWSMatrix4f()*LWSMatrix4f(), LWSMatrix4f())) return false;
 	if (!TestEquality("LWSMatrix4f<Multiply>", Mat4f*LWSMatrix4f(), Mat4f)) return false;
-	std::cout << Mat4f*Testf << " | " << Mat4f.AsMat4()*Testf.AsVec4() << std::endl;
 	if (!TestEquality("LWSMatrix4f<*LWSVector4>", LWSMatrix4f()*Testf, Testf)) return false;
 	if (!TestEquality("LWSMatrix4f<*LWSVector4>", Mat4f*Testf, LWSVector4f(Mat4f.AsMat4()*Testf.AsVec4()))) return false;
-	Mat4f *= LWSMatrix4f::Translation(1.0f, 2.0f, 3.0f);
-	//if (!TestEquality("LWSMatrix4<TransformInverse>", Mat4f.TransformInverse(), InvResult)) return false;
-	//if (!TestEquality("LWSMatrix4f<Inverse>", Mat4f.Inverse(), InvResult)) return false;
-	
+	Mat4f *= LWSMatrix4f::Translation(LWSVector4f(1.0f, 2.0f, 3.0f, 1.0f));
+	if (!TestEquality("LWSMatrix4<TransformInverse>", Mat4f.TransformInverse(), InvResult)) return false;
+	if (!TestEquality("LWSMatrix4f<Inverse>", Mat4f.Inverse(), InvResult)) return false;
+	Mat4f = LWSMatrix4f::LookAt(LWSVector4f(5.0f, 5.0f, 5.0f, 1.0f), LWVector4f(6.0f, 6.0f, 6.0f, 1.0f), LWSVector4f(0.0f, 1.0f, 0.0f, 0.0f));
+	if (!TestEquality("LWSMatrix4f<LookAt>", Mat4f, LookAtResult)) return false;
+	Mat4f = LWSMatrix4f::OrthoGL(0.0f, 10.0f, 0.0f, 10.0f, 0.0f, 1.0f);
+	if (!TestEquality("LWSMatrix4f<OrthoGL>", Mat4f, OrthoGLResult)) return false;
+	Mat4f = LWSMatrix4f::OrthoDX(0.0f, 10.0f, 0.0f, 10.0f, 0.0f, 1.0f);
+	if (!TestEquality("LWSMatrix4f<OrthoDX>", Mat4f, OrthoDXResult)) return false;
+	Mat4f = LWSMatrix4f::Frustum(0.0f, 10.0f, 0.0f, 10.0f, 0.0f, 1.0f);
+	if (!TestEquality("LWSMatrix4f<Frustum>", Mat4f, FrustumResult)) return false;
+	Mat4f = LWSMatrix4f::Perspective(LW_PI_4, 0.9f, 0.0f, 1.0f);
+	if (!TestEquality("LWSMatrix4f<Perspective>", Mat4f, PerspectiveResult)) return false;
+	Mat4f = LWSMatrix4f(LWSQuaternionf::FromEuler(0.0f, LW_PI_2, 0.0f));
+	if (!TestEquality("LWSMatrix4f<Quaternion>", Mat4f, LWSMatrix4f({ 0.0f, 0.0f, 1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f }, {-1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 1.0f }))) return false;
+	Mat4f = LWSMatrix4f(LWSVector4f(2.0f, 2.0f, 2.0f, 0.0f), LWSQuaternionf::FromEuler(0.0f, LW_PI_2, 0.0f), LWSVector4f(1.0f, 2.0f, 3.0f, 1.0f));
+	if (!TestEquality("LWSMatrix4f<Scale_Quaternion_Pos>", Mat4f, LWSMatrix4f({ 0.0f, 0.0f, 2.0f, 0.0f }, { 0.0f, 2.0f, 0.0f, 0.0f }, { -2.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 2.0f, 3.0f, 1.0f }))) return false;
 	return true;
 }
 
 bool PerformLWMatrixTest(void){
 	std::cout << "Performing LWMatrix test: " << std::endl;
 	std::cout << "Testing LWMatrix4: " << std::endl;
-
 
 	LWMatrix4f Trans = LWMatrix4f(LWVector4f(1.0f, 2.0f, 3.0f, 4.0f), LWVector4f(5.0f, 6.0f, 7.0f, 8.0f), LWVector4f(9.0f, 10.0f, 11.0f, 12.0f), LWVector4f(13.0f, 14.0f, 15.0f, 16.0f));
 	if (!TestEquality("LWSMatrix4f<Transpose>", Trans.Transpose(), LWMatrix4f(LWVector4f(1.0f, 5.0f, 9.0f, 13.0f), LWVector4f(2.0f, 6.0f, 10.0f, 14.0f), LWVector4f(3.0f, 7.0f, 11.0f, 15.0f), LWVector4f(4.0f, 8.0f, 12.0f, 16.0f)))) return false;
@@ -1427,7 +1463,6 @@ bool PerformLWMatrixTest(void){
 	if (!TestEquality("LWMatrix4<Multiply>", Mat4f*LWMatrix4f(), Mat4f)) return false;
 	Mat4f *= LWMatrix4f::Translation(1.0f, 2.0f, 3.0f);
 	if (!TestEquality("LWMatrix4<TransformInverse>", Mat4f.TransformInverse(), InvResult)) return false;
-	
 	if (!TestEquality("LWMatrix4<Inverse>", Mat4f.Inverse(), InvResult)) return false;
 
 	std::cout << "Testing LWMatrix3: " << std::endl;
@@ -1653,25 +1688,178 @@ bool PerformLWCryptoTest(void){
 	return true;
 }
 
+template<class Type, class Callback>
+uint64_t DoWork(uint32_t Count, Type* Array, Callback CB) {
+	uint64_t Start = LWTimer::GetCurrent();
+	for (uint32_t i = 0; i < Count; i++) CB(Array[i]);
+	return LWTimer::ToMilliSecond(LWTimer::GetCurrent() - Start);
+}
+
+void PerformSIMDComparisonTest(uint32_t Count) {
+	LWAllocator_Default DefAlloc;
+	std::cout << "Performing SIMD Comparison Tests: " << Count << std::endl;
+	std::cout << "Initializing data." << std::endl;
+
+	LWVector4f *Vec4f = DefAlloc.AllocateArray<LWVector4f>(Count);
+	LWSVector4f *SVec4f = DefAlloc.AllocateArray<LWSVector4f>(Count);
+	LWVector4d *Vec4d = DefAlloc.AllocateArray<LWVector4d>(Count);
+	LWSVector4d *SVec4d = DefAlloc.AllocateArray<LWSVector4d>(Count);
+	LWMatrix4f *Mat4f = DefAlloc.AllocateArray<LWMatrix4f>(Count);
+	LWSMatrix4f *SMat4f = DefAlloc.AllocateArray<LWSMatrix4f>(Count);
+	LWQuaternionf *Quatf = DefAlloc.AllocateArray<LWQuaternionf>(Count);
+	LWSQuaternionf *SQuatf = DefAlloc.AllocateArray<LWSQuaternionf>(Count);
+	for (uint32_t i = 0; i < Count; i++) {
+		Vec4f[i] = LWVector4f((float)i);
+		SVec4f[i] = LWSVector4f((float)i);
+		Vec4d[i] = LWVector4d((double)i);
+		SVec4d[i] = LWSVector4d((double)i);
+		Mat4f[i] = LWMatrix4f::RotationXYZ(-(float)i * 0.2f, (float)i * 0.1f, (float)i);
+		SMat4f[i] = LWSMatrix4f::RotationXYZ(-(float)i * 0.2f, (float)i * 0.1f, (float)i);
+		Quatf[i] = LWQuaternionf::FromEuler(-(float)i*0.2f, (float)i * 0.1f, (float)i);
+		SQuatf[i] = LWSQuaternionf::FromEuler(-(float)i*0.2f, (float)i * 0.1f, (float)i);
+	}
+	float FinalLen = 0.0f;
+	std::cout << "Vector4f:" << std::endl;
+	std::cout << "Length: ";
+	std::cout << DoWork(Count, Vec4f, [&FinalLen](LWVector4f& Vec) { FinalLen += Vec.Length(); }) << "ms | " << FinalLen << std::endl;
+	std::cout << "Normalize: ";
+	std::cout << DoWork(Count, Vec4f, [](LWVector4f& Vec) { Vec = Vec.Normalize(); }) << "ms" << std::endl;
+	std::cout << "Add: ";
+	std::cout << DoWork(Count, Vec4f, [](LWVector4f& Vec) { Vec += Vec; }) << "ms" << std::endl;
+	std::cout << "Multiply: ";
+	std::cout << DoWork(Count, Vec4f, [](LWVector4f& Vec) { Vec *= Vec; }) << "ms" << std::endl;
+	std::cout << "Sub: ";
+	std::cout << DoWork(Count, Vec4f, [](LWVector4f& Vec) { Vec -= Vec; }) << "ms" << std::endl;
+	std::cout << "Divide: ";
+	std::cout << DoWork(Count, Vec4f, [](LWVector4f& Vec) { Vec /= Vec; }) << "ms" << std::endl;
+
+	FinalLen = 0.0f;
+	std::cout << "SVector4f:" << std::endl;
+	std::cout << "Length: ";
+	std::cout << DoWork(Count, SVec4f, [&FinalLen](LWSVector4f& Vec) { FinalLen += Vec.Length(); }) << "ms | " << FinalLen << std::endl;
+	std::cout << "Normalize: ";
+	std::cout << DoWork(Count, SVec4f, [](LWSVector4f& Vec) { Vec = Vec.Normalize(); }) << "ms" << std::endl;
+	std::cout << "Add: ";
+	std::cout << DoWork(Count, SVec4f, [](LWSVector4f& Vec) { Vec += Vec; }) << "ms" << std::endl;
+	std::cout << "Multiply: ";
+	std::cout << DoWork(Count, SVec4f, [](LWSVector4f& Vec) { Vec *= Vec; }) << "ms" << std::endl;
+	std::cout << "Sub: ";
+	std::cout << DoWork(Count, SVec4f, [](LWSVector4f& Vec) { Vec -= Vec; }) << "ms" << std::endl;
+	std::cout << "Divide: ";
+	std::cout << DoWork(Count, SVec4f, [](LWSVector4f& Vec) { Vec /= Vec; }) << "ms" << std::endl;
+
+	double FinalLend = 0.0;
+	std::cout << "Vector4d:" << std::endl;
+	std::cout << "Length: ";
+	std::cout << DoWork(Count, Vec4d, [&FinalLend](LWVector4d& Vec) { FinalLend += Vec.Length(); }) << "ms | " << FinalLend << std::endl;
+	std::cout << "Normalize: ";
+	std::cout << DoWork(Count, Vec4d, [](LWVector4d& Vec) { Vec = Vec.Normalize(); }) << "ms" << std::endl;
+	std::cout << "Add: ";
+	std::cout << DoWork(Count, Vec4d, [](LWVector4d& Vec) { Vec += Vec; }) << "ms" << std::endl;
+	std::cout << "Multiply: ";
+	std::cout << DoWork(Count, Vec4d, [](LWVector4d& Vec) { Vec *= Vec; }) << "ms" << std::endl;
+	std::cout << "Sub: ";
+	std::cout << DoWork(Count, Vec4d, [](LWVector4d& Vec) { Vec -= Vec; }) << "ms" << std::endl;
+	std::cout << "Divide: ";
+	std::cout << DoWork(Count, Vec4d, [](LWVector4d& Vec) { Vec /= Vec; }) << "ms" << std::endl;
+
+	FinalLend = 0.0;
+	std::cout << "SVector4d:" << std::endl;
+	std::cout << "Length: ";
+	std::cout << DoWork(Count, SVec4d, [&FinalLend](LWSVector4d& Vec) { FinalLend += Vec.Length(); }) << "ms | " << FinalLend << std::endl;
+	std::cout << "Normalize: ";
+	std::cout << DoWork(Count, SVec4d, [](LWSVector4d& Vec) { Vec = Vec.Normalize(); }) << "ms" << std::endl;
+	std::cout << "Add: ";
+	std::cout << DoWork(Count, SVec4d, [](LWSVector4d& Vec) { Vec += Vec; }) << "ms" << std::endl;
+	std::cout << "Multiply: ";
+	std::cout << DoWork(Count, SVec4d, [](LWSVector4d& Vec) { Vec *= Vec; }) << "ms" << std::endl;
+	std::cout << "Sub: ";
+	std::cout << DoWork(Count, SVec4d, [](LWSVector4d& Vec) { Vec -= Vec; }) << "ms" << std::endl;
+	std::cout << "Divide: ";
+	std::cout << DoWork(Count, SVec4d, [](LWSVector4d& Vec) { Vec /= Vec; }) << "ms" << std::endl;
+
+	LWVector4f FinalSum;
+	std::cout << "Matrix4f:" << std::endl;
+	std::cout << "Transpose: ";
+	std::cout << DoWork(Count, Mat4f, [](LWMatrix4f &Mat) { Mat = Mat.Transpose(); }) << "ms" << std::endl;
+	std::cout << "TransformInvert: ";
+	std::cout << DoWork(Count, Mat4f, [](LWMatrix4f &Mat) { Mat = Mat.TransformInverse(); }) << "ms" << std::endl;
+	std::cout << "Invert: ";
+	std::cout << DoWork(Count, Mat4f, [](LWMatrix4f &Mat) { Mat = Mat.Inverse(); }) << "ms" << std::endl;
+	std::cout << "MVec4: ";
+	std::cout << DoWork(Count, Mat4f, [&FinalSum](LWMatrix4f &Mat) {FinalSum += Mat * LWVector4f(1.0f); }) << "ms | " << FinalSum << std::endl;
+	std::cout << "Multiply: ";
+	std::cout << DoWork(Count, Mat4f, [](LWMatrix4f &Mat) { Mat = Mat * Mat; }) << "ms" << std::endl;
+	std::cout << "Add: ";
+	std::cout << DoWork(Count, Mat4f, [](LWMatrix4f &Mat) {Mat = Mat + Mat; }) << "ms" << std::endl;
+	std::cout << "Sub: ";
+	std::cout << DoWork (Count, Mat4f, [](LWMatrix4f &Mat) {Mat = Mat - Mat; }) << "ms" << std::endl;
+	
+	LWSVector4f SFinalSum;
+	std::cout << "SMatrix4f:" << std::endl;
+	std::cout << "Transpose:";
+	std::cout << DoWork(Count, SMat4f, [](LWSMatrix4f &Mat) { Mat = Mat.Transpose(); }) << "ms" << std::endl;
+	std::cout << "TransformInvert: ";
+	std::cout << DoWork(Count, SMat4f, [](LWSMatrix4f &Mat) { Mat = Mat.TransformInverse(); }) << "ms" << std::endl;
+	std::cout << "Invert: ";
+	std::cout << DoWork(Count, SMat4f, [](LWSMatrix4f &Mat) { Mat = Mat.Inverse(); }) << "ms" << std::endl;
+	std::cout << "MVec4: ";
+	std::cout << DoWork(Count, SMat4f, [&SFinalSum](LWSMatrix4f &Mat) {SFinalSum += Mat * LWSVector4f(1.0f); }) << "ms | " << SFinalSum << std::endl;
+	std::cout << "Multiply: ";
+	std::cout << DoWork(Count, SMat4f, [](LWSMatrix4f &Mat) { Mat = Mat * Mat; }) << "ms" << std::endl;
+	std::cout << "Add: ";
+	std::cout << DoWork(Count, SMat4f, [](LWSMatrix4f &Mat) {Mat = Mat + Mat; }) << "ms" << std::endl;
+	std::cout << "Sub: ";
+	std::cout << DoWork(Count, SMat4f, [](LWSMatrix4f &Mat) {Mat = Mat - Mat; }) << "ms" << std::endl;
+
+	LWVector4f FinalPnt = LWVector4f(1.0f, 0.0f, 0.0f, 1.0f);
+	std::cout << "Quaternionf:" << std::endl;
+	std::cout << "Mul: ";
+	std::cout << DoWork(Count, Quatf, [](LWQuaternionf &Q) { Q *= LWQuaternionf(); }) << "ms" << std::endl;
+	std::cout << "Conjugate: ";
+	std::cout << DoWork(Count, Quatf, [](LWQuaternionf &Q) { Q = Q.Conjugate(); }) << "ms" << std::endl;
+	std::cout << "RotatePnt4: ";
+	std::cout << DoWork(Count, Quatf, [&FinalPnt](LWQuaternionf &Q) { FinalPnt = Q.RotatePoint(FinalPnt); }) << "ms | " << FinalPnt << std::endl;
+
+	LWSVector4f SFinalPnt = LWVector4f(1.0f, 0.0f, 0.0f, 1.0f);
+	std::cout << "SQuaternionf:" << std::endl;
+	std::cout << "Mul: ";
+	std::cout << DoWork(Count, SQuatf, [](LWSQuaternionf &Q) { Q *= LWSQuaternionf(); }) << "ms" << std::endl;
+	std::cout << "Conjugate: ";
+	std::cout << DoWork(Count, SQuatf, [](LWSQuaternionf &Q) { Q = Q.Conjugate(); }) << "ms" << std::endl;
+	std::cout << "RotatePnt4: ";
+	std::cout << DoWork(Count, SQuatf, [&SFinalPnt](LWSQuaternionf &Q) { SFinalPnt = Q.RotatePoint(SFinalPnt); }) << "ms | " << FinalPnt << std::endl;
+
+	LWAllocator::Destroy(Vec4f);
+	LWAllocator::Destroy(SVec4f);
+	LWAllocator::Destroy(Vec4d);
+	LWAllocator::Destroy(SVec4d);
+	LWAllocator::Destroy(Mat4f);
+	LWAllocator::Destroy(SMat4f);
+	LWAllocator::Destroy(Quatf);
+	LWAllocator::Destroy(SQuatf);
+	return;
+};
+
 int main(int, char **){
 	std::cout << "Testing LWFramework core features." << std::endl;
-
-	/*if (!PerformLWAllocatorTest()) std::cout << "Error with LWAllocator test." << std::endl;
+	/*
+	if (!PerformLWAllocatorTest()) std::cout << "Error with LWAllocator test." << std::endl;
 	else if (!PerformLWByteBufferTest()) std::cout << "Error with LWByteBuffer Test." << std::endl;
 	else if (!PerformLWByteStreamTest()) std::cout << "Error with LWByteStream test." << std::endl;
 	else if (!PerformLWVectorTest()) std::cout << "Error with LWVector test." << std::endl;
 	else if (!PerformLWSVectorTest()) std::cout << "Error with LWSVector test." << std::endl;
 	else if (!PerformLWMatrixTest()) std::cout << "Error with LWMatrix Test." << std::endl;
-	else */ if (!PerformLWSMatrixTest()) std::cout << "Error with LWSMatrix Test." << std::endl;
-	/*
+	else if (!PerformLWSMatrixTest()) std::cout << "Error with LWSMatrix Test." << std::endl;
 	else if (!PerformLWQuaternionTest()) std::cout << "Error with LWQuaternion Test." << std::endl;
 	else if (!PerformLWSQuaternionTest()) std::cout << "Error with LWSQuaternion Test." << std::endl;
 	else if (!PerformLWTextTest()) std::cout << "Error with LWText Test." << std::endl;
 	else if (!PerformLWConcurrentTest()) std::cout << "Error with LWConcurrent Test." << std::endl;
 	else if (!PerformLWTimerTest()) std::cout << "Error with LWTimer Test." << std::endl;
 	else if (!PerformLWCryptoTest()) std::cout << "Error with LWCrypto test." << std::endl;
-	*/
-	else std::cout << "LWFramework core successful test." << std::endl;
-
+	else {*/
+		PerformSIMDComparisonTest(50000000);
+		std::cout << "LWFramework core successful test." << std::endl;
+	//}
 	return 0;
 }

@@ -23,7 +23,6 @@ libogg-1.3.2 https://xiph.org/ogg/ (be sure to rename the folder to libogg)
 
 libvorbis-1.3.5 https://xiph.org/vorbis/ (be sure to rename the folder to libvorbis)
 
-
 Place all library folders into the dependency directory then naviagate to the build system for that platform.  the build systems are designed to build statically linked librarys.
 The build systems were built with the above versions.  Using more upto date librarys may required modifications to the build processes, but ideally if the library hasn't had radical changes it should be interchangable.
 
@@ -82,7 +81,7 @@ When using libbotan for x86 or x64 the include headers are found under libbotan/
 libvpx https://github.com/webmproject/libvpx (rename to libvpx)
 This library is used for LWEVideoPlayer, omitting LWEVideoPlayer will not require this library.
 The build steps can be followed if on non-windows platforms.  if on windows10 the Build project requires Windows Subsystem for linux with any distro installed as well with make installed(apt-get update, apt-get install make).
-It also requires the correct yasm(http://yasm.tortall.net/)(Not the VS2010 version) to be installed to the visual studio common7/Tools directoy(copy yasm-1.x.0-win(64|32).exe into directory and rename to yasm.exe).  after this is complete you should be able to load the msvc17 solution and build for each platform.
+It also requires the correct yasm(http://yasm.tortall.net/) (Not the VS2010 version) to be installed to the visual studio common7/Tools directoy.  (copy yasm-1.x.0-win(64|32).exe into directory and rename to yasm.exe).  after this is complete you should be able to load the msvc17 solution and build for each platform.
 
 Older windows systems will have to follow the build process found on the project page.
 

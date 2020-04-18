@@ -1,0 +1,153 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\LWVideoDrivers">
+      <UniqueIdentifier>{55cb1f02-e0c9-4a65-8b33-3da958900741}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\LWVideoDrivers">
+      <UniqueIdentifier>{532420f3-a784-480f-afe0-cb29e19fc48a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWFont.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWFrameBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWImage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWMesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWShader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWTexture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWVideoBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWVideoDriver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWVideoDrivers\LWVideoDriver_DirectX11_1.h">
+      <Filter>Header Files\LWVideoDrivers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWVideoDrivers\LWVideoDriver_OpenGL2_1.h">
+      <Filter>Header Files\LWVideoDrivers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWVideoDrivers\LWVideoDriver_OpenGLES2.h">
+      <Filter>Header Files\LWVideoDrivers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWPipeline.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWVideoDrivers\LWVideoDriver_OpenGL3_3.h">
+      <Filter>Header Files\LWVideoDrivers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWVideoDrivers\LWVideoDriver_OpenGL4_5.h">
+      <Filter>Header Files\LWVideoDrivers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWVideoDrivers\LWVideoDriver_Vulkan.h">
+      <Filter>Header Files\LWVideoDrivers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWVideoDriver\LWVideoDriver_OpenGL2_1.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWFont.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWFrameBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWImage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWShader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWTexture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWVideoBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWVideoDriver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Windows\LWVideo\LWVideoDrivers\LWVideoDriver_DirectX11_1_Windows.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Windows\LWVideo\LWVideoDrivers\LWVideoDriver_OpenGl2_1_Windows.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\NDK\LWVideo\LWVideoDriver\LWVideoDriver_OpenGLES2_NDK.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWVideoDriver\LWVideoDriver_OpenGLES2.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\X11\LWVideo\LWVideoDriver\LWVideoDriver_OpenGL2_1_X11.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Web\LWVideo\LWVideoDriver\LWVideoDriver_OpenGLES2_Web.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Mac\LWVideo\LWVideoDriver\LWVideoDriver_OpenGL2_1_Mac.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWVideoDriver\LWVideoDriver_DirectX11.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWPipeline.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWVideoDriver\LWVideoDriver_OpenGL3_3.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Mac\LWVideo\LWVideoDriver\LWVideoDriver_OpenGL3_3_Mac.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Windows\LWVideo\LWVideoDrivers\LWVideoDriver_OpenGL3_3_Windows.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\X11\LWVideo\LWVideoDriver\LWVideoDriver_OpenGL3_3_X11.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWVideoDriver\LWVideoDriver_OpenGL4_5.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Windows\LWVideo\LWVideoDrivers\LWVideoDriver_OpenGL4_5_Windows.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWVideo\LWVideoDriver\LWVideoDriver_Vulkan.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Windows\LWVideo\LWVideoDrivers\LWVideoDriver_Vulkan_Windows.cpp">
+      <Filter>Source Files\LWVideoDrivers</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

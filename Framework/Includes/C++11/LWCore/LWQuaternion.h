@@ -11,6 +11,11 @@ struct LWQuaternion {
 	Type z; /*!< \brief imaginary z component of quaternion */
 	Type w; /*!< \brief real component of quaternion */
 
+	/*!< \brief returns a simd-quaternion quaternion. */
+	LWSQuaternion<Type> AsSQuaternion(void) const {
+		return LWSQuaternion<Type>(w, x, y, z);
+	}
+
 	/*!< \brief constructs a quaternion for the provided yaw, pitch, and roll angles. */
 	static LWQuaternion FromEuler(Type Pitch, Type Yaw, Type Roll) {
 		
@@ -199,7 +204,6 @@ struct LWQuaternion {
 	LWQuaternion operator*(Type rhs) const {
 		return LWQuaternion(w*rhs, x*rhs, y*rhs, z*rhs);
 	}
-
 
 	friend std::ostream &operator<<(std::ostream &o, const LWQuaternion<Type> &q) {
 		o << q.w << " " << q.x << " " << q.y << " " << q.z;

@@ -15,6 +15,11 @@ template<class Type>
 struct LWMatrix4{
 	LWVector4<Type> m_Rows[4]; /*!< The 4x4 matrix in row-major order. */
 
+	/*!< \brief returns the simd matrix4 of this matrix. */
+	LWSMatrix4<Type> AsSMat4(void) const {
+		return LWSMatrix4<Type>(m_Rows[0].AsSVec4(), m_Rows[1].AsSVec4(), m_Rows[2].AsSVec4(), m_Rows[3].AsSVec4());
+	}
+
 	/*!< \brief returns the inverse of an transformation only matrix, if the matrix is more complex then this function will return incorrect results. */
 	LWMatrix4 TransformInverse(void) const {
 		const Type E = std::numeric_limits<Type>::epsilon();
@@ -43,7 +48,6 @@ struct LWMatrix4{
 
 	/*! \brief Returns an copied inverse of this matrix for general matrix's. */
 	LWMatrix4 Inverse(void) const{
-
 		//Found from: https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
 		LWVector4<Type> A = m_Rows[0];
 		LWVector4<Type> B = m_Rows[1];
@@ -54,18 +58,22 @@ struct LWMatrix4{
 		Type A1323 = C.y * D.w - C.w * D.y; //m.m21 * m.m33 - m.m23 * m.m31;
 		Type A1223 = C.y * D.z - C.z * D.y; //m.m21 * m.m32 - m.m22 * m.m31;
 		Type A0323 = C.x * D.w - C.w * D.x; //m.m20 * m.m33 - m.m23 * m.m30;
+
 		Type A0223 = C.x * D.z - C.z * D.x; //m.m20 * m.m32 - m.m22 * m.m30;
 		Type A0123 = C.x * D.y - C.y * D.x; //m.m20 * m.m31 - m.m21 * m.m30;
 		Type A2313 = B.z * D.w - B.w * D.z; //m.m12 * m.m33 - m.m13 * m.m32;
 		Type A1313 = B.y * D.w - B.w * D.y; //m.m11 * m.m33 - m.m13 * m.m31;
+
 		Type A1213 = B.y * D.z - B.z * D.y; //m.m11 * m.m32 - m.m12 * m.m31;
 		Type A2312 = B.z * C.w - B.w * C.z; //m.m12 * m.m23 - m.m13 * m.m22;
 		Type A1312 = B.y * C.w - B.w * C.y; //m.m11 * m.m23 - m.m13 * m.m21;
 		Type A1212 = B.y * C.z - B.z * C.y; //m.m11 * m.m22 - m.m12 * m.m21;
+
 		Type A0313 = B.x * D.w - B.w * D.x; //m.m10 * m.m33 - m.m13 * m.m30;
 		Type A0213 = B.x * D.z - B.z * D.x; //m.m10 * m.m32 - m.m12 * m.m30;
 		Type A0312 = B.x * C.w - B.w * C.x; //m.m10 * m.m23 - m.m13 * m.m20;
 		Type A0212 = B.x * C.z - B.z * C.x; //m.m10 * m.m22 - m.m12 * m.m20;
+
 		Type A0113 = B.x * D.y - B.y * D.x; //m.m10 * m.m31 - m.m11 * m.m30;
 		Type A0112 = B.x * C.y - B.y * C.x; //m.m10 * m.m21 - m.m11 * m.m20;
 
@@ -81,7 +89,7 @@ struct LWMatrix4{
 		Type Az =  A.y * A2313 - A.z * A1313 + A.w * A1213;  // (m.m01 * A2313 - m.m02 * A1313 + m.m03 * A1213)
 		Type Aw =-(A.y * A2312 - A.z * A1312 + A.w * A1212); //-(m.m01 * A2312 - m.m02 * A1312 + m.m03 * A1212)
 
-		Type Bx =-(B.y * A2323 - B.z * A0323 + B.w * A0223); //-(m.m10 * A2323 - m.m12 * A0323 + m.m13 * A0223)
+		Type Bx =-(B.x * A2323 - B.z * A0323 + B.w * A0223); //-(m.m10 * A2323 - m.m12 * A0323 + m.m13 * A0223)
 		Type By =  A.x * A2323 - A.z * A0323 + A.w * A0223;  // (m.m00 * A2323 - m.m02 * A0323 + m.m03 * A0223)
 		Type Bz =-(A.x * A2313 - A.z * A0313 + A.w * A0213); //-(m.m00 * A2313 - m.m02 * A0313 + m.m03 * A0213);
 		Type Bw =  A.x * A2312 - A.z * A0312 + A.w * A0212;  // (m.m00 * A2312 - m.m02 * A0312 + m.m03 * A0212)
@@ -90,9 +98,6 @@ struct LWMatrix4{
 		Type Cy =-(A.x * A1323 - A.y * A0323 + A.w * A0123); //-(m.m00 * A1323 - m.m01 * A0323 + m.m03 * A0123)
 		Type Cz =  A.x * A1313 - A.y * A0313 + A.w * A0113;  // (m.m00 * A1313 - m.m01 * A0313 + m.m03 * A0113),
 		Type Cw =-(A.x * A1312 - A.y * A0312 + A.w * A0112); //-(m.m00 * A1312 - m.m01 * A0312 + m.m03 * A0112),
-
-		std::cout << A1323 << " " << A1323 << " " << A1313 << " " << A1312 << " | " << A0323 << " " << A0323 << " " << A0313 << "  " << A0312 << " | " << A0123 << " " << A0123 << " " << A0113 << " " << A0112 << std::endl;
-
 
 		Type Dx =-(B.x * A1223 - B.y * A0223 + B.z * A0123); //-(m.m10 * A1223 - m.m11 * A0223 + m.m12 * A0123)
 		Type Dy =  A.x * A1223 - A.y * A0223 + A.z * A0123;  // (m.m00 * A1223 - m.m01 * A0223 + m.m02 * A0123)
