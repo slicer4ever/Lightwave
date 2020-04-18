@@ -7,6 +7,7 @@ LWVector4<int32_t> LWSVector4<int32_t>::AsVec4(void) const {
 	return R;
 }
 
+<<<<<<< HEAD
 int32_t *LWSVector4<int32_t>::AsArray(void) {
 	return (int32_t*)&m_Data;
 }
@@ -84,6 +85,8 @@ LWSVector4<int32_t> LWSVector4<int32_t>::Normalize2(void) const {
 
 }
 
+=======
+>>>>>>> Nearly finished with SIMD functions.
 int32_t LWSVector4<int32_t>::Min(void) const {
 	__m128i A = _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 0, 3));
 	__m128i B = _mm_min_epi32(m_Data, A);
@@ -171,6 +174,7 @@ LWSVector4<int32_t> LWSVector4<int32_t>::Max(const LWSVector4<int32_t>& A) const
 	return _mm_max_epi32(m_Data, A.m_Data);
 }
 
+<<<<<<< HEAD
 LWSVector4<int32_t> LWSVector4<int32_t>::Cross3(const LWSVector4<int32_t>& O) const {
 	__m128i A = yzxw().m_Data;
 	__m128i B = O.zxyw().m_Data;
@@ -480,6 +484,8 @@ bool LWSVector4<int32_t>::GreaterEqual2(const LWSVector4<int32_t> &Rhs) const {
 	return _mm_test_all_ones(_mm_blend_epi32(t, one, 0xC));
 }
 
+=======
+>>>>>>> Nearly finished with SIMD functions.
 LWSVector4<int32_t>& LWSVector4<int32_t>::operator = (const LWSVector4<int32_t>& Rhs) {
 	m_Data = Rhs.m_Data;
 	return *this;
@@ -520,22 +526,46 @@ LWSVector4<int32_t>& LWSVector4<int32_t>::operator *= (int32_t Rhs) {
 
 LWSVector4<int32_t>& LWSVector4<int32_t>::operator /= (const LWSVector4<int32_t>& Rhs) {
 	//No integer division, cast data to float, divide, cast back to m128i
+<<<<<<< HEAD
 	int32_t *L = AsArray();
 	const int32_t *R = Rhs.AsArray();
 	L[0] /= R[0];
 	L[1] /= R[1];
 	L[2] /= R[2];
 	L[3] /= R[3];
+=======
+	alignas (16) LWVector4i RiA;
+	alignas (16) LWVector4i RiB;
+	alignas (16) LWVector4f Rf;
+	_mm_store_si128((__m128i*) & RiA.x, m_Data);
+	_mm_store_si128((__m128i*) & RiB.x, Rhs.m_Data);
+	__m128 tA = _mm_set_ps((float)RiA.x, (float)RiA.y, (float)RiA.z, (float)RiA.w);
+	__m128 tB = _mm_set_ps((float)RiB.x, (float)RiB.y, (float)RiB.z, (float)RiB.w);
+	__m128 t = _mm_div_ps(tA, tB);
+	_mm_store_ps(&Rf.x, t);
+	m_Data = _mm_set_epi32((int32_t)Rf.x, (int32_t)Rf.y, (int32_t)Rf.z, (int32_t)Rf.w);
+>>>>>>> Nearly finished with SIMD functions.
 	return *this;
 }
 
 LWSVector4<int32_t>& LWSVector4<int32_t>::operator /= (int32_t Rhs) {
 	//No integer division, cast data to float, divide, cast back to m128i
+<<<<<<< HEAD
 	int32_t *L = AsArray();
 	L[0] /= Rhs;
 	L[1] /= Rhs;
 	L[2] /= Rhs;
 	L[3] /= Rhs;
+=======
+	alignas (16) LWVector4i RiA;
+	alignas (16) LWVector4f Rf;
+	_mm_store_si128((__m128i*) & RiA.x, m_Data);
+	__m128 tA = _mm_set_ps((float)RiA.x, (float)RiA.y, (float)RiA.z, (float)RiA.w);
+	__m128 tB = _mm_set_ps1((float)Rhs);
+	__m128 t = _mm_div_ps(tA, tB);
+	_mm_store_ps(&Rf.x, t);
+	m_Data = _mm_set_epi32((int32_t)Rf.x, (int32_t)Rf.y, (int32_t)Rf.z, (int32_t)Rf.w);
+>>>>>>> Nearly finished with SIMD functions.
 	return *this;
 }
 
@@ -547,6 +577,7 @@ LWSVector4<int32_t> operator - (const LWSVector4<int32_t>& Rhs) {
 	return _mm_sign_epi32(Rhs.m_Data, _mm_set1_epi32(-1));
 }
 
+<<<<<<< HEAD
 bool LWSVector4<int32_t>::operator > (const LWSVector4<int32_t> &Rhs) const {
 	return _mm_test_all_ones(_mm_cmpgt_epi32(m_Data, Rhs.m_Data));
 }
@@ -563,6 +594,8 @@ bool LWSVector4<int32_t>::operator <= (const LWSVector4<int32_t> &Rhs) const {
 	return _mm_test_all_ones(_mm_cmplt_epi32(m_Data, Rhs.m_Data)) || _mm_test_all_ones(_mm_cmpeq_epi32(m_Data, Rhs.m_Data));
 }
 
+=======
+>>>>>>> Nearly finished with SIMD functions.
 bool LWSVector4<int32_t>::operator == (const LWSVector4<int32_t>& Rhs) const {
 	return _mm_test_all_ones(_mm_cmpeq_epi32(m_Data, Rhs.m_Data));
 }
@@ -621,6 +654,7 @@ LWSVector4<int32_t> operator * (int32_t Lhs, const LWSVector4<int32_t>& Rhs) {
 }
 
 LWSVector4<int32_t> operator / (const LWSVector4<int32_t>& Lhs, const LWSVector4<int32_t>& Rhs) {
+<<<<<<< HEAD
 	const int32_t *L = Lhs.AsArray();
 	const int32_t *R = Rhs.AsArray();
 	return LWSVector4<int32_t>(L[0] / R[0], L[1] / R[1], L[2] / R[2], L[3] / R[3]);
@@ -634,6 +668,39 @@ LWSVector4<int32_t> operator / (const LWSVector4<int32_t>& Lhs, int32_t Rhs) {
 LWSVector4<int32_t> operator / (int32_t Lhs, const LWSVector4<int32_t>& Rhs) {
 	const int32_t *R = Rhs.AsArray();
 	return LWSVector4<int32_t>(Lhs / R[0], Lhs / R[1], Lhs / R[2], Lhs / R[3]);
+=======
+	alignas (16) LWVector4i RiA;
+	alignas (16) LWVector4i RiB;
+	alignas (16) LWVector4f Rf;
+	_mm_store_si128((__m128i*) & RiA.x, Lhs.m_Data);
+	_mm_store_si128((__m128i*) & RiB.x, Rhs.m_Data);
+	__m128 tA = _mm_set_ps((float)RiA.x, (float)RiA.y, (float)RiA.z, (float)RiA.w);
+	__m128 tB = _mm_set_ps((float)RiB.x, (float)RiB.y, (float)RiB.z, (float)RiB.w);
+	__m128 t = _mm_div_ps(tA, tB);
+	_mm_store_ps(&Rf.x, t);
+	return _mm_set_epi32((int32_t)Rf.x, (int32_t)Rf.y, (int32_t)Rf.z, (int32_t)Rf.w);
+}
+
+LWSVector4<int32_t> operator / (const LWSVector4<int32_t>& Lhs, int32_t Rhs) {
+	alignas (16) LWVector4i RiA;
+	alignas (16) LWVector4f Rf;
+	_mm_store_si128((__m128i*) & RiA.x, Lhs.m_Data);
+	__m128 tA = _mm_set_ps((float)RiA.x, (float)RiA.y, (float)RiA.z, (float)RiA.w);
+	__m128 tB = _mm_set_ps1((float)Rhs);
+	__m128 t = _mm_div_ps(tA, tB);
+	_mm_store_ps(&Rf.x, t);
+	return _mm_set_epi32((int32_t)Rf.x, (int32_t)Rf.y, (int32_t)Rf.z, (int32_t)Rf.w);
+}
+
+LWSVector4<int32_t> operator / (int32_t Lhs, const LWSVector4<int32_t>& Rhs) {
+	alignas (16) LWVector4f Rf;
+	alignas (16) LWVector4i RiB;
+	__m128 tA = _mm_set_ps1((float)Lhs);
+	__m128 tB = _mm_set_ps((float)RiB.x, (float)RiB.y, (float)RiB.z, (float)RiB.w);
+	__m128 t = _mm_div_ps(tA, tB);
+	_mm_store_ps(&Rf.x, t);
+	return _mm_set_epi32((int32_t)Rf.x, (int32_t)Rf.y, (int32_t)Rf.z, (int32_t)Rf.w);
+>>>>>>> Nearly finished with SIMD functions.
 }
 
 LWSVector4<int32_t> LWSVector4<int32_t>::AAAB(const LWSVector4<int32_t>& B) const {
@@ -1836,6 +1903,7 @@ LWSVector4<int32_t> LWSVector4<int32_t>::yy(void) const {
 }
 
 int32_t LWSVector4<int32_t>::x(void) const {
+<<<<<<< HEAD
 	return ((int32_t*)&m_Data)[0];
 }
 
@@ -1850,6 +1918,21 @@ int32_t LWSVector4<int32_t>::z(void) const {
 
 int32_t LWSVector4<int32_t>::w(void) const {
 	return ((int32_t*)&m_Data)[3];
+=======
+	return _mm_extract_epi32(m_Data, 0);
+}
+
+int32_t LWSVector4<int32_t>::y(void) const {
+	return _mm_extract_epi32(m_Data, 1);
+}
+
+int32_t LWSVector4<int32_t>::z(void) const {
+	return _mm_extract_epi32(m_Data, 2);
+}
+
+int32_t LWSVector4<int32_t>::w(void) const {
+	return _mm_extract_epi32(m_Data, 3);
+>>>>>>> Nearly finished with SIMD functions.
 }
 
 LWSVector4<int32_t>::LWSVector4(__m128i Data) : m_Data(Data) {}

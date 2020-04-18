@@ -1,5 +1,8 @@
 #include "LWCore/LWSVector.h"
+<<<<<<< HEAD
 #include <numeric>
+=======
+>>>>>>> Nearly finished with SIMD functions.
 #ifndef LW_NOAVX
 
 LWVector4<float> LWSVector4<float>::AsVec4(void) const {
@@ -8,6 +11,7 @@ LWVector4<float> LWSVector4<float>::AsVec4(void) const {
 	return R;
 }
 
+<<<<<<< HEAD
 float *LWSVector4<float>::AsArray(void) {
 	return (float*)&m_Data;
 }
@@ -36,6 +40,8 @@ LWSVector4<float> &LWSVector4<float>::sW(float Value) {
 	return *this;
 }
 
+=======
+>>>>>>> Nearly finished with SIMD functions.
 LWSVector4<float> LWSVector4<float>::Normalize(void) const {
 	const float e = std::numeric_limits<float>::epsilon();
 	__m128 eps = _mm_set_ps1(e);
@@ -148,6 +154,7 @@ LWSVector4<float> LWSVector4<float>::Cross3(const LWSVector4<float>& O) const {
 	return _mm_sub_ps(_mm_mul_ps(A, B), _mm_mul_ps(C, D));
 }
 
+<<<<<<< HEAD
 void LWSVector4<float>::Orthogonal3(LWSVector4<float> &Right, LWSVector4<float> &Up) const {
 	const LWSVector4<float> XAxis = LWSVector4<float>(1.0f, 0.0f, 0.0f, 0.0f);
 	const LWSVector4<float> YAxis = LWSVector4<float>(0.0f, 1.0f, 0.0f, 0.0f);
@@ -161,6 +168,10 @@ void LWSVector4<float>::Orthogonal3(LWSVector4<float> &Right, LWSVector4<float> 
 
 LWSVector4<float> LWSVector4<float>::Perpindicular2(void) const {
 	return _mm_xor_ps(yx().m_Data, _mm_set_ps(0.0f, 0.0f, 0.0f, -0.0f));
+=======
+LWSVector4<float> LWSVector4<float>::Perpindicular2(void) const {
+	return _mm_mul_ps(yx().m_Data, _mm_set_ps(-1.0, 1.0, 1.0, 1.0));
+>>>>>>> Nearly finished with SIMD functions.
 }
 
 float LWSVector4<float>::Length(void) const {
@@ -223,6 +234,7 @@ float LWSVector4<float>::DistanceSquared2(const LWSVector4<float>& O) const {
 	return _mm_cvtss_f32(_mm_dp_ps(t, t, 0x3F));
 }
 
+<<<<<<< HEAD
 LWSVector4<float> LWSVector4<float>::Abs(void) const {
 	return _mm_andnot_ps(_mm_set_ps1(-0.0f), m_Data);
 }
@@ -391,6 +403,8 @@ bool LWSVector4<float>::GreaterEqual2(const LWSVector4<float> &Rhs) const {
 	return _mm_test_all_ones(_mm_blend_epi32(t, one, 0xC));
 }
 
+=======
+>>>>>>> Nearly finished with SIMD functions.
 LWSVector4<float>& LWSVector4<float>::operator = (const LWSVector4<float>& Rhs) {
 	m_Data = Rhs.m_Data;
 	return *this;
@@ -449,6 +463,7 @@ LWSVector4<float> operator - (const LWSVector4<float>& Rhs) {
 	return _mm_xor_ps(Rhs.m_Data, t);
 }
 
+<<<<<<< HEAD
 bool LWSVector4<float>::operator > (const LWSVector4<float> &Rhs) const {
 	return _mm_test_all_ones(_mm_castps_si128(_mm_cmpgt_ps(m_Data, Rhs.m_Data)));
 }
@@ -465,6 +480,8 @@ bool LWSVector4<float>::operator <= (const LWSVector4<float> &Rhs) const {
 	return _mm_test_all_ones(_mm_castps_si128(_mm_cmple_ps(m_Data, Rhs.m_Data)));
 }
 
+=======
+>>>>>>> Nearly finished with SIMD functions.
 bool LWSVector4<float>::operator == (const LWSVector4<float>& Rhs) const {
 	__m128 e = _mm_set_ps1(std::numeric_limits<float>::epsilon());
 	__m128 t = _mm_sub_ps(m_Data, Rhs.m_Data);
@@ -1740,6 +1757,7 @@ LWSVector4<float> LWSVector4<float>::yy(void) const {
 }
 
 float LWSVector4<float>::x(void) const {
+<<<<<<< HEAD
 	return ((float*)&m_Data)[0];
 }
 
@@ -1749,11 +1767,26 @@ float LWSVector4<float>::y(void) const {
 
 float LWSVector4<float>::z(void) const {
 	return ((float*)&m_Data)[2];
+=======
+	return _mm_cvtss_f32(xxxx().m_Data);
+}
+
+float LWSVector4<float>::y(void) const {
+	return _mm_cvtss_f32(yyyy().m_Data);
+}
+
+float LWSVector4<float>::z(void) const {
+	return _mm_cvtss_f32(zzzz().m_Data);
+>>>>>>> Nearly finished with SIMD functions.
 
 }
 
 float LWSVector4<float>::w(void) const {
+<<<<<<< HEAD
 	return ((float*)&m_Data)[3];
+=======
+	return _mm_cvtss_f32(wwww().m_Data);
+>>>>>>> Nearly finished with SIMD functions.
 }
 	
 LWSVector4<float>::LWSVector4(__m128 Data) : m_Data(Data) {}

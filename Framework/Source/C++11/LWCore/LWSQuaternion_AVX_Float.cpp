@@ -12,7 +12,10 @@ LWSQuaternion<float> LWSQuaternion<float>::FromEuler(float Pitch, float Yaw, flo
 	float c1c2 = c1 * c2;
 	float s1s2 = s1 * s2;
 	return LWSQuaternion(c1c2 * c3 - s1s2 * s3, c1c2 * s3 + s1s2 * c3, s1 * c2 * c3 + c1 * s2 * s3, c1 * s2 * c3 - s1 * c2 * s3);
+<<<<<<< HEAD
 
+=======
+>>>>>>> Nearly finished with SIMD functions.
 };
 
 LWSQuaternion<float> LWSQuaternion<float>::FromEuler(const LWVector3<float>& Euler) {
@@ -72,6 +75,7 @@ LWSVector4<float> LWSQuaternion<float>::ToEuler(void) const {
 
 	__m128 cP = _mm_mul_ps(LenSq, _mm_set_ps1(hE));
 	__m128 cN = _mm_mul_ps(LenSq, _mm_set_ps1(-hE));
+<<<<<<< HEAD
 	__m128i GE = _mm_castps_si128(_mm_cmpgt_ps(t, cP));
 	__m128i LE = _mm_castps_si128(_mm_cmplt_ps(t, cN));
 
@@ -79,6 +83,15 @@ LWSVector4<float> LWSQuaternion<float>::ToEuler(void) const {
 
 	if (_mm_test_all_ones(GE)) return LWSVector4<float>(LW_PI_2, 2.0f * atan2f(vals[0], vals[3]), 0.0f, 0.0f);
 	if (_mm_test_all_ones(LE)) return LWSVector4<float>(-LW_PI_2, -2.0f * atan2f(vals[0], vals[3]), 0.0f, 0.0f);
+=======
+	__m128i GE = _mm_castps_si128(_mm_cmpge_ps(t, cP));
+	__m128i LE = _mm_castps_si128(_mm_cmple_ps(t, cN));
+
+	_mm_store_ps(vals, m_Data);
+
+	if (_mm_test_all_ones(GE)) return LWSVector4<float>(LW_PI_2, 2.0f * atan2f(vals[0], vals[3]), 0.0f);
+	if (_mm_test_all_ones(LE)) return LWSVector4<float>(-LW_PI_2, -2.0f * atan2f(vals[0], vals[3]), 0.0f);
+>>>>>>> Nearly finished with SIMD functions.
 	__m128 YSq = _mm_xor_ps(Sq, _mm_set_ps(0.0f, -0.0f, -0.0f, 0.0f));
 	__m128 RSq = _mm_xor_ps(Sq, _mm_set_ps(0.0f, -0.0f, 0.0f, -0.0f));
 	YSq = _mm_hadd_ps(YSq, YSq);
@@ -113,11 +126,16 @@ float LWSQuaternion<float>::Dot(const LWSQuaternion& O) const {
 }
 
 LWSQuaternion<float> LWSQuaternion<float>::Conjugate(void) const {
+<<<<<<< HEAD
 	return _mm_xor_ps(m_Data, _mm_set_ps(0.0f, -0.0f, -0.0f, -0.0f));
+=======
+	return _mm_xor_ps(m_Data, _mm_set_ps(-0.0f, -0.0f, -0.0f, 0.0f));
+>>>>>>> Nearly finished with SIMD functions.
 }
 
 LWSQuaternion<float> LWSQuaternion<float>::Inverse(void) const {
 	__m128 iLenSq = _mm_div_ps(_mm_set_ps1(1.0f), _mm_dp_ps(m_Data, m_Data, 0xFF));
+<<<<<<< HEAD
 	return _mm_mul_ps(_mm_xor_ps(m_Data, _mm_set_ps(0.0f, -0.0f, -0.0f, -0.0f)), iLenSq);
 }
 #include <iostream>
@@ -125,11 +143,23 @@ LWSVector4<float> LWSQuaternion<float>::RotatePoint(const LWSVector4<float> Pnt)
 	__m128 u = _mm_mul_ps(m_Data, _mm_set_ps(0.0f, 1.0f, 1.0f, 1.0f));
 	__m128 dA = _mm_dp_ps(u, Pnt.m_Data, 0x7F);
 	__m128 dB = _mm_dp_ps(u, u, 0xff);
+=======
+	return _mm_mul_ps(_mm_xor_ps(m_Data, _mm_set_ps(-0.0f, -0.0f, -0.0f, 0.0f)), iLenSq);
+}
+
+LWSVector4<float> LWSQuaternion<float>::RotatePoint(const LWSVector4<float> Pnt) const {
+	__m128 u = _mm_mul_ps(m_Data, _mm_set_ps(0.0f, 1.0f, 1.0f, 1.0f));
+	__m128 dA = _mm_dp_ps(u, Pnt.m_Data, 0x7F);
+	__m128 dB = _mm_mul_ps(u, u);
+>>>>>>> Nearly finished with SIMD functions.
 
 	__m128 Two = _mm_set_ps1(2.0f);
 	__m128 mw = _mm_permute_ps(m_Data, _MM_SHUFFLE(3, 3, 3, 3));
 	__m128 wSq = _mm_mul_ps(mw, mw);
+<<<<<<< HEAD
 
+=======
+>>>>>>> Nearly finished with SIMD functions.
 	//Do cross product:
 	__m128 A = _mm_permute_ps(u, _MM_SHUFFLE(3, 0, 2, 1));
 	__m128 B = _mm_permute_ps(Pnt.m_Data, _MM_SHUFFLE(3, 1, 0, 2));
@@ -142,7 +172,11 @@ LWSVector4<float> LWSQuaternion<float>::RotatePoint(const LWSVector4<float> Pnt)
 	__m128 PtC = _mm_mul_ps(_mm_mul_ps(Two, mw), Crss);
 
 	__m128 r = _mm_add_ps(_mm_add_ps(PtA, PtB), PtC);
+<<<<<<< HEAD
 	r = _mm_blend_ps(r, Pnt.m_Data, 0x8);
+=======
+	r = _mm_blend_ps(_mm_mul_ps(r, _mm_set_ps(1.0f, 1.0f, 1.0f, 0.0f)), Pnt.m_Data, 0x8);
+>>>>>>> Nearly finished with SIMD functions.
 	return r;
 }
 
@@ -162,6 +196,7 @@ LWSQuaternion<float> LWSQuaternion<float>::operator+(const LWSQuaternion<float>&
 	return _mm_add_ps(m_Data, Rhs.m_Data);
 }
 
+<<<<<<< HEAD
 LWSQuaternion<float> LWSQuaternion<float>::operator-(const LWSQuaternion<float>& Rhs) const {
 	return _mm_sub_ps(m_Data, Rhs.m_Data);
 }
@@ -182,6 +217,12 @@ LWSQuaternion<float> operator / (float Lhs, const LWSQuaternion<float> &Rhs) {
 	return _mm_div_ps(_mm_set_ps1(Lhs), Rhs.m_Data);
 }
 
+=======
+LWSQuaternion<float> LWSQuaternion<float>:: operator-(const LWSQuaternion<float>& Rhs) const {
+	return _mm_sub_ps(m_Data, Rhs.m_Data);
+}
+
+>>>>>>> Nearly finished with SIMD functions.
 LWSQuaternion<float> LWSQuaternion<float>:: operator*(const LWSQuaternion<float>& Rhs) const {
 	__m128 mwwww = _mm_permute_ps(m_Data, _MM_SHUFFLE(3, 3, 3, 3));
 	__m128 mxyzx = _mm_permute_ps(m_Data, _MM_SHUFFLE(0, 2, 1, 0));
@@ -190,8 +231,13 @@ LWSQuaternion<float> LWSQuaternion<float>:: operator*(const LWSQuaternion<float>
 	__m128 rwwwx = _mm_permute_ps(Rhs.m_Data, _MM_SHUFFLE(0, 3, 3, 3));
 	__m128 rzxyy = _mm_permute_ps(Rhs.m_Data, _MM_SHUFFLE(1, 1, 0, 2));
 
+<<<<<<< HEAD
 	mxyzx = _mm_xor_ps(mxyzx, _mm_set_ps(-0.0f, 0.0f, 0.0f, 0.0f));
 	myzxy = _mm_xor_ps(myzxy, _mm_set_ps(-0.0f, 0.0f, 0.0f, 0.0f));
+=======
+	mxyzx = _mm_xor_ps(mxyzx, _mm_set_ps(0.0f, 0.0f, 0.0f, -0.0f));
+	myzxy = _mm_xor_ps(myzxy, _mm_set_ps(0.0f, 0.0f, 0.0f, -0.0f));
+>>>>>>> Nearly finished with SIMD functions.
 	mzxyz = _mm_xor_ps(mzxyz, _mm_set_ps1(-0.0f));
 
 	__m128 ryzxz = _mm_permute_ps(Rhs.m_Data, _MM_SHUFFLE(2, 0, 2, 1));
@@ -210,7 +256,11 @@ LWSQuaternion<float> LWSQuaternion<float>::operator*(float Rhs) const {
 std::ostream& operator<<(std::ostream& o, const LWSQuaternion<float>& q) {
 	alignas(16) LWQuaternion<float> R;
 	_mm_store_ps(&R.x, q.m_Data);
+<<<<<<< HEAD
 	o << R.w << " " << R.x << " " << R.y << " " << R.z;
+=======
+	o << R.x << " " << R.y << " " << R.z << " " << R.w;
+>>>>>>> Nearly finished with SIMD functions.
 	return o;
 }
 
@@ -244,6 +294,7 @@ LWSQuaternion<float> LWSQuaternion<float>::operator-() const {
 }
 
 float LWSQuaternion<float>::x(void) const {
+<<<<<<< HEAD
 	return ((float*)&m_Data)[0];
 }
 
@@ -257,12 +308,30 @@ float LWSQuaternion<float>::z(void) const {
 
 float LWSQuaternion<float>::w(void) const {
 	return ((float*)&m_Data)[3];
+=======
+	return _mm_cvtss_f32(_mm_permute_ps(m_Data, _MM_SHUFFLE(0, 0, 0, 0)));
+}
+
+float LWSQuaternion<float>::y(void) const {
+	return _mm_cvtss_f32(_mm_permute_ps(m_Data, _MM_SHUFFLE(1, 1, 1, 1)));
+}
+
+float LWSQuaternion<float>::z(void) const {
+	return _mm_cvtss_f32(_mm_permute_ps(m_Data, _MM_SHUFFLE(2, 2, 2, 2)));
+}
+
+float LWSQuaternion<float>::w(void) const {
+	return _mm_cvtss_f32(_mm_permute_ps(m_Data, _MM_SHUFFLE(3, 3, 3, 3)));
+>>>>>>> Nearly finished with SIMD functions.
 }
 
 LWSQuaternion<float>::LWSQuaternion(__m128 Data) : m_Data(Data) {}
 
+<<<<<<< HEAD
 LWSQuaternion<float>::LWSQuaternion(const LWQuaternion<float> &Q) : m_Data(_mm_set_ps(Q.w, Q.z, Q.y, Q.x)) {}
 
+=======
+>>>>>>> Nearly finished with SIMD functions.
 LWSQuaternion<float>::LWSQuaternion(float vw, float vx, float vy, float vz) : m_Data(_mm_set_ps(vw, vz, vy, vx)) {}
 
 LWSQuaternion<float>::LWSQuaternion(const LWSMatrix4<float>& Mat) {

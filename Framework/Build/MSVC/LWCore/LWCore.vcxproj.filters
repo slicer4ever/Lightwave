@@ -136,5 +136,20 @@
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWByteStream.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSVector_AVX_Float.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSVector_AVX_Int.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSVector_AVX2_Double.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSQuaternion_AVX_Float.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSMatrix_AVX2_Float.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

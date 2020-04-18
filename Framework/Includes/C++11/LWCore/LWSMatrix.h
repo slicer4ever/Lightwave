@@ -41,7 +41,6 @@ struct LWSMatrix4 {
 	}
 
 	/*! \brief Returns an copied inverse of this matrix. */
-	
 	LWSMatrix4 Inverse(void) const {
 		//adapted Non-simd version Found from: https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
 		LWSVector4<Type> A = m_Rows[0];
@@ -84,22 +83,25 @@ struct LWSMatrix4 {
 		if (Det.x() <= std::numeric_limits<Type>::epsilon()) Det = LWSVector4<Type>(0, 0, 0, 0);
 		else Det = (Type)1 / Det;
 
-		LWSVector4<Type> ByAxxx = B.yyyy().ABBB(A.xxxx());
 		LWSVector4<Type> ByAyyy = B.yyyy().ABBB(A.yyyy());
 		LWSVector4<Type> BzAzzz = B.zzzz().ABBB(A.zzzz());
 		LWSVector4<Type> BwAwww = B.wwww().ABBB(A.wwww());
 		LWSVector4<Type> BxAxxx = B.xxxx().ABBB(A.xxxx());
 		A = (ByAyyy * A2323_A2323_A2313_A2312 - BzAzzz * A1323_A1323_A1313_A1312 + BwAwww * A1223_A1223_A1213_A1212) * MulA * Det;
-		B = (ByAxxx * A2323_A2323_A2313_A2312 - BzAzzz * A0323_A0323_A0313_A0312 + BwAwww * A0223_A0223_A0213_A0212) * MulB * Det;
+		B = (BxAxxx * A2323_A2323_A2313_A2312 - BzAzzz * A0323_A0323_A0313_A0312 + BwAwww * A0223_A0223_A0213_A0212) * MulB * Det;
 		C = (BxAxxx * A1323_A1323_A1313_A1312 - ByAyyy * A0323_A0323_A0313_A0312 + BwAwww * A0123_A0123_A0113_A0112) * MulA * Det;
 		D = (BxAxxx * A1223_A1223_A1213_A1212 - ByAyyy * A0223_A0223_A0213_A0212 + BzAzzz * A0123_A0123_A0113_A0112) * MulB * Det;
 		return LWSMatrix4(A, B, C, D);
 	}
 
 	/*!< \brief returns the specified column of the matrix. */
-	LWSVector4<Type> Column(uint32_t Index) {
+	LWSVector4<Type> Column(uint32_t Index) const {
 		return Transpose().m_Rows[Index];
 	};
+
+	LWSVector4<Type> Row(uint32_t Index) const {
+		return m_Rows[Index];
+	}
 
 	/*! \brief returns the transpose of the this matrix. */
 	LWSMatrix4 Transpose(void) const {
@@ -591,13 +593,13 @@ struct LWSMatrix4 {
 		LWSVector4<Type> Fwrd = (Target - Position).Normalize3();
 		LWSVector4<Type> Rght = Fwrd.Cross3(Up).Normalize3();
 		LWSVector4<Type> U = Rght.Cross3(Fwrd);
-		return LWSMatrix4(Rght, U, Fwrd, Position);
+		return LWSMatrix4(Rght, U, -Fwrd, Position);
 	}
 
 	/*!< \brief constructs a 4x4 rotational matrix from the specified quaternion. */
 
 	LWSMatrix4(const LWSQuaternion<Type> &Q) {
-		LWSVector4<Type> VQ = Q.AsVec4();
+		LWSVector4<Type> VQ = Q.AsSVec4();
 		
 		LWSVector4<Type> yy_xx_xx_xx = VQ.yxxx()*VQ.yxxx();
 		LWSVector4<Type> zz_zz_yy_xx = VQ.zzyx()*VQ.zzyx();
@@ -638,7 +640,7 @@ struct LWSMatrix4 {
 	
 	/*!< \brief constructs a 4x4 matrix from Scale, Rotation, Position components(Position should have 1 as it's w component). */
 	LWSMatrix4(const LWSVector4<Type> &Scale, const LWSQuaternion<Type> &Rotation, const LWSVector4<Type> &Pos) {
-		LWSVector4<Type> VQ = Q.AsVec4();
+		LWSVector4<Type> VQ = Rotation.AsSVec4();
 
 		LWSVector4<Type> yy_xx_xx_xx = VQ.yxxx()*VQ.yxxx();
 		LWSVector4<Type> zz_zz_yy_xx = VQ.zzyx()*VQ.zzyx();
