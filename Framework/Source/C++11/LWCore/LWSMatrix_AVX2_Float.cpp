@@ -9,83 +9,6 @@ LWMatrix4<float> LWSMatrix4<float>::AsMat4(void) const {
 	return R;
 }
 
-<<<<<<< HEAD
-float *LWSMatrix4<float>::AsArray(void) {
-	return (float*)&m_Row01;
-}
-
-const float *LWSMatrix4<float>::AsArray(void) const {
-	return (float*)&m_Row01;
-}
-
-LWSMatrix4<float> &LWSMatrix4<float>::sRC(uint32_t Row, uint32_t Column, float Value) {
-	float *v = AsArray();
-	v[Row * 4 + Column] = Value;
-	return *this;
-}
-
-LWSVector4<float> LWSMatrix4<float>::DecomposeScale(bool doTranspose3x3) const {
-	LWSMatrix4<float> v = doTranspose3x3 ? Transpose3x3() : *this;
-	__m128 R0 = _mm256_extractf128_ps(v.m_Row01, 0);
-	__m128 R1 = _mm256_extractf128_ps(v.m_Row01, 1);
-	__m128 R2 = _mm256_extractf128_ps(v.m_Row23, 0);
-
-	//Calculate r0 length.
-	R0 = _mm_dp_ps(R0, R0, 0x7F);
-	R0 = _mm_sqrt_ps(R0);
-
-	//Calculate r1 length.
-	R1 = _mm_dp_ps(R1, R1, 0x7F);
-	R1 = _mm_sqrt_ps(R1);
-
-	//Calculate r2 length.
-	R2 = _mm_dp_ps(R2, R2, 0x7F);
-	R2 = _mm_sqrt_ps(R2);
-
-	__m128 Res = _mm_blend_ps(R0, R1, 0x2);
-	Res = _mm_blend_ps(Res, R2, 0x4);
-	Res = _mm_blend_ps(Res, _mm_set_ps1(1.0f), 0x8);
-	return LWSVector4<float>(Res);
-};
-
-void LWSMatrix4<float>::Decompose(LWSVector4<float> &Scale, LWSQuaternion<float> &Rotation, LWSVector4<float> &Translation, bool doTranspose3x3) const {
-	LWSMatrix4<float> v = doTranspose3x3 ? Transpose3x3() : *this;
-	__m128 R0 = _mm256_extractf128_ps(v.m_Row01, 0);
-	__m128 R1 = _mm256_extractf128_ps(v.m_Row01, 1);
-	__m128 R2 = _mm256_extractf128_ps(v.m_Row23, 0);
-	__m128 R3 = _mm256_extractf128_ps(v.m_Row23, 1);
-
-	//Row0 Length.
-	__m128 sR0 = _mm_dp_ps(R0, R0, 0x7F);
-	sR0 = _mm_sqrt_ps(sR0);
-
-	//Row1 Length.
-	__m128 sR1 = _mm_dp_ps(R1, R1, 0x7F);
-	sR1 = _mm_sqrt_ps(sR1);
-
-	__m128 sR2 = _mm_dp_ps(R2, R2, 0x7F);
-	sR2 = _mm_sqrt_ps(sR2);
-
-	__m128 S = _mm_blend_ps(sR0, sR1, 0x2);
-	S = _mm_blend_ps(S, sR2, 0x4);
-	S = _mm_blend_ps(S, _mm_set_ps1(1.0f), 0x8);
-	Scale = LWSVector4<float>(S);
-
-	__m128 iScale = _mm_div_ps(_mm_set_ps1(1.0f), S);
-	__m128 xScale = _mm_permute_ps(iScale, _MM_SHUFFLE(0, 0, 0, 0));
-	__m128 yScale = _mm_permute_ps(iScale, _MM_SHUFFLE(1, 1, 1, 1));
-	__m128 zScale = _mm_permute_ps(iScale, _MM_SHUFFLE(2, 2, 2, 2));
-	R0 = _mm_mul_ps(R0, xScale);
-	R1 = _mm_mul_ps(R1, yScale);
-	R2 = _mm_mul_ps(R2, zScale);
-	v = LWSMatrix4<float>(LWSVector4<float>(R0), LWSVector4<float>(R1), LWSVector4<float>(R2), LWSVector4<float>(R3));
-	Rotation = LWSQuaternion<float>(v);
-	Translation = LWSVector4<float>(R3);
-	return;
-}
-
-=======
->>>>>>> Nearly finished with SIMD functions.
 LWSMatrix4<float> LWSMatrix4<float>::TransformInverse(void) const {
 
 	__m128 E = _mm_set_ps1(std::numeric_limits<float>::epsilon());
@@ -116,10 +39,7 @@ LWSMatrix4<float> LWSMatrix4<float>::TransformInverse(void) const {
 	return LWSMatrix4(Row01, Row23);
 }
 
-<<<<<<< HEAD
-=======
 
->>>>>>> Nearly finished with SIMD functions.
 LWSMatrix4<float> LWSMatrix4<float>::Inverse(void) const {
 	//adapted Non-simd version Found from: https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
 	__m128 e = _mm_set_ps1(std::numeric_limits<float>::epsilon());
@@ -164,10 +84,7 @@ LWSMatrix4<float> LWSMatrix4<float>::Inverse(void) const {
 	__m128 CwwBww = _mm_blend_ps(Cwwww, Bwwww, 0xC);
 	__m128 DzzzCz = _mm_blend_ps(Dzzzz, Czzzz, 0x8);
 	__m128 CyyByy = _mm_blend_ps(Cyyyy, Byyyy, 0xC);
-<<<<<<< HEAD
-=======
 	__m128 DyyCyy = _mm_blend_ps(Dyyyy, Cyyyy, 0xC);
->>>>>>> Nearly finished with SIMD functions.
 	__m128 DyyyCy = _mm_blend_ps(Dyyyy, Cyyyy, 0x8);
 	__m128 CxxBxx = _mm_blend_ps(Cxxxx, Bxxxx, 0xC);
 	__m128 DxxxCx = _mm_blend_ps(Dxxxx, Cxxxx, 0x8);
@@ -175,15 +92,9 @@ LWSMatrix4<float> LWSMatrix4<float>::Inverse(void) const {
 	__m128 A2323_A2323_A1323_A1223 = _mm_sub_ps(_mm_mul_ps(Czzyy, Dwwwz), _mm_mul_ps(Cwwwz, Dzzyy));
 	__m128 A1323_A0323_A0323_A0223 = _mm_sub_ps(_mm_mul_ps(Cyxxx, Dwwwz), _mm_mul_ps(Cwwwz, Dyxxx));
 	__m128 A1223_A0223_A0123_A0123 = _mm_sub_ps(_mm_mul_ps(Cyxxx, Dzzyy), _mm_mul_ps(Czzyy, Dyxxx));
-<<<<<<< HEAD
-	
-	__m128 A2323_A2323_A2313_A2312 = _mm_sub_ps(_mm_mul_ps(CzzBzz, DwwwCw), _mm_mul_ps(CwwBww, DzzzCz));
-	__m128 A1323_A1323_A1313_A1312 = _mm_sub_ps(_mm_mul_ps(CyyByy, DwwwCw), _mm_mul_ps(CwwBww, DyyyCy));
-=======
 
 	__m128 A2323_A2323_A2313_A2312 = _mm_sub_ps(_mm_mul_ps(CzzBzz, DwwwCw), _mm_mul_ps(CwwBww, DzzzCz));
 	__m128 A1323_A1323_A1313_A1312 = _mm_sub_ps(_mm_mul_ps(CyyByy, DwwwCw), _mm_mul_ps(CwwBww, DyyCyy));
->>>>>>> Nearly finished with SIMD functions.
 	__m128 A1223_A1223_A1213_A1212 = _mm_sub_ps(_mm_mul_ps(CyyByy, DzzzCz), _mm_mul_ps(CzzBzz, DyyyCy));
 	__m128 A0323_A0323_A0313_A0312 = _mm_sub_ps(_mm_mul_ps(CxxBxx, DwwwCw), _mm_mul_ps(CwwBww, DxxxCx));
 	__m128 A0223_A0223_A0213_A0212 = _mm_sub_ps(_mm_mul_ps(CxxBxx, DzzzCz), _mm_mul_ps(CzzBzz, DxxxCx));
@@ -210,11 +121,7 @@ LWSMatrix4<float> LWSMatrix4<float>::Inverse(void) const {
 	__m128 ByAyyy = _mm_blend_ps(Byyyy, Ayyyy, 0xE);
 	__m128 BzAzzz = _mm_blend_ps(Bzzzz, Azzzz, 0xE);
 	__m128 BwAwww = _mm_blend_ps(Bwwww, Awwww, 0xE);
-<<<<<<< HEAD
-	__m128 BxAxxx = _mm_blend_ps(Bxxxx, Axxxx, 0xE);
-=======
 	__m128 BxAxxx = _mm_blend_ps(Bxxxx, Axxxx, 0xe);
->>>>>>> Nearly finished with SIMD functions.
 	A = _mm_mul_ps(rDet, _mm_xor_ps(NegA, _mm_add_ps(_mm_sub_ps(_mm_mul_ps(ByAyyy, A2323_A2323_A2313_A2312), _mm_mul_ps(BzAzzz, A1323_A1323_A1313_A1312)), _mm_mul_ps(BwAwww, A1223_A1223_A1213_A1212))));
 	//A = (ByAyyy * A2323_A2323_A2313_A2312 - BzAzzz * A1323_A1323_A1313_A1312 + BwAwww * A1223_A1223_A1213_A1212) * MulA * Det;
 	B = _mm_mul_ps(rDet, _mm_xor_ps(NegB, _mm_add_ps(_mm_sub_ps(_mm_mul_ps(BxAxxx, A2323_A2323_A2313_A2312), _mm_mul_ps(BzAzzz, A0323_A0323_A0313_A0312)), _mm_mul_ps(BwAwww, A0223_A0223_A0213_A0212))));
@@ -466,34 +373,19 @@ LWSVector4<float> operator * (const LWSMatrix4<float>& Lhs, const LWSVector4<flo
 	__m256 Rxy = _mm256_set_m128(_mm_permute_ps(Rhs.m_Data, _MM_SHUFFLE(1, 1, 1, 1)), _mm_permute_ps(Rhs.m_Data, _MM_SHUFFLE(0, 0, 0, 0)));
 	__m256 Rzw = _mm256_set_m128(_mm_permute_ps(Rhs.m_Data, _MM_SHUFFLE(3, 3, 3, 3)), _mm_permute_ps(Rhs.m_Data, _MM_SHUFFLE(2, 2, 2, 2)));
 
-<<<<<<< HEAD
-	__m256 A = _mm256_mul_ps(Lhs.m_Row01, Rxy);
-	A = _mm256_add_ps(A, _mm256_permutevar8x32_ps(A, _mm256_set_epi32(3, 2, 1, 0, 7, 6, 5, 4)));
-	__m256 B = _mm256_mul_ps(Lhs.m_Row23, Rzw);
-	B = _mm256_add_ps(B, _mm256_permutevar8x32_ps(B, _mm256_set_epi32(3, 2, 1, 0, 7, 6, 5, 4)));
-	A = _mm256_add_ps(A, B);
-	return LWSVector4<float>(_mm256_extractf128_ps(A, 0));
-=======
 	__m256 r = _mm256_mul_ps(Lhs.m_Row01, Rxy);
 	r = _mm256_add_ps(r, _mm256_mul_ps(Lhs.m_Row23, Rzw));
 	r = _mm256_add_ps(r, _mm256_permutevar8x32_ps(r, _mm256_set_epi32(3, 2, 1, 0, 7, 6, 5, 4)));
 
 	return LWSVector4<float>(_mm256_extractf128_ps(r, 0));
->>>>>>> Nearly finished with SIMD functions.
 }
 
 LWSVector4<float> operator * (const LWSVector4<float>& Lhs, const LWSMatrix4<float>& Rhs) {
 	__m256 Lxy = _mm256_set_m128(_mm_permute_ps(Lhs.m_Data, _MM_SHUFFLE(1, 1, 1, 1)), _mm_permute_ps(Lhs.m_Data, _MM_SHUFFLE(0, 0, 0, 0)));
 	__m256 Lzw = _mm256_set_m128(_mm_permute_ps(Lhs.m_Data, _MM_SHUFFLE(3, 3, 3, 3)), _mm_permute_ps(Lhs.m_Data, _MM_SHUFFLE(2, 2, 2, 2)));
-<<<<<<< HEAD
-	__m256 r = _mm256_mul_ps(Lxy, Rhs.m_Row01);
-	r = _mm256_add_ps(r, _mm256_mul_ps(Lzw, Rhs.m_Row23));
-	r = _mm256_add_ps(r, _mm256_permutevar8x32_ps(r, _mm256_set_epi32(3, 2, 1, 0, 7, 6, 5, 4)));
-=======
 	__m256 r = _mm256_mul_ps(Rhs.m_Row01, Lxy);
 	r = _mm256_add_ps(r, _mm256_mul_ps(Rhs.m_Row23, Lzw));
 	r = _mm256_hadd_ps(r, r);
->>>>>>> Nearly finished with SIMD functions.
 	return LWSVector4<float>(_mm256_extractf128_ps(r, 0));
 }
 
@@ -587,22 +479,14 @@ LWSMatrix4<float> LWSMatrix4<float>::Translation(const LWSVector4<float>& Positi
 	__m128 C = _mm_set_ps(0.0f, 1.0f, 0.0f, 0.0f);
 	__m256 Row01 = _mm256_set_ps(0.0f, 0.0f, 1.0f, 0.0f,
 		0.0f, 0.0f, 0.0f, 1.0f);
-<<<<<<< HEAD
-	__m256 Row23 = _mm256_set_m128(_mm_blend_ps(Position.m_Data, _mm_set_ps1(1.0f), 0x8), C);
-=======
 	__m256 Row23 = _mm256_set_m128(Position.m_Data, C);
->>>>>>> Nearly finished with SIMD functions.
 	return LWSMatrix4(Row01, Row23);
 }
 
 LWSMatrix4<float> LWSMatrix4<float>::Rotation(const LWSVector4<float>& Direction, const LWSVector4<float>& Up) {
 	LWSVector4<float> xAxis = Up.Cross3(Direction);
 	LWSVector4<float> yAxis = Direction.Cross3(xAxis);
-<<<<<<< HEAD
 	__m128 D = _mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f);
-=======
-	__m128 D = _mm_set_ps(0.0f, 0.0f, 0.0f, 1.0f);
->>>>>>> Nearly finished with SIMD functions.
 	__m256 Row01 = _mm256_set_m128(yAxis.m_Data, xAxis.m_Data);
 	__m256 Row23 = _mm256_set_m128(D, Direction.m_Data);
 	return LWSMatrix4(Row01, Row23);
@@ -681,38 +565,17 @@ LWSMatrix4<float>::LWSMatrix4(const LWSQuaternion<float>& Q) {
 
 	__m128 Bxxxx = _mm_permute_ps(B, _MM_SHUFFLE(0, 0, 0, 0));
 	__m128 Byyww = _mm_permute_ps(B, _MM_SHUFFLE(3, 3, 1, 1));
-<<<<<<< HEAD
-	__m128 Bzzzz = _mm_permute_ps(B, _MM_SHUFFLE(2, 2, 2, 2));
-
-	__m128 Row0 = _mm_blend_ps(_mm_blend_ps(A, C, 0x2), Bxxxx, 0x4);
-	__m128 Row1 = _mm_blend_ps(_mm_blend_ps(Byyww, A, 0x2), C, 0x4);
-	__m128 Row2 = _mm_blend_ps(_mm_blend_ps(C, Bzzzz, 0x2), A, 0x4);
-
-=======
 	__m128 Czzzz = _mm_permute_ps(C, _MM_SHUFFLE(2, 2, 2, 2));
 
 	__m128 Row0 = _mm_blend_ps(_mm_blend_ps(A, C, 0x2), Bxxxx, 0x4);
 	__m128 Row1 = _mm_blend_ps(_mm_blend_ps(Byyww, A, 0x2), C, 0x4);
 	__m128 Row2 = _mm_blend_ps(_mm_blend_ps(C, Czzzz, 0x2), A, 0x4);
->>>>>>> Nearly finished with SIMD functions.
 	__m128 Row3 = _mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f);
 
 	m_Row01 = _mm256_set_m128(Row1, Row0);
 	m_Row23 = _mm256_set_m128(Row3, Row2);
 }
 
-<<<<<<< HEAD
-LWSMatrix4<float>::LWSMatrix4(const LWMatrix4<float> &M) {
-	__m128 R0 = _mm_set_ps(M.m_Rows[0].w, M.m_Rows[0].z, M.m_Rows[0].y, M.m_Rows[0].x);
-	__m128 R1 = _mm_set_ps(M.m_Rows[1].w, M.m_Rows[1].z, M.m_Rows[1].y, M.m_Rows[1].x);
-	__m128 R2 = _mm_set_ps(M.m_Rows[2].w, M.m_Rows[2].z, M.m_Rows[2].y, M.m_Rows[2].x);
-	__m128 R3 = _mm_set_ps(M.m_Rows[3].w, M.m_Rows[3].z, M.m_Rows[3].y, M.m_Rows[3].x);
-	m_Row01 = _mm256_set_m128(R1, R0);
-	m_Row23 = _mm256_set_m128(R3, R2);
-}
-
-=======
->>>>>>> Nearly finished with SIMD functions.
 LWSMatrix4<float>::LWSMatrix4(__m256 Row01, __m256 Row23) : m_Row01(Row01), m_Row23(Row23) {}
 
 LWSMatrix4<float>::LWSMatrix4(float xScale, float yScale, float zScale, float wScale) : m_Row01(_mm256_set_ps(0.0f, 0.0f, yScale, 0.0f, 0.0f, 0.0f, 0.0f, xScale)), m_Row23(_mm256_set_ps(wScale, 0.0f, 0.0f, 0.0f, 0.0f, zScale, 0.0f, 0.0f)) {}
@@ -729,10 +592,7 @@ LWSMatrix4<float>::LWSMatrix4(const LWSVector4<float>& Scale, const LWSQuaternio
 	__m128 yzxx = _mm_permute_ps(vq, _MM_SHUFFLE(0, 0, 2, 1));
 	__m128 wwwx = _mm_permute_ps(vq, _MM_SHUFFLE(0, 3, 3, 3));
 
-<<<<<<< HEAD
-=======
 
->>>>>>> Nearly finished with SIMD functions.
 	__m128 yy_xx_xx_xx = _mm_mul_ps(yxxx, yxxx);
 	__m128 zz_zz_yy_xx = _mm_mul_ps(zzyx, zzyx);
 
@@ -748,23 +608,12 @@ LWSMatrix4<float>::LWSMatrix4(const LWSVector4<float>& Scale, const LWSQuaternio
 
 	__m128 Bxxxx = _mm_permute_ps(B, _MM_SHUFFLE(0, 0, 0, 0));
 	__m128 Byyww = _mm_permute_ps(B, _MM_SHUFFLE(3, 3, 1, 1));
-<<<<<<< HEAD
-	__m128 Bzzzz = _mm_permute_ps(B, _MM_SHUFFLE(2, 2, 2, 2));
-
-	__m128 Row0 = _mm_mul_ps(_mm_blend_ps(_mm_blend_ps(A, C, 0x2), Bxxxx, 0x4), Scale.xxxw().m_Data);
-	__m128 Row1 = _mm_mul_ps(_mm_blend_ps(_mm_blend_ps(Byyww, A, 0x2), C, 0x4), Scale.yyyw().m_Data);
-	__m128 Row2 = _mm_mul_ps(_mm_blend_ps(_mm_blend_ps(C, Bzzzz, 0x2), A, 0x4), Scale.zzzw().m_Data);
-	__m128 Row3 = Pos.m_Data;
-
-
-=======
 	__m128 Czzzz = _mm_permute_ps(C, _MM_SHUFFLE(2, 2, 2, 2));
 
 	__m128 Row0 = _mm_mul_ps(_mm_blend_ps(_mm_blend_ps(A, C, 0x2), Bxxxx, 0x4), Scale.xxxw().m_Data);
 	__m128 Row1 = _mm_mul_ps(_mm_blend_ps(_mm_blend_ps(Byyww, A, 0x2), C, 0x4), Scale.yyyw().m_Data);
 	__m128 Row2 = _mm_mul_ps(_mm_blend_ps(_mm_blend_ps(C, Czzzz, 0x2), A, 0x4), Scale.zzzw().m_Data);
 	__m128 Row3 = Pos.m_Data;
->>>>>>> Nearly finished with SIMD functions.
 	m_Row01 = _mm256_set_m128(Row1, Row0);
 	m_Row23 = _mm256_set_m128(Row3, Row2);
 };

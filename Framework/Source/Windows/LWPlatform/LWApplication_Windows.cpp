@@ -8,6 +8,11 @@
 
 void *LWSignal_UserData[LWSignal_Unknown];
 LWSignalHandlerFunc LWSignal_Funcs[LWSignal_Unknown];
+/*!< \brief enable dedicated gpu's if applicable. */
+extern "C" {
+	__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
 
 
 bool LWSignal_Handler(int32_t Signal) {

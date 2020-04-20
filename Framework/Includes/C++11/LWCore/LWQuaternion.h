@@ -171,8 +171,8 @@ struct LWQuaternion {
 	LWVector4<Type> RotatePoint(const LWVector4<Type> Pnt) const {
 		LWVector3<Type> u = LWVector3<Type>(x, y, z);
 		LWVector3<Type> v = LWVector3<Type>(Pnt.x, Pnt.y, Pnt.z);
-		float dA = u.Dot(v);
-		float dB = u.Dot(u);
+		Type dA = u.Dot(v);
+		Type dB = u.Dot(u);
 		return LWVector4<Type>((Type)2 * dA*u + (w*w - dB)*v + (Type)2 * w*u.Cross(v), Pnt.w);
 	}
 

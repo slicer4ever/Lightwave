@@ -7,37 +7,6 @@ LWVector4<double> LWSVector4<double>::AsVec4(void) const {
 	return R;
 }
 
-<<<<<<< HEAD
-double *LWSVector4<double>::AsArray(void) {
-	return (double*)&m_Data;
-}
-
-const double *LWSVector4<double>::AsArray(void) const {
-	return (double*)&m_Data;
-}
-
-LWSVector4<double> &LWSVector4<double>::sX(double Value) {
-	((double*)&m_Data)[0] = Value;
-	return *this;
-}
-
-LWSVector4<double> &LWSVector4<double>::sY(double Value) {
-	((double*)&m_Data)[1] = Value;
-	return *this;
-}
-
-LWSVector4<double> &LWSVector4<double>::sZ(double Value) {
-	((double*)&m_Data)[2] = Value;
-	return *this;
-}
-
-LWSVector4<double> &LWSVector4<double>::sW(double Value) {
-	((double*)&m_Data)[3] = Value;
-	return *this;
-}
-
-=======
->>>>>>> Nearly finished with SIMD functions.
 LWSVector4<double> LWSVector4<double>::Normalize(void) const {
 	const double e = std::numeric_limits<double>::epsilon();
 	__m256d eps = _mm256_set1_pd(e);
@@ -81,11 +50,7 @@ double LWSVector4<double>::Dot(const LWSVector4<double>& O) const {
 }
 
 double LWSVector4<double>::Dot3(const LWSVector4<double>& O) const {
-<<<<<<< HEAD
 	__m256d t = _mm256_set_pd(0.0, 1.0, 1.0, 1.0);
-=======
-	__m256d t = _mm256_set_pd(0.0, 1.0, 1.0, 1.0f);
->>>>>>> Nearly finished with SIMD functions.
 	t = _mm256_mul_pd(_mm256_mul_pd(m_Data, t), _mm256_mul_pd(O.m_Data, t));
 	t = _mm256_hadd_pd(t, t);
 	t = _mm256_permute4x64_pd(t, _MM_SHUFFLE(0, 2, 1, 3));
@@ -170,7 +135,6 @@ LWSVector4<double> LWSVector4<double>::Max(const LWSVector4<double>& A) const {
 	return _mm256_max_pd(m_Data, A.m_Data);
 }
 
-<<<<<<< HEAD
 LWSVector4<double> LWSVector4<double>::Cross3(const LWSVector4<double>& O) const {
 	__m256d A = yzxw().m_Data;
 	__m256d B = O.zxyw().m_Data;
@@ -179,23 +143,10 @@ LWSVector4<double> LWSVector4<double>::Cross3(const LWSVector4<double>& O) const
 	return _mm256_sub_pd(_mm256_mul_pd(A, B), _mm256_mul_pd(C, D));
 }
 
-void LWSVector4<double>::Orthogonal3(LWSVector4<double> &Right, LWSVector4<double> &Up) const {
-	const LWSVector4<double> XAxis = LWSVector4<double>(1.0, 0.0, 0.0, 0.0);
-	const LWSVector4<double> YAxis = LWSVector4<double>(0.0, 1.0, 0.0, 0.0);
-	LWSVector4<double> A = XAxis;
-	double d = abs(Dot3(A));
-	if (d > 0.8) A = YAxis;
-	Right = Cross3(A).Normalize3().AAAB(*this);
-	Up = Cross3(Right).AAAB(*this);
-	return;
-};
-
 LWSVector4<double> LWSVector4<double>::Perpindicular2(void) const {
 	return _mm256_xor_pd(yx().m_Data, _mm256_set_pd(0.0, 0.0, 0.0, -0.0));
 }
 
-=======
->>>>>>> Nearly finished with SIMD functions.
 double LWSVector4<double>::Length(void) const {
 	__m256d t = _mm256_mul_pd(m_Data, m_Data);
 	t = _mm256_hadd_pd(t, t);
@@ -293,178 +244,6 @@ double LWSVector4<double>::DistanceSquared2(const LWSVector4<double>& O) const {
 	return _mm256_cvtsd_f64(t);
 }
 
-<<<<<<< HEAD
-LWSVector4<double> LWSVector4<double>::Abs(void) const {
-	return _mm256_andnot_pd(_mm256_set1_pd(-0.0), m_Data);
-}
-
-LWSVector4<double> LWSVector4<double>::Abs3(void) const {
-	return _mm256_andnot_pd(_mm256_set_pd(0.0, -0.0, -0.0, -0.0), m_Data);
-}
-
-LWSVector4<double> LWSVector4<double>::Abs2(void) const {
-	return _mm256_andnot_pd(_mm256_set_pd(0.0, 0.0, -0.0, -0.0), m_Data);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_Less(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d c = _mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_LT_OS);
-	return _mm256_blendv_pd(m_Data, Value.m_Data, c);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_Less3(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d c = _mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_LT_OS);
-	return _mm256_blend_pd(_mm256_blendv_pd(m_Data, Value.m_Data, c), m_Data, 0x8);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_Less2(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d c = _mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_LT_OS);
-	return _mm256_blend_pd(_mm256_blendv_pd(m_Data, Value.m_Data, c), m_Data, 0xC);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_LessEqual(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d c = _mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_LE_OS);
-	return _mm256_blendv_pd(m_Data, Value.m_Data, c);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_LessEqual3(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d c = _mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_LE_OS);
-	return _mm256_blend_pd(_mm256_blendv_pd(m_Data, Value.m_Data, c), m_Data, 0x8);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_LessEqual2(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d c = _mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_LE_OS);
-	return _mm256_blend_pd(_mm256_blendv_pd(m_Data, Value.m_Data, c), m_Data, 0xC);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_Greater(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d c = _mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_GT_OS);
-	return _mm256_blendv_pd(m_Data, Value.m_Data, c);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_Greater3(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d c = _mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_GT_OS);
-	return _mm256_blend_pd(_mm256_blendv_pd(m_Data, Value.m_Data, c), m_Data, 0x8);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_Greater2(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d c = _mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_GT_OS);
-	return _mm256_blend_pd(_mm256_blendv_pd(m_Data, Value.m_Data, c), m_Data, 0xC);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_GreaterEqual(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d c = _mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_GE_OS);
-	return _mm256_blendv_pd(m_Data, Value.m_Data, c);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_GreaterEqual3(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d c = _mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_GE_OS);
-	return _mm256_blend_pd(_mm256_blendv_pd(m_Data, Value.m_Data, c), m_Data, 0x8);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_GreaterEqual2(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d c = _mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_GE_OS);
-	return _mm256_blend_pd(_mm256_blendv_pd(m_Data, Value.m_Data, c), m_Data, 0xC);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_Equal(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d e = _mm256_set1_pd((double)std::numeric_limits<float>::epsilon());
-	__m256d d = _mm256_sub_pd(m_Data, Rhs.m_Data);
-	d = _mm256_andnot_pd(_mm256_set1_pd(-0.0), d);//get absolute value.
-	__m256d c = _mm256_cmp_pd(d, e, _CMP_LE_OS);
-	return _mm256_blendv_pd(m_Data, Value.m_Data, c);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_Equal3(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d e = _mm256_set1_pd((double)std::numeric_limits<float>::epsilon());
-	__m256d d = _mm256_sub_pd(m_Data, Rhs.m_Data);
-	d = _mm256_andnot_pd(_mm256_set1_pd(-0.0), d);//get absolute value.
-	__m256d c = _mm256_cmp_pd(d, e, _CMP_LE_OS);
-	return _mm256_blend_pd(_mm256_blendv_pd(m_Data, Value.m_Data, c), m_Data, 0x8);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_Equal2(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d e = _mm256_set1_pd((double)std::numeric_limits<float>::epsilon());
-	__m256d d = _mm256_sub_pd(m_Data, Rhs.m_Data);
-	d = _mm256_andnot_pd(_mm256_set1_pd(-0.0), d);//get absolute value.
-	__m256d c = _mm256_cmp_pd(d, e, _CMP_LE_OS);
-	return _mm256_blend_pd(_mm256_blendv_pd(m_Data, Value.m_Data, c), m_Data, 0xC);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_NotEqual(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d e = _mm256_set1_pd((double)std::numeric_limits<float>::epsilon());
-	__m256d d = _mm256_sub_pd(m_Data, Rhs.m_Data);
-	d = _mm256_andnot_pd(_mm256_set1_pd(-0.0), d);//get absolute value.
-	__m256d c = _mm256_cmp_pd(d, e, _CMP_GT_OS);
-	return _mm256_blendv_pd(m_Data, Value.m_Data, c);
-}
-
-/*! \brief compares x, y, and z component, if component is != rhs(use's double epsilon for comparison) than stores value's component, otherwise keeps current component. */
-LWSVector4<double> LWSVector4<double>::Blend_NotEqual3(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d e = _mm256_set1_pd((double)std::numeric_limits<float>::epsilon());
-	__m256d d = _mm256_sub_pd(m_Data, Rhs.m_Data);
-	d = _mm256_andnot_pd(_mm256_set1_pd(-0.0), d);//get absolute value.
-	__m256d c = _mm256_cmp_pd(d, e, _CMP_GT_OS);
-	return _mm256_blend_pd(_mm256_blendv_pd(m_Data, Value.m_Data, c), m_Data, 0x8);
-}
-
-LWSVector4<double> LWSVector4<double>::Blend_NotEqual2(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const {
-	__m256d e = _mm256_set1_pd((double)std::numeric_limits<float>::epsilon());
-	__m256d d = _mm256_sub_pd(m_Data, Rhs.m_Data);
-	d = _mm256_andnot_pd(_mm256_set1_pd(-0.0), d);//get absolute value.
-	__m256d c = _mm256_cmp_pd(d, e, _CMP_LE_OS);
-	return _mm256_blend_pd(_mm256_blendv_pd(m_Data, Value.m_Data, c), m_Data, 0xC);
-}
-
-bool LWSVector4<double>::Less3(const LWSVector4<double> &Rhs) const {
-	__m256i one = _mm256_set1_epi32(-1);
-	__m256i t = _mm256_castpd_si256(_mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_LT_OS));
-	return _mm256_test_all_ones(_mm256_blend_epi32(t, one, 0xC0));
-}
-
-bool LWSVector4<double>::Less2(const LWSVector4<double> &Rhs) const {
-	__m256i one = _mm256_set1_epi32(-1);
-	__m256i t = _mm256_castpd_si256(_mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_LT_OS));
-	return _mm256_test_all_ones(_mm256_blend_epi32(t, one, 0xF0));
-}
-
-bool LWSVector4<double>::LessEqual3(const LWSVector4<double> &Rhs) const {
-	__m256i one = _mm256_set1_epi32(-1);
-	__m256i t = _mm256_castpd_si256(_mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_LE_OS));
-	return _mm256_test_all_ones(_mm256_blend_epi32(t, one, 0xC0));
-}
-
-bool LWSVector4<double>::LessEqual2(const LWSVector4<double> &Rhs) const {
-	__m256i one = _mm256_set1_epi32(-1);
-	__m256i t = _mm256_castpd_si256(_mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_LE_OS));
-	return _mm256_test_all_ones(_mm256_blend_epi32(t, one, 0xF0));
-}
-
-bool LWSVector4<double>::Greater3(const LWSVector4<double> &Rhs) const {
-	__m256i one = _mm256_set1_epi32(-1);
-	__m256i t = _mm256_castpd_si256(_mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_GT_OS));
-	return _mm256_test_all_ones(_mm256_blend_epi32(t, one, 0xC0));
-}
-
-bool LWSVector4<double>::Greater2(const LWSVector4<double> &Rhs) const {
-	__m256i one = _mm256_set1_epi32(-1);
-	__m256i t = _mm256_castpd_si256(_mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_GT_OS));
-	return _mm256_test_all_ones(_mm256_blend_epi32(t, one, 0xF0));
-}
-
-bool LWSVector4<double>::GreaterEqual3(const LWSVector4<double> &Rhs) const {
-	__m256i one = _mm256_set1_epi32(-1);
-	__m256i t = _mm256_castpd_si256(_mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_GE_OS));
-	return _mm256_test_all_ones(_mm256_blend_epi32(t, one, 0xC0));
-}
-
-bool LWSVector4<double>::GreaterEqual2(const LWSVector4<double> &Rhs) const {
-	__m256i one = _mm256_set1_epi32(-1);
-	__m256i t = _mm256_castpd_si256(_mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_GE_OS));
-	return _mm256_test_all_ones(_mm256_blend_epi32(t, one, 0xF0));
-}
-
-=======
->>>>>>> Nearly finished with SIMD functions.
 LWSVector4<double>& LWSVector4<double>::operator = (const LWSVector4<double>& Rhs) {
 	m_Data = Rhs.m_Data;
 	return *this;
@@ -523,30 +302,9 @@ LWSVector4<double> operator - (const LWSVector4<double>& Rhs) {
 	return _mm256_xor_pd(Rhs.m_Data, t);
 }
 
-<<<<<<< HEAD
-bool LWSVector4<double>::operator > (const LWSVector4<double> &Rhs) const {
-	return _mm256_test_all_ones(_mm256_castpd_si256(_mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_GT_OS)));
-}
-
-bool LWSVector4<double>::operator >= (const LWSVector4<double> &Rhs) const {
-	return _mm256_test_all_ones(_mm256_castpd_si256(_mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_GE_OS)));
-}
-
-bool LWSVector4<double>::operator < (const LWSVector4<double> &Rhs) const {
-	return _mm256_test_all_ones(_mm256_castpd_si256(_mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_LT_OS)));
-}
-
-bool LWSVector4<double>::operator <= (const LWSVector4<double> &Rhs) const {
-	return _mm256_test_all_ones(_mm256_castpd_si256(_mm256_cmp_pd(m_Data, Rhs.m_Data, _CMP_LE_OS)));
-}
-
 bool LWSVector4<double>::operator == (const LWSVector4<double>& Rhs) const {
 	//float episilon is "good" enough for closeness comparison.
 	__m256d e = _mm256_set1_pd((double)std::numeric_limits<float>::epsilon());
-=======
-bool LWSVector4<double>::operator == (const LWSVector4<double>& Rhs) const {
-	__m256d e = _mm256_set1_pd(std::numeric_limits<double>::epsilon());
->>>>>>> Nearly finished with SIMD functions.
 	__m256d t = _mm256_sub_pd(m_Data, Rhs.m_Data);
 	t = _mm256_andnot_pd(_mm256_set1_pd(-0.0), t); //Get absolute value of difference.
 	t = _mm256_cmp_pd(t, e, _CMP_LE_OS);
@@ -1820,22 +1578,6 @@ LWSVector4<double> LWSVector4<double>::yy(void) const {
 }
 
 double LWSVector4<double>::x(void) const {
-<<<<<<< HEAD
-	return ((double*)&m_Data)[0];
-}
-
-double LWSVector4<double>::y(void) const {
-	return ((double*)&m_Data)[1];
-}
-
-double LWSVector4<double>::z(void) const {
-	return ((double*)&m_Data)[2];
-
-}
-
-double LWSVector4<double>::w(void) const {
-	return ((double*)&m_Data)[3];
-=======
 	return _mm256_cvtsd_f64(xxxx().m_Data);
 }
 
@@ -1849,7 +1591,6 @@ double LWSVector4<double>::z(void) const {
 
 double LWSVector4<double>::w(void) const {
 	return _mm256_cvtsd_f64(wwww().m_Data);
->>>>>>> Nearly finished with SIMD functions.
 }
 
 LWSVector4<double>::LWSVector4(const __m256d Data) : m_Data(Data) {}

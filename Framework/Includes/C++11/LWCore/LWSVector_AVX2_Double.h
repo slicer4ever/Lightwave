@@ -47,6 +47,10 @@ struct LWSVector4<double> {
 
 	LWSVector4<double> Max(const LWSVector4<double> &A) const;
 
+	LWSVector4<double> Cross3(const LWSVector4<double>& O) const;
+
+	LWSVector4<double> Perpindicular2(void) const;
+
 	double Length(void) const;
 
 	double Length3(void) const;

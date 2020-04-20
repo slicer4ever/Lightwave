@@ -1,7 +1,3 @@
-
-#include <iostream>
-#include <functional>
-#include <chrono>
 #include <LWCore/LWTypes.h>
 #include <LWCore/LWByteBuffer.h>
 #include <LWCore/LWByteStream.h>
@@ -20,6 +16,12 @@
 #include <LWCore/LWConcurrent/LWFIFO.h>
 #include <LWCore/LWCrypto.h>
 #include <thread>
+#include <iostream>
+#include <iomanip>
+#include <functional>
+#include <chrono>
+#include <string>
+#include <cstdarg>
 
 template<typename Func, class ResultType>
 bool PerformTest(const char *FunctionName, Func F, ResultType ExpectedResult, bool ResultHex = false){
@@ -1368,6 +1370,7 @@ bool PerformLWQuaternionTest(void) {
 
 bool PerformLWSQuaternionTest(void) {
 	std::cout << "Performing LWSQuaternion test: " << std::endl;
+	std::cout << "LWSQuaternionf:" << std::endl;
 	LWSQuaternionf Testf;
 	if (!TestEquality("LWSQuaternionf<Identity>", Testf, LWSQuaternionf(1.0f, 0.0f, 0.0f, 0.0f))) return false;
 	Testf *= LWSQuaternionf::FromEuler(0.0f, LW_PI, 0.0f);
@@ -1382,6 +1385,22 @@ bool PerformLWSQuaternionTest(void) {
 	Pnt4f = Testf.RotatePoint(Pnt4f);
 	if (!TestEquality("LWSQuaternionf<RotatePoint>", Pnt4f, LWSVector4f(0.0f, 0.0f, -1.0f, 0.0f))) return false;
 	if (!TestEquality("LWSQuaternionf<ToEuler>", Testf.ToEuler(), LWSVector4f(0.0f, LW_PI_2, 0.0f, 0.0f))) return false;
+
+	std::cout << "LWSQuaterniond:" << std::endl;
+	LWSQuaterniond Testd;
+	if (!TestEquality("LWSQuaterniond<Identity>", Testd, LWSQuaterniond(1.0, 0.0, 0.0, 0.0))) return false;
+	Testd *= LWSQuaterniond::FromEuler(0.0, LW_PI, 0.0);
+	if (!TestEquality("LWSQuaterniond<Multiply>", Testd, LWSQuaterniond(0.0, 0.0, 1.0, 0.0))) return false;
+	if (!TestEquality("LWSQuaterniond<Conjugate>", Testd.Conjugate(), LWSQuaterniond(0.0, 0.0, -1.0, 0.0))) return false;
+	if (!TestEquality("LWSQuaterniond<SLERP>", LWSQuaterniond::SLERP(LWSQuaterniond(), Testd, 0.5), LWSQuaterniond(0.70710682, 0.0, -0.707106769, 0.0))) return false;
+	if (!TestEquality("LWSQuaterniond<NLERP>", LWSQuaterniond::NLERP(LWSQuaterniond(), Testd, 0.5), LWSQuaterniond(0.70710682, 0.0, 0.707106769, 0.0))) return false;
+	Testd = LWSQuaterniond::NLERP(LWSQuaterniond(), Testd, 0.5f);
+	if (!PerformTest("LWSQuaterniond<Length>", std::bind(&LWSQuaterniond::Length, &Testd), 1.0)) return false;
+	if (!PerformTest("LWSQuaterniond<LengthSq>", std::bind(&LWSQuaterniond::LengthSq, &Testd), 1.0)) return false;
+	LWSVector4d Pnt4d = LWSVector4d(1.0, 0.0, 0.0, 0.0);
+	Pnt4d = Testd.RotatePoint(Pnt4d);
+	if (!TestEquality("LWSQuaterniond<RotatePoint>", Pnt4d, LWSVector4d(0.0, 0.0, -1.0, 0.0))) return false;
+	if (!TestEquality("LWSQuaterniond<ToEuler>", Testd.ToEuler(), LWSVector4d(0.0, LW_PI_2, 0.0, 0.0))) return false;
 	return true;
 }
 
@@ -1439,6 +1458,63 @@ bool PerformLWSMatrixTest(void) {
 	if (!TestEquality("LWSMatrix4f<Quaternion>", Mat4f, LWSMatrix4f({ 0.0f, 0.0f, 1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f }, {-1.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 1.0f }))) return false;
 	Mat4f = LWSMatrix4f(LWSVector4f(2.0f, 2.0f, 2.0f, 0.0f), LWSQuaternionf::FromEuler(0.0f, LW_PI_2, 0.0f), LWSVector4f(1.0f, 2.0f, 3.0f, 1.0f));
 	if (!TestEquality("LWSMatrix4f<Scale_Quaternion_Pos>", Mat4f, LWSMatrix4f({ 0.0f, 0.0f, 2.0f, 0.0f }, { 0.0f, 2.0f, 0.0f, 0.0f }, { -2.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 2.0f, 3.0f, 1.0f }))) return false;
+
+
+
+	std::cout << "Testing LWSMatrix4d: " << std::endl;
+	
+	LWSMatrix4d Transd = LWSMatrix4d(LWSVector4d(1.0, 2.0, 3.0, 4.0), LWSVector4d(5.0, 6.0, 7.0, 8.0), LWSVector4d(9.0, 10.0, 11.0, 12.0), LWSVector4d(13.0, 14.0, 15.0, 16.0));
+	if (!TestEquality("LWSMatrix4d<Transpose>", Transd.Transpose(), LWSMatrix4d(LWSVector4d(1.0f, 5.0, 9.0, 13.0), LWSVector4d(2.0, 6.0, 10.0, 14.0), LWSVector4d(3.0, 7.0, 11.0, 15.0), LWSVector4d(4.0, 8.0, 12.0, 16.0)))) return false;
+	if (!TestEquality("LWSMatrix4d<Transpose3x3>", Transd.Transpose3x3(), LWSMatrix4d(LWSVector4d(1.0, 5.0, 9.0, 4.0), LWSVector4d(2.0, 6.0, 10.0, 8.0), LWSVector4d(3.0, 7.0, 11.0, 12.0), LWSVector4d(13.0, 14.0, 15.0, 16.0)))) return false;
+	if (!TestEquality("LWSMatrix4d<Transpose2x2>", Transd.Transpose2x2(), LWSMatrix4d(LWSVector4d(1.0, 5.0, 3.0, 4.0), LWSVector4d(2.0, 6.0, 7.0, 8.0), LWSVector4d(9.0, 10.0, 11.0, 12.0), LWSVector4d(13.0, 14.0, 15.0, 16.0)))) return false;
+	if (!TestEquality("LWSMatrix4d<Column0>", Transd.Column(0), LWSVector4d(1.0, 5.0, 9.0, 13.0))) return false;
+	if (!TestEquality("LWSMatrix4d<Column1>", Transd.Column(1), LWSVector4d(2.0, 6.0, 10.0, 14.0))) return false;
+	if (!TestEquality("LWSMatrix4d<Column2>", Transd.Column(2), LWSVector4d(3.0, 7.0, 11.0, 15.0))) return false;
+	if (!TestEquality("LWSMatrix4d<Column3>", Transd.Column(3), LWSVector4d(4.0, 8.0, 12.0, 16.0))) return false;
+	if (!TestEquality("LWSMatrix4d<Row0>", Transd.Row(0), LWSVector4d(1.0, 2.0, 3.0, 4.0))) return false;
+	if (!TestEquality("LWSMatrix4d<Row1>", Transd.Row(1), LWSVector4d(5.0, 6.0, 7.0, 8.0))) return false;
+	if (!TestEquality("LWSMatrix4d<Row2>", Transd.Row(2), LWSVector4d(9.0, 10.0, 11.0, 12.0))) return false;
+	if (!TestEquality("LWSMatrix4d<Row3>", Transd.Row(3), LWSVector4d(13.0, 14.0, 15.0, 16.0))) return false;
+
+	double Sd = sin(LW_PI * 0.25);
+	double Cd = cos(LW_PI * 0.25);
+	LWSMatrix4d InvResultd = LWSMatrix4d(LWSVector4d(0.70710682, 0.70710682, 0.0, 0.0),LWSVector4d(-0.70710682, 0.70710682, 0.0, 0.0), LWSVector4d(0.0, 0.0, 1.0, 0.0), LWSVector4d(0.70710682, -2.12132044, -3.0, 1.0));
+	LWSMatrix4d LookAtResultd = LWSMatrix4d(LWSVector4d(-0.7071067691, 0.0, 0.7071067691, 0.0), LWSVector4d(-0.4082482755, 0.816496551, -0.4082482755, 0.0), LWSVector4d(-0.5773502588, -0.5773502588, -0.5773502588, 0.0), LWSVector4d(5.0, 5.0, 5.0, 1.0));
+	LWSMatrix4d OrthoGLResultd = LWSMatrix4d(LWSVector4d(0.200000003, 0.0, 0.0, 0.0), LWSVector4d(0.0, 0.200000003, 0.0, 0.0), LWSVector4d(0.0, 0.0, -2.0, 0.0), LWSVector4d(-1.0, -1.0, -1.0, 1.0 ));
+	LWSMatrix4d OrthoDXResultd = LWSMatrix4d(LWSVector4d(0.200000003, 0.0, 0.0, 0.0), LWSVector4d(0.0, 0.200000003, 0.0, 0.0), LWSVector4d(0.0, 0.0, -1.0, 0.0), LWSVector4d(-1.0, -1.0, 0.0, 1.0 ));
+	LWSMatrix4d FrustumResultd = LWSMatrix4d(LWSVector4d(0.0, 0.0, 1.0, 0.0), LWSVector4d(0.0, 0.0, 1.0, 0.0), LWSVector4d(0.0, 0.0, -1.0, -1.0), LWSVector4d(0.0, 0.0, -0.0, 0.0 ));
+	LWSMatrix4d PerspectiveResultd = LWSMatrix4d(LWSVector4d(2.682459354, 0.0, 0.0, 0.0), LWSVector4d(0.0, 2.414213419, 0.0, 0.0), LWSVector4d(0.0, 0.0, -1.0, -1.0), LWSVector4d(0.0, 0.0, -0.0, 0.0));
+
+	LWSMatrix4d Mat4d = LWSMatrix4d::RotationX(LW_PI * 0.25);
+
+	if (!TestEquality("LWSMatrix4d::RotationX", Mat4d, LWSMatrix4d(LWSVector4d(1.0, 0.0, 0.0, 0.0), LWSVector4d(0.0, Cd, -Sd, 0.0), LWSVector4d(0.0, Sd, Cd, 0.0), LWSVector4d(0.0, 0.0, 0.0, 1.0)))) return false;
+	Mat4d = LWSMatrix4d::RotationY(LW_PI * 0.25);
+	if (!TestEquality("LWSMatrix4d::RotationY", Mat4d, LWSMatrix4d(LWSVector4d(Cd, 0.0, Sd, 0.0), LWSVector4d(0.0, 1.0, 0.0, 0.0), LWSVector4d(-Sd, 0.0, Cd, 0.0), LWSVector4d(0.0, 0.0, 0.0, 1.0)))) return false;
+	Mat4d = LWSMatrix4d::RotationZ(LW_PI * 0.25);
+	LWSVector4d Testd = LWSVector4d(1.0, 1.0, 1.0, 1.0);
+	if (!TestEquality("LWSMatrix4d::RotationZ", Mat4d, LWSMatrix4d(LWSVector4d(Cd, -Sd, 0.0, 0.0), LWSVector4d(Sd, Cd, 0.0, 0.0), LWSVector4d(0.0, 0.0, 1.0, 0.0), LWSVector4d(0.0, 0.0, 0.0, 1.0)))) return false;
+	if (!TestEquality("LWSMatrix4d<Identity>", LWSMatrix4d() * LWSMatrix4d(), LWSMatrix4d())) return false;
+	if (!TestEquality("LWSMatrix4d<Multiply>", Mat4d * LWSMatrix4d(), Mat4d)) return false;
+	if (!TestEquality("LWSMatrix4d<*LWSVector4>", LWSMatrix4d() * Testd, Testd)) return false;
+	if (!TestEquality("LWSMatrix4d<*LWSVector4>", Mat4d * Testd, LWSVector4d(Mat4d.AsMat4() * Testd.AsVec4()))) return false;
+	Mat4d *= LWSMatrix4d::Translation(LWSVector4d(1.0f, 2.0, 3.0, 1.0));
+	if (!TestEquality("LWSMatrix4<TransformInverse>", Mat4d.TransformInverse(), InvResultd)) return false;
+	if (!TestEquality("LWSMatrix4d<Inverse>", Mat4d.Inverse(), InvResultd)) return false;
+	Mat4d = LWSMatrix4d::LookAt(LWSVector4d(5.0, 5.0, 5.0, 1.0), LWVector4d(6.0, 6.0, 6.0, 1.0), LWSVector4d(0.0, 1.0, 0.0, 0.0));
+	if (!TestEquality("LWSMatrix4d<LookAt>", Mat4d, LookAtResultd)) return false;
+	Mat4d = LWSMatrix4d::OrthoGL(0.0, 10.0, 0.0, 10.0, 0.0, 1.0);
+	if (!TestEquality("LWSMatrix4d<OrthoGL>", Mat4d, OrthoGLResultd)) return false;
+	Mat4d = LWSMatrix4d::OrthoDX(0.0, 10.0, 0.0, 10.0, 0.0, 1.0);
+	if (!TestEquality("LWSMatrix4d<OrthoDX>", Mat4d, OrthoDXResultd)) return false;
+	Mat4d = LWSMatrix4d::Frustum(0.0, 10.0, 0.0, 10.0, 0.0, 1.0);
+	if (!TestEquality("LWSMatrix4d<Frustum>", Mat4d, FrustumResultd)) return false;
+	Mat4d = LWSMatrix4d::Perspective(LW_PI_4, 0.9, 0.0, 1.0);
+	if (!TestEquality("LWSMatrix4d<Perspective>", Mat4d, PerspectiveResultd)) return false;
+	Mat4d = LWSMatrix4d(LWSQuaterniond::FromEuler(0.0, LW_PI_2, 0.0));
+	if (!TestEquality("LWSMatrix4d<Quaternion>", Mat4d, LWSMatrix4d(LWSVector4d(0.0, 0.0, 1.0, 0.0), LWSVector4d(0.0, 1.0, 0.0, 0.0 ), LWSVector4d(-1.0, 0.0, 0.0, 0.0), LWSVector4d(0.0, 0.0, 0.0, 1.0 )))) return false;
+	Mat4d = LWSMatrix4d(LWSVector4d(2.0, 2.0, 2.0, 0.0), LWSQuaterniond::FromEuler(0.0, LW_PI_2, 0.0), LWSVector4d(1.0, 2.0, 3.0, 1.0));
+	if (!TestEquality("LWSMatrix4d<Scale_Quaternion_Pos>", Mat4d, LWSMatrix4d(LWSVector4d(0.0, 0.0, 2.0, 0.0), LWSVector4d(0.0, 2.0, 0.0, 0.0), LWSVector4d(-2.0, 0.0, 0.0, 0.0), LWSVector4d(1.0, 2.0, 3.0, 1.0)))) return false;
+
 	return true;
 }
 
@@ -1649,7 +1725,7 @@ bool PerformLWCryptoTest(void){
 	char Outputs[][32] = {"YW55IGNhcm5hbCBwbGVhc3VyZS4=", "YW55IGNhcm5hbCBwbGVhc3VyZQ==", "YW55IGNhcm5hbCBwbGVhc3Vy", "YW55IGNhcm5hbCBwbGVhc3U=", "YW55IGNhcm5hbCBwbGVhcw==" };
 	
 	for (uint32_t i = 0; i < EncodeTests;i++){
-		uint32_t Len = LWCrypto::Base64Encode(Inputs[i], strlen(Inputs[i]), BufferA, sizeof(BufferA));
+		uint32_t Len = LWCrypto::Base64Encode(Inputs[i], (uint32_t)strlen(Inputs[i]), BufferA, sizeof(BufferA));
 		BufferA[Len] = '\0';
 		if(LWText(BufferA)!=LWText(Outputs[i])){
 			std::cout << "Error with encoding base64: '" << Inputs[i] << "' Received: '" << BufferA << "' Instead of: '" << Outputs[i] << "'" << std::endl;
@@ -1669,7 +1745,7 @@ bool PerformLWCryptoTest(void){
 	uint32_t MD5Outputs[] = { 0xd41d8cd9, 0x8f00b204, 0xe9800998, 0xecf8427e, 0x9e107d9d, 0x372bb682, 0x6bd81d35, 0x42a419d6, 0x038aee51, 0x276c48bf, 0x27db1229, 0x9909ae88 };
 	uint32_t SHA1Outputs[] = { 0xda39a3ee, 0x5e6b4b0d, 0x3255bfef, 0x95601890, 0xafd80709, 0x2fd4e1c6, 0x7a2d28fc, 0xed849ee1, 0xbb76e739, 0x1b93eb12, 0xd2f76f0b, 0x044c24c7, 0x941d42d2, 0xeddcb34a, 0xb54e1ca0 };
 	for (uint32_t i = 0; i < HashCount;i++){
-		LWCrypto::HashMD5(HashInputs[i], strlen(HashInputs[i]), BufferA);
+		LWCrypto::HashMD5(HashInputs[i], (uint32_t)strlen(HashInputs[i]), BufferA);
 		if(MD5Outputs[i*4]!=*(uint32_t*)BufferA || MD5Outputs[i*4+1]!=*(((uint32_t*)BufferA)+1) || MD5Outputs[i*4+2]!=*(((uint32_t*)BufferA)+2) || MD5Outputs[i*4+3]!=*(((uint32_t*)BufferA)+3)){
 			std::cout << "Hash incorrect: '" << HashInputs[i] << "' Expected: '" << std::hex << MD5Outputs[i * 4] << MD5Outputs[i * 4 + 1] << MD5Outputs[i*4+2] << MD5Outputs[i*4+3] << "' Receivied: '" << *(uint32_t*)BufferA << *(((uint32_t*)BufferA) + 1) << *(((uint32_t*)BufferA)+2)<< *(((uint32_t*)BufferA)+3)<< "'" << std::dec << std::endl;
 			return false;
@@ -1678,7 +1754,7 @@ bool PerformLWCryptoTest(void){
 	std::cout << "MD5 hash passed!" << std::endl;
 	std::cout << "Beginning SHA-1 Hash tests." << std::endl;
 	for (uint32_t i = 0; i < HashCount; i++){
-		LWCrypto::HashSHA1(HashInputs[i], strlen(HashInputs[i]), BufferA);
+		LWCrypto::HashSHA1(HashInputs[i], (uint32_t)strlen(HashInputs[i]), BufferA);
 		if (SHA1Outputs[i * 5] != *(uint32_t*)BufferA || SHA1Outputs[i * 5 + 1] != *(((uint32_t*)BufferA) + 1) || SHA1Outputs[i * 5 + 2] != *(((uint32_t*)BufferA) + 2) || SHA1Outputs[i * 5 + 3] != *(((uint32_t*)BufferA) + 3) || SHA1Outputs[i*5+4]!=*(((uint32_t*)BufferA)+4)){
 			std::cout << "Hash incorrect: '" << HashInputs[i] << "' Expected: '" << std::hex << SHA1Outputs[i * 5] << SHA1Outputs[i * 5 + 1] << SHA1Outputs[i * 5 + 2] << SHA1Outputs[i * 5 + 3] << SHA1Outputs[i * 5 + 4] << "' Receivied: '" << *(uint32_t*)BufferA << *(((uint32_t*)BufferA) + 1) << *(((uint32_t*)BufferA) + 2) << *(((uint32_t*)BufferA) + 3) << *(((uint32_t*)BufferA) + 4) << "'" << std::dec << std::endl;
 			return false;
@@ -1689,161 +1765,237 @@ bool PerformLWCryptoTest(void){
 }
 
 template<class Type, class Callback>
-uint64_t DoWork(uint32_t Count, Type* Array, Callback CB) {
+uint64_t DoWork(uint32_t PartCnt, uint32_t *Count, Type** Array, Callback CB) {
 	uint64_t Start = LWTimer::GetCurrent();
-	for (uint32_t i = 0; i < Count; i++) CB(Array[i]);
+	uint32_t k = 0;
+	for (uint32_t i = 0; i < PartCnt; i++) {
+		uint32_t Len = Count[i];
+		for (uint32_t n = 0; n < Len; n++, k++) CB(Array[i][n], k);
+	}
 	return LWTimer::ToMilliSecond(LWTimer::GetCurrent() - Start);
 }
 
-void PerformSIMDComparisonTest(uint32_t Count) {
+template<class TypeA, class TypeB>
+uint32_t GeneratePartitians(uint32_t Count, uint32_t *&PartitionLens, TypeA **&AArray, TypeB **&BArray, LWAllocator &Allocator) {
+	const uint32_t AllocatorSafeHeaderSize = 128; //Safety margin for header.
+	uint32_t Max = (std::numeric_limits<uint32_t>::max()-AllocatorSafeHeaderSize)/sizeof(TypeA);
+	uint32_t PartCnt = (Count/Max);
+	if ((Count % Max) != 0) PartCnt++;
+	PartitionLens = Allocator.AllocateArray<uint32_t>(PartCnt);
+	AArray = Allocator.AllocateArray<TypeA*>(PartCnt);
+	BArray = Allocator.AllocateArray<TypeB*>(PartCnt);
+	for (uint32_t i = 0; i < PartCnt; i++) {
+		PartitionLens[i] = std::min<uint32_t>(Count - i * Max, Max);
+		AArray[i] = Allocator.AllocateArray<TypeA>(PartitionLens[i]);
+		BArray[i] = Allocator.AllocateArray<TypeB>(PartitionLens[i]);
+	}
+	return PartCnt;
+}
+
+template<class TypeA, class TypeB>
+void FreePartitions(uint32_t PartitionCount, uint32_t *PartitionLens, TypeA **AArray, TypeB **BArray) {
+	for (uint32_t i = 0; i < PartitionCount; i++) {
+		LWAllocator::Destroy(AArray[i]);
+		LWAllocator::Destroy(BArray[i]);
+	}
+	LWAllocator::Destroy(AArray);
+	LWAllocator::Destroy(BArray);
+	LWAllocator::Destroy(PartitionLens);
+};
+
+std::string FormatCenteredf(uint32_t width, const char *Fmt, ...) {
+	char Buffer[64];
+	va_list lst;
+	va_start(lst, Fmt);
+	uint32_t Len = vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
+	va_end(lst);
+	Len = std::min<uint32_t>(Len, width);
+	uint32_t Spaces = (width-Len) / 2;
+	std::string r = std::string(Spaces, ' ') + Buffer;
+	Len = (uint32_t)r.size();
+	if (Len < width) {
+		r += std::string(width - Len, ' ');
+	} else r = r.substr(0, width);
+	return r;
+}
+
+template<class Type>
+bool PerformSIMDVec4Test(uint32_t Count, const LWText &Name, LWAllocator &Allocator) {
+	const uint32_t ColumnSize = 16;
+	const uint32_t LineSize = ColumnSize * 3 + 4;
+	const char Border = '|';
+	const char Line = '-';
+	std::cout << "Performing " << Name << " Test." << std::endl;
+	std::cout << "Allocating data." << std::endl;
+	uint32_t *PartitionLens = nullptr;
+	LWVector4<Type> **Vec4 = nullptr;
+	LWSVector4<Type> **SVec4 = nullptr;
+	uint32_t PartCnt = GeneratePartitians(Count, PartitionLens, Vec4, SVec4, Allocator);
+	Type FinalLen = 0;
+	Type SFinalLen = 0;
+	std::cout << std::left;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Function") << Border << FormatCenteredf(ColumnSize, "Generic Time") << Border << FormatCenteredf(ColumnSize, "SIMD Time") << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Initialize") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Type Val = i & 1 ? -(Type)i : (Type)i;  Vec = LWVector4<Type>(Val); })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Type Val = i & 1 ? -(Type)i : (Type)i;  Vec = LWSVector4<Type>(Val); })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Length") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Vec4, [&FinalLen](LWVector4<Type> &Vec, uint32_t i) { FinalLen += Vec.Length(); })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SVec4, [&SFinalLen](LWSVector4<Type> &Vec, uint32_t i) { SFinalLen += Vec.Length(); })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "LengthSq") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Vec4, [&FinalLen](LWVector4<Type> &Vec, uint32_t i) { FinalLen += Vec.LengthSquared(); })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SVec4, [&SFinalLen](LWSVector4<Type> &Vec, uint32_t i) { SFinalLen += Vec.LengthSquared(); })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Normalize") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Vec = Vec.Normalize(); })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec = Vec.Normalize(); })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Add") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Vec += Vec; })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec *= Vec; })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Multiply") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) {Vec *= Vec; })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec *= Vec; })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Sub") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Vec -= LWVector4<Type>(1); })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec -= LWSVector4<Type>(1); })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Divide") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Vec /= Vec; })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec /= Vec; })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	FreePartitions(PartCnt, PartitionLens, Vec4, SVec4);
+	if (std::is_same <Type, int32_t>()) return true; //Int32_t at extreme values can have incorrect Length Results.
+	else {
+		std::cout << Border << FormatCenteredf(ColumnSize, "Sanitized") << Border;
+		std::cout << FormatCenteredf(ColumnSize, "%.5e", FinalLen) << Border << FormatCenteredf(ColumnSize, "%.5e", SFinalLen) << Border << std::endl;
+		std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	}
+	return FinalLen==SFinalLen;
+}
+
+template<class Type>
+bool PerformSIMDMat4Test(uint32_t Count, const LWText &Name, LWAllocator &Allocator) {
+	const uint32_t ColumnSize = 32;
+	const uint32_t LineSize = ColumnSize*3+4;
+	const char Border = '|';
+	const char Line = '-';
+	std::cout << "Performing " << Name << " Test." << std::endl;
+	std::cout << "Allocating data." << std::endl;
+	uint32_t *PartitionLens = nullptr;
+	LWMatrix4<Type> **Mat4 = nullptr;
+	LWSMatrix4<Type> **SMat4 = nullptr;
+	uint32_t PartCnt = GeneratePartitians(Count, PartitionLens, Mat4, SMat4, Allocator);
+	LWVector4<Type> FinalSum;
+	LWSVector4<Type> SFinalSum;
+	std::cout << std::left;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Function") << Border << FormatCenteredf(ColumnSize, "Generic Time") << Border << FormatCenteredf(ColumnSize, "SIMD Time") << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Initialize") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Mat4, [](LWMatrix4<Type> &Mat, uint32_t i) { Type Pitch = -(Type)i * (Type)0.2; Type Yaw = (Type)i * (Type)0.1; Type Roll = (Type)i; Mat = LWMatrix4<Type>::RotationXYZ(Pitch, Yaw, Roll); })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SMat4, [](LWSMatrix4<Type> &Mat, uint32_t i) { Type Pitch = -(Type)i * (Type)0.2; Type Yaw = (Type)i * (Type)0.1; Type Roll = (Type)i; Mat = LWSMatrix4<Type>::RotationXYZ(Pitch, Yaw, Roll); })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Transpose") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Mat4, [](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.Transpose(); })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SMat4, [](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.Transpose(); })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "TransformInverse") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Mat4, [](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.TransformInverse(); })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SMat4, [](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.TransformInverse(); })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Inverse") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Mat4, [](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.Inverse(); })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SMat4, [](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.Inverse(); })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "MultVec4") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Mat4, [&FinalSum](LWMatrix4<Type> &Mat, uint32_t i) { FinalSum += Mat * LWVector4<Type>((Type)1); })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SMat4, [&SFinalSum](LWSMatrix4<Type> &Mat, uint32_t i) { SFinalSum += Mat * LWVector4<Type>((Type)1); })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Multiply") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Mat4, [&FinalSum](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat*Mat; })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SMat4, [&SFinalSum](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat*Mat; })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Add") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Mat4, [&FinalSum](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat + Mat; })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SMat4, [&SFinalSum](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat + Mat; })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Subtract") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Mat4, [&FinalSum](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat - Mat; })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SMat4, [&SFinalSum](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat - Mat; })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Sanitize") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%e", (FinalSum.x+FinalSum.y+FinalSum.z+FinalSum.w)) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%e", SFinalSum.Sum4()) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	Type Val = (FinalSum.x + FinalSum.y + FinalSum.z + FinalSum.w);
+	Type SVal = SFinalSum.Sum4();
+	FreePartitions(PartCnt, PartitionLens, Mat4, SMat4);
+	return (Type)abs(Val - SVal) <= (Type)std::numeric_limits<float>::epsilon();
+};
+
+template<class Type>
+bool PerformSIMDQuatTest(uint32_t Count, const LWText &Name, LWAllocator &Allocator) {
+	const uint32_t ColumnSize = 32;
+	const uint32_t LineSize = ColumnSize * 3 + 4;
+	const char Border = '|';
+	const char Line = '-';
+	std::cout << "Performing " << Name << " Test." << std::endl;
+	std::cout << "Allocating data." << std::endl;
+	uint32_t *PartitionLens = nullptr;
+	LWQuaternion<Type> **Quat = nullptr;
+	LWSQuaternion<Type> **SQuat = nullptr;
+	uint32_t PartCnt = GeneratePartitians(Count, PartitionLens, Quat, SQuat, Allocator);
+	LWVector4<Type> FinalPnt = LWVector4<Type>(1, 0, 0, 1);
+	LWSVector4<Type> SFinalPnt = LWSVector4<Type>(1, 0, 0, 1);
+	std::cout << std::left;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Function") << Border << FormatCenteredf(ColumnSize, "Generic Time") << Border << FormatCenteredf(ColumnSize, "SIMD Time") << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Initialize") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Quat, [](LWQuaternion<Type> &Q, uint32_t i) { Type Pitch = -(Type)i * (Type)0.2; Type Yaw = (Type)i * (Type)0.1; Type Roll = (Type)i; Q = LWQuaternion<Type>::FromEuler(Pitch, Yaw, Roll); })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SQuat, [](LWSQuaternion<Type> &Q, uint32_t i) { Type Pitch = -(Type)i * (Type)0.2; Type Yaw = (Type)i * (Type)0.1; Type Roll = (Type)i; Q = LWSQuaternion<Type>::FromEuler(Pitch, Yaw, Roll); })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Multiply") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Quat, [](LWQuaternion<Type> &Q, uint32_t i) { Q *= LWQuaternion<Type>(); })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SQuat, [](LWSQuaternion<Type> &Q, uint32_t i) { Q *= LWSQuaternion<Type>(); })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Conjugate") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Quat, [](LWQuaternion<Type> &Q, uint32_t i) { Q = Q.Conjugate(); })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SQuat, [](LWSQuaternion<Type> &Q, uint32_t i) { Q = Q.Conjugate(); })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "RotatePnt4") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, Quat, [&FinalPnt](LWQuaternion<Type> &Q, uint32_t i) { FinalPnt = Q.RotatePoint(FinalPnt); })) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%dms", DoWork(PartCnt, PartitionLens, SQuat, [&SFinalPnt](LWSQuaternion<Type> &Q, uint32_t i) { SFinalPnt = Q.RotatePoint(SFinalPnt); })) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	std::cout << Border << FormatCenteredf(ColumnSize, "Sanitize") << Border;
+	std::cout << FormatCenteredf(ColumnSize, "%.4f %.4f %.4f %.4f", FinalPnt.x, FinalPnt.y, FinalPnt.z, FinalPnt.w) << Border << std::flush;
+	std::cout << FormatCenteredf(ColumnSize, "%.4f %.4f %.4f %.4f", SFinalPnt.x(), SFinalPnt.y(), SFinalPnt.z(), SFinalPnt.w()) << Border << std::endl;
+	std::cout << std::setfill(Line) << std::setw(LineSize) << "" << std::setfill(' ') << std::endl;
+	FreePartitions(PartCnt, PartitionLens, Quat, SQuat);
+	return FinalPnt==SFinalPnt.AsVec4();
+}
+
+bool PerformSIMDComparisonTest(uint32_t Count) {
 	LWAllocator_Default DefAlloc;
 	std::cout << "Performing SIMD Comparison Tests: " << Count << std::endl;
-	std::cout << "Initializing data." << std::endl;
-
-	LWVector4f *Vec4f = DefAlloc.AllocateArray<LWVector4f>(Count);
-	LWSVector4f *SVec4f = DefAlloc.AllocateArray<LWSVector4f>(Count);
-	LWVector4d *Vec4d = DefAlloc.AllocateArray<LWVector4d>(Count);
-	LWSVector4d *SVec4d = DefAlloc.AllocateArray<LWSVector4d>(Count);
-	LWMatrix4f *Mat4f = DefAlloc.AllocateArray<LWMatrix4f>(Count);
-	LWSMatrix4f *SMat4f = DefAlloc.AllocateArray<LWSMatrix4f>(Count);
-	LWQuaternionf *Quatf = DefAlloc.AllocateArray<LWQuaternionf>(Count);
-	LWSQuaternionf *SQuatf = DefAlloc.AllocateArray<LWSQuaternionf>(Count);
-	for (uint32_t i = 0; i < Count; i++) {
-		Vec4f[i] = LWVector4f((float)i);
-		SVec4f[i] = LWSVector4f((float)i);
-		Vec4d[i] = LWVector4d((double)i);
-		SVec4d[i] = LWSVector4d((double)i);
-		Mat4f[i] = LWMatrix4f::RotationXYZ(-(float)i * 0.2f, (float)i * 0.1f, (float)i);
-		SMat4f[i] = LWSMatrix4f::RotationXYZ(-(float)i * 0.2f, (float)i * 0.1f, (float)i);
-		Quatf[i] = LWQuaternionf::FromEuler(-(float)i*0.2f, (float)i * 0.1f, (float)i);
-		SQuatf[i] = LWSQuaternionf::FromEuler(-(float)i*0.2f, (float)i * 0.1f, (float)i);
-	}
-	float FinalLen = 0.0f;
-	std::cout << "Vector4f:" << std::endl;
-	std::cout << "Length: ";
-	std::cout << DoWork(Count, Vec4f, [&FinalLen](LWVector4f& Vec) { FinalLen += Vec.Length(); }) << "ms | " << FinalLen << std::endl;
-	std::cout << "Normalize: ";
-	std::cout << DoWork(Count, Vec4f, [](LWVector4f& Vec) { Vec = Vec.Normalize(); }) << "ms" << std::endl;
-	std::cout << "Add: ";
-	std::cout << DoWork(Count, Vec4f, [](LWVector4f& Vec) { Vec += Vec; }) << "ms" << std::endl;
-	std::cout << "Multiply: ";
-	std::cout << DoWork(Count, Vec4f, [](LWVector4f& Vec) { Vec *= Vec; }) << "ms" << std::endl;
-	std::cout << "Sub: ";
-	std::cout << DoWork(Count, Vec4f, [](LWVector4f& Vec) { Vec -= Vec; }) << "ms" << std::endl;
-	std::cout << "Divide: ";
-	std::cout << DoWork(Count, Vec4f, [](LWVector4f& Vec) { Vec /= Vec; }) << "ms" << std::endl;
-
-	FinalLen = 0.0f;
-	std::cout << "SVector4f:" << std::endl;
-	std::cout << "Length: ";
-	std::cout << DoWork(Count, SVec4f, [&FinalLen](LWSVector4f& Vec) { FinalLen += Vec.Length(); }) << "ms | " << FinalLen << std::endl;
-	std::cout << "Normalize: ";
-	std::cout << DoWork(Count, SVec4f, [](LWSVector4f& Vec) { Vec = Vec.Normalize(); }) << "ms" << std::endl;
-	std::cout << "Add: ";
-	std::cout << DoWork(Count, SVec4f, [](LWSVector4f& Vec) { Vec += Vec; }) << "ms" << std::endl;
-	std::cout << "Multiply: ";
-	std::cout << DoWork(Count, SVec4f, [](LWSVector4f& Vec) { Vec *= Vec; }) << "ms" << std::endl;
-	std::cout << "Sub: ";
-	std::cout << DoWork(Count, SVec4f, [](LWSVector4f& Vec) { Vec -= Vec; }) << "ms" << std::endl;
-	std::cout << "Divide: ";
-	std::cout << DoWork(Count, SVec4f, [](LWSVector4f& Vec) { Vec /= Vec; }) << "ms" << std::endl;
-
-	double FinalLend = 0.0;
-	std::cout << "Vector4d:" << std::endl;
-	std::cout << "Length: ";
-	std::cout << DoWork(Count, Vec4d, [&FinalLend](LWVector4d& Vec) { FinalLend += Vec.Length(); }) << "ms | " << FinalLend << std::endl;
-	std::cout << "Normalize: ";
-	std::cout << DoWork(Count, Vec4d, [](LWVector4d& Vec) { Vec = Vec.Normalize(); }) << "ms" << std::endl;
-	std::cout << "Add: ";
-	std::cout << DoWork(Count, Vec4d, [](LWVector4d& Vec) { Vec += Vec; }) << "ms" << std::endl;
-	std::cout << "Multiply: ";
-	std::cout << DoWork(Count, Vec4d, [](LWVector4d& Vec) { Vec *= Vec; }) << "ms" << std::endl;
-	std::cout << "Sub: ";
-	std::cout << DoWork(Count, Vec4d, [](LWVector4d& Vec) { Vec -= Vec; }) << "ms" << std::endl;
-	std::cout << "Divide: ";
-	std::cout << DoWork(Count, Vec4d, [](LWVector4d& Vec) { Vec /= Vec; }) << "ms" << std::endl;
-
-	FinalLend = 0.0;
-	std::cout << "SVector4d:" << std::endl;
-	std::cout << "Length: ";
-	std::cout << DoWork(Count, SVec4d, [&FinalLend](LWSVector4d& Vec) { FinalLend += Vec.Length(); }) << "ms | " << FinalLend << std::endl;
-	std::cout << "Normalize: ";
-	std::cout << DoWork(Count, SVec4d, [](LWSVector4d& Vec) { Vec = Vec.Normalize(); }) << "ms" << std::endl;
-	std::cout << "Add: ";
-	std::cout << DoWork(Count, SVec4d, [](LWSVector4d& Vec) { Vec += Vec; }) << "ms" << std::endl;
-	std::cout << "Multiply: ";
-	std::cout << DoWork(Count, SVec4d, [](LWSVector4d& Vec) { Vec *= Vec; }) << "ms" << std::endl;
-	std::cout << "Sub: ";
-	std::cout << DoWork(Count, SVec4d, [](LWSVector4d& Vec) { Vec -= Vec; }) << "ms" << std::endl;
-	std::cout << "Divide: ";
-	std::cout << DoWork(Count, SVec4d, [](LWSVector4d& Vec) { Vec /= Vec; }) << "ms" << std::endl;
-
-	LWVector4f FinalSum;
-	std::cout << "Matrix4f:" << std::endl;
-	std::cout << "Transpose: ";
-	std::cout << DoWork(Count, Mat4f, [](LWMatrix4f &Mat) { Mat = Mat.Transpose(); }) << "ms" << std::endl;
-	std::cout << "TransformInvert: ";
-	std::cout << DoWork(Count, Mat4f, [](LWMatrix4f &Mat) { Mat = Mat.TransformInverse(); }) << "ms" << std::endl;
-	std::cout << "Invert: ";
-	std::cout << DoWork(Count, Mat4f, [](LWMatrix4f &Mat) { Mat = Mat.Inverse(); }) << "ms" << std::endl;
-	std::cout << "MVec4: ";
-	std::cout << DoWork(Count, Mat4f, [&FinalSum](LWMatrix4f &Mat) {FinalSum += Mat * LWVector4f(1.0f); }) << "ms | " << FinalSum << std::endl;
-	std::cout << "Multiply: ";
-	std::cout << DoWork(Count, Mat4f, [](LWMatrix4f &Mat) { Mat = Mat * Mat; }) << "ms" << std::endl;
-	std::cout << "Add: ";
-	std::cout << DoWork(Count, Mat4f, [](LWMatrix4f &Mat) {Mat = Mat + Mat; }) << "ms" << std::endl;
-	std::cout << "Sub: ";
-	std::cout << DoWork (Count, Mat4f, [](LWMatrix4f &Mat) {Mat = Mat - Mat; }) << "ms" << std::endl;
-	
-	LWSVector4f SFinalSum;
-	std::cout << "SMatrix4f:" << std::endl;
-	std::cout << "Transpose:";
-	std::cout << DoWork(Count, SMat4f, [](LWSMatrix4f &Mat) { Mat = Mat.Transpose(); }) << "ms" << std::endl;
-	std::cout << "TransformInvert: ";
-	std::cout << DoWork(Count, SMat4f, [](LWSMatrix4f &Mat) { Mat = Mat.TransformInverse(); }) << "ms" << std::endl;
-	std::cout << "Invert: ";
-	std::cout << DoWork(Count, SMat4f, [](LWSMatrix4f &Mat) { Mat = Mat.Inverse(); }) << "ms" << std::endl;
-	std::cout << "MVec4: ";
-	std::cout << DoWork(Count, SMat4f, [&SFinalSum](LWSMatrix4f &Mat) {SFinalSum += Mat * LWSVector4f(1.0f); }) << "ms | " << SFinalSum << std::endl;
-	std::cout << "Multiply: ";
-	std::cout << DoWork(Count, SMat4f, [](LWSMatrix4f &Mat) { Mat = Mat * Mat; }) << "ms" << std::endl;
-	std::cout << "Add: ";
-	std::cout << DoWork(Count, SMat4f, [](LWSMatrix4f &Mat) {Mat = Mat + Mat; }) << "ms" << std::endl;
-	std::cout << "Sub: ";
-	std::cout << DoWork(Count, SMat4f, [](LWSMatrix4f &Mat) {Mat = Mat - Mat; }) << "ms" << std::endl;
-
-	LWVector4f FinalPnt = LWVector4f(1.0f, 0.0f, 0.0f, 1.0f);
-	std::cout << "Quaternionf:" << std::endl;
-	std::cout << "Mul: ";
-	std::cout << DoWork(Count, Quatf, [](LWQuaternionf &Q) { Q *= LWQuaternionf(); }) << "ms" << std::endl;
-	std::cout << "Conjugate: ";
-	std::cout << DoWork(Count, Quatf, [](LWQuaternionf &Q) { Q = Q.Conjugate(); }) << "ms" << std::endl;
-	std::cout << "RotatePnt4: ";
-	std::cout << DoWork(Count, Quatf, [&FinalPnt](LWQuaternionf &Q) { FinalPnt = Q.RotatePoint(FinalPnt); }) << "ms | " << FinalPnt << std::endl;
-
-	LWSVector4f SFinalPnt = LWVector4f(1.0f, 0.0f, 0.0f, 1.0f);
-	std::cout << "SQuaternionf:" << std::endl;
-	std::cout << "Mul: ";
-	std::cout << DoWork(Count, SQuatf, [](LWSQuaternionf &Q) { Q *= LWSQuaternionf(); }) << "ms" << std::endl;
-	std::cout << "Conjugate: ";
-	std::cout << DoWork(Count, SQuatf, [](LWSQuaternionf &Q) { Q = Q.Conjugate(); }) << "ms" << std::endl;
-	std::cout << "RotatePnt4: ";
-	std::cout << DoWork(Count, SQuatf, [&SFinalPnt](LWSQuaternionf &Q) { SFinalPnt = Q.RotatePoint(SFinalPnt); }) << "ms | " << FinalPnt << std::endl;
-
-	LWAllocator::Destroy(Vec4f);
-	LWAllocator::Destroy(SVec4f);
-	LWAllocator::Destroy(Vec4d);
-	LWAllocator::Destroy(SVec4d);
-	LWAllocator::Destroy(Mat4f);
-	LWAllocator::Destroy(SMat4f);
-	LWAllocator::Destroy(Quatf);
-	LWAllocator::Destroy(SQuatf);
-	return;
+	if (!PerformSIMDVec4Test<float>(Count, "Vector4 Float", DefAlloc)) return false;
+	if (!PerformSIMDVec4Test<double>(Count, "Vector4 Double", DefAlloc)) return false;
+	if (!PerformSIMDVec4Test<int32_t>(Count, "Vector4 Int", DefAlloc)) return false;
+	if (!PerformSIMDMat4Test<float>(Count, "Matrix4 Float", DefAlloc)) return false;
+	if (!PerformSIMDMat4Test<double>(Count, "Matrix4 Double", DefAlloc)) return false;
+	if (!PerformSIMDQuatTest<float>(Count, "Quaternion Float", DefAlloc)) return false;
+	if (!PerformSIMDQuatTest<double>(Count, "Quaternion Double", DefAlloc)) return false;
+	return true;
 };
 
 int main(int, char **){
 	std::cout << "Testing LWFramework core features." << std::endl;
-	/*
 	if (!PerformLWAllocatorTest()) std::cout << "Error with LWAllocator test." << std::endl;
 	else if (!PerformLWByteBufferTest()) std::cout << "Error with LWByteBuffer Test." << std::endl;
 	else if (!PerformLWByteStreamTest()) std::cout << "Error with LWByteStream test." << std::endl;
@@ -1857,9 +2009,7 @@ int main(int, char **){
 	else if (!PerformLWConcurrentTest()) std::cout << "Error with LWConcurrent Test." << std::endl;
 	else if (!PerformLWTimerTest()) std::cout << "Error with LWTimer Test." << std::endl;
 	else if (!PerformLWCryptoTest()) std::cout << "Error with LWCrypto test." << std::endl;
-	else {*/
-		PerformSIMDComparisonTest(50000000);
-		std::cout << "LWFramework core successful test." << std::endl;
-	//}
+	else if (!PerformSIMDComparisonTest(50000000)) std::cout << "Error with SIMD comparison test." << std::endl;
+	else std::cout << "LWFramework core successful test." << std::endl;
 	return 0;
 }

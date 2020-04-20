@@ -28,8 +28,8 @@ struct LWVector4{
 	/*! \brief returns a copy of the normalized vector4. */
 	LWVector4<Type> Normalize(void) const{
 		Type L = x*x + y*y + z*z + w*w;
-		if (L < std::numeric_limits<Type>::epsilon()) L = 0;
-		else L = (Type)1 / sqrt(L);
+		if (L <= std::numeric_limits<Type>::epsilon()) L = 0;
+		else L = (Type)1 / (Type)sqrt(L);
 		return LWVector4<Type>(x*L, y*L, z*L, w*L);
 	}
 
@@ -84,8 +84,8 @@ struct LWVector4{
 	*/
 	Type Length(void) const{
 		Type L = x*x + y*y + z*z + w*w;
-		if (L < std::numeric_limits<Type>::epsilon()) return 0;
-		return sqrt(L);
+		if (L <= std::numeric_limits<Type>::epsilon()) return 0;
+		return (Type)sqrt(L);
 	}
 
 	/*! \brief Gets the squared length of the vector4.
@@ -1656,7 +1656,7 @@ struct LWVector3{
 	/*! \brief returns a copy of the normalized vector3. */
 	LWVector3<Type> Normalize(void) const{
 		Type L = x*x + y*y + z*z;
-		if (L < std::numeric_limits<Type>::epsilon()) L = 0;
+		if (L <= std::numeric_limits<Type>::epsilon()) L = 0;
 		else L = (Type)1 / sqrt(L);
 		return LWVector3<Type>(x*L, y*L, z*L);
 	}
@@ -1747,7 +1747,7 @@ struct LWVector3{
 	*/
 	Type Length(void) const{
 		Type L = x*x + y*y + z*z;
-		if (L < std::numeric_limits<Type>::epsilon()) return 0;
+		if (L <= std::numeric_limits<Type>::epsilon()) return 0;
 		return (Type)sqrt(L);
 	}
 
@@ -2096,7 +2096,7 @@ struct LWVector2{
 	/*! \brief returns a copy of the normalized vector3. */
 	LWVector2<Type> Normalize(void) const{
 		Type L = x*x + y*y;
-		if (L < std::numeric_limits<Type>::epsilon()) L = 0;
+		if (L <= std::numeric_limits<Type>::epsilon()) L = 0;
 		else L = (Type)1 / sqrt(L);
 		return LWVector2<Type>(x*L, y*L);
 	}
@@ -2166,8 +2166,8 @@ struct LWVector2{
 	*/
 	Type Length(void) const{
 		Type L = x*x + y*y;
-		if (L < std::numeric_limits<Type>::epsilon()) return 0;
-		return sqrt(L);
+		if (L <= std::numeric_limits<Type>::epsilon()) return 0;
+		return (Type)sqrt(L);
 	}
 
 	/*! \brief Gets the squared length of the vector2.

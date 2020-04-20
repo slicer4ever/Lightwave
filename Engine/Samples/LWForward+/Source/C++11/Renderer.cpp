@@ -318,8 +318,8 @@ Renderer &Renderer::RenderFrame(lFrame &F, LWWindow *Window) {
 
 	RenderList(F, lFrame::MainView, Window);
 
-	m_FontPipeline->SetResource(0, m_ShadowDepthBuffer);
-	m_Driver->DrawMesh(m_FontPipeline, LWVideoDriver::Triangle, m_DebugRect);
+	//m_FontPipeline->SetResource(0, m_ShadowDepthBuffer);
+	//m_Driver->DrawMesh(m_FontPipeline, LWVideoDriver::Triangle, m_DebugRect);
 
 	RenderText(F.m_FontWriter);
 	return *this;

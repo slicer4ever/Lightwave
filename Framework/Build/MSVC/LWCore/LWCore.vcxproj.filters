@@ -98,6 +98,12 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSQuaternion_AVX_Float.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSQuaternion_AVX2_Double.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSMatrix_AVX2_Double.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWAllocator.cpp">
@@ -149,6 +155,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSMatrix_AVX2_Float.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSQuaternion_AVX2_Double.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSMatrix_AVX2_Double.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
