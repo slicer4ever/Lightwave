@@ -67,6 +67,7 @@ struct LWSQuaternion<double> {
 
 	LWSQuaternion<double> operator-() const;
 
+<<<<<<< HEAD
 	friend LWSQuaternion<double> operator * (double Lhs, const LWSQuaternion<double> &Rhs);
 
 	friend LWSQuaternion<double> operator + (double Lhs, const LWSQuaternion<double> &Rhs);
@@ -75,6 +76,8 @@ struct LWSQuaternion<double> {
 
 	friend LWSQuaternion<double> operator / (double Lhs, const LWSQuaternion<double> &Rhs);
 
+=======
+>>>>>>> Added double simd version of LWSMatrix4 + LWSQuaternion.
 	double x(void) const;
 
 	double y(void) const;
@@ -85,8 +88,11 @@ struct LWSQuaternion<double> {
 
 	LWSQuaternion(__m256d Data);
 
+<<<<<<< HEAD
 	LWSQuaternion(const LWQuaternion<double> &Q);
 
+=======
+>>>>>>> Added double simd version of LWSMatrix4 + LWSQuaternion.
 	LWSQuaternion(double vw, double vx, double vy, double vz);
 
 	LWSQuaternion(const LWSMatrix4<double>& Mat);

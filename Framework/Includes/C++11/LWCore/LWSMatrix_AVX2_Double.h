@@ -14,6 +14,7 @@ struct LWSMatrix4<double> {
 
 	LWMatrix4<double> AsMat4(void) const;
 
+<<<<<<< HEAD
 	double *AsArray(void);
 
 	const double *AsArray(void) const;
@@ -24,6 +25,8 @@ struct LWSMatrix4<double> {
 
 	void Decompose(LWSVector4<double> &Scale, LWSQuaternion<double> &Rotation, LWSVector4<double> &Translation, bool doTranspose3x3) const;
 
+=======
+>>>>>>> Added double simd version of LWSMatrix4 + LWSQuaternion.
 	LWSMatrix4<double> TransformInverse(void) const;
 
 	LWSMatrix4<double> Inverse(void) const;
@@ -126,8 +129,11 @@ struct LWSMatrix4<double> {
 
 	LWSMatrix4(const LWSQuaternion<double>& Q);
 
+<<<<<<< HEAD
 	LWSMatrix4(const LWMatrix4<double> &M);
 
+=======
+>>>>>>> Added double simd version of LWSMatrix4 + LWSQuaternion.
 	LWSMatrix4(__m256d Row0, __m256d Row1, __m256d Row2, __m256d Row3);
 
 	LWSMatrix4(double xScale = 1.0, double yScale = 1.0, double zScale = 1.0, double wScale = 1.0);
