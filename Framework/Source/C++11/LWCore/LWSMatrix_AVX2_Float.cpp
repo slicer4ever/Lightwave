@@ -486,7 +486,7 @@ LWSMatrix4<float> LWSMatrix4<float>::Translation(const LWSVector4<float>& Positi
 LWSMatrix4<float> LWSMatrix4<float>::Rotation(const LWSVector4<float>& Direction, const LWSVector4<float>& Up) {
 	LWSVector4<float> xAxis = Up.Cross3(Direction);
 	LWSVector4<float> yAxis = Direction.Cross3(xAxis);
-	__m128 D = _mm_set_ps(0.0f, 0.0f, 0.0f, 1.0f);
+	__m128 D = _mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f);
 	__m256 Row01 = _mm256_set_m128(yAxis.m_Data, xAxis.m_Data);
 	__m256 Row23 = _mm256_set_m128(D, Direction.m_Data);
 	return LWSMatrix4(Row01, Row23);

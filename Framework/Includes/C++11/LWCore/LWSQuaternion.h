@@ -269,4 +269,8 @@ struct LWSQuaternion {
 #include "LWCore/LWSQuaternion_AVX_Float.h"
 #endif
 
+#ifndef LW_NOAVX2
+#include "LWCore/LWSQuaternion_AVX2_Double.h"
+#endif
+
 #endif

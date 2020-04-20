@@ -664,6 +664,7 @@ struct LWSMatrix4 {
 
 #ifndef LW_NOAVX2
 #include "LWCore/LWSMatrix_AVX2_Float.h"
+#include "LWCore/LWSMatrix_AVX2_Double.h"
 #endif
 
 #endif

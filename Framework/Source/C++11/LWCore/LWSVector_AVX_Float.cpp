@@ -120,7 +120,7 @@ LWSVector4<float> LWSVector4<float>::Cross3(const LWSVector4<float>& O) const {
 }
 
 LWSVector4<float> LWSVector4<float>::Perpindicular2(void) const {
-	return _mm_mul_ps(yx().m_Data, _mm_set_ps(-1.0, 1.0, 1.0, 1.0));
+	return _mm_xor_ps(yx().m_Data, _mm_set_ps(0.0f, 0.0f, 0.0f, -0.0f));
 }
 
 float LWSVector4<float>::Length(void) const {

@@ -12,6 +12,12 @@ struct LWSVector4<int32_t> {
 
 	LWVector4<int32_t> AsVec4(void) const;
 
+	LWSVector4<int32_t> Normalize(void) const;
+
+	LWSVector4<int32_t> Normalize3(void) const;
+
+	LWSVector4<int32_t> Normalize2(void) const;
+
 	int32_t Min(void) const;
 
 	int32_t Min3(void) const;
@@ -41,6 +47,34 @@ struct LWSVector4<int32_t> {
 	LWSVector4<int32_t> Min(const LWSVector4<int32_t> &A) const;
 
 	LWSVector4<int32_t> Max(const LWSVector4<int32_t> &A) const;
+
+	LWSVector4<int32_t> Cross3(const LWSVector4<int32_t>& O) const;
+
+	LWSVector4<int32_t> Perpindicular2(void) const;
+
+	int32_t Length(void) const;
+
+	int32_t Length3(void) const;
+
+	int32_t Length2(void) const;
+
+	int32_t LengthSquared(void) const;
+
+	int32_t LengthSquared3(void) const;
+
+	int32_t LengthSquared2(void) const;
+
+	int32_t Distance(const LWSVector4<int32_t>& O) const;
+
+	int32_t Distance3(const LWSVector4<int32_t>& O) const;
+
+	int32_t Distance2(const LWSVector4<int32_t>& O) const;
+
+	int32_t DistanceSquared(const LWSVector4<int32_t>& O) const;
+
+	int32_t DistanceSquared3(const LWSVector4<int32_t>& O) const;
+
+	int32_t DistanceSquared2(const LWSVector4<int32_t>& O) const;
 
 	LWSVector4<int32_t>& operator = (const LWSVector4<int32_t>& Rhs);
 

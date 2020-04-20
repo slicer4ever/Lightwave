@@ -50,7 +50,7 @@ double LWSVector4<double>::Dot(const LWSVector4<double>& O) const {
 }
 
 double LWSVector4<double>::Dot3(const LWSVector4<double>& O) const {
-	__m256d t = _mm256_set_pd(0.0, 1.0, 1.0, 1.0f);
+	__m256d t = _mm256_set_pd(0.0, 1.0, 1.0, 1.0);
 	t = _mm256_mul_pd(_mm256_mul_pd(m_Data, t), _mm256_mul_pd(O.m_Data, t));
 	t = _mm256_hadd_pd(t, t);
 	t = _mm256_permute4x64_pd(t, _MM_SHUFFLE(0, 2, 1, 3));
@@ -133,6 +133,18 @@ LWSVector4<double> LWSVector4<double>::Min(const LWSVector4<double>& A) const {
 
 LWSVector4<double> LWSVector4<double>::Max(const LWSVector4<double>& A) const {
 	return _mm256_max_pd(m_Data, A.m_Data);
+}
+
+LWSVector4<double> LWSVector4<double>::Cross3(const LWSVector4<double>& O) const {
+	__m256d A = yzxw().m_Data;
+	__m256d B = O.zxyw().m_Data;
+	__m256d C = zxyw().m_Data;
+	__m256d D = O.yzxw().m_Data;
+	return _mm256_sub_pd(_mm256_mul_pd(A, B), _mm256_mul_pd(C, D));
+}
+
+LWSVector4<double> LWSVector4<double>::Perpindicular2(void) const {
+	return _mm256_xor_pd(yx().m_Data, _mm256_set_pd(0.0, 0.0, 0.0, -0.0));
 }
 
 double LWSVector4<double>::Length(void) const {
@@ -291,7 +303,8 @@ LWSVector4<double> operator - (const LWSVector4<double>& Rhs) {
 }
 
 bool LWSVector4<double>::operator == (const LWSVector4<double>& Rhs) const {
-	__m256d e = _mm256_set1_pd(std::numeric_limits<double>::epsilon());
+	//float episilon is "good" enough for closeness comparison.
+	__m256d e = _mm256_set1_pd((double)std::numeric_limits<float>::epsilon());
 	__m256d t = _mm256_sub_pd(m_Data, Rhs.m_Data);
 	t = _mm256_andnot_pd(_mm256_set1_pd(-0.0), t); //Get absolute value of difference.
 	t = _mm256_cmp_pd(t, e, _CMP_LE_OS);

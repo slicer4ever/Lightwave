@@ -25,6 +25,48 @@ struct LWEGLTFAnimTween{
 	LWETween<LWVector3f> m_Scale;
 };
 
+
+struct LWEGLTFAccessor {
+	enum {
+		//Component Type possible values, Based on openGL values, the Byte2-4 are unlikely to be ever used but are added for completness sake.
+		Byte = 0,
+		UByte,
+		Short,
+		UShort,
+		Int,
+		UInt,
+		Float,
+		Byte2,
+		Byte3,
+		Byte4,
+		Double,
+
+		//Type possible values, indicates how many of ComponentType are to be read.
+		Scalar = 0,
+		Vec2,
+		Vec3,
+		Vec4,
+		Mat2,
+		Mat3,
+		Mat4,
+
+		Normalized = 0x1 //Flag indicating the value should be normalized when read out.
+	};
+
+	static bool ParseJSON(LWEGLTFAccessor &Buf, LWEJson &J, LWEJObject *Obj);
+
+	LWEGLTFAccessor(uint32_t BufferID, uint32_t Offset, uint32_t ComponentType, uint32_t Count, uint32_t Type, uint32_t Flag);
+
+	LWEGLTFAccessor() = default;
+
+	uint32_t m_BufferID = -1;
+	uint32_t m_Offset = 0;
+	uint32_t m_ComponentType = 0;
+	uint32_t m_Count = 0;
+	uint32_t m_Type = 0;
+	uint32_t m_Flag = 0;
+};
+
 struct LWEGLTFAccessorView {
 
 	/*!< \brief reads from Position the specified component type, normalizes if necessary, then returns the value as type. */
@@ -127,48 +169,6 @@ struct LWEGLTFBufferView {
 	uint32_t m_Offset = 0;
 	uint32_t m_Length = 0;
 	uint32_t m_Stride = 0;
-};
-
-
-struct LWEGLTFAccessor {
-	enum {
-		//Component Type possible values, Based on openGL values, the Byte2-4 are unlikely to be ever used but are added for completness sake.
-		Byte = 0,
-		UByte,
-		Short,
-		UShort,
-		Int,
-		UInt,
-		Float,
-		Byte2,
-		Byte3,
-		Byte4,
-		Double,
-
-		//Type possible values, indicates how many of ComponentType are to be read.
-		Scalar=0,
-		Vec2,
-		Vec3,
-		Vec4,
-		Mat2,
-		Mat3,
-		Mat4,
-
-		Normalized = 0x1 //Flag indicating the value should be normalized when read out.
-	};
-
-	static bool ParseJSON(LWEGLTFAccessor &Buf, LWEJson &J, LWEJObject *Obj);
-
-	LWEGLTFAccessor(uint32_t BufferID, uint32_t Offset, uint32_t ComponentType, uint32_t Count, uint32_t Type, uint32_t Flag);
-
-	LWEGLTFAccessor() = default;
-
-	uint32_t m_BufferID = -1;
-	uint32_t m_Offset = 0;
-	uint32_t m_ComponentType = 0;
-	uint32_t m_Count = 0;
-	uint32_t m_Type = 0;
-	uint32_t m_Flag = 0;
 };
 
 

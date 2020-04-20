@@ -7,6 +7,56 @@ LWVector4<int32_t> LWSVector4<int32_t>::AsVec4(void) const {
 	return R;
 }
 
+
+LWSVector4<int32_t> LWSVector4<int32_t>::Normalize(void) const {
+	__m128i e = _mm_set1_epi32(1);
+	__m128i t = _mm_mullo_epi32(m_Data, m_Data);
+	t = _mm_hadd_epi32(t, t);
+	t = _mm_hadd_epi32(t, t);
+	if (_mm_test_all_ones(_mm_cmplt_epi32(t, e))) return _mm_set1_epi32(0);
+	alignas(16) int32_t vi[4];
+	alignas(16) float vf[4];
+	_mm_store_si128((__m128i*)vi, t);
+	__m128 tf = _mm_set_ps((float)vi[0], (float)vi[1], (float)vi[2], (float)vi[3]);
+	tf = _mm_div_ps(tf, _mm_sqrt_ps(tf));
+	_mm_store_ps(vf, tf);
+	return _mm_set_epi32((int32_t)vf[0], (int32_t)vf[1], (int32_t)vf[2], (int32_t)vf[3]);
+}
+
+LWSVector4<int32_t> LWSVector4<int32_t>::Normalize3(void) const {
+	__m128i e = _mm_set1_epi32(1);
+	__m128i t = _mm_mullo_epi32(m_Data, _mm_set_epi32(0, 1, 1, 1));
+	t = _mm_mullo_epi32(t, t);
+	t = _mm_hadd_epi32(t, t);
+	t = _mm_hadd_epi32(t, t);
+	if (_mm_test_all_ones(_mm_cmplt_epi32(t, e))) return _mm_set1_epi32(0);
+	alignas(16) int32_t vi[4];
+	alignas(16) float vf[4];
+	_mm_store_si128((__m128i*)vi, t);
+	__m128 tf = _mm_set_ps((float)vi[0], (float)vi[1], (float)vi[2], (float)vi[3]);
+	tf = _mm_div_ps(tf, _mm_sqrt_ps(tf));
+	_mm_store_ps(vf, tf);
+	return _mm_blend_epi32(_mm_set_epi32((int32_t)vf[0], (int32_t)vf[1], (int32_t)vf[2], (int32_t)vf[3]), m_Data, 0x8);
+
+}
+
+LWSVector4<int32_t> LWSVector4<int32_t>::Normalize2(void) const {
+	__m128i e = _mm_set1_epi32(1);
+	__m128i t = _mm_mullo_epi32(m_Data, _mm_set_epi32(0, 0, 1, 1));
+	t = _mm_mullo_epi32(t, t);
+	t = _mm_hadd_epi32(t, t);
+	t = _mm_hadd_epi32(t, t);
+	if (_mm_test_all_ones(_mm_cmplt_epi32(t, e))) return _mm_set1_epi32(0);
+	alignas(16) int32_t vi[4];
+	alignas(16) float vf[4];
+	_mm_store_si128((__m128i*)vi, t);
+	__m128 tf = _mm_set_ps((float)vi[0], (float)vi[1], (float)vi[2], (float)vi[3]);
+	tf = _mm_div_ps(tf, _mm_sqrt_ps(tf));
+	_mm_store_ps(vf, tf);
+	return _mm_blend_epi32(_mm_set_epi32((int32_t)vf[0], (int32_t)vf[1], (int32_t)vf[2], (int32_t)vf[3]), m_Data, 0xC);
+
+}
+
 int32_t LWSVector4<int32_t>::Min(void) const {
 	__m128i A = _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 1, 0, 3));
 	__m128i B = _mm_min_epi32(m_Data, A);
@@ -93,6 +143,151 @@ LWSVector4<int32_t> LWSVector4<int32_t>::Min(const LWSVector4<int32_t>& A) const
 LWSVector4<int32_t> LWSVector4<int32_t>::Max(const LWSVector4<int32_t>& A) const {
 	return _mm_max_epi32(m_Data, A.m_Data);
 }
+
+LWSVector4<int32_t> LWSVector4<int32_t>::Cross3(const LWSVector4<int32_t>& O) const {
+	__m128i A = yzxw().m_Data;
+	__m128i B = O.zxyw().m_Data;
+	__m128i C = zxyw().m_Data;
+	__m128i D = O.yzxw().m_Data;
+	return _mm_sub_epi32(_mm_mullo_epi32(A, B), _mm_mullo_epi32(C, D));
+}
+
+LWSVector4<int32_t> LWSVector4<int32_t>::Perpindicular2(void) const {
+	return _mm_xor_si128(yx().m_Data, _mm_set_epi32(0, 0, 0, -0));
+}
+
+int32_t LWSVector4<int32_t>::Length(void) const {
+	const __m128i e = _mm_set1_epi32(1);
+	__m128i t = _mm_mullo_epi32(m_Data, m_Data);
+	t = _mm_hadd_epi32(t, t);
+	t = _mm_hadd_epi32(t, t);
+	if (_mm_test_all_ones(_mm_cmplt_epi32(t, e))) return 0;
+	alignas(16) int32_t vi[4];
+	_mm_store_si128((__m128i*)vi, t);
+	__m128 mf = _mm_set_ps((float)vi[0], (float)vi[1], (float)vi[2], (float)vi[3]);
+	return (int32_t)_mm_cvtss_f32(_mm_sqrt_ps(mf));
+}
+
+int32_t LWSVector4<int32_t>::Length3(void) const {
+	const __m128i e = _mm_set1_epi32(1);
+	__m128i t = _mm_mullo_epi32(m_Data, _mm_set_epi32(0, 1, 1, 1));
+	t = _mm_mullo_epi32(t, t);
+	t = _mm_hadd_epi32(t, t);
+	t = _mm_hadd_epi32(t, t);
+	if (_mm_test_all_ones(_mm_cmplt_epi32(t, e))) return 0;
+	alignas(16) int32_t vi[4];
+	_mm_store_si128((__m128i*)vi, t);
+	__m128 mf = _mm_set_ps((float)vi[0], (float)vi[1], (float)vi[2], (float)vi[3]);
+	return (int32_t)_mm_cvtss_f32(_mm_sqrt_ps(mf));
+
+}
+
+int32_t LWSVector4<int32_t>::Length2(void) const {
+	const __m128i e = _mm_set1_epi32(1);
+	__m128i t = _mm_mullo_epi32(m_Data, _mm_set_epi32(0, 0, 1, 1));
+	t = _mm_mullo_epi32(t, t);
+	t = _mm_hadd_epi32(t, t);
+	t = _mm_hadd_epi32(t, t);
+	if (_mm_test_all_ones(_mm_cmplt_epi32(t, e))) return 0;
+	alignas(16) int32_t vi[4];
+	_mm_store_si128((__m128i*)vi, t);
+	__m128 mf = _mm_set_ps((float)vi[0], (float)vi[1], (float)vi[2], (float)vi[3]);
+	return (int32_t)_mm_cvtss_f32(_mm_sqrt_ps(mf));
+}
+
+int32_t LWSVector4<int32_t>::LengthSquared(void) const {
+	__m128i Sq = _mm_mullo_epi32(m_Data, m_Data);
+	Sq = _mm_hadd_epi32(Sq, Sq);
+	Sq = _mm_hadd_epi32(Sq, Sq);
+	return _mm_cvtsi128_si32(Sq);
+}
+
+int32_t LWSVector4<int32_t>::LengthSquared3(void) const {
+	__m128i t = _mm_mullo_epi32(m_Data, _mm_set_epi32(0, 1, 1, 1));
+	__m128i Sq = _mm_mullo_epi32(t, t);
+	Sq = _mm_hadd_epi32(Sq, Sq);
+	Sq = _mm_hadd_epi32(Sq, Sq);
+	return _mm_cvtsi128_si32(Sq);
+}
+
+int32_t LWSVector4<int32_t>::LengthSquared2(void) const {
+	__m128i t = _mm_mullo_epi32(m_Data, _mm_set_epi32(0, 0, 1, 1));
+	__m128i Sq = _mm_mullo_epi32(t, t);
+	Sq = _mm_hadd_epi32(Sq, Sq);
+	Sq = _mm_hadd_epi32(Sq, Sq);
+	return _mm_cvtsi128_si32(Sq);
+}
+
+int32_t LWSVector4<int32_t>::Distance(const LWSVector4<int32_t>& O) const {
+	const __m128i e = _mm_set1_epi32(1);
+	alignas(16) int32_t vi[4];
+	__m128i ti = _mm_sub_epi32(m_Data, O.m_Data);
+	ti = _mm_mullo_epi32(ti, ti);
+	ti = _mm_hadd_epi32(ti, ti);
+	ti = _mm_hadd_epi32(ti, ti);
+	if(_mm_test_all_ones(_mm_cmplt_epi32(ti, e))) return 0;
+	_mm_store_si128((__m128i*)vi, ti);
+	__m128 t = _mm_set_ps((float)vi[0], (float)vi[1], (float)vi[2], (float)vi[3]);
+	return (int32_t)_mm_cvtss_f32(_mm_sqrt_ps(t));
+}
+
+int32_t LWSVector4<int32_t>::Distance3(const LWSVector4<int32_t>& O) const {
+	const __m128i e = _mm_set1_epi32(1);
+	alignas(16) int32_t vi[4];
+	__m128i ti = _mm_sub_epi32(m_Data, O.m_Data);
+	ti = _mm_mullo_epi32(ti, _mm_set_epi32(0, 1, 1, 1));
+	ti = _mm_mullo_epi32(ti, ti);
+	ti = _mm_hadd_epi32(ti, ti);
+	ti = _mm_hadd_epi32(ti, ti);
+	if (_mm_test_all_ones(_mm_cmplt_epi32(ti, e))) return 0;
+	_mm_store_si128((__m128i*)vi, ti);
+	__m128 t = _mm_set_ps((float)vi[0], (float)vi[1], (float)vi[2], (float)vi[3]);
+	return (int32_t)_mm_cvtss_f32(_mm_sqrt_ps(t));
+}
+
+int32_t LWSVector4<int32_t>::Distance2(const LWSVector4<int32_t>& O) const {
+	const __m128i e = _mm_set1_epi32(1);
+	alignas(16) int32_t vi[4];
+	__m128i ti = _mm_sub_epi32(m_Data, O.m_Data);
+	ti = _mm_mullo_epi32(ti, _mm_set_epi32(0, 0, 1, 1));
+	ti = _mm_mullo_epi32(ti, ti);
+	ti = _mm_hadd_epi32(ti, ti);
+	ti = _mm_hadd_epi32(ti, ti);
+	if (_mm_test_all_ones(_mm_cmplt_epi32(ti, e))) return 0;
+	_mm_store_si128((__m128i*)vi, ti);
+	__m128 t = _mm_set_ps((float)vi[0], (float)vi[1], (float)vi[2], (float)vi[3]);
+	return (int32_t)_mm_cvtss_f32(_mm_sqrt_ps(t));
+}
+
+int32_t LWSVector4<int32_t>::DistanceSquared(const LWSVector4<int32_t>& O) const {
+	const __m128i e = _mm_set1_epi32(1);
+	__m128i t = _mm_sub_epi32(m_Data, O.m_Data);
+	t = _mm_mullo_epi32(t, t);
+	t = _mm_hadd_epi32(t, t);
+	t = _mm_hadd_epi32(t, t);
+	return _mm_cvtsi128_si32(t);
+}
+
+int32_t LWSVector4<int32_t>::DistanceSquared3(const LWSVector4<int32_t>& O) const {
+	const __m128i e = _mm_set1_epi32(1);
+	__m128i t = _mm_sub_epi32(m_Data, O.m_Data);
+	t = _mm_mullo_epi32(t, _mm_set_epi32(0, 1, 1, 1));
+	t = _mm_mullo_epi32(t, t);
+	t = _mm_hadd_epi32(t, t);
+	t = _mm_hadd_epi32(t, t);
+	return _mm_cvtsi128_si32(t);
+}
+
+int32_t LWSVector4<int32_t>::DistanceSquared2(const LWSVector4<int32_t>& O) const {
+	const __m128i e = _mm_set1_epi32(1);
+	__m128i t = _mm_sub_epi32(m_Data, O.m_Data);
+	t = _mm_mullo_epi32(t, _mm_set_epi32(0, 0, 1, 1));
+	t = _mm_mullo_epi32(t, t);
+	t = _mm_hadd_epi32(t, t);
+	t = _mm_hadd_epi32(t, t);
+	return _mm_cvtsi128_si32(t);
+}
+
 
 LWSVector4<int32_t>& LWSVector4<int32_t>::operator = (const LWSVector4<int32_t>& Rhs) {
 	m_Data = Rhs.m_Data;

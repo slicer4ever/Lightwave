@@ -21,15 +21,15 @@ App &App::Update(uint64_t lCurrentTime) {
 	m_Camera.SetAspect(m_Window->GetAspect()).BuildFrustrum();
 	LWVector3f SceneSize = m_Scene->GetAAMax()-m_Scene->GetAAMin();
 	float SceneRadi = SceneSize.Max();
-
+	 
 	m_Flag = (m_Flag&~OrbitCamera) | (SceneRadi < OrbitRadius) ? OrbitCamera : 0;
-	m_SceneScale = 25.0f;
+	//m_SceneScale = 25.0f;
 	LWMatrix4f SceneTransform = LWMatrix4f(m_SceneScale, m_SceneScale, m_SceneScale, 1.0f) * LWMatrix4f::RotationY(m_SceneTheta);
 	uint32_t Vertices = m_Scene->DrawScene(lCurrentTime, SceneTransform, m_Renderer, *F, m_Camera, m_Driver);
 	float Deg = fmodf(m_SceneTheta*LW_RADTODEG, 360.0f);
 	if (Deg < 0.0f) Deg += 360.0f;
 	
-	m_DefaultFont->DrawTextmf("Vertices: %d FrameTime: %dms Scale: %.2f Rotation: %.2f", LWVector2f(), 2.0f, LWVector4f(1.0f, 1.0f, 1.0f, 1.0f), &F->m_FontWriter, &LWFontSimpleWriter::WriteGlyph, Vertices, UpdateFreq, m_SceneScale, Deg);
+	m_DefaultFont->DrawTextmf("Vertices: %d FrameTime: %dms Scale: %.2f Rotation: %.2f", LWVector2f(), 1.0f, LWVector4f(1.0f, 1.0f, 1.0f, 1.0f), &F->m_FontWriter, &LWFontSimpleWriter::WriteGlyph, Vertices, UpdateFreq, m_SceneScale, Deg);
 	m_Renderer->EndFrame();
 	m_LastUpdateTime = lCurrentTime;
 	return *this;
@@ -179,8 +179,8 @@ App::App(const char *Path, LWAllocator &Allocator) : m_Allocator(Allocator) {
 
 	m_Scene->PushLight(Light(LWVector4f(1.0f), 0.05f));
 	if (m_Scene->GetLightCount() == 1) { //Add "sun" if no lighting is provided by the model.
-		//m_Scene->PushLight(Light(LWVector3f(1.0f, -0.1f, 0.0f).Normalize(), LWVector4f(1.0f), 1.0f, LWVector4i(-1)));
-		m_Scene->PushLight(Light(LWVector3f(0.0f, 20.0f, 0.0f), 50.0f, 25.0f, LWVector4f(1.0f), 1.0f, LWVector4i(-1)));
+		m_Scene->PushLight(Light(LWVector3f(1.0f, -0.1f, 0.0f).Normalize(), LWVector4f(1.0f), 1.0f, LWVector4i(-1)));
+		//m_Scene->PushLight(Light(LWVector3f(0.0f, 20.0f, 0.0f), 50.0f, 25.0f, LWVector4f(1.0f), 1.0f, LWVector4i(-1)));
 	}
 
 	m_Camera = Camera(LWVector3f(0.0f, 0.0f, 0.0f), LWVector3f(-1.0f, 0.0f, 0.0f), LWVector3f(0.0f, 1.0f, 0.0f), 1, 1.0f, LW_PI_4, 0.1f, 5000.0f, false);

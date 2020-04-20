@@ -244,7 +244,8 @@ public:
 			SetFinished("Error creating window!");
 			return;
 		}
-		uint32_t TargetDriver = LWVideoDriver::Vulkan | LWVideoDriver::DebugLayer;
+		//uint32_t TargetDriver = LWVideoDriver::Vulkan | LWVideoDriver::DebugLayer;
+		uint32_t TargetDriver = LWVideoDriver::Unspecefied;
 		std::cout << "Window created: " << m_Window->GetSize().x << " " << m_Window->GetSize().y << std::endl;
 		m_Driver = LWVideoDriver::MakeVideoDriver(m_Window, TargetDriver);
 		if (!m_Driver) {
