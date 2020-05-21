@@ -48,8 +48,6 @@ class LWEJobQueue;
 
 class LWEGLTFParser;
 
-class LWEGLTFParser;
-
 class LWEVideoPlayer;
 
 class LWEVideoDecoder;

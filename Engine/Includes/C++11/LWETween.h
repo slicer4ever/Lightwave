@@ -3,6 +3,8 @@
 #include <LWCore/LWTypes.h>
 #include <LWCore/LWVector.h>
 #include <LWCore/LWByteBuffer.h>
+#include <LWCore/LWSVector.h>
+#include <LWCore/LWSMatrix.h>
 #include <vector>
 #include <algorithm>
 
@@ -82,6 +84,11 @@ public:
 		return *this;
 	}
 
+	LWETween &Clear(void) {
+		m_Frames.clear();
+		return *this;
+	}
+
 	bool Push(const Type &Val, float Time) {
 		auto Pos = std::lower_bound(m_Frames.begin(), m_Frames.end(), Time);
 		m_Frames.emplace(Pos, Time, Val);
@@ -157,6 +164,10 @@ public:
 		return m_Frames[i];
 	}
 
+	const LWETweenFrame<Type> &GetFrame(uint32_t i) const {
+		return m_Frames[i];
+	}
+
 	uint32_t GetFrameCount(void) const {
 		return (uint32_t)m_Frames.size();
 	}
@@ -191,6 +202,16 @@ private:
 };
 
 template<>
+inline LWSQuaternionf LWETweenFrame<LWSQuaternionf>::LinearTween(const LWETweenFrame<LWSQuaternionf> &A, const LWETweenFrame<LWSQuaternionf> &B, float p) {
+	return LWSQuaternionf::SLERP(A.m_Value[0], B.m_Value[0], p);
+}
+
+template<>
+inline LWSQuaterniond LWETweenFrame<LWSQuaterniond>::LinearTween(const LWETweenFrame<LWSQuaterniond> &A, const LWETweenFrame<LWSQuaterniond> &B, float p) {
+	return LWSQuaterniond::SLERP(A.m_Value[0], B.m_Value[0], p);
+}
+
+template<>
 inline LWQuaternionf LWETweenFrame<LWQuaternionf>::LinearTween(const LWETweenFrame<LWQuaternionf> &A, const LWETweenFrame<LWQuaternionf> &B, float p) {
 	return LWQuaternionf::SLERP(A.m_Value[0], B.m_Value[0], p);
 }
@@ -201,29 +222,35 @@ inline LWQuaterniond LWETweenFrame<LWQuaterniond>::LinearTween(const LWETweenFra
 }
 
 template<>
+inline LWSQuaternionf LWETweenFrame<LWSQuaternionf>::CubicTween(const LWETweenFrame<LWSQuaternionf> &A, const LWETweenFrame<LWSQuaternionf> &B, float p) {
+	float t2 = p * p;
+	float t3 = p * p * p;
+	LWSQuaternionf Res = (2.0f * t3 - 3.0f * t2 + 1.0f) * A.m_Value[1] + (t3 - 2.0f * t2 + p) * A.m_Value[0] + (-2.0f * t3 + 3.0f * t2) * B.m_Value[1] + (t3 - t2) * B.m_Value[2];
+	return Res.Normalize();
+}
+
+template<>
+inline LWSQuaterniond LWETweenFrame<LWSQuaterniond>::CubicTween(const LWETweenFrame<LWSQuaterniond> &A, const LWETweenFrame<LWSQuaterniond> &B, float p) {
+	float t2 = p * p;
+	float t3 = p * p * p;
+	LWSQuaterniond Res = (2.0f * t3 - 3.0f * t2 + 1.0f) * A.m_Value[1] + (t3 - 2.0f * t2 + p) * A.m_Value[0] + (-2.0f * t3 + 3.0f * t2) * B.m_Value[1] + (t3 - t2) * B.m_Value[2];
+	return Res.Normalize();
+}
+
+template<>
 inline LWQuaternionf LWETweenFrame<LWQuaternionf>::CubicTween(const LWETweenFrame<LWQuaternionf> &A, const LWETweenFrame<LWQuaternionf> &B, float p) {
 	float t2 = p * p;
 	float t3 = p * p * p;
-	LWVector4f aInTan = LWVector4f(A.m_Value[0].x, A.m_Value[0].y, A.m_Value[0].z, A.m_Value[0].w);
-	LWVector4f aSpline = LWVector4f(A.m_Value[1].x, A.m_Value[1].y, A.m_Value[1].z, A.m_Value[1].w);
-	LWVector4f bSpline = LWVector4f(B.m_Value[1].x, B.m_Value[1].y, B.m_Value[1].z, B.m_Value[1].w);
-	LWVector4f bOutTan = LWVector4f(B.m_Value[2].x, B.m_Value[2].y, B.m_Value[2].z, B.m_Value[2].w);
-
-	LWVector4f Res = (2.0f*t3 - 3 * t2 + 1)*aSpline + (t3 - 2.0f*t2 + p)*aInTan + (-2.0f*t3 + 3.0f*t2)*bSpline + (t3 - t2)*bOutTan;
-	return LWQuaternionf(Res.w, Res.x, Res.y, Res.z).Normalize();
+	LWQuaternionf Res = (2.0f * t3 - 3.0f * t2 + 1.0f) * A.m_Value[1] + (t3 - 2.0f * t2 + p) * A.m_Value[0] + (-2.0f * t3 + 3.0f * t2) * B.m_Value[1] + (t3 - t2) * B.m_Value[2];
+	return Res.Normalize();
 }
 
 template<>
 inline LWQuaterniond LWETweenFrame<LWQuaterniond>::CubicTween(const LWETweenFrame<LWQuaterniond> &A, const LWETweenFrame<LWQuaterniond> &B, float p) {
 	float t2 = p * p;
 	float t3 = p * p * p;
-	LWVector4d aInTan = LWVector4d(A.m_Value[0].x, A.m_Value[0].y, A.m_Value[0].z, A.m_Value[0].w);
-	LWVector4d aSpline = LWVector4d(A.m_Value[1].x, A.m_Value[1].y, A.m_Value[1].z, A.m_Value[1].w);
-	LWVector4d bSpline = LWVector4d(B.m_Value[1].x, B.m_Value[1].y, B.m_Value[1].z, B.m_Value[1].w);
-	LWVector4d bOutTan = LWVector4d(B.m_Value[2].x, B.m_Value[2].y, B.m_Value[2].z, B.m_Value[2].w);
-
-	LWVector4d Res = (2.0f*t3 - 3 * t2 + 1)*aSpline + (t3 - 2.0f*t2 + p)*aInTan + (-2.0f*t3 + 3.0f*t2)*bSpline + (t3 - t2)*bOutTan;
-	return LWQuaterniond(Res.w, Res.x, Res.y, Res.z).Normalize();
+	LWQuaterniond Res = (2.0f * t3 - 3.0f * t2 + 1.0f) * A.m_Value[1] + (t3 - 2.0f * t2 + p) * A.m_Value[0] + (-2.0f * t3 + 3.0f * t2) * B.m_Value[1] + (t3 - t2) * B.m_Value[2];
+	return Res.Normalize();
 }
 
 
@@ -291,6 +318,27 @@ inline void LWETweenFrame<LWVector4d>::Deserialize(LWETweenFrame<LWVector4d> &T,
 }
 
 template<>
+inline void LWETweenFrame<LWSVector4i>::Deserialize(LWETweenFrame<LWSVector4i> &T, uint32_t ValueCnt, LWByteBuffer &Buf) {
+	T.m_Time = Buf.Read<float>();
+	Buf.ReadSVec4<int32_t>(T.m_Value, ValueCnt);
+	return;
+}
+
+template<>
+inline void LWETweenFrame<LWSVector4f>::Deserialize(LWETweenFrame<LWSVector4f> &T, uint32_t ValueCnt, LWByteBuffer &Buf) {
+	T.m_Time = Buf.Read<float>();
+	Buf.ReadSVec4<float>(T.m_Value, ValueCnt);
+	return;
+}
+
+template<>
+inline void LWETweenFrame<LWSVector4d>::Deserialize(LWETweenFrame<LWSVector4d> &T, uint32_t ValueCnt, LWByteBuffer &Buf) {
+	T.m_Time = Buf.Read<float>();
+	Buf.ReadSVec4<double>(T.m_Value, ValueCnt);
+	return;
+}
+
+template<>
 inline void LWETweenFrame<LWMatrix2i>::Deserialize(LWETweenFrame<LWMatrix2i> &T, uint32_t ValueCnt, LWByteBuffer &Buf) {
 	T.m_Time = Buf.Read<float>();
 	Buf.ReadMat2<int32_t>(T.m_Value, ValueCnt);
@@ -352,7 +400,20 @@ template<>
 inline void LWETweenFrame<LWMatrix4d>::Deserialize(LWETweenFrame<LWMatrix4d> &T, uint32_t ValueCnt, LWByteBuffer &Buf) {
 	T.m_Time = Buf.Read<float>();
 	Buf.ReadMat4<double>(T.m_Value, ValueCnt);
+	return;
+}
 
+template<>
+inline void LWETweenFrame<LWSMatrix4f>::Deserialize(LWETweenFrame<LWSMatrix4f> &T, uint32_t ValueCnt, LWByteBuffer &Buf) {
+	T.m_Time = Buf.Read<float>();
+	Buf.ReadSMat4<float>(T.m_Value, ValueCnt);
+	return;
+}
+
+template<>
+inline void LWETweenFrame<LWSMatrix4d>::Deserialize(LWETweenFrame<LWSMatrix4d> &T, uint32_t ValueCnt, LWByteBuffer &Buf) {
+	T.m_Time = Buf.Read<float>();
+	Buf.ReadSMat4<double>(T.m_Value, ValueCnt);
 	return;
 }
 
@@ -367,6 +428,20 @@ template<>
 inline void LWETweenFrame<LWQuaterniond>::Deserialize(LWETweenFrame<LWQuaterniond> &T, uint32_t ValueCnt, LWByteBuffer &Buf) {
 	T.m_Time = Buf.Read<float>();
 	Buf.ReadQuaternion<double>(T.m_Value, ValueCnt);
+	return;
+}
+
+template<>
+inline void LWETweenFrame<LWSQuaternionf>::Deserialize(LWETweenFrame<LWSQuaternionf> &T, uint32_t ValueCnt, LWByteBuffer &Buf) {
+	T.m_Time = Buf.Read<float>();
+	Buf.ReadSQuaternion<float>(T.m_Value, ValueCnt);
+	return;
+}
+
+template<>
+inline void LWETweenFrame<LWSQuaterniond>::Deserialize(LWETweenFrame<LWSQuaterniond> &T, uint32_t ValueCnt, LWByteBuffer &Buf) {
+	T.m_Time = Buf.Read<float>();
+	Buf.ReadSQuaternion<double>(T.m_Value, ValueCnt);
 	return;
 }
 

@@ -32,11 +32,11 @@ bool LWEGeometry2D::RayAABBIntersect(const LWVector2f &RayStart, const LWVector2
 
 	LWVector2f MinBox = (AABBMin - RayStart)*invDir;
 	LWVector2f MaxBox = (AABBMax - RayStart)*invDir;
-	float tmin = MinBox.Min(MaxBox).Max();
-	float tmax = MaxBox.Max(MinBox).Min();
+	float tmin = std::max<float>(std::min<float>(MinBox.x, MaxBox.x), std::min<float>(MinBox.y, MaxBox.y));
+	float tmax = std::min<float>(std::max<float>(MinBox.x, MaxBox.x), std::max<float>(MinBox.y, MaxBox.y));
 	if (Min) *Min = tmin;
 	if (Max) *Max = tmax;
-	if (tmax < 0.0f) return false;
+	if (tmax < 0) return false;
 	if (tmin > tmax) return false;
 	return true;
 }
@@ -109,10 +109,6 @@ bool LWEGeometry2D::AABBIntersect(const LWVector2f &aAABBMin, const LWVector2f &
 	return true;
 }
 
-
-bool LWEGeometry2D::PointInsideAABB(const LWVector2f &Point, const LWVector2f &AABBMin, const LWVector2f &AABBMax) {
-	return Point.x >= AABBMin.x && Point.x <= AABBMax.x && Point.y >= AABBMin.y && Point.y <= AABBMax.y;
-}
 
 bool LWEGeometry2D::PointInsidePlanes(const LWVector2f &Point, const LWVector3f *Planes, uint32_t PlaneCnt) {
 	const float e = 0.0001f;

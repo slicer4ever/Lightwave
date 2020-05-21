@@ -117,6 +117,9 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUIRichLabel.h">
       <Filter>Header Files\LWEUI</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWESGeometry3D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\C++11\LWEAsset.cpp">
@@ -175,12 +178,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolWebSocketSecure.cpp">
       <Filter>Source Files\LWEProtocols</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Source\C++11\LWEGeometry3D.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Source\C++11\LWEGeometry2D.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\C++11\LWEVideoDecoderIVF.cpp">
       <Filter>Source Files</Filter>

@@ -75,7 +75,7 @@ struct LWEUIMaterial {
 	LWVector4f m_ColorA = LWVector4f(1.0f);
 	LWVector4f m_ColorB = LWVector4f(1.0f);
 	LWTexture *m_Texture = nullptr;
-	LWVector4f m_SubRegion = LWVector4f(0.0f, 0.0f, 1.0f, 1.0f); /*!< \brief Subregion, x,y is top left, z,w is bottom right of texture. */
+	LWVector4f m_SubRegion = LWVector4f(0.0f, 0.0f, 1.0f, 1.0f); /*!< \brief Subregion, x,y is bottom left, z,w is top right of texture. */
 
 	/*!< \brief generates the fill type's color for each quadrant. */
 	LWEUIMaterial &MakeColors(LWVector4f &TLColor, LWVector4f &BLColor, LWVector4f &TRColor, LWVector4f &BRColor);
@@ -110,7 +110,7 @@ struct LWEUIFrame {
 
 	LWEUIFrame &ApplyClipRatios(LWVector2f &TopLeft, LWVector2f &BtmLeft, LWVector2f &TopRight, LWVector2f &BtmRight, const LWVector2f &Pos, const LWVector2f &Size, const LWVector4f &Ratio);
 
-	bool WriteFontGlyph(LWTexture *Texture, const LWVector2f &Position, const LWVector2f &Size, const LWVector4f &TexCoord, const LWVector4f &Color);
+	bool WriteFontGlyph(LWTexture *Texture, const LWVector2f &Position, const LWVector2f &Size, const LWVector4f &TexCoord, const LWVector2f &SignedDistance, const LWVector4f &Color);
 
 	bool WriteClippedRect(LWEUIMaterial *Mat, const LWVector2f &Pos, const LWVector2f &Size, const LWVector4f &AABB);
 
@@ -156,6 +156,8 @@ public:
 		MaxScreenScales = 32,
 		MaxDPIScales = 32
 	};
+
+	static const char *GetVertexShaderSource(void);
 
 	static const char *GetTextureShaderSource(void);
 

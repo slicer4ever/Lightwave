@@ -488,8 +488,6 @@ bool PerformLWVectorTest(void){
 	if (LWVector4f(2.0f) == LWVector4f(1.0f)) return false;
 	Test = LWVector4f(1.0f, 1.0f, 0.0f, 0.0f).Normalize();
 	if (!PerformTest("LWVector4<Normalize>", std::bind(SumValues, Test), 1.41421356f)) return false;
-	LWVector4f(1.0f, 1.0f, 0.0f, 0.0f).Normalize(Test);
-	if (!PerformTest("LWVector4<Normalize>", std::bind(SumValues, Test), 1.41421356f)) return false;
 	if (!PerformTest("LWVector4<Length>", std::bind(&LWVector4f::Length, &Test), 1.0f)) return false;
 	if (!PerformTest("LWVector4<LengthSq>", std::bind(&LWVector4f::LengthSquared, &Test), 1.0f)) return false;
 	Test = LWVector4f(1.0f, 0.0f, 0.0f, 0.0f);
@@ -533,8 +531,6 @@ bool PerformLWVectorTest(void){
 	if (LWVector3f(1.0f) != LWVector3f(1.0f)) return false;
 	if (LWVector3f(2.0f) == LWVector3f(1.0f)) return false;
 	Test3 = LWVector3f(1.0f, 1.0f, 0.0f).Normalize();
-	if (!PerformTest("LWVector3<Normalize>", std::bind(SumValues3, Test3), 1.41421356f)) return false;
-	LWVector3f(1.0f, 1.0f, 0.0f).Normalize(Test3);
 	if (!PerformTest("LWVector3<Normalize>", std::bind(SumValues3, Test3), 1.41421356f)) return false;
 	if (!PerformTest("LWVector3<Length>", std::bind(&LWVector3f::Length, &Test3), 1.0f)) return false;
 	if (!PerformTest("LWVector3<LengthSq>", std::bind(&LWVector3f::LengthSquared, &Test3), 1.0f)) return false;
@@ -581,8 +577,6 @@ bool PerformLWVectorTest(void){
 	if (LWVector2f(1.0f) != LWVector2f(1.0f)) return false;
 	if (LWVector2f(2.0f) == LWVector2f(1.0f)) return false;
 	Test2 = LWVector2f(1.0f, 1.0f).Normalize();
-	if (!PerformTest("LWVector2<Normalize>", std::bind(SumValues2, Test2), 1.41421356f)) return false;
-	LWVector2f(1.0f, 1.0f).Normalize(Test2);
 	if (!PerformTest("LWVector2<Normalize>", std::bind(SumValues2, Test2), 1.41421356f)) return false;
 	if (!PerformTest("LWVector2<Length>", std::bind(&LWVector2f::Length, &Test2), 1.0f)) return false;
 	if (!PerformTest("LWVector2<LengthSq>", std::bind(&LWVector2f::LengthSquared, &Test2), 1.0f)) return false;

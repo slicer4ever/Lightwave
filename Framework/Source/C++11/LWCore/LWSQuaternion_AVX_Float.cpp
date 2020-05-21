@@ -72,13 +72,13 @@ LWSVector4<float> LWSQuaternion<float>::ToEuler(void) const {
 
 	__m128 cP = _mm_mul_ps(LenSq, _mm_set_ps1(hE));
 	__m128 cN = _mm_mul_ps(LenSq, _mm_set_ps1(-hE));
-	__m128i GE = _mm_castps_si128(_mm_cmpge_ps(t, cP));
-	__m128i LE = _mm_castps_si128(_mm_cmple_ps(t, cN));
+	__m128i GE = _mm_castps_si128(_mm_cmpgt_ps(t, cP));
+	__m128i LE = _mm_castps_si128(_mm_cmplt_ps(t, cN));
 
 	_mm_store_ps(vals, m_Data);
 
-	if (_mm_test_all_ones(GE)) return LWSVector4<float>(LW_PI_2, 2.0f * atan2f(vals[0], vals[3]), 0.0f);
-	if (_mm_test_all_ones(LE)) return LWSVector4<float>(-LW_PI_2, -2.0f * atan2f(vals[0], vals[3]), 0.0f);
+	if (_mm_test_all_ones(GE)) return LWSVector4<float>(LW_PI_2, 2.0f * atan2f(vals[0], vals[3]), 0.0f, 0.0f);
+	if (_mm_test_all_ones(LE)) return LWSVector4<float>(-LW_PI_2, -2.0f * atan2f(vals[0], vals[3]), 0.0f, 0.0f);
 	__m128 YSq = _mm_xor_ps(Sq, _mm_set_ps(0.0f, -0.0f, -0.0f, 0.0f));
 	__m128 RSq = _mm_xor_ps(Sq, _mm_set_ps(0.0f, -0.0f, 0.0f, -0.0f));
 	YSq = _mm_hadd_ps(YSq, YSq);
@@ -162,8 +162,24 @@ LWSQuaternion<float> LWSQuaternion<float>::operator+(const LWSQuaternion<float>&
 	return _mm_add_ps(m_Data, Rhs.m_Data);
 }
 
-LWSQuaternion<float> LWSQuaternion<float>:: operator-(const LWSQuaternion<float>& Rhs) const {
+LWSQuaternion<float> LWSQuaternion<float>::operator-(const LWSQuaternion<float>& Rhs) const {
 	return _mm_sub_ps(m_Data, Rhs.m_Data);
+}
+
+LWSQuaternion<float> operator * (float Lhs, const LWSQuaternion<float> &Rhs) {
+	return _mm_mul_ps(_mm_set_ps1(Lhs), Rhs.m_Data);
+}
+
+LWSQuaternion<float> operator + (float Lhs, const LWSQuaternion<float> &Rhs) {
+	return _mm_add_ps(_mm_set_ps1(Lhs), Rhs.m_Data);
+}
+
+LWSQuaternion<float> operator - (float Lhs, const LWSQuaternion<float> &Rhs) {
+	return _mm_sub_ps(_mm_set_ps1(Lhs), Rhs.m_Data);
+}
+
+LWSQuaternion<float> operator / (float Lhs, const LWSQuaternion<float> &Rhs) {
+	return _mm_div_ps(_mm_set_ps1(Lhs), Rhs.m_Data);
 }
 
 LWSQuaternion<float> LWSQuaternion<float>:: operator*(const LWSQuaternion<float>& Rhs) const {
@@ -228,22 +244,24 @@ LWSQuaternion<float> LWSQuaternion<float>::operator-() const {
 }
 
 float LWSQuaternion<float>::x(void) const {
-	return _mm_cvtss_f32(_mm_permute_ps(m_Data, _MM_SHUFFLE(0, 0, 0, 0)));
+	return ((float*)&m_Data)[0];
 }
 
 float LWSQuaternion<float>::y(void) const {
-	return _mm_cvtss_f32(_mm_permute_ps(m_Data, _MM_SHUFFLE(1, 1, 1, 1)));
+	return ((float*)&m_Data)[1];
 }
 
 float LWSQuaternion<float>::z(void) const {
-	return _mm_cvtss_f32(_mm_permute_ps(m_Data, _MM_SHUFFLE(2, 2, 2, 2)));
+	return ((float*)&m_Data)[2];
 }
 
 float LWSQuaternion<float>::w(void) const {
-	return _mm_cvtss_f32(_mm_permute_ps(m_Data, _MM_SHUFFLE(3, 3, 3, 3)));
+	return ((float*)&m_Data)[3];
 }
 
 LWSQuaternion<float>::LWSQuaternion(__m128 Data) : m_Data(Data) {}
+
+LWSQuaternion<float>::LWSQuaternion(const LWQuaternion<float> &Q) : m_Data(_mm_set_ps(Q.w, Q.z, Q.y, Q.x)) {}
 
 LWSQuaternion<float>::LWSQuaternion(float vw, float vx, float vy, float vz) : m_Data(_mm_set_ps(vw, vz, vy, vx)) {}
 
