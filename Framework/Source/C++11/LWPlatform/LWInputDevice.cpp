@@ -220,8 +220,8 @@ LWInputDevice &LWTouch::Update(LWWindow *, uint64_t lCurrentTime) {
 	return *this;
 }
 
-const LWTouchPoint *LWTouch::GetPoint(uint32_t i) const {
-	return m_Points + i;
+const LWTouchPoint &LWTouch::GetPoint(uint32_t i) const {
+	return m_Points[i];
 }
 
 const LWGesture &LWTouch::GetGesture(void) const {

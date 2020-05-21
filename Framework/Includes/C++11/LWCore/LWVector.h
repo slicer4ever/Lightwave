@@ -20,44 +20,52 @@ struct LWVector4{
 	Type z; /*!< \brief z component of the Vector4 */
 	Type w; /*!< \brief w component of the Vector4 */
 
+	/*! \brief returns a simd version of this vector4. */
+	LWSVector4<Type> AsSVec4(void) const {
+		return LWSVector4<Type>(x, y, z, w);
+	}
+
+	/*! \brief returns an array representation of the underlying data. */
+	Type *AsArray(void) {
+		return &x;
+	}
+
+	/*! \brief returns the internal components as a const array of data. */
+	const Type *AsArray(void) const {
+		return &x;
+	}
+
 	/*! \brief returns a copy of the normalized vector4. */
 	LWVector4<Type> Normalize(void) const{
 		Type L = x*x + y*y + z*z + w*w;
-		if (L < std::numeric_limits<Type>::epsilon()) L = 0;
-		else L = (Type)1 / sqrt(L);
+		if (L <= std::numeric_limits<Type>::epsilon()) L = 0;
+		else L = (Type)1 / (Type)sqrt(L);
 		return LWVector4<Type>(x*L, y*L, z*L, w*L);
 	}
 
-	/*! \brief writes into result the normalized of this vector4. 
-		\param Result the variable to store the normalized result into.
-	*/
-	void Normalize(LWVector4<Type> &Result) const {
-		Result = Normalize();
-		return;
+	/*!< \brief returns the min element of all vec4 components. */
+	Type Min(void) const {
+		return std::min<Type>(std::min<Type>(std::min<Type>(x, y), z), w);
 	}
 
 	/*!< \brief returns the min of each component between this vector4 and A vector4 */
-	LWVector4<Type> Min(const LWVector4<Type> &A) {
+	LWVector4<Type> Min(const LWVector4<Type> &A) const {
 		return LWVector4<Type>(std::min<Type>(x, A.x), std::min<Type>(y, A.y), std::min<Type>(z, A.z), std::min<Type>(w, A.w));
 	}
 
+	/*!< \brief Required to be compatible with LWSVector4 in the case that LW_NOSIMD is specified during compilation. */
+	LWVector4<Type> AsVec4(void) const {
+		return *this;
+	}
 
-	/*!< \brief writes into result the min of each component between this vector4 and A vector4 */
-	void Min(const LWVector4<Type> &A, const LWVector4<Type> &Result) const {
-		Result = Min(A);
-		return;
+	/*!< \brief returns the max element of all vec4 components. */
+	Type Max(void) const {
+		return std::max<Type>(std::max<Type>(std::max<Type>(x, y), z), w);
 	}
 
 	/*!< \brief returns the max of each component between this vector4 and A vector4 */
-	LWVector4<Type> Max(const LWVector4<Type> &A) {
+	LWVector4<Type> Max(const LWVector4<Type> &A) const {
 		return LWVector4<Type>(std::max<Type>(x, A.x), std::max<Type>(y, A.y), std::max<Type>(z, A.z), std::max<Type>(w, A.w));
-	}
-
-
-	/*!< \brief writes into result the max of each component between this vector4 and A vector4 */
-	void Max(const LWVector4<Type> &A, const LWVector4<Type> &Result) const {
-		Result = Max(A);
-		return;
 	}
 
 	/*! \brief Gets the length of the vector4.
@@ -65,8 +73,8 @@ struct LWVector4{
 	*/
 	Type Length(void) const{
 		Type L = x*x + y*y + z*z + w*w;
-		if (L < std::numeric_limits<Type>::epsilon()) return 0;
-		return sqrt(L);
+		if (L <= std::numeric_limits<Type>::epsilon()) return 0;
+		return (Type)sqrt(L);
 	}
 
 	/*! \brief Gets the squared length of the vector4.
@@ -94,6 +102,69 @@ struct LWVector4{
 	*/
 	Type Dot(const LWVector4<Type> &O) const{
 		return x*O.x + y*O.y + z*O.z + w*O.w;
+	}
+
+	/*! \brief returns the absolute value of each component. */
+	LWVector4<Type> Abs(void) const {
+		return LWVector4<Type>((Type)abs(x), (Type)abs(y), (Type)abs(z), (Type)abs(w));
+	}
+
+	/*! \brief compares each component, if component is < rhs, then stores Value's component, otherwise keeps current component. */
+	LWVector4<Type> Blend_Less(const LWVector4<Type> &Rhs, const LWVector4<Type> &Value) const {
+		return LWVector4<Type>(x < Rhs.x ? Value.x : x, y < Rhs.y ? Value.y : y, z < Rhs.z ? Value.z : z, w < Rhs.w ? Value.w : w);
+	}
+
+	/*! \brief compares each component, if component is <= rhs, than stores Value's component, otherwise keeps current component. */
+	LWVector4<Type> Blend_LessEqual(const LWVector4<Type> &Rhs, const LWVector4<Type> &Value) const {
+		return LWVector4<Type>(x <= Rhs.x ? Value.x : x, y <= Rhs.y ? Value.y : y, z <= Rhs.z ? Value.z : z, w <= Rhs.w ? Value.w : w);
+	}
+
+	/*! \brief compares each component, if component is > rhs than stores Value's component, otherwise keeps current component. */
+	LWVector4<Type> Blend_Greater(const LWVector4<Type> &Rhs, const LWVector4<Type> &Value) const {
+		return LWVector4<Type>(x > Rhs.x ? Value.x : x, y > Rhs.y ? Value.y : y, z > Rhs.z ? Value.z : z, w > Rhs.w ? Value.w : w);
+	}
+
+	/*! \brief compares each component if component is >= rhs than stores value's component, otherwise keeps current component. */
+	LWVector4<Type> Blend_GreaterEqual(const LWVector4<Type> &Rhs, const LWVector4<Type> &Value) const {
+		return LWVector4<Type>(x >= Rhs.x ? Value.x : x, y >= Rhs.y ? Value.y : y, z >= Rhs.z ? Value.z : z, w >= Rhs.w ? Value.w : w);
+	}
+
+	/*! \brief compares each component, if component is == rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWVector4<Type> Blend_Equal(const LWVector4<Type> &Rhs, const LWVector4<Type> &Value) const {
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
+		LWVector4<Type> Diff = (Rhs - *this).Abs();
+		return LWVector4<Type>(Diff.x <= e ? Value.x : x, Diff.y <= e ? Value.y : y, Diff.z <= e ? Value.z : z, Diff.w <= e ? Value.w : w);
+	}
+
+	/*! \brief compares each component, if component is != rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWVector4<Type> Blend_NotEqual(const LWVector4<Type> &Rhs, const LWVector4<Type> &Value) const {
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
+		LWVector4<Type> Diff = (Rhs - *this).Abs();
+		return LWVector4<Type>(Diff.x > e ? Value.x : x, Diff.y > e ? Value.y : y, Diff.z > e ? Value.z : z, Diff.w > e ? Value.w : w);
+	}
+
+	/*! \brief set's the x component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
+	LWVector4<Type> &sX(Type v) {
+		x = v;
+		return *this;
+	}
+	
+	/*! \brief set's the y component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
+	LWVector4<Type> &sY(Type v) {
+		y = v;
+		return *this;
+	}
+
+	/*! \brief set's the z component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
+	LWVector4<Type> &sZ(Type v) {
+		z = v;
+		return *this;
+	}
+
+	/*! \brief set's the w component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
+	LWVector4<Type> &sW(Type v) {
+		w = v;
+		return *this;
 	}
 
 	/*! \cond */
@@ -178,8 +249,29 @@ struct LWVector4{
 		return LWVector4<Type>(-Rhs.x, -Rhs.y, -Rhs.z, -Rhs.w);
 	}
 
+	/*! \brief returns true if all components are > than rhs components. */
+	bool operator > (const LWVector4<Type> &Rhs) const {
+		return x > Rhs.x && y > Rhs.y && z > Rhs.z && w > Rhs.w;
+	}
+
+	/*! \brief returns true if all componets are >= than rhs components. */
+	bool operator >= (const LWVector4<Type> &Rhs) const {
+		return x >= Rhs.x && y >= Rhs.y && z >= Rhs.z && w >= Rhs.w;
+	}
+
+	/*! \brief returns true if all components are < than rhs components. */
+	bool operator < (const LWVector4<Type> &Rhs) const {
+		return x < Rhs.x && y < Rhs.y && z < Rhs.z && w < Rhs.w;
+	}
+
+	/*! \brief returns true if all components are <= than rhs components. */
+	bool operator <= (const LWVector4<Type> &Rhs) const {
+		return x <= Rhs.x && y <= Rhs.y && z <= Rhs.z && w <= Rhs.w;
+	}
+
 	bool operator == (const LWVector4<Type> &Rhs) const{
-		return x == Rhs.x && y == Rhs.y && z == Rhs.z && w == Rhs.w;
+		const Type e = std::numeric_limits<Type>::epsilon();
+		return (Type)abs(x - Rhs.x) <= e && (Type)abs(y - Rhs.y) <= e && (Type)abs(z - Rhs.z) <= e && (Type)abs(w - Rhs.w) <= e;
 	}
 
 	bool operator != (const LWVector4<Type> &Rhs) const{
@@ -1633,44 +1725,42 @@ struct LWVector3{
 	Type y; /*!< \brief y component of the Vector3 */
 	Type z; /*!< \brief z component of the Vector3 */
 
+	/*! \brief returns the internal components as an array of data. */
+	Type *AsArray(void) {
+		return &x;
+	}
+
+	/*! \brief returns the internal components as a const array of data. */
+	const Type *AsArray(void) const {
+		return &x;
+	}
+
 	/*! \brief returns a copy of the normalized vector3. */
 	LWVector3<Type> Normalize(void) const{
 		Type L = x*x + y*y + z*z;
-		if (L < std::numeric_limits<Type>::epsilon()) L = 0;
+		if (L <= std::numeric_limits<Type>::epsilon()) L = 0;
 		else L = (Type)1 / sqrt(L);
 		return LWVector3<Type>(x*L, y*L, z*L);
 	}
 
-	/*! \brief writes into result the normalized of this vector3.
-		\param Result the variable to store the normalized result into.
-	*/
-	void Normalize(LWVector3<Type> &Result) const{
-		Result = Normalize();
-		return;
+	/*!< \brief returns the min of all components of the vec3. */
+	Type Min(void) const {
+		return std::min<Type>(std::min<Type>(x, y), z);
 	}
 
 	/*!< \brief returns the min of each component between this vector3 and A vector3 */
-	LWVector3<Type> Min(const LWVector3<Type> &A) {
+	LWVector3<Type> Min(const LWVector3<Type> &A) const {
 		return LWVector3<Type>(std::min<Type>(x, A.x), std::min<Type>(y, A.y), std::min<Type>(z, A.z));
 	}
 
-
-	/*!< \brief writes into result the min of each component between this vector3 and A vector3 */
-	void Min(const LWVector3<Type> &A, const LWVector3<Type> &Result) const {
-		Result = Min(A);
-		return;
+	/*!< \brief returns the max of all components of the vec3. */
+	Type Max(void) const {
+		return std::max<Type>(std::max<Type>(x, y), z);
 	}
 
 	/*!< \brief returns the max of each component between this vector3 and A vector3 */
-	LWVector3<Type> Max(const LWVector3<Type> &A) {
+	LWVector3<Type> Max(const LWVector3<Type> &A) const {
 		return LWVector3<Type>(std::max<Type>(x, A.x), std::max<Type>(y, A.y), std::max<Type>(z, A.z));
-	}
-
-
-	/*!< \brief writes into result the max of each component between this vector3 and A vector3 */
-	void Max(const LWVector3<Type> &A, const LWVector3<Type> &Result) const {
-		Result = Max(A);
-		return;
 	}
 
 	/*!< \brief projects Pnt onto this vector and returns the projected result. */
@@ -1679,18 +1769,12 @@ struct LWVector3{
 		return N*N.Dot(Pnt);
 	}
 
-	/*<! \brief projects Pnt onto this vector and stores the resultant into Result. */
-	void Project(const LWVector3<Type> &Pnt, LWVector3<Type> &Result) const {
-		Result = Project(Pnt);
-		return;
-	}
-
 	/*!< \brief attempts to generate orthogonal angles to the supplied axis. */
 	void Othogonal(LWVector3<Type> &Right, LWVector3<Type> &Up) const {
 		const LWVector3<Type> XAxis = LWVector3<Type>(1, 0, 0);
 		const LWVector3<Type> YAxis = LWVector3<Type>(0, 1, 0);
 		LWVector3 A = XAxis;
-		float d = fabs(Dot(A));
+		Type d = (Type)abs(Dot(A));
 		if (d > 0.8) A = YAxis;
 		Right = Cross(A).Normalize();
 		Up = Cross(Right);
@@ -1703,22 +1787,13 @@ struct LWVector3{
 		return LWVector3<Type>(y*O.z - z*O.y, z*O.x - x*O.z, x*O.y - y*O.x);
 	}
 
-	/*! \brief returns the cross product of two Vctor3's.
-		\param O the second vector3 to cross product with.
-		\param Result the result of the cross product is placed inside this vec3.
-	*/
-	void Cross(const LWVector3<Type> &O, LWVector3<Type> &Result) const{
-		Result = Cross(O);
-		return;
-	}
-
 	/*! \brief Gets the length of the vector3.
 		\return the length of the vector3.
 	*/
 	Type Length(void) const{
 		Type L = x*x + y*y + z*z;
-		if (L < std::numeric_limits<Type>::epsilon()) return 0;
-		return sqrt(L);
+		if (L <= std::numeric_limits<Type>::epsilon()) return 0;
+		return (Type)sqrt(L);
 	}
 
 	/*! \brief Gets the squared length of the vector4.
@@ -1746,6 +1821,63 @@ struct LWVector3{
 	*/
 	Type Dot(const LWVector3<Type> &O) const{
 		return x*O.x + y*O.y + z*O.z;
+	}
+
+	/*! \brief returns the absolute value of each component. */
+	LWVector3<Type> Abs(void) const {
+		return LWVector3<Type>((Type)abs(x), (Type)abs(y), (Type)abs(z));
+	}
+
+	/*! \brief compares each component, if component is < rhs, then stores Value's component, otherwise keeps current component. */
+	LWVector3<Type> Blend_Less(const LWVector3<Type> &Rhs, const LWVector3<Type> &Value) const {
+		return LWVector3<Type>(x < Rhs.x ? Value.x : x, y < Rhs.y ? Value.y : y, z < Rhs.z ? Value.z : z);
+	}
+
+	/*! \brief compares each component, if component is <= rhs, than stores Value's component, otherwise keeps current component. */
+	LWVector3<Type> Blend_LessEqual(const LWVector3<Type> &Rhs, const LWVector3<Type> &Value) const {
+		return LWVector3<Type>(x <= Rhs.x ? Value.x : x, y <= Rhs.y ? Value.y : y, z <= Rhs.z ? Value.z : z);
+	}
+
+	/*! \brief compares each component, if component is > rhs than stores Value's component, otherwise keeps current component. */
+	LWVector3<Type> Blend_Greater(const LWVector3<Type> &Rhs, const LWVector3<Type> &Value) const {
+		return LWVector3<Type>(x > Rhs.x ? Value.x : x, y > Rhs.y ? Value.y : y, z > Rhs.z ? Value.z : z);
+	}
+
+	/*! \brief compares each component if component is >= rhs than stores value's component, otherwise keeps current component. */
+	LWVector3<Type> Blend_GreaterEqual(const LWVector3<Type> &Rhs, const LWVector3<Type> &Value) const {
+		return LWVector3<Type>(x >= Rhs.x ? Value.x : x, y >= Rhs.y ? Value.y : y, z >= Rhs.z ? Value.z : z);
+	}
+
+	/*! \brief compares each component, if component is == rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWVector3<Type> Blend_Equal(const LWVector3<Type> &Rhs, const LWVector3<Type> &Value) const {
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
+		LWVector3<Type> Diff = (Rhs - *this).Abs();
+		return LWVector3<Type>(Diff.x <= e ? Value.x : x, Diff.y <= e ? Value.y : y, Diff.z <= e ? Value.z : z);
+	}
+
+	/*! \brief compares each component, if component is != rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWVector3<Type> Blend_NotEqual(const LWVector3<Type> &Rhs, const LWVector3<Type> &Value) const {
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
+		LWVector3<Type> Diff = (Rhs - *this).Abs();
+		return LWVector3<Type>(Diff.x > e ? Value.x : x, Diff.y > e ? Value.y : y, Diff.z > e ? Value.z : z);
+	}
+
+	/*! \brief set's the x component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
+	LWVector3<Type> &sX(Type v) {
+		x = v;
+		return *this;
+	}
+
+	/*! \brief set's the y component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
+	LWVector3<Type> &sY(Type v) {
+		y = v;
+		return *this;
+	}
+
+	/*! \brief set's the z component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
+	LWVector3<Type> &sZ(Type v) {
+		z = v;
+		return *this;
 	}
 
 	/*! \cond */
@@ -1821,8 +1953,29 @@ struct LWVector3{
 		return LWVector3<Type>(-Rhs.x, -Rhs.y, -Rhs.z);
 	}
 
+	/*! \brief returns true if all components are > than rhs components. */
+	bool operator > (const LWVector3<Type> &Rhs) const {
+		return x > Rhs.x && y > Rhs.y && z > Rhs.z;
+	}
+
+	/*! \brief returns true if all componets are >= than rhs components. */
+	bool operator >= (const LWVector3<Type> &Rhs) const {
+		return x >= Rhs.x && y >= Rhs.y && z >= Rhs.z;
+	}
+
+	/*! \brief returns true if all components are < than rhs components. */
+	bool operator < (const LWVector3<Type> &Rhs) const {
+		return x < Rhs.x && y < Rhs.y && z < Rhs.z;
+	}
+
+	/*! \brief returns true if all components are <= than rhs components. */
+	bool operator <= (const LWVector3<Type> &Rhs) const {
+		return x <= Rhs.x && y <= Rhs.y && z <= Rhs.z;
+	}
+
 	bool operator == (const LWVector3<Type> &Rhs) const{
-		return x == Rhs.x && y == Rhs.y && z == Rhs.z;
+		const Type e = std::numeric_limits<Type>::epsilon();
+		return (Type)abs(x - Rhs.x) <= e && (Type)abs(y - Rhs.y) <= e && (Type)abs(z - Rhs.z) <= e;
 	}
 
 	bool operator != (const LWVector3<Type> &Rhs) const{
@@ -2056,8 +2209,17 @@ struct LWVector2{
 	Type x; /*!< \brief x component of the Vector2 */
 	Type y; /*!< \brief y component of the Vector2 */
 
-	/*! \brief Construct a LWVector2 from the input radian theta. */
+	/*! \brief returns the internal components as an array of Type. */
+	Type *AsArray(void) {
+		return &x;
+	}
 
+	/*! \brief returns the internal components as a const array of data. */
+	const Type *AsArray(void) const {
+		return &x;
+	}
+
+	/*! \brief Construct a LWVector2 from the input radian theta. */
 	static LWVector2<Type> MakeTheta(Type Theta){
 		return LWVector2<Type>(cos(Theta), sin(Theta));
 	}
@@ -2065,17 +2227,14 @@ struct LWVector2{
 	/*! \brief returns a copy of the normalized vector3. */
 	LWVector2<Type> Normalize(void) const{
 		Type L = x*x + y*y;
-		if (L < std::numeric_limits<Type>::epsilon()) L = 0;
+		if (L <= std::numeric_limits<Type>::epsilon()) L = 0;
 		else L = (Type)1 / sqrt(L);
 		return LWVector2<Type>(x*L, y*L);
 	}
 
-	/*! \brief writes into result the normalized of this vector2.
-	\param Result the variable to store the normalized result into.
-	*/
-	void Normalize(LWVector2<Type> &Result) const{
-		Result = Normalize();
-		return;
+	/*!< \brief returns the min component of the Vec2. */
+	Type Min(void) const {
+		return std::min<Type>(x, y);
 	}
 
 	/*!< \brief returns the min of each component between this vector2 and A vector2. */
@@ -2083,23 +2242,53 @@ struct LWVector2{
 		return LWVector2<Type>(std::min<Type>(x, A.x), std::min<Type>(y, A.y));
 	}
 
-
-	/*!< \brief writes into result the min of each component between this vector2 and A vector2. */
-	void Min(const LWVector2<Type> &A, const LWVector2<Type> &Result) const {
-		Result = Min(A);
-		return;
+	/*!< \brief returns the max component of the Vec2. */
+	Type Max(void) const {
+		return std::max<Type>(x, y);
 	}
 
 	/*!< \brief returns the max of each component between this vector2 and A vector2. */
-	LWVector2<Type> Max(const LWVector2<Type> &A) {
+	LWVector2<Type> Max(const LWVector2<Type> &A) const {
 		return LWVector2<Type>(std::max<Type>(x, A.x), std::max<Type>(y, A.y));
 	}
 
+	/*! \brief returns the absolute value of each component. */
+	LWVector2<Type> Abs(void) const {
+		return LWVector2<Type>((Type)abs(x), (Type)abs(y));
+	}
 
-	/*!< \brief writes into result the max of each component between this vector2 and A vector2. */
-	void Max(const LWVector2<Type> &A, const LWVector2<Type> &Result) const {
-		Result = Max(A);
-		return;
+	/*! \brief compares each component, if component is < rhs, then stores Value's component, otherwise keeps current component. */
+	LWVector2<Type> Blend_Less(const LWVector2<Type> &Rhs, const LWVector2<Type> &Value) const {
+		return LWVector2<Type>(x < Rhs.x ? Value.x : x, y < Rhs.y ? Value.y : y);
+	}
+	
+	/*! \brief compares each component, if component is <= rhs, than stores Value's component, otherwise keeps current component. */
+	LWVector2<Type> Blend_LessEqual(const LWVector2<Type> &Rhs, const LWVector2<Type> &Value) const {
+		return LWVector2<Type>(x <= Rhs.x ? Value.x : x, y <= Rhs.y ? Value.y : y);
+	}
+
+	/*! \brief compares each component, if component is > rhs than stores Value's component, otherwise keeps current component. */
+	LWVector2<Type> Blend_Greater(const LWVector2<Type> &Rhs, const LWVector2<Type> &Value) const {
+		return LWVector2<Type>(x > Rhs.x ? Value.x : x, y > Rhs.y ? Value.y : y);
+	}
+
+	/*! \brief compares each component if component is >= rhs than stores value's component, otherwise keeps current component. */
+	LWVector2<Type> Blend_GreaterEqual(const LWVector2<Type> &Rhs, const LWVector2<Type> &Value) const {
+		return LWVector2<Type>(x >= Rhs.x ? Value.x : x, y >= Rhs.y ? Value.y : y);
+	}
+
+	/*! \brief compares each component, if component is == rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWVector2<Type> Blend_Equal(const LWVector2<Type> &Rhs, const LWVector2<Type> &Value) const {
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
+		LWVector2<Type> Diff = (Rhs - *this).Abs();
+		return LWVector2<Type>(Diff.x <= e ? Value.x : x, Diff.y <= e ? Value.y : y);
+	}
+
+	/*! \brief compares each component, if component is != rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWVector2<Type> Blend_NotEqual(const LWVector2<Type> &Rhs, const LWVector2<Type> &Value) const {
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
+		LWVector2<Type> Diff = (Rhs - *this).Abs();
+		return LWVector2<Type>(Diff.x > e ? Value.x : x, Diff.y > e ? Value.y : y);
 	}
 
 	/*! \brief returns a perpendicular vector of the Vector2.
@@ -2114,20 +2303,13 @@ struct LWVector2{
 		return atan2(y, x);
 	}
 
-	/*! \brief writes the perpendicular vector of vector2 into result.
-	*/
-	void Perpindicular(LWVector2<Type> &Result) const{
-		Result = Perpindicular();
-		return;
-	}
-
 	/*! \brief Gets the length of the vector2.
 	\return the length of the vector2.
 	*/
 	Type Length(void) const{
 		Type L = x*x + y*y;
-		if (L < std::numeric_limits<Type>::epsilon()) return 0;
-		return sqrt(L);
+		if (L <= std::numeric_limits<Type>::epsilon()) return 0;
+		return (Type)sqrt(L);
 	}
 
 	/*! \brief Gets the squared length of the vector2.
@@ -2162,14 +2344,19 @@ struct LWVector2{
 		return LWVector2<Type>(Pnt.x*x + Pnt.y*y, Pnt.x*y - Pnt.y*x);
 	}
 
-	/*!< \brief write the rotated point into result. */
-	void Rotate(LWVector2<Type> &Result, const LWVector2<Type> &Pnt) {
-		Result = Rotate(Pnt);
-		return;
+	/*! \brief set's the x component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
+	LWVector2<Type> &sX(Type v) {
+		x = v;
+		return *this;
+	}
+
+	/*! \brief set's the y component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
+	LWVector2<Type> &sY(Type v) {
+		y = v;
+		return *this;
 	}
 
 	/*! \cond */
-
 	LWVector2<Type> &operator = (const LWVector2<Type> &Rhs){
 		x = Rhs.x;
 		y = Rhs.y;
@@ -2232,8 +2419,29 @@ struct LWVector2{
 		return LWVector2<Type>(-Rhs.x, -Rhs.y);
 	}
 
+	/*! \brief returns true if all components are > than rhs components. */
+	bool operator > (const LWVector2<Type> &Rhs) const {
+		return x > Rhs.x && y > Rhs.y;
+	}
+
+	/*! \brief returns true if all componets are >= than rhs components. */
+	bool operator >= (const LWVector2<Type> &Rhs) const {
+		return x >= Rhs.x && y >= Rhs.y;
+	}
+
+	/*! \brief returns true if all components are < than rhs components. */
+	bool operator < (const LWVector2<Type> &Rhs) const {
+		return x < Rhs.x && y < Rhs.y;
+	}
+
+	/*! \brief returns true if all components are <= than rhs components. */
+	bool operator <= (const LWVector2<Type> &Rhs) const {
+		return x <= Rhs.x && y <= Rhs.y;
+	}
+
 	bool operator == (const LWVector2<Type> &Rhs) const{
-		return x == Rhs.x && y == Rhs.y;
+		const Type e = std::numeric_limits<Type>::epsilon();
+		return (Type)abs(x - Rhs.x) <= e && (Type)abs(y - Rhs.y) <= e;
 	}
 
 	bool operator != (const LWVector2<Type> &Rhs) const{

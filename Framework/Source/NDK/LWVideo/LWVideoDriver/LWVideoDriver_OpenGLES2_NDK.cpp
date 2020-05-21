@@ -4,7 +4,7 @@
 #include <iostream>
 
 
-LWVideoDriver_OpenGLES2 *LWVideoDriver_OpenGLES2::MakeVideoDriver(LWWindow *Window) {
+LWVideoDriver_OpenGLES2 *LWVideoDriver_OpenGLES2::MakeVideoDriver(LWWindow *Window, uint32_t Type) {
 	LWVideoDriver *Driver = nullptr;
 	LWWindowContext WinCon = Window->GetContext();
 	LWOpenGLES2Context ESContext;

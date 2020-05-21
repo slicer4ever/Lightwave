@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\libvpx\args.c" />
+    <ClCompile Include="..\..\..\libvpx\ivfdec.c" />
+    <ClCompile Include="..\..\..\libvpx\ivfenc.c" />
+    <ClCompile Include="..\..\..\libvpx\md5_utils.c" />
+    <ClCompile Include="..\..\..\libvpx\rate_hist.c" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libwebm\common\file_util.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libwebm\common\hdr_util.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libwebm\mkvmuxer\mkvmuxer.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libwebm\mkvmuxer\mkvmuxerutil.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libwebm\mkvmuxer\mkvwriter.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libwebm\mkvparser\mkvparser.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libwebm\mkvparser\mkvreader.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libyuv\source\convert.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libyuv\source\convert_argb.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libyuv\source\convert_from.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libyuv\source\convert_from_argb.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libyuv\source\convert_jpeg.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libyuv\source\convert_to_argb.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libyuv\source\convert_to_i420.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libyuv\source\cpu_id.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libyuv\source\mjpeg_decoder.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libyuv\source\mjpeg_validate.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libyuv\source\planar_functions.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libyuv\source\rotate.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libyuv\source\row_any.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libyuv\source\scale.cc" />
+    <ClCompile Include="..\..\..\libvpx\third_party\libyuv\source\video_common.cc" />
+    <ClCompile Include="..\..\..\libvpx\tools_common.c" />
+    <ClCompile Include="..\..\..\libvpx\video_reader.c" />
+    <ClCompile Include="..\..\..\libvpx\video_writer.c" />
+    <ClCompile Include="..\..\..\libvpx\vpxstats.c" />
+    <ClCompile Include="..\..\..\libvpx\warnings.c" />
+    <ClCompile Include="..\..\..\libvpx\webmdec.cc" />
+    <ClCompile Include="..\..\..\libvpx\webmenc.cc" />
+    <ClCompile Include="..\..\..\libvpx\y4menc.c" />
+    <ClCompile Include="..\..\..\libvpx\y4minput.c" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <ProjectGuid>{17931ACE-44C1-4D38-8695-EC722E126AF3}</ProjectGuid>
+    <RootNamespace>libvpx</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>libvpx_common</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)../../../Binarys/$(Configuration)/$(PlatformTarget)/</OutDir>
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)../../../Binarys/$(Configuration)/$(PlatformTarget)/</OutDir>
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)../../../Binarys/$(Configuration)/$(PlatformTarget)/</OutDir>
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)../../../Binarys/$(Configuration)/$(PlatformTarget)/</OutDir>
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>../../../libvpx/$(Configuration)/$(PlatformTarget)/include/;../../../libvpx/;../../../libvpx/third_party/libyuv/include/;../../../libvpx/third_party/libwebm/;../../../libvpx/third_party/googletest/src/include/</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <PreBuildEvent>
+      <Message>Configuring libvpx for $(PlatformTarget) release.</Message>
+      <Command>mkdir $(PlatformTarget)
+cd $(PlatformTarget)
+%windir%\sysnative\wsl.exe -- ../../../../libvpx/configure --target=x86-win32-vs15 --disable-docs --disable-examples --disable-tools
+%windir%\sysnative\wsl.exe -- make dist
+%windir%\sysnative\wsl.exe -- sed -i "s/ &lt;ProjectGuid/ &lt;WindowsTargetPlatformVersion&gt;$(TargetPlatformVersion)&lt;\/WindowsTargetPlatformVersion&gt;&lt;ProjectGuid/g" *.vcxproj
+%windir%\sysnative\wsl.exe -- sed -i "s/v141/v142/g" *.vcxproj
+msbuild.exe vpx.vcxproj -m -t:Build -p:Configuration="$(Configuration)" -p:Platform="$(PlatformName)"
+%windir%\sysnative\wsl.exe -- mv ../$(PlatformTarget)/Win32/$(Configuration)/vpxmdd.lib ../../../../Binarys/$(Configuration)/$(PlatformTarget)/libvpx.lib
+%windir%\sysnative\wsl.exe -- mkdir -p ../../../../libvpx/$(Configuration)/$(PlatformTarget)/
+%windir%\sysnative\wsl.exe -- rm -r -f ../../../../libvpx/$(Configuration)/$(PlatformTarget)/include
+%windir%\sysnative\wsl.exe -- mv vpx-vp8-vp9-nodocs-x86-win32md-vs15-v1.8.2/include/ ../../../../libvpx/$(Configuration)/$(PlatformTarget)/
+%windir%\sysnative\wsl.exe -- mv vpx_config.h ../../../../libvpx/$(Configuration)/$(PlatformTarget)/include/vpx_config.h</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>../../../libvpx/$(Configuration)/$(PlatformTarget)/include/;../../../libvpx/;../../../libvpx/third_party/libyuv/include/;../../../libvpx/third_party/libwebm/;../../../libvpx/third_party/googletest/src/include/</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <PreBuildEvent>
+      <Message>Configuring libvpx for $(PlatformTarget) release.</Message>
+      <Command>mkdir $(PlatformTarget)
+cd $(PlatformTarget)
+%windir%\sysnative\wsl.exe -- ../../../../libvpx/configure --target=x86_64-win64-vs15 --disable-examples --disable-docs --disable-tools
+%windir%\sysnative\wsl.exe -- make dist
+%windir%\sysnative\wsl.exe -- sed -i "s/ &lt;ProjectGuid/ &lt;WindowsTargetPlatformVersion&gt;$(TargetPlatformVersion)&lt;\/WindowsTargetPlatformVersion&gt;&lt;ProjectGuid/g" *.vcxproj
+%windir%\sysnative\wsl.exe -- sed -i "s/v141/v142/g" *.vcxproj
+msbuild.exe vpx.vcxproj -m -t:Build -p:Configuration="$(Configuration)" -p:Platform="$(PlatformName)"
+%windir%\sysnative\wsl.exe -- mv ../$(PlatformTarget)/x64/$(Configuration)/vpxmdd.lib ../../../../Binarys/$(Configuration)/$(PlatformTarget)/libvpx.lib
+%windir%\sysnative\wsl.exe -- mkdir -p ../../../../libvpx/$(Configuration)/$(PlatformTarget)/
+%windir%\sysnative\wsl.exe -- rm -r -f ../../../../libvpx/$(Configuration)/$(PlatformTarget)/include
+%windir%\sysnative\wsl.exe -- mv vpx-vp8-vp9-nodocs-x86_64-win64md-vs15-v1.8.2/include/ ../../../../libvpx/$(Configuration)/$(PlatformTarget)/
+</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>../../../libvpx/$(Configuration)/$(PlatformTarget)/include/;../../../libvpx/;../../../libvpx/third_party/libyuv/include/;../../../libvpx/third_party/libwebm/;../../../libvpx/third_party/googletest/src/include/</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <PreBuildEvent>
+      <Message>Configuring libvpx for $(PlatformTarget) release.</Message>
+      <Command>mkdir $(PlatformTarget)
+cd $(PlatformTarget)
+%windir%\sysnative\wsl.exe -- ../../../../libvpx/configure --target=x86-win32-vs15 --disable-examples --disable-docs --disable-tools
+%windir%\sysnative\wsl.exe -- make dist
+%windir%\sysnative\wsl.exe -- sed -i "s/ &lt;ProjectGuid/ &lt;WindowsTargetPlatformVersion&gt;$(TargetPlatformVersion)&lt;\/WindowsTargetPlatformVersion&gt;&lt;ProjectGuid/g" *.vcxproj
+%windir%\sysnative\wsl.exe -- sed -i "s/v141/v142/g" *.vcxproj
+msbuild.exe vpx.vcxproj -m -t:Build -p:Configuration="$(Configuration)" -p:Platform="$(PlatformName)"
+%windir%\sysnative\wsl.exe -- mv ../$(PlatformTarget)/Win32/$(Configuration)/vpxmd.lib ../../../../Binarys/$(Configuration)/$(PlatformTarget)/libvpx.lib
+%windir%\sysnative\wsl.exe -- mkdir -p ../../../../libvpx/$(Configuration)/$(PlatformTarget)/
+%windir%\sysnative\wsl.exe -- rm -r -f ../../../../libvpx/$(Configuration)/$(PlatformTarget)/include
+%windir%\sysnative\wsl.exe -- mv vpx-vp8-vp9-nodocs-x86-win32md-vs15-v1.8.2/include/ ../../../../libvpx/$(Configuration)/$(PlatformTarget)/
+</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>../../../libvpx/$(Configuration)/$(PlatformTarget)/include/;../../../libvpx/;../../../libvpx/third_party/libyuv/include/;../../../libvpx/third_party/libwebm/;../../../libvpx/third_party/googletest/src/include/</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <PreBuildEvent>
+      <Message>Configuring libvpx for $(PlatformTarget) release.</Message>
+      <Command>mkdir $(PlatformTarget)
+cd $(PlatformTarget)
+%windir%\sysnative\wsl.exe -- ../../../../libvpx/configure --target=x86_64-win64-vs15 --disable-examples --disable-docs --disable-tools
+%windir%\sysnative\wsl.exe -- make dist
+%windir%\sysnative\wsl.exe -- sed -i "s/ &lt;ProjectGuid/ &lt;WindowsTargetPlatformVersion&gt;$(TargetPlatformVersion)&lt;\/WindowsTargetPlatformVersion&gt;&lt;ProjectGuid/g" *.vcxproj
+%windir%\sysnative\wsl.exe -- sed -i "s/v141/v142/g" *.vcxproj
+msbuild.exe vpx.vcxproj -m -t:Build -p:Configuration="$(Configuration)" -p:Platform="$(PlatformName)"
+%windir%\sysnative\wsl.exe -- mv ../$(PlatformTarget)/x64/$(Configuration)/vpxmd.lib ../../../../Binarys/$(Configuration)/$(PlatformTarget)/libvpx.lib
+%windir%\sysnative\wsl.exe -- mkdir -p ../../../../libvpx/$(Configuration)/$(PlatformTarget)/
+%windir%\sysnative\wsl.exe -- rm -r -f ../../../../libvpx/$(Configuration)/$(PlatformTarget)/include
+%windir%\sysnative\wsl.exe -- mv vpx-vp8-vp9-nodocs-x86_64-win64md-vs15-v1.8.2/include/ ../../../../libvpx/$(Configuration)/$(PlatformTarget)/
+</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -103,7 +103,7 @@ public:
 			if (KB->ButtonDown(LWKey::D)) m_Window->SetPosition(m_Window->GetPosition() + LWVector2i(1, 0));
 			if (KB->ButtonDown(LWKey::S)) m_Window->SetPosition(m_Window->GetPosition() + LWVector2i(0, 1));
 			if (KB->ButtonDown(LWKey::W)) m_Window->SetPosition(m_Window->GetPosition() + LWVector2i(0, -1));
-			if (KB->ButtonPressed(LWKey::Space)) m_UseSDF = !m_UseSDF;
+			if (KB->ButtonPressed(LWKey::Space)) m_UseMSDF = !m_UseMSDF;
 			if (KB->ButtonPressed(LWKey::R)) m_Window->SetMousePosition(m_Window->GetSize() / 2);
 
 			if (KB->ButtonPressed(LWKey::C)) m_Window->SetMouseVisible((m_Window->GetFlag()&LWWindow::MouseVisible) != 0 ? false : true);
@@ -123,9 +123,9 @@ public:
 		}
 		if (TD) {
 			for (uint32_t i = 0; i < TD->GetPointCount(); i++) {
-				const LWTouchPoint *Pnt = TD->GetPoint(i);
-				std::cout << "Point: " << Pnt->m_Position.x << " " << Pnt->m_Position.y << " State: " << Pnt->m_State << " Init: " << Pnt->m_InitPosition.x << " " << Pnt->m_InitPosition.y << " DownTime: " << Pnt->m_DownTime << " Size: " << Pnt->m_Size << std::endl;
-				if (Pnt->m_State == LWTouchPoint::DOWN) m_UseSDF = !m_UseSDF;
+				const LWTouchPoint &Pnt = TD->GetPoint(i);
+				std::cout << "Point: " << Pnt.m_Position.x << " " << Pnt.m_Position.y << " State: " << Pnt.m_State << " Init: " << Pnt.m_InitPosition.x << " " << Pnt.m_InitPosition.y << " DownTime: " << Pnt.m_DownTime << " Size: " << Pnt.m_Size << std::endl;
+				if (Pnt.m_State == LWTouchPoint::DOWN) m_UseMSDF = !m_UseMSDF;
 			}
 			const LWGesture &Gest = TD->GetGesture();
 			if (Gest.m_Type != LWGesture::None) {
@@ -163,8 +163,8 @@ public:
 		//Driver->DrawBuffer(S, LWVideoDriver::Triangle, InputData, nullptr, 6, sizeof(LWVertexPosition));
 		//if (m_UseSDF) m_Driver->DrawMesh(m_SDFFontShader, LWVideoDriver::Triangle, m_SDFFontMesh);
 		//else 
-		
-		m_Driver->DrawMesh(m_TTFPipeline, LWVideoDriver::Triangle, m_TTFFontMesh);
+		if (m_UseMSDF) m_Driver->DrawMesh(m_FontMSDFPipeline, LWVideoDriver::Triangle, m_MSDFFontMesh);
+		else m_Driver->DrawMesh(m_FontColorPipeline, LWVideoDriver::Triangle, m_ColorFontMesh);
 		m_Driver->Present(1);
 		
 		m_Theta += 0.01f;
@@ -244,8 +244,10 @@ public:
 			SetFinished("Error creating window!");
 			return;
 		}
+		//uint32_t TargetDriver = LWVideoDriver::Vulkan | LWVideoDriver::DebugLayer;
+		uint32_t TargetDriver = LWVideoDriver::Unspecefied ;
 		std::cout << "Window created: " << m_Window->GetSize().x << " " << m_Window->GetSize().y << std::endl;
-		m_Driver = LWVideoDriver::MakeVideoDriver(m_Window, LWVideoDriver::OpenGL3_3);
+		m_Driver = LWVideoDriver::MakeVideoDriver(m_Window, TargetDriver);
 		if (!m_Driver) {
 			SetFinished("Error: Creating video driver.");
 			return;
@@ -337,63 +339,94 @@ public:
 		m_DefaultPipeline->SetResource(0, m_RTex);
 		float Theta = 0.0f;
 		
-
-		bool UseSDF = false;
-
-		LWFileStream TTFStream;
-		if (!LWFileStream::OpenStream(TTFStream, "App:Junicode-Regular.ttf", LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, nullptr)) {
+		LWFileStream FontColorStream;
+		if (!LWFileStream::OpenStream(FontColorStream, "App:Junicode-Regular.ttf", LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, nullptr)) {
 			SetFinished("Error opening Junicode-Regular.ttf");
 			return;
 		}
-		m_TTFFont = LWFont::LoadFontTTF(&TTFStream, m_Driver, 32, 32, 96, Allocator);
-		if (!m_TTFFont) {
+		m_ColorFont = LWFont::LoadFontTTF(&FontColorStream, m_Driver, 32, 32, 96, Allocator);
+		if (!m_ColorFont) {
 			SetFinished("Error loading ttf font.");
 			return;
 		}
-		m_TTFVertexShader = m_Driver->ParseShader(LWShader::Vertex, LWFont::GetFontShaderSource(), Allocator, 0, nullptr, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
-		if (!m_TTFVertexShader) {
-			SetFinishedf("Error creating TTF vertex shader:\n%s\n", ErrorBuffer);
-			return;
-		}
-		m_TTFVertexShader->SetInputMap(3, "Position", LWShaderInput::Vec4, 1, "Color", LWShaderInput::Vec4, 1, "TexCoord", LWShaderInput::Vec4, 1);
-		m_TTFPixelShader = m_Driver->ParseShader(LWShader::Pixel, LWFont::GetFontShaderSource(), Allocator, 0, nullptr, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
-		if (!m_TTFPixelShader) {
-			SetFinishedf("Error creating TTF pixel shader:\n%s\n", ErrorBuffer);
-			return;
-		}
-		m_TTFPipeline = m_Driver->CreatePipeline(m_TTFVertexShader, nullptr, m_TTFPixelShader, LWPipeline::BLENDING, 0, LWPipeline::CULL_NONE, LWPipeline::SOLID, LWPipeline::BLEND_SRC_ALPHA, LWPipeline::BLEND_ONE_MINUS_SRC_ALPHA, Allocator);
-		
-		m_TTFFontBuffer = m_Driver->CreateVideoBuffer(LWVideoBuffer::Vertex, LWVideoBuffer::WriteDiscardable | LWVideoBuffer::LocalCopy, sizeof(LWVertexUI), 6 * 256, Allocator,  nullptr);
-		m_FontUniformBuffer = m_Driver->CreateVideoBuffer(LWVideoBuffer::Uniform, LWVideoBuffer::LocalCopy | LWVideoBuffer::WriteDiscardable, sizeof(LWMatrix4f), 1, Allocator, nullptr);
-		m_TTFPipeline->SetResource(0, m_TTFFont->GetTexture(0));
-		m_TTFPipeline->SetUniformBlock(0, m_FontUniformBuffer);
 
-		m_TTFFontMesh = LWVertexUI::MakeMesh(Allocator, m_TTFFontBuffer, 0);
-		LWFontSimpleWriter Writer(m_TTFFontMesh);
-		m_TTFFont->DrawTextm("LWSimple example.", LWVector2f(0.0f, m_TTFFont->GetLineSize()), 3.0f, LWVector4f(0.0f, 1.0f, 1.0f, 1.0f), &Writer, &LWFontSimpleWriter::WriteGlyph);
-		m_TTFFontMesh->Finished();
-		std::cout << "LineSize: " << m_TTFFont->GetLineSize() << std::endl;
+		LWFileStream MSDFStream;
+		if (!LWFileStream::OpenStream(MSDFStream, "App:Arial.arfont", LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, nullptr)) {
+			SetFinished("Error opening Junicode-Regular.arfont");
+			return;
+		}
+		m_MSDFFont = LWFont::LoadFontAR(&MSDFStream, m_Driver, Allocator);
+
+		if (!m_MSDFFont) {
+			SetFinished("Error loading Arial.arfont");
+			return;
+		}
+
+		m_FontVertexShader = m_Driver->ParseShader(LWShader::Vertex, LWFont::GetVertexShaderSource(), Allocator, 0, nullptr, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
+		if (!m_FontVertexShader) {
+			SetFinishedf("Error creating Font vertex shader:\n%s\n", ErrorBuffer);
+			return;
+		}
+		m_FontVertexShader->SetInputMap(3, "Position", LWShaderInput::Vec4, 1, "Color", LWShaderInput::Vec4, 1, "TexCoord", LWShaderInput::Vec4, 1);
+
+		m_FontColorShader = m_Driver->ParseShader(LWShader::Pixel, LWFont::GetPixelColorShaderSource(), Allocator, 0, nullptr, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
+		if (!m_FontColorShader) {
+			SetFinishedf("Error creating Color pixel shader:\n%s\n", ErrorBuffer);
+			return;
+		}
+
+		m_FontMSDFShader = m_Driver->ParseShader(LWShader::Pixel, LWFont::GetPixelMSDFShaderSource(), Allocator, 0, nullptr, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
+		if (!m_FontMSDFShader) {
+			SetFinishedf("Error creating msdf pixel shader:\n%s\n", ErrorBuffer);
+			return;
+		}
+
+
+		m_FontColorPipeline = m_Driver->CreatePipeline(m_FontVertexShader, nullptr, m_FontColorShader, LWPipeline::BLENDING, 0, LWPipeline::CULL_CW, LWPipeline::SOLID, LWPipeline::BLEND_SRC_ALPHA, LWPipeline::BLEND_ONE_MINUS_SRC_ALPHA, Allocator);
+		m_FontMSDFPipeline = m_Driver->CreatePipeline(m_FontVertexShader, nullptr, m_FontMSDFShader, LWPipeline::BLENDING, 0, LWPipeline::CULL_CW, LWPipeline::SOLID, LWPipeline::BLEND_SRC_ALPHA, LWPipeline::BLEND_ONE_MINUS_SRC_ALPHA, Allocator);
+		
+		m_FontUniformBuffer = m_Driver->CreateVideoBuffer<LWMatrix4f>(LWVideoBuffer::Uniform, LWVideoBuffer::LocalCopy | LWVideoBuffer::WriteDiscardable, 1, Allocator, nullptr);
+		m_ColorFontBuffer = m_Driver->CreateVideoBuffer<LWVertexUI>(LWVideoBuffer::Vertex, LWVideoBuffer::WriteDiscardable | LWVideoBuffer::LocalCopy, 6 * 256, Allocator,  nullptr);
+		m_MSDFFontBuffer = m_Driver->CreateVideoBuffer<LWVertexUI>(LWVideoBuffer::Vertex, LWVideoBuffer::WriteDiscardable | LWVideoBuffer::LocalCopy, 6 * 256, Allocator, nullptr);
+
+		m_FontColorPipeline->SetResource(0, m_ColorFont->GetTexture(0));
+		m_FontMSDFPipeline->SetResource(0, m_MSDFFont->GetTexture(0));
+
+		m_FontColorPipeline->SetUniformBlock(0, m_FontUniformBuffer);
+		m_FontMSDFPipeline->SetUniformBlock(0, m_FontUniformBuffer);
+
+		m_ColorFontMesh = LWVertexUI::MakeMesh(Allocator, m_ColorFontBuffer, 0);
+		m_MSDFFontMesh = LWVertexUI::MakeMesh(Allocator, m_MSDFFontBuffer, 0);
+
+		LWFontSimpleWriter ColorWriter(m_ColorFontMesh);
+		LWFontSimpleWriter MSDFWriter(m_MSDFFontMesh);
+		m_ColorFont->DrawTextm("LWSimple Example Color", LWVector2f(0.0f, m_ColorFont->GetLineSize()), 2.0f, LWVector4f(0.0f, 1.0f, 1.0f, 1.0f), &ColorWriter, &LWFontSimpleWriter::WriteGlyph);
+		m_MSDFFont->DrawTextm("LWSimple Example MSDF", LWVector2f(0.0f, m_MSDFFont->GetLineSize()), 2.0f, LWVector4f(0.0f, 1.0f, 1.0f, 1.0f), &MSDFWriter, &LWFontSimpleWriter::WriteGlyph);
+		m_ColorFontMesh->Finished();
+		m_MSDFFontMesh->Finished();
 	};
 
 	~App() {
 		if(m_Tex) m_Driver->DestroyTexture(m_Tex);
 		if(m_RTex) m_Driver->DestroyTexture(m_RTex);
-		//LWAllocator::Destroy(m_SDFFont);
-		LWAllocator::Destroy(m_TTFFont);
+		LWAllocator::Destroy(m_MSDFFont);
+		LWAllocator::Destroy(m_ColorFont);
+		if (m_DefaultPipeline) m_Driver->DestroyPipeline(m_DefaultPipeline);
+		if (m_FontColorPipeline) m_Driver->DestroyPipeline(m_FontColorPipeline);
+		if (m_FontMSDFPipeline) m_Driver->DestroyPipeline(m_FontMSDFPipeline);
+
 		if (m_DefaultVertexShader) m_Driver->DestroyShader(m_DefaultVertexShader);
 		if (m_DefaultPixelShader) m_Driver->DestroyShader(m_DefaultPixelShader);
-		if (m_TTFVertexShader) m_Driver->DestroyShader(m_TTFVertexShader);
-		if (m_TTFPixelShader) m_Driver->DestroyShader(m_TTFPixelShader);
-		if (m_DefaultPipeline) m_Driver->DestroyPipeline(m_DefaultPipeline);
+		if (m_FontVertexShader) m_Driver->DestroyShader(m_FontVertexShader);
+		if (m_FontColorShader) m_Driver->DestroyShader(m_FontColorShader);
+		if (m_FontMSDFShader) m_Driver->DestroyShader(m_FontMSDFShader);
 		if(m_FrameBuffer) m_Driver->DestroyFrameBuffer(m_FrameBuffer);
 		if(m_UniformBuffer) m_Driver->DestroyVideoBuffer(m_UniformBuffer);
 		//if(m_SDFFontBuffer) m_Driver->DestroyVideoBuffer(m_SDFFontBuffer);
-		if(m_TTFFontBuffer) m_Driver->DestroyVideoBuffer(m_TTFFontBuffer);
 		if(m_FontUniformBuffer) m_Driver->DestroyVideoBuffer(m_FontUniformBuffer);
-		if(m_VertexBuffer) m_Driver->DestroyVideoBuffer(m_VertexBuffer);
-		LWAllocator::Destroy(m_RectMesh);
-		LWAllocator::Destroy(m_TTFFontMesh);
-		if (m_TTFPipeline) m_Driver->DestroyPipeline(m_TTFPipeline);
+		if(m_RectMesh) m_RectMesh->Destroy(m_Driver);
+		if (m_ColorFontMesh) m_ColorFontMesh->Destroy(m_Driver);
+		if (m_MSDFFontMesh) m_MSDFFontMesh->Destroy(m_Driver);
 		if (m_Driver) LWVideoDriver::DestroyVideoDriver(m_Driver);
 		LWAllocator::Destroy(m_Window);
 
@@ -409,28 +442,36 @@ public:
 	LWVideoDriver *m_Driver = nullptr;
 	LWShader *m_DefaultVertexShader = nullptr;
 	LWShader *m_DefaultPixelShader = nullptr;
-	LWShader *m_TTFVertexShader = nullptr;
-	LWShader *m_TTFPixelShader = nullptr;
+	LWShader *m_FontVertexShader = nullptr;
+	LWShader *m_FontColorShader = nullptr;
+	LWShader *m_FontMSDFShader = nullptr;
 
 	LWPipeline *m_DefaultPipeline = nullptr;
-	LWPipeline *m_TTFPipeline = nullptr;
+	LWPipeline *m_FontColorPipeline = nullptr;
+	LWPipeline *m_FontMSDFPipeline = nullptr;
+
 	LWVideoBuffer *m_UniformBuffer = nullptr;
-	LWVideoBuffer *m_TTFFontBuffer = nullptr;
+	LWVideoBuffer *m_ColorFontBuffer = nullptr;
+	LWVideoBuffer *m_MSDFFontBuffer = nullptr;
 	LWVideoBuffer *m_FontUniformBuffer = nullptr;
 	UniformBlock *m_UniBlock = nullptr;
 	LWVideoBuffer *m_VertexBuffer = nullptr;
 	LWMesh<LWVertexTexture> *m_RectMesh = nullptr;
-	LWMesh<LWVertexUI> *m_TTFFontMesh = nullptr;
+	LWMesh<LWVertexUI> *m_ColorFontMesh = nullptr;
+	LWMesh<LWVertexUI> *m_MSDFFontMesh = nullptr;
 	LWFrameBuffer *m_FrameBuffer = nullptr;
 	LWTexture *m_Tex = nullptr;
 	LWTexture *m_RTex = nullptr;
-	LWFont *m_TTFFont = nullptr;
+	LWFont *m_ColorFont = nullptr;
+	LWFont *m_MSDFFont = nullptr;
+
+
 	LWVector2i m_PrevSize;
 	LWVector2i m_PrevPos;
 	float m_Theta = 0.0f;
 	bool m_SizeChanged = true;
 	bool m_Finished = false;
-	bool m_UseSDF = false;
+	bool m_UseMSDF = true;
 
 };
 int LWMain(int, char **){

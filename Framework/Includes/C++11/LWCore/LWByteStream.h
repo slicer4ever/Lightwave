@@ -125,6 +125,29 @@ public:
 		return Length;
 	}
 
+	/*!< \brief reads a SIMD vec4 of type from the internal buffer.*/
+	template<class Type>
+	LWSVector4<Type> ReadSVec4(void) {
+		typedef int32_t(*Func_T)(LWSVector4<Type> *, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		LWSVector4<Type> Res;
+		if (!CanReadBytes(sizeof(Type) * 4)) return Res;
+		int32_t Length = Funcs[m_SelectedFunc](&Res, m_DataBuffer + m_Position);
+		m_Position += Length;
+		return Res;
+	}
+
+	/*!< \brief reads an array of vec4 of type from the internal buffer. */
+	template<class Type>
+	int32_t ReadVec4(LWSVector4<Type> *Values, uint32_t Len) {
+		typedef int32_t(*Func_T)(LWSVector4<Type> *, uint32_t, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		if (!CanReadBytes(sizeof(Type) * 4 * Len)) return 0;
+		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_DataBuffer + m_Position);
+		m_Position += Length;
+		return Length;
+	}
+
 
 	/*!< \brief reads a Quaternion of type from the internal buffer.*/
 	template<class Type>
@@ -142,6 +165,30 @@ public:
 	template<class Type>
 	int32_t ReadQuaternion(LWQuaternion<Type> *Values, uint32_t Len) {
 		typedef int32_t(*Func_T)(LWQuaternion<Type> *, uint32_t, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		if (!CanReadBytes(sizeof(Type) * 4 * Len)) return 0;
+		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_DataBuffer + m_Position);
+		m_Position += Length;
+		return Length;
+	}
+
+
+	/*!< \brief reads a SIMD Quaternion of type from the internal buffer.*/
+	template<class Type>
+	LWSQuaternion<Type> ReadSQuaternion(void) {
+		typedef int32_t(*Func_T)(LWSQuaternion<Type> *, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		LWSQuaternion<Type> Res;
+		if (!CanReadBytes(sizeof(Type) * 4)) return Res;
+		int32_t Length = Funcs[m_SelectedFunc](&Res, m_DataBuffer + m_Position);
+		m_Position += Length;
+		return Res;
+	}
+
+	/*!< \brief reads an array of SIMD Quaternion of type from the internal buffer. */
+	template<class Type>
+	int32_t ReadSQuaternion(LWSQuaternion<Type> *Values, uint32_t Len) {
+		typedef int32_t(*Func_T)(LWSQuaternion<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		if (!CanReadBytes(sizeof(Type) * 4 * Len)) return 0;
 		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_DataBuffer + m_Position);
@@ -211,6 +258,29 @@ public:
 	template<class Type>
 	int32_t ReadMat4(LWMatrix4<Type> *Values, uint32_t Len) {
 		typedef int32_t(*Func_T)(LWMatrix4<Type> *, uint32_t, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		if (!CanReadBytes(sizeof(Type) * 16 * Len)) return 0;
+		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_DataBuffer + m_Position);
+		m_Position += Length;
+		return Length;
+	}
+
+	/*!< \brief reads a SIMD matrix4 of type from the internal buffer.*/
+	template<class Type>
+	LWSMatrix4<Type> ReadSMat4(void) {
+		typedef int32_t(*Func_T)(LWSMatrix4<Type> *, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		LWSMatrix4<Type> Res;
+		if (!CanReadBytes(sizeof(Type) * 16)) return Res;
+		int32_t Length = Funcs[m_SelectedFunc](&Res, m_DataBuffer + m_Position);
+		m_Position += Length;
+		return Res;
+	}
+
+	/*!< \brief reads an array of SIMD matrix4 of type from the internal buffer. */
+	template<class Type>
+	int32_t ReadMat4(LWSMatrix4<Type> *Values, uint32_t Len) {
+		typedef int32_t(*Func_T)(LWSMatrix4<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		if (!CanReadBytes(sizeof(Type) * 16 * Len)) return 0;
 		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_DataBuffer + m_Position);

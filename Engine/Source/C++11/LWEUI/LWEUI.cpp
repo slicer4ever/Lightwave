@@ -5,7 +5,10 @@
 #include "LWEUI/LWEUIRect.h"
 #include "LWEUI/LWEUIScrollBar.h"
 #include "LWEUI/LWEUITextInput.h"
-#include "LWEUI/LWEUIAdvLabel.h"
+#include "LWEUI/LWEUIRichLabel.h"
+#include "LWEUI/LWEUITreeList.h"
+#include "LWEUI/LWEUIComponent.h"
+#include <LWPlatform/LWWindow.h>
 #include "LWEAsset.h"
 #include <iostream>
 #include <algorithm>
@@ -41,12 +44,6 @@ LWXMLAttribute *LWEUI::FindAttribute(LWEXMLNode *Node, LWEXMLNode *Style, const 
 	LWXMLAttribute *Res = Node->FindAttribute(Name);
 	if (!Res && Style) return Style->FindAttribute(Name);
 	return Res;
-};
-
-void *LWEUI::FindAsset(LWEAssetManager *AM, const LWText &Name, uint32_t Type){
-	LWEAsset *A = AM->GetAsset(Name);
-	if (!A || A->GetType() != Type) return nullptr;
-	return A->GetAsset();
 };
 
 const char *LWEUI::ParseComponentAttribute(char *Buffer, uint32_t BufferSize, const char *SrcAttribute, LWEXMLNode *Component, LWEXMLNode *ComponentNode) {
@@ -85,7 +82,7 @@ const char *LWEUI::ParseComponentAttribute(char *Buffer, uint32_t BufferSize, co
 LWEUI *LWEUI::XMLParseSubNodes(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode *> &StyleMap, std::map<uint32_t, LWEXMLNode *> &ComponentMap) {
 	char Buffer[256];
 	char NameBuffer[256];
-	uint32_t Idx = LWText::CompareMultiple(Node->m_Name, 7, "Label", "Button", "Rect", "TextInput", "ScrollBar", "ListBox", "AdvLabel");
+	uint32_t Idx = LWText::CompareMultiple(Node->m_Name, 8, "Label", "Button", "Rect", "TextInput", "ScrollBar", "ListBox", "RichLabel", "TreeList");
 	LWEUI *U = nullptr;
 	if (Idx == 0) U = LWEUILabel::XMLParse(Node, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 	else if (Idx == 1) U = LWEUIButton::XMLParse(Node, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
@@ -93,7 +90,8 @@ LWEUI *LWEUI::XMLParseSubNodes(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIMa
 	else if (Idx == 3) U = LWEUITextInput::XMLParse(Node, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 	else if (Idx == 4) U = LWEUIScrollBar::XMLParse(Node, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 	else if (Idx == 5) U = LWEUIListBox::XMLParse(Node, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (Idx == 6) U = LWEUIAdvLabel::XMLParse(Node, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else if (Idx == 6) U = LWEUIRichLabel::XMLParse(Node, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else if (Idx == 7) U = LWEUITreeList::XMLParse(Node, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 	else {
 		uint32_t NameHash = LWText::MakeHash(Node->m_Name);
 		auto Iter = ComponentMap.find(NameHash);
@@ -117,8 +115,8 @@ LWEUI *LWEUI::XMLParseSubNodes(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIMa
 		} else if (*ActiveComponentName) ActiveName = ActiveComponentName;
 		U = Manager->GetAllocator()->Allocate<LWEUIComponent>(LWVector4f(0.0f), LWVector4f(0.0f), 0);
 		for (LWEXMLNode *C = XML->NextNode(nullptr, Component); C; C = XML->NextNode(C, Component, true)) {
-			LWEUI *SubU = LWEUI::XMLParseSubNodes(U, C, XML, Manager, ActiveName, Component, Node, StyleMap, ComponentMap);
-			if (SubU) ((LWEUIComponent*)U)->PushComponent(SubU);
+			LWEUI *S = LWEUI::XMLParseSubNodes(U, C, XML, Manager, ActiveName, Component, Node, StyleMap, ComponentMap);
+			if (S) ((LWEUIComponent*)U)->PushComponent(S);
 		}
 		LWEUI::XMLParse(U, Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 	}
@@ -134,14 +132,18 @@ bool LWEUI::XMLParse(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Man
 	LWXMLAttribute *FlagAttr = FindAttribute(Node, Style, "Flag");
 	LWXMLAttribute *PosAttr = FindAttribute(Node, Style, "Position");
 	LWXMLAttribute *SizeAttr = FindAttribute(Node, Style, "Size");
-	const uint32_t FlagValues[] = { ParentAnchorTopLeft,   ParentAnchorTopCenter,   ParentAnchorTopRight,   ParentAnchorMidLeft,   ParentAnchorMidCenter,   ParentAnchorMidRight,   ParentAnchorBtmLeft,   ParentAnchorBtmCenter,   ParentAnchorBtmRight,   LocalAnchorTopLeft,   LocalAnchorTopCenter,   LocalAnchorTopRight,   LocalAnchorMidLeft,   LocalAnchorMidCenter,   LocalAnchorMidRight,   LocalAnchorBtmLeft,   LocalAnchorBtmCenter,   LocalAnchorBtmRight,   DrawAfter,   Invisible,  Invisible,  FocusAble,   TabAble,   FocusAble,      TabAble,      InvertAllowed,  LabelLeftAligned, LabelCenterAligned, LabelRightAligned, PasswordField,   IgnoreOverCounter,   HorizontalBar,   VerticalBar,  ParentAnchorTopLeft, ParentAnchorTopCenter, ParentAnchorTopRight, ParentAnchorMidLeft, ParentAnchorMidCenter, ParentAnchorMidRight, ParentAnchorBtmLeft, ParentAnchorBtmCenter, ParentAnchorBtmRight, LocalAnchorTopLeft, LocalAnchorTopCenter, LocalAnchorTopRight, LocalAnchorMidLeft, LocalAnchorMidCenter, LocalAnchorMidRight, LocalAnchorBtmLeft, LocalAnchorBtmCenter, LocalAnchorBtmRight,  NoScalePos,   NoScaleSize, (NoScalePos | NoScaleSize), SizeToTexture, NoAutoSize };
-	const char FlagNames[][32] = { "ParentAnchorTopLeft", "ParentAnchorTopCenter", "ParentAnchorTopRight", "ParentAnchorMidLeft", "ParentAnchorMidCenter", "ParentAnchorMidRight", "ParentAnchorBtmLeft", "ParentAnchorBtmCenter", "ParentAnchorBtmRight", "LocalAnchorTopLeft", "LocalAnchorTopCenter", "LocalAnchorTopRight", "LocalAnchorMidLeft", "LocalAnchorMidCenter", "LocalAnchorMidRight", "LocalAnchorBtmLeft", "LocalAnchorBtmCenter", "LocalAnchorBtmRight", "DrawAfter", "Invisible", "Visible", "FocusAble", "TabAble", "NotFocusable", "NotTabable", "InvertAllowed", "AlignLeft",      "AlignCenter",      "AlignRight",     "PasswordField", "IgnoreOverCounter", "HorizontalBar", "VerticalBar", "PATL",              "PATC",                "PATR",               "PAML",              "PAMC",                "PAMR",               "PABL",              "PABC",                "PABR",               "LATL",             "LATC",               "LATR",              "LAML",             "LAMC",               "LAMR",              "LABL",             "LABC",               "LABR",              "NoScalePos", "NoScaleSize", "NoScale",                "SizeToTexture", "NoAutoSize" };
-	const uint32_t FlagCount = sizeof(FlagValues) / sizeof(uint32_t);
+	LWXMLAttribute *TooltipAttr = FindAttribute(Node, Style, "Tooltip");
+	const uint64_t FlagValues[] = { ParentAnchorTopLeft,   ParentAnchorTopCenter,   ParentAnchorTopRight,   ParentAnchorMidLeft,   ParentAnchorMidCenter,   ParentAnchorMidRight,   ParentAnchorBtmLeft,   ParentAnchorBtmCenter,   ParentAnchorBtmRight,   LocalAnchorTopLeft,   LocalAnchorTopCenter,   LocalAnchorTopRight,   LocalAnchorMidLeft,   LocalAnchorMidCenter,   LocalAnchorMidRight,   LocalAnchorBtmLeft,   LocalAnchorBtmCenter,   LocalAnchorBtmRight,   DrawAfter,   Invisible,  Invisible,  FocusAble,   TabAble,   FocusAble,      TabAble,      InvertAllowed,  LabelLeftAligned, LabelCenterAligned, LabelRightAligned, LabelBottomAligned, LabelVCenterAligned, LabelTopAligned,  PasswordField,   IgnoreOverCounter,   HorizontalBar,   VerticalBar,  ParentAnchorTopLeft, ParentAnchorTopCenter, ParentAnchorTopRight, ParentAnchorMidLeft, ParentAnchorMidCenter, ParentAnchorMidRight, ParentAnchorBtmLeft, ParentAnchorBtmCenter, ParentAnchorBtmRight, LocalAnchorTopLeft, LocalAnchorTopCenter, LocalAnchorTopRight, LocalAnchorMidLeft, LocalAnchorMidCenter, LocalAnchorMidRight, LocalAnchorBtmLeft, LocalAnchorBtmCenter, LocalAnchorBtmRight,  NoScalePos,   NoScaleSize, (NoScalePos | NoScaleSize), SizeToTexture, NoAutoSize, NoAutoHeightSize, NoAutoWidthSize };
+	const char FlagNames[][32] = { "ParentAnchorTopLeft", "ParentAnchorTopCenter", "ParentAnchorTopRight", "ParentAnchorMidLeft", "ParentAnchorMidCenter", "ParentAnchorMidRight", "ParentAnchorBtmLeft", "ParentAnchorBtmCenter", "ParentAnchorBtmRight", "LocalAnchorTopLeft", "LocalAnchorTopCenter", "LocalAnchorTopRight", "LocalAnchorMidLeft", "LocalAnchorMidCenter", "LocalAnchorMidRight", "LocalAnchorBtmLeft", "LocalAnchorBtmCenter", "LocalAnchorBtmRight", "DrawAfter", "Invisible", "Visible", "FocusAble", "TabAble", "NotFocusable", "NotTabable", "InvertAllowed", "AlignLeft",      "AlignCenter",      "AlignRight",     "AlignBottom",       "AlignVCent",       "AlignTop",       "PasswordField", "IgnoreOverCounter", "HorizontalBar", "VerticalBar", "PATL",              "PATC",                "PATR",               "PAML",              "PAMC",                "PAMR",               "PABL",              "PABC",                "PABR",               "LATL",             "LATC",               "LATR",              "LAML",             "LAMC",               "LAMR",              "LABL",             "LABC",               "LABR",              "NoScalePos", "NoScaleSize", "NoScale",                "SizeToTexture", "NoAutoSize", "NoAutoHeightSize", "NoAutoWidthSize" };
+	const uint64_t FlagCount = sizeof(FlagValues) / sizeof(uint64_t);
 	LWVector4f Pos = LWVector4f(0.0f);
 	LWVector4f Size = LWVector4f(0.0f);
-	uint32_t Flag = UI->GetFlag();
+
+	uint64_t Flag = UI->GetFlag();
 	if (PosAttr) Pos = EvaluatePerPixelAttr(ParseComponentAttribute(Buffer, sizeof(Buffer), PosAttr->m_Value, ActiveComponent, ActiveComponentNode));
-	if (SizeAttr) Size = EvaluatePerPixelAttr(ParseComponentAttribute(Buffer, sizeof(Buffer), SizeAttr->m_Value, ActiveComponent, ActiveComponentNode));
+	if (SizeAttr) {
+		Size = EvaluatePerPixelAttr(ParseComponentAttribute(Buffer, sizeof(Buffer), SizeAttr->m_Value, ActiveComponent, ActiveComponentNode));
+	}
 	if (FlagAttr) {
 		for (const char *C = ParseComponentAttribute(Buffer, sizeof(Buffer), FlagAttr->m_Value, ActiveComponent, ActiveComponentNode); *C; C++) {
 			bool Found = false;
@@ -172,6 +174,10 @@ bool LWEUI::XMLParse(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Man
 			}
 		}
 	}
+	if (TooltipAttr) {
+		const char *Tooltip = ParseComponentAttribute(Buffer, sizeof(Buffer), TooltipAttr->m_Value, ActiveComponent, ActiveComponentNode);
+		if (*Tooltip) UI->SetTooltip(Tooltip, *Manager->GetAllocator());
+	}
 	UI->SetPosition(Pos).SetSize(Size).SetFlag(Flag);
 	for (LWEXMLNode *C = XML->NextNode(nullptr, Node); C; C = XML->NextNode(C, Node, true)) {
 		XMLParseSubNodes(UI, C, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
@@ -180,59 +186,115 @@ bool LWEUI::XMLParse(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Man
 	return true;
 }
 
+//LWVector4f LWEUI::MakeVisibleBounds(uint32_t Flags, LWEUI *Parent, LWEUIManager &UIMan, const LWVector4f &Position, const LWVector4f &Size, float Scale) {
+LWVector4f LWEUI::MakeVisibleBounds(uint64_t Flags, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWEUIManager &UIMan, const LWVector4f &Position, const LWVector4f &Size, float Scale){
+	const LWVector2f PAnchors[] = { LWVector2f(0.0f, 1.0f), LWVector2f(0.5f, 1.0f),  LWVector2f(1.0f, 1.0f),  LWVector2f(0.0f, 0.5f),  LWVector2f(0.5f, 0.5f),  LWVector2f(1.0f, 0.5f),   LWVector2f(0.0f, 0.0f), LWVector2f(0.5f, 0.0f),  LWVector2f(1.0f, 0.0f) };
+	const LWVector2f LAnchors[] = { LWVector2f(0.0f,-1.0f), LWVector2f(-0.5f,-1.0f), LWVector2f(-1.0f,-1.0f), LWVector2f(0.0f, -0.5f), LWVector2f(-0.5f, -0.5f), LWVector2f(-1.0f, -0.5f), LWVector2f(0.0f, 0.0f), LWVector2f(-0.5f, 0.0f), LWVector2f(-1.0f, 0.0f) };
+	uint32_t ParentAnchor = (Flags&ParentAnchorBits) >> ParentAnchorOffsetBits;
+	uint32_t LocalAnchor = (Flags&LocalAnchorBIts) >> LocalAnchorOffsetBits;
+	float SP = Flags & NoScalePos ? 1.0f : Scale;
+	float SS = Flags & NoScaleSize ? 1.0f : Scale;
+
+	LWVector2f S = ParentVisibleSize * Size.xy() + Size.zw()*SS;
+	LWVector2f P = ParentVisiblePos + ParentVisibleSize * PAnchors[ParentAnchor] + S * LAnchors[LocalAnchor] + ParentVisibleSize * Position.xy() + Position.zw()*SP;
+	return LWVector4f(P, S);
+}
+
+LWVector4f LWEUI::MakeNewBounds(const LWVector4f &CurrBounds, const LWVector4f &NewBounds) {
+	if (NewBounds.x == 0.0f && NewBounds.y == 0.0f && NewBounds.z == 0.0f && NewBounds.w == 0.0f) return CurrBounds;
+	return LWVector4f(CurrBounds.xy().Min(NewBounds.xy()), CurrBounds.zw().Max(NewBounds.zw()));
+}
+
 bool LWEUI::PointInside(const LWVector2f &Pnt, float PntSize, const LWVector2f &VisiblePos, const LWVector2f &VisibleSize) {
 	return Pnt.x + PntSize >= VisiblePos.x && Pnt.x - PntSize <= VisiblePos.x + VisibleSize.x && Pnt.y + PntSize >= VisiblePos.y && Pnt.y - PntSize <= VisiblePos.y + VisibleSize.y;
 }
 
-LWVector4f LWEUI::Update(LWEUIManager *Manager, float Scale, uint64_t lCurrentTime) {
-	LWVector2f ParentPosition = Manager->GetVisiblePosition();
-	LWVector2f ParentSize = Manager->GetVisibleSize();
-	if (m_Parent) {
-		ParentPosition = m_Parent->GetVisiblePosition();
-		ParentSize = m_Parent->GetVisibleSize();
+LWEUI &LWEUI::UpdateOverTime(LWEUIManager &Manager, const LWVector2f &VisiblePosition, const LWVector2f &VisibleSize, uint64_t lCurrentTime) {
+	LWWindow *Wnd = Manager.GetWindow();
+	LWMouse *Mouse = Wnd->GetMouseDevice();
+	LWTouch *Touch = Wnd->GetTouchDevice();
+	LWEUINavigation &Navigator = Manager.GetNavigator();
+	bool isNavigationEnabled = Navigator.isEnabled();
+	bool isFocused = Manager.GetFocusedUI() == this;
+	uint64_t Time = 0;
+	if (isNavigationEnabled) {
+		if (isFocused) Time = lCurrentTime;
 	}
-	uint32_t ParentAnchor = (m_Flag&ParentAnchorBits) >> ParentAnchorOffsetBits;
-	uint32_t LocalAnchor = (m_Flag&LocalAnchorBIts) >> LocalAnchorOffsetBits;
-	LWVector2f PAnchors[] = { LWVector2f(0.0f, 1.0f), LWVector2f(0.5f, 1.0f),  LWVector2f(1.0f, 1.0f),  LWVector2f(0.0f, 0.5f),  LWVector2f(0.5f, 0.5f),  LWVector2f(1.0f, 0.5f),   LWVector2f(0.0f, 0.0f), LWVector2f(0.5f, 0.0f),  LWVector2f(1.0f, 0.0f) };
-	LWVector2f CAnchors[] = { LWVector2f(0.0f,-1.0f), LWVector2f(-0.5f,-1.0f), LWVector2f(-1.0f,-1.0f), LWVector2f(0.0f, -0.5f), LWVector2f(-0.5f, -0.5f), LWVector2f(-1.0f, -0.5f), LWVector2f(0.0f, 0.0f), LWVector2f(-0.5f, 0.0f), LWVector2f(-1.0f, 0.0f) };
-	float SP = m_Flag&NoScalePos ? 1.0f : Scale;
-	float SS = m_Flag&NoScaleSize ? 1.0f : Scale;
-	
-	m_VisibleSize = ParentSize*LWVector2f(m_Size.x, m_Size.y) + LWVector2f(m_Size.z, m_Size.w)*SS;
-	m_VisiblePosition = ParentPosition + ParentSize*PAnchors[ParentAnchor] + m_VisibleSize*CAnchors[LocalAnchor] + ParentSize*LWVector2f(m_Position.x, m_Position.y) + LWVector2f(m_Position.z, m_Position.w)*SP;
-	
-	LWVector4f VisBounds = LWVector4f(m_VisiblePosition, m_VisiblePosition + m_VisibleSize);
-	auto UpdateWithBounds = [](LWEUI *N, LWEUIManager *Manager, float Scale, uint64_t lCurrentTime, LWVector4f &Bounds, bool First)->LWVector4f{
-		if (!N) return Bounds;
-		LWVector4f NBounds = N->Update(Manager, Scale, lCurrentTime);
-		if (First) Bounds = NBounds;
-		else {
-			if (NBounds.x == 0.0f && NBounds.y == 0.0f && NBounds.z == 0.0f && NBounds.w == 0.0f) return Bounds;
-			Bounds.x = std::min<float>(Bounds.x, NBounds.x);
-			Bounds.y = std::min<float>(Bounds.y, NBounds.y);
-			Bounds.z = std::max<float>(Bounds.z, NBounds.z);
-			Bounds.w = std::max<float>(Bounds.w, NBounds.w);
+	if (Mouse) {
+		if (Manager.DispatchEvent(this, LWEUI::Event_TempOverInc, PointInside(Mouse->GetPositionf()))) {
+			Time = lCurrentTime;
 		}
-		return Bounds;
-	};
+	}
+	if (Touch) {
+		uint32_t TouchPnts = Touch->GetPointCount();
+		for (uint32_t i = 0; i < TouchPnts; i++) {
+			const LWTouchPoint &T = Touch->GetPoint(i);
+			if (Manager.DispatchEvent(this, LWEUI::Event_TempOverInc | (i << LWEUI::Event_OverOffset), PointInside(T.m_Position.CastTo<float>(), T.m_Size))) {
+				Time = lCurrentTime;
+			}
+		}
+	}
+	m_TimeOver = Time ? (m_TimeOver ? m_TimeOver : Time) : Time;
+	return *this;
+}
 
-
-	if (m_Flag&Invisible) {
+LWVector4f LWEUI::Update(LWEUIManager &Manager, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, bool ParentWasVisible, uint64_t lCurrentTime){
+	LWVector4f Bounds = MakeVisibleBounds(m_Flag, ParentVisiblePos, ParentVisibleSize, Manager, m_Position, m_Size, Scale);
+	bool wasVisible = !(m_VisibleBounds.x == 0.0f && m_VisibleBounds.y == 0.0f && m_VisibleBounds.z == 0.0f && m_VisibleBounds.w == 0.0f) && ParentWasVisible;
+	bool Visible = isVisible();
+	bool DrawAfter = isDrawingAfter();
+	if (!Visible) {
+		m_VisiblePosition = m_VisibleSize = LWVector2f();
 		m_VisibleBounds = LWVector4f();
-		VisBounds = LWVector4f();
-		return UpdateWithBounds(m_Next, Manager, Scale, lCurrentTime, VisBounds, true);
+		Manager.DispatchEvent(this, Event_Invisible, wasVisible);
+		return m_VisibleBounds;
 	}
-	if ((m_Flag&DrawAfter) != 0) UpdateWithBounds(m_FirstChild, Manager, Scale, lCurrentTime, VisBounds, false);
+	LWVector2f VisPosition = Bounds.xy();
+	LWVector2f VisSize = Bounds.zw();
+	LWVector4f VisBounds = LWVector4f(VisPosition, VisPosition+VisSize);
 	
-	if (m_Flag&VisibilityChange) {
-		m_Flag &= ~VisibilityChange;
-		Manager->DispatchEvent(this, (m_Flag&Invisible) ? Event_Invisible : Event_Visible);
+	UpdateOverTime(Manager, VisPosition, VisSize, lCurrentTime);
+	Manager.GetNavigator().ProcessUI(this, VisPosition, VisSize, Manager);
+	if (DrawAfter) {
+		for (LWEUI *C = m_FirstChild; C; C = C->GetNext()) {
+			VisBounds = MakeNewBounds(VisBounds, C->Update(Manager, Scale, VisPosition, VisSize, wasVisible, lCurrentTime));
+		}
 	}
-
-	UpdateSelf(Manager, Scale, lCurrentTime);
-	if ((m_Flag&DrawAfter) == 0) UpdateWithBounds(m_FirstChild, Manager, Scale, lCurrentTime, VisBounds, false);
+	UpdateSelf(Manager, Scale, ParentVisiblePos, ParentVisibleSize, VisPosition, VisSize, lCurrentTime);
+	if (!DrawAfter) {
+		VisBounds = LWVector4f(VisPosition, VisPosition + VisSize);
+		for (LWEUI *C = m_FirstChild; C; C = C->GetNext()) {
+			VisBounds = MakeNewBounds(VisBounds, C->Update(Manager, Scale, VisPosition, VisSize, wasVisible, lCurrentTime));
+		}
+	}
+	m_VisiblePosition = VisPosition;
+	m_VisibleSize = VisSize;
 	m_VisibleBounds = VisBounds;
-	return UpdateWithBounds(m_Next, Manager, Scale, lCurrentTime, VisBounds, false);
+	Manager.DispatchEvent(this, Event_Visible, !wasVisible);
+	return m_VisibleBounds;
+}
+
+
+LWEUI &LWEUI::Draw(LWEUIManager &Manager, LWEUIFrame &Frame, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, uint64_t lCurrentTime) {
+	LWVector4f Bounds = MakeVisibleBounds(m_Flag, ParentVisiblePos, ParentVisibleSize, Manager, m_Position, m_Size, Scale);
+	bool Visible = isVisible();
+	bool DrawAfter = isDrawingAfter();
+	if (!Visible) {
+		m_VisiblePosition = m_VisibleSize = LWVector2f();
+		return *this;
+	}
+	LWVector2f VisPosition = Bounds.xy();
+	LWVector2f VisSize = Bounds.zw();
+	if (DrawAfter) {
+		for (LWEUI *C = m_FirstChild; C; C = C->GetNext()) C->Draw(Manager, Frame, Scale, VisPosition, VisSize, lCurrentTime);
+	}
+	DrawSelf(Manager, Frame, Scale, ParentVisiblePos, ParentVisibleSize, VisPosition, VisSize, lCurrentTime);
+	if (!DrawAfter) {
+		for (LWEUI *C = m_FirstChild; C; C = C->GetNext()) C->Draw(Manager, Frame, Scale, VisPosition, VisSize, lCurrentTime);
+	}
+	m_VisiblePosition = VisPosition;
+	m_VisibleSize = VisSize;
+	return *this;
 }
 
 LWEUI &LWEUI::DispatchEvent(uint32_t EventCode) {
@@ -245,7 +307,7 @@ LWEUI &LWEUI::DispatchEvent(uint32_t EventCode) {
 	return *this;
 }
 
-bool LWEUI::RegisterEvent(uint32_t EventCode, std::function<void(LWEUI*, uint32_t, void*)> Callback, void *UserData) {
+bool LWEUI::RegisterEvent(uint32_t EventCode, LWEUIEventCallback Callback, void *UserData) {
 	if (m_EventCount >= MaxEvents) return false;
 	m_EventTable[m_EventCount] = { Callback, EventCode, UserData };
 	m_EventCount++;
@@ -265,20 +327,31 @@ bool LWEUI::UnregisterEvent(uint32_t EventCode) {
 	return false;
 }
 
-LWEUI &LWEUI::Draw(LWEUIManager *Manager, LWEUIFrame *Frame, float Scale, uint64_t lCurrentTime) {
-	if (m_Flag&Invisible) return m_Next ? m_Next->Draw(Manager, Frame, Scale, lCurrentTime) : *this;
-	if ((m_Flag&DrawAfter) != 0) if (m_FirstChild) m_FirstChild->Draw(Manager, Frame, Scale, lCurrentTime);
-	DrawSelf(Manager, Frame, Scale, lCurrentTime);
-	if ((m_Flag&DrawAfter) == 0) if (m_FirstChild) m_FirstChild->Draw(Manager, Frame, Scale, lCurrentTime);
-	return m_Next ? m_Next->Draw(Manager, Frame, Scale, lCurrentTime) : *this;
-}
-
-LWEUI &LWEUI::DrawSelf(LWEUIManager *Manager, LWEUIFrame *Frame, float Scale, uint64_t lCurrentTime) {
+LWEUI &LWEUI::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime) {
 	return *this;
 }
 
-LWEUI &LWEUI::UpdateSelf(LWEUIManager *Manager, float Scale, uint64_t lCurrentTime) {
+LWEUI &LWEUI::UpdateSelf(LWEUIManager &Manager, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime) {
 
+	return *this;
+}
+
+void LWEUI::Destroy(void) {
+	LWAllocator::Destroy(this);
+}
+
+LWEUI &LWEUI::SetTooltip(const LWText &Value, LWAllocator &Allocator) {
+	m_Tooltip = LWText(Value, Allocator);
+	return *this;
+}
+
+LWEUI &LWEUI::SetTooltipf(LWAllocator &Allocator, const char *Fmt, ...) {
+	char Buffer[1024];
+	va_list lst;
+	va_start(lst, Fmt);
+	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
+	va_end(lst);
+	m_Tooltip = LWText(Buffer, Allocator);
 	return *this;
 }
 
@@ -327,11 +400,18 @@ LWEUI &LWEUI::SetVisible(bool Visible) {
 	return *this;
 }
 
-LWEUI &LWEUI::SetFlag(uint32_t Flag) {
-	if ((m_Flag&Invisible) && (Flag&Invisible) == 0) Flag |= VisibilityChange;
-	if ((m_Flag&Invisible) == 0 && (Flag&Invisible)) Flag |= VisibilityChange;
-	m_Flag = Flag;
+LWEUI &LWEUI::SetFocusAble(bool FocusAble) {
+	m_Flag = (m_Flag&~LWEUI::FocusAble) | (FocusAble ? LWEUI::FocusAble : 0);
+	return *this;
+}
 
+LWEUI &LWEUI::SetTabAble(bool TabAble) {
+	m_Flag = (m_Flag&~LWEUI::TabAble) | (TabAble ? LWEUI::TabAble : 0);
+	return *this;
+}
+
+LWEUI &LWEUI::SetFlag(uint64_t Flag) {
+	m_Flag = Flag;
 	return *this;
 }
 
@@ -343,12 +423,12 @@ LWVector4f LWEUI::GetSize(void) const {
 	return m_Size;
 }
 
-bool LWEUI::PointInside(const LWVector2f &Point) const {
-	return Point.x >= m_VisiblePosition.x && Point.x <= m_VisiblePosition.x + m_VisibleSize.x && Point.y >= m_VisiblePosition.y && Point.y <= m_VisiblePosition.y + m_VisibleSize.y;
+bool LWEUI::PointInside(const LWVector2f &Point, float PntSize) const {
+	return PointInside(Point, PntSize, m_VisiblePosition, m_VisibleSize);
 }
 
-bool LWEUI::PointInsideBounds(const LWVector2f &Point) const {
-	return Point.x >= m_VisibleBounds.x && Point.x <= m_VisibleBounds.z && Point.y >= m_VisibleBounds.y && Point.y <= m_VisibleBounds.w;
+bool LWEUI::PointInsideBounds(const LWVector2f &Point, float PntSize) const {
+	return PointInside(Point, PntSize, m_VisibleBounds.xy(), m_VisibleBounds.zw() - m_VisibleBounds.xy());
 }
 
 LWVector4f LWEUI::GetVisibleBounds(void) const {
@@ -363,12 +443,48 @@ LWVector2f LWEUI::GetVisibleSize(void) const {
 	return m_VisibleSize;
 }
 
-bool LWEUI::GetVisible(void) const {
+bool LWEUI::isVisible(void) const {
 	return (m_Flag&LWEUI::Invisible) == 0;
 }
 
-uint32_t LWEUI::GetFlag(void) const {
+bool LWEUI::isInvisible(void) const {
+	return (m_Flag&LWEUI::Invisible) != 0;
+}
+
+bool LWEUI::isFocusAble(void) const {
+	return (m_Flag&LWEUI::FocusAble) != 0;
+}
+
+bool LWEUI::isTabAble(void) const {
+	return (m_Flag&LWEUI::TabAble) != 0;
+}
+
+bool LWEUI::isDrawingAfter(void) const {
+	return (m_Flag&LWEUI::DrawAfter) != 0;
+}
+
+bool LWEUI::isIgnoringOverCount(void) const {
+	return (m_Flag&LWEUI::IgnoreOverCounter) != 0;
+}
+
+bool LWEUI::HasTooltip(void) const {
+	return m_Tooltip.GetLength() > 0;
+}
+
+const LWText &LWEUI::GetTooltip(void) const {
+	return m_Tooltip;
+}
+
+uint64_t LWEUI::GetOverTime(void) const {
+	return m_TimeOver;
+}
+
+uint64_t LWEUI::GetFlag(void) const {
 	return m_Flag;
+}
+
+uint64_t LWEUI::GetTimeOver(void) const {
+	return m_TimeOver;
 }
 
 LWEUI *LWEUI::GetFirstChild(void) {
@@ -387,5 +503,5 @@ LWEUI *LWEUI::GetParent(void) {
 	return m_Parent;
 }
 
-LWEUI::LWEUI(const LWVector4f &Position, const LWVector4f &Size, uint32_t Flag) : m_Position(Position), m_Size(Size), m_FirstChild(nullptr), m_LastChild(nullptr), m_Next(nullptr), m_Parent(nullptr), m_Flag(Flag), m_VisibleBounds(LWVector4f()), m_EventCount(0) {}
+LWEUI::LWEUI(const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : m_Position(Position), m_Size(Size), m_FirstChild(nullptr), m_LastChild(nullptr), m_Next(nullptr), m_Parent(nullptr), m_Flag(Flag), m_VisibleBounds(LWVector4f()), m_TimeOver(0), m_EventCount(0) {}
 

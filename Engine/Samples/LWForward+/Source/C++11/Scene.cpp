@@ -22,6 +22,7 @@ Scene *Scene::LoadGLTF(const LWText &Path, LWVideoDriver *Driver, LWAllocator &A
 	std::vector<uint32_t> MaterialList;
 	std::vector<uint32_t> TextureList;
 	std::vector<uint32_t> ImageList;
+
 	auto MapIDToListIndex = [](std::vector<uint32_t> &List, uint32_t ID)->uint32_t {
 		for (uint32_t i = 0; i < List.size(); i++) {
 			if (ID == List[i]) return i;
@@ -146,6 +147,7 @@ Scene *Scene::LoadGLTF(const LWText &Path, LWVideoDriver *Driver, LWAllocator &A
 		for (uint32_t i = 0; i < Skin->m_JointList.size(); i++) {
 			ParseSkinNode(Skel, Skin, Skin->m_JointList[i], InvMatrices);
 		}
+
 		S->PushSkeleton(Skel);
 	}
 
@@ -225,7 +227,8 @@ Scene &Scene::Update(float deltaTime) {
 
 uint32_t Scene::DrawScene(uint64_t lCurrentTime, const LWMatrix4f &SceneTransform, Renderer *R, lFrame &F, Camera &C, LWVideoDriver *Driver) {
 	if (!m_StartTime) m_StartTime = lCurrentTime;
-	uint64_t Elapsed = lCurrentTime - m_StartTime;
+	float Elapsed = LWTimer::ToMilliSecond(lCurrentTime - m_StartTime) / 1000.0f;
+	float T = Elapsed * LW_DEGTORAD*3.0f;
 	uint32_t TotalVertices = 0;
 	uint32_t MatOffset = F.m_MaterialCount;
 	struct ShadowedLights {

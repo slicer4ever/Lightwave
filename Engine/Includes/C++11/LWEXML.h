@@ -30,6 +30,10 @@ struct LWEXMLNode {
 
 	bool PushAttributef(const char *Name, const char *ValueFmt, ...);
 
+	bool RemoveAttribute(uint32_t i);
+
+	bool RemoveAttribute(LWXMLAttribute *Attr);
+
 	LWEXMLNode &SetName(const char *Name);
 
 	LWEXMLNode &SetText(const char *Text);
@@ -51,6 +55,11 @@ public:
 		NodePoolSize = 256,
 		MaxParsers = 32
 	};
+
+	static bool LoadFile(LWEXML &XML, LWAllocator &Allocator, const LWText &Path, bool StripFormatting, LWEXMLNode *Parent, LWEXMLNode *Prev, LWFileStream *ExistingStream = nullptr);
+
+	static bool LoadFile(LWEXML &XML, LWAllocator &Allocator, const LWText &Path, bool StripFormatting, LWFileStream *ExistingStream = nullptr);
+
 	static bool ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const char *Buffer, bool StripFormatting, LWEXMLNode *Parent, LWEXMLNode *Prev);
 
 	static bool ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const char *Buffer, bool StripFormatting);
@@ -63,9 +72,9 @@ public:
 
 	LWEXMLNode *NextNodeWithName(LWEXMLNode *Current, const LWText &Name, bool SkipChildren =false);
 
-	template<class T, class Y>
-	LWEXML &PushMethodParser(const LWText &XMLNodeName, T Method, Y Object, void *UserData) {
-		return PushParser(XMLNodeName, std::bind(Method, Object, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), UserData);
+	template<class Method, class Obj>
+	LWEXML &PushMethodParser(const LWText &XMLNodeName, Method CB, Obj *O, void *UserData) {
+		return PushParser(XMLNodeName, std::bind(CB, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), UserData);
 	}
 
 	LWEXML &PushParser(const LWText &XMLNodeName, std::function<bool(LWEXMLNode*, void*, LWEXML*)> Callback, void *UserData);

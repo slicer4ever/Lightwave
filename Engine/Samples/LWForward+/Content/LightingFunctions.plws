@@ -160,7 +160,7 @@ struct LightResults{
 	float VdotH;
 };
 
-uniform sampler2DArrayShadow DepthTex;
+uniform sampler2DArray DepthTex;
 
 layout(std430, binding=0) buffer Lights{
 	Light LightsD[];
@@ -174,8 +174,8 @@ float PCFFilter(vec2 TexCoord, int Layer, float Depth, float SNdotL){
 	for(int y=-1;y<=1;y++){
 		for(int x=-1;x<=1;x++){
 			//Using sampler2DArrayShadow is bugged on some intel platforms with textureOffset(sampler2DArrayShadow not being implemented) and can't be used reliably.
-			Att += textureOffset(DepthTex, vec4(TexCoord, float(Layer), Depth), ivec2(x, y)).r;
-			
+			//Att += textureOffset(DepthTex, vec4(TexCoord, float(Layer), Depth), ivec2(x, y)).r;
+			Att += step(Depth, textureOffset(DepthTex, vec3(TexCoord, float(Layer)), ivec2(x, y)).r);
 		}
 	}
 	return Att/9.0f;

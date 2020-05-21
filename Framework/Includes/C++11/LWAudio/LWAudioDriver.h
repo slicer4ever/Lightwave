@@ -175,6 +175,9 @@ public:
 	/*!< \brief returns true if the system has been muted(through from focus lost. */
 	bool isMuted(void) const;
 
+	/*!< \brief returns non zero if an error occurred, or 0 if no error has occurred. */
+	uint32_t GetError(void) const;
+
 	/*!< \brief pushs an event to be handled by the audio driver in it's next update cycle. 
 		 \return returns true if the event could be inserted.
 	*/

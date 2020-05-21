@@ -4,12 +4,35 @@
 #include <LWCore/LWTimer.h>
 #include <ShellScalingApi.h>
 
-//Application entry points and other data is managed here.
 
+
+void *LWSignal_UserData[LWSignal_Unknown];
+LWSignalHandlerFunc LWSignal_Funcs[LWSignal_Unknown];
+/*!< \brief enable dedicated gpu's if applicable. */
+extern "C" {
+	__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+
+
+bool LWSignal_Handler(int32_t Signal) {
+	uint32_t LWSignalIDs[5] = { LWSignal_CtrlC, LWSignal_Break, LWSignal_Close, LWSignal_Logoff, LWSignal_Shutdown };
+	if (Signal >= LWSignal_Unknown) return false;
+	uint32_t ID = LWSignalIDs[Signal];
+	if (ID >= LWSignal_Unknown) return false;
+	if (!LWSignal_Funcs[ID]) return false;
+	return LWSignal_Funcs[ID](Signal, LWSignal_UserData[ID]);
+};
+
+//Application entry points and other data is managed here.
 int main(int argc, char **argv){
+	std::fill(LWSignal_UserData, LWSignal_UserData + LWSignal_Unknown, nullptr);
+	std::fill(LWSignal_Funcs, LWSignal_Funcs + LWSignal_Unknown, nullptr);
 	HWND ConsoleWnd = GetConsoleWindow();
 	if (ConsoleWnd) SetWindowPos(ConsoleWnd, HWND_TOP, 1, 1, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+
 	SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
+	SetConsoleCtrlHandler((PHANDLER_ROUTINE)LWSignal_Handler, true);
 	return LWMain(argc, argv);
 }
 
@@ -44,10 +67,21 @@ int __stdcall WinMain(HINSTANCE, HINSTANCE, LPSTR, int CmdCnt){
 		o += (uint32_t)(uintptr_t)(C - P) + 1;
 	}
 	//for (uint32_t i = 0; i < CmndCnt; i++) std::cout << i << ": " << Results[i] << std::endl;
+
+	std::fill(LWSignal_UserData, LWSignal_UserData + LWSignal_Unknown, nullptr);
+	std::fill(LWSignal_Funcs, LWSignal_Funcs + LWSignal_Unknown, nullptr);
 	SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
+	SetConsoleCtrlHandler((PHANDLER_ROUTINE)LWSignal_Handler, true);
 
 	return LWMain(CmndCnt, Results);
 }
+
+void LWRegisterSignal(LWSignalHandlerFunc Handler, uint32_t Signal, void *UserData){
+	LWSignal_UserData[Signal] = UserData;
+	LWSignal_Funcs[Signal] = Handler;
+	return;
+}
+
 
 bool LWRunLoop(std::function<bool(void*)> LoopFunc, uint64_t Frequency, void* UserData) {
 	uint64_t Prev = LWTimer::GetCurrent();

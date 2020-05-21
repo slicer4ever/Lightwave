@@ -72,6 +72,9 @@ public:
 	/*!< \brief seeks the sound to the position requested(in samples). */
 	LWSound &SeekTo(uint32_t SeekPos);
 
+	/*!< \brief seeks to the time stamp(calulcates the nearest samples position). */
+	LWSound &SeekTo(float Time);
+
 	/*!< \brief sets the sound's 3D position. */
 	LWSound &Set3DPosition(const LWVector3f &Position);
 

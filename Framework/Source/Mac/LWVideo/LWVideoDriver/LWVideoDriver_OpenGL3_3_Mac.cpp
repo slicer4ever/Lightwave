@@ -4,7 +4,7 @@
 #import <Cocoa/Cocoa.h>
 #include <iostream>
 
-LWVideoDriver_OpenGL3_3 *LWVideoDriver_OpenGL3_3::MakeVideoDriver(LWWindow *Window) {
+LWVideoDriver_OpenGL3_3 *LWVideoDriver_OpenGL3_3::MakeVideoDriver(LWWindow *Window, uint32_t Type) {
 	LWWindowContext WinCon = Window->GetContext();
 	LWOpenGL3_2Context Context;
 

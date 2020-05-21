@@ -7,22 +7,20 @@
 #include <functional>
 
 #pragma region LWEGLTFANIMTWEEN
-
-LWMatrix4f LWEGLTFAnimTween::GetFrame(uint64_t Time, bool Loop) {
+LWMatrix4f LWEGLTFAnimTween::GetFrame(float Time, bool Loop) {
 	if (Loop) {
-		uint64_t Total = GetTotalTime();
-		if (Total) Time = Time % Total;
+		float Total = GetTotalTime();
+		if (Total>0.0f) Time = (float)fmodf(Time,Total);
 	}
 	LWVector3f Trans = m_Translation.GetValue(Time);
-	LWVector3f Scale = m_Scale.GetValue(Time);
+	LWVector3f Scale = m_Scale.GetValue(Time, LWVector3f(1.0f));
 	LWQuaternionf Rot = m_Rotation.GetValue(Time);
 	LWMatrix4f Mat = (LWMatrix4f(Scale.x, Scale.y, Scale.z, 1.0f) * LWMatrix4f(Rot) * LWMatrix4f::Translation(Trans)).Transpose3x3();
-	//std::cout << "Scale: " << Scale << " | " << Trans <<" " << " " << Rot << " " <<  Mat << std::endl;
 	return Mat;
 }
 
-uint64_t LWEGLTFAnimTween::GetTotalTime(void) const {
-	return std::max<uint64_t>(std::max<uint64_t>(m_Translation.GetTotalTime(), m_Scale.GetTotalTime()), m_Rotation.GetTotalTime());
+float LWEGLTFAnimTween::GetTotalTime(void) const {
+	return std::max<float>(std::max<float>(m_Translation.GetTotalTime(), m_Scale.GetTotalTime()), m_Rotation.GetTotalTime());
 }
 
 #pragma endregion
@@ -1033,6 +1031,7 @@ bool LWEGLTFParser::ParseJSON(LWEGLTFParser &Parser, LWEJson &J, LWFileStream &S
 		LWEGLTFNode Node;
 		LWEJObject *JNode = J.GetElement(i, JNodes);
 		if (!LWEGLTFNode::ParseJSON(Node, J, JNode)) return false;
+		Node.m_NodeID = i;
 		Parser.PushNode(Node);
 	}
 	uint32_t NodeCnt = Parser.GetNodeCount();
@@ -1125,7 +1124,7 @@ bool LWEGLTFParser::CreateAccessorView(LWEGLTFAccessorView &View, uint32_t Acces
 	return true;
 }
 
-uint64_t LWEGLTFParser::BuildNodeAnimation(LWEGLTFAnimTween &Animation, uint32_t NodeID) {
+float LWEGLTFParser::BuildNodeAnimation(LWEGLTFAnimTween &Animation, uint32_t NodeID) {
 	uint64_t Resolution = LWTimer::GetResolution();
 	LWEGLTFAnimChannel *TranslationChannel = nullptr;
 	LWEGLTFAnimChannel *ScaleChannel = nullptr;
@@ -1161,8 +1160,7 @@ uint64_t LWEGLTFParser::BuildNodeAnimation(LWEGLTFAnimTween &Animation, uint32_t
 	return Animation.GetTotalTime();
 }
 
-uint64_t LWEGLTFParser::BuildNodeAnimation(LWEGLTFAnimTween &Animation, uint32_t AnimationID, uint32_t NodeID) {
-	uint64_t Resolution = LWTimer::GetResolution();
+float LWEGLTFParser::BuildNodeAnimation(LWEGLTFAnimTween &Animation, uint32_t AnimationID, uint32_t NodeID) {
 	LWEGLTFAnimChannel *TranslationChannel = nullptr;
 	LWEGLTFAnimChannel *ScaleChannel = nullptr;
 	LWEGLTFAnimChannel *RotationChannel = nullptr;

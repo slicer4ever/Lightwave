@@ -315,8 +315,12 @@ Renderer &Renderer::RenderFrame(lFrame &F, LWWindow *Window) {
 	m_Driver->SetFrameBuffer(nullptr);
 	m_Driver->ClearColor(0xFFFF).ClearDepth(1.0f);
 	m_Driver->ViewPort();
-	
+
 	RenderList(F, lFrame::MainView, Window);
+
+	//m_FontPipeline->SetResource(0, m_ShadowDepthBuffer);
+	//m_Driver->DrawMesh(m_FontPipeline, LWVideoDriver::Triangle, m_DebugRect);
+
 	RenderText(F.m_FontWriter);
 	return *this;
 }
@@ -410,15 +414,15 @@ Renderer::Renderer(LWVideoDriver *Driver, App *A, LWEAssetManager *AssetManager,
 	LWVideoBuffer *ICone = m_Driver->CreateVideoBuffer<uint16_t>(LWVideoBuffer::Index16, LWVideoBuffer::Static, ConeRadiCnt * 6, m_Allocator, ConeIdxs);
 	m_DebugCone = m_Allocator.Allocate<LWMesh<Vertice>>(VCone, ICone, ConeRadiCnt + 2, ConeRadiCnt * 6);
 
-	LWVertexTexture Verts[4] = { {LWVector4f(-1.0f, 1.0f, 0.0f, 1.0f), LWVector4f(0.0f, 0.0f, 0.0f, 0.0f)},
-								 {LWVector4f(-1.0f,-1.0f, 0.0f, 1.0f), LWVector4f(0.0f, 1.0f, 0.0f, 0.0f)},
-								 {LWVector4f(1.0f, 1.0f, 0.0f, 1.0f), LWVector4f(1.0f, 0.0f, 0.0f, 0.0f)},
-								 { LWVector4f(1.0f,-1.0f, 0.0f, 1.0f), LWVector4f(1.0f, 1.0f, 0.0f, 0.0f) } };
+	LWVertexUI Verts[4] = { {LWVector4f(0.0f, 576.0f, 0.0f, 1.0f), LWVector4f(1.0f), LWVector4f(0.0f, 0.0f, 0.0f, 0.0f)},
+						    {LWVector4f(0.0f,  64.0f, 0.0f, 1.0f), LWVector4f(1.0f), LWVector4f(0.0f, 1.0f, 0.0f, 0.0f)},
+						    {LWVector4f(512.0f, 576.0f, 0.0f, 1.0f), LWVector4f(1.0f), LWVector4f(1.0f, 0.0f, 0.0f, 0.0f)},
+							{LWVector4f(512.0f, 64.0f, 0.0f, 1.0f), LWVector4f(1.0f), LWVector4f(1.0f, 1.0f, 0.0f, 0.0f) } };
 	uint16_t Indices[6] = { 0,1,2, 1,3, 2 };
 
-	LWVideoBuffer *VBuf = Driver->CreateVideoBuffer<LWVertexTexture>(LWVideoBuffer::Vertex, LWVideoBuffer::Static, 4, Allocator, Verts);
+	LWVideoBuffer *VBuf = Driver->CreateVideoBuffer<LWVertexUI>(LWVideoBuffer::Vertex, LWVideoBuffer::Static, 4, Allocator, Verts);
 	LWVideoBuffer *IBuf = Driver->CreateVideoBuffer<uint16_t>(LWVideoBuffer::Index16, LWVideoBuffer::Static, 6, Allocator, Indices);
-	m_DebugRect = LWVertexTexture::MakeMesh(Allocator, VBuf, IBuf, 4, 6);
+	m_DebugRect = LWVertexUI::MakeMesh(Allocator, VBuf, IBuf, 4, 6);
 
 	Vertice CubeVerts[8];
 	uint16_t CubeIdxs[36] = { 0,5,1,0,4,5,  2,3,7,2,7,6,  2,6,4,2,4,0,  3,5,7,3,1,5,  6,7,5,6,5,4,  2,1,3,2,0,1 };

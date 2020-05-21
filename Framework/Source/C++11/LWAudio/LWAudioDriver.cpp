@@ -46,7 +46,7 @@ uint32_t LWAudioDriver::EncodeEventSpeed(float Pitch) {
 }
 
 bool LWAudioDriver::Update(uint64_t lCurrentTime, LWWindow *Window) {
-	const uint64_t PositionUpdateFreq = LWTimer::ToHighResolution(UpdatePositionFrequency);
+	const uint64_t PositionUpdateFreq = LWTimer::ToHighResolution((uint64_t)UpdatePositionFrequency);
 	if (!m_LastTime) m_LastTime = m_LastPositionUpdateTime = lCurrentTime;
 	if (Window) {
 		if (Window->isFocused()) {
@@ -404,6 +404,10 @@ bool LWAudioDriver::isPaused(void) const{
 
 bool LWAudioDriver::isMuted(void) const {
 	return (m_Flag&(Muted|MutedSystem)) != 0;
+}
+
+uint32_t LWAudioDriver::GetError(void) const {
+	return (m_Flag&Error);
 }
 
 LWAudioDriver &LWAudioDriver::SetUserData(void *UserData) {

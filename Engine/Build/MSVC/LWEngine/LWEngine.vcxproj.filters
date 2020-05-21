@@ -1,0 +1,201 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\LWEUI">
+      <UniqueIdentifier>{ffad2988-f9c7-4cfb-880e-6ed38c1da38c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\LWEUI">
+      <UniqueIdentifier>{9468ecc4-9e40-4c22-95ed-940e65a1f4b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\LWEProtocols">
+      <UniqueIdentifier>{c575d011-c6e4-4c2f-a44d-210ec032580d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\LWEProtocols">
+      <UniqueIdentifier>{ebab224d-dabe-46e0-afff-bbdb9a0b86d5}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEAsset.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWETypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEUIManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEXML.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUI.h">
+      <Filter>Header Files\LWEUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUIButton.h">
+      <Filter>Header Files\LWEUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUIComponent.h">
+      <Filter>Header Files\LWEUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUILabel.h">
+      <Filter>Header Files\LWEUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUIListBox.h">
+      <Filter>Header Files\LWEUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUIRect.h">
+      <Filter>Header Files\LWEUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUIScrollBar.h">
+      <Filter>Header Files\LWEUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUITextInput.h">
+      <Filter>Header Files\LWEUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWELocalization.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEJson.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEJobQueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolHTTP.h">
+      <Filter>Header Files\LWEProtocols</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolTLS.h">
+      <Filter>Header Files\LWEProtocols</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolHTTPS.h">
+      <Filter>Header Files\LWEProtocols</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolWebSocket.h">
+      <Filter>Header Files\LWEProtocols</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolWebSocketSecure.h">
+      <Filter>Header Files\LWEProtocols</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEGeometry3D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEGeometry2D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEVideoDecoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEVideoDecoderIVF.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEVideoDecoderWEBM.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEVideoPlayer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWETween.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEGLTFParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUITreeList.h">
+      <Filter>Header Files\LWEUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEUI\LWEUIRichLabel.h">
+      <Filter>Header Files\LWEUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWESGeometry3D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\C++11\LWEAsset.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEUIManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEXML.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUI.cpp">
+      <Filter>Source Files\LWEUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIButton.cpp">
+      <Filter>Source Files\LWEUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIComponent.cpp">
+      <Filter>Source Files\LWEUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUILabel.cpp">
+      <Filter>Source Files\LWEUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIListBox.cpp">
+      <Filter>Source Files\LWEUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIRect.cpp">
+      <Filter>Source Files\LWEUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIScrollBar.cpp">
+      <Filter>Source Files\LWEUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUITextInput.cpp">
+      <Filter>Source Files\LWEUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWELocalization.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEJson.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEJobQueue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolHttp.cpp">
+      <Filter>Source Files\LWEProtocols</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolTLS.cpp">
+      <Filter>Source Files\LWEProtocols</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolHTTPS.cpp">
+      <Filter>Source Files\LWEProtocols</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolWebSocket.cpp">
+      <Filter>Source Files\LWEProtocols</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolWebSocketSecure.cpp">
+      <Filter>Source Files\LWEProtocols</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEVideoDecoderIVF.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEVideoDecoderWEBM.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEVideoPlayer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEGLTFParser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUITreeList.cpp">
+      <Filter>Source Files\LWEUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIRichLabel.cpp">
+      <Filter>Source Files\LWEUI</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

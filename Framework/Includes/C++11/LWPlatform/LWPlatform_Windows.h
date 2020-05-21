@@ -12,8 +12,12 @@
 
 //uncomment to use OpenAL instead of Xaudio2 for audio backend.
 //#define LW_USEOPENAL
-#define LW_OPENALPATH C:/Program Files (x86)/OpenAL 1.1 SDK/
-
+#ifndef LW_OPENALPATH
+#define LW_OPENALPATH C:/Program Files (x86)/OpenAL 1.1 SDK
+#endif
+#ifndef LW_VULKANSDKPATH
+#define LW_VULKANSDKPATH C:/VulkanSDK/1.2.131.2
+#endif
 
 #if (WIN32_WINNT >= 0x0602 /* WIN32_WINNT_WIN8*/)
 #define LWPLATFORM_ID LWPLATFORM_WIN8_1
@@ -52,6 +56,7 @@
 #define LWVIDEO_IMPLEMENTED_OPENGL2_1
 #define LWVIDEO_IMPLEMENTED_OPENGL3_3
 #define LWVIDEO_IMPLEMENTED_OPENGL4_5
+//#define LWVIDEO_IMPLEMENTED_VULKAN
 
 /*! \brief This context is provided here incase your application does need to access the underlying win32 window context information.  in general this information should not ever be required by an application. */
 struct LWWindowContext {
@@ -68,6 +73,7 @@ typedef std::thread LWThreadType;
 
 //Add driver contexts when necessary, please note that we want to include these only at the appropriate time, as such we do a bit of preprocessor mangling to make this work.
 #ifdef LWVIDEODRIVER_DIRECTX11_H
+#ifdef LWVIDEO_IMPLEMENTED_DIRECTX11
 #ifndef LWVIDEODRIVER_DIRECTX11_PLATFORM_H
 #define LWVIDEODRIVER_DIRECTX11_PLATFORM_H
 #include <dxgi.h>
@@ -99,8 +105,39 @@ struct LWDirectX11_1Context {
 
 #endif
 #endif
+#endif
+
+#ifdef LWVIDEODRIVER_VULKAN_H
+#ifdef LWVIDEO_IMPLEMENTED_VULKAN
+#ifndef LWVIDEODRIVER_VULKAN_PLATFORM_H
+#define LWVIDEODRIVER_VULKAN_PLATFORM_H
+#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_win32.h>
+#include <vector>
+//#include LWSTR(LW_VULKANSDKPATH/include/vulkan/vulkan.h)
+//#include LWSTR(LW_VULKANSDKPATH/include/vulkan/vulkan_win32.h)
+#if LWARCH_ID==LWARCH_X86
+#pragma comment(lib, LWSTR(LW_VULKANSDKPATH/Lib32/vulkan-1.lib))
+#else
+#pragma comment(lib, LWSTR(LW_VULKANSDKPATH/Lib/vulkan-1.lib))
+#endif
+
+struct LWVulkan_Context{
+	VkInstance m_Instance = nullptr;
+	VkDevice m_Device = nullptr;
+	VkQueue m_GraphicsQueue = nullptr;
+	VkSurfaceKHR m_Surface = nullptr;
+	VkSwapchainKHR m_Swapchain = nullptr;
+	std::vector<VkImage> m_SwapImageList;
+	std::vector<VkImageView> m_SwapImageViewList;
+};
+
+#endif
+#endif
+#endif
 
 #ifdef LWVIDEODRIVER_OPENGL4_5_H
+#ifdef LWVIDEO_IMPLEMENTED_OPENGL4_5
 #ifndef LWVIDEODRIVER_OPENGL4_5_PLATFORM_H
 #define LWVIDEODRIVER_OPENGL4_5_PLATFORM_H
 #include <gl/glew.h>
@@ -115,9 +152,10 @@ struct LWOpenGL4_5Context {
 
 #endif
 #endif
-
+#endif
 
 #ifdef LWVIDEODRIVER_OPENGL3_3_H
+#ifdef LWVIDEO_IMPLEMENTED_OPENGL3_3
 #ifndef LWVIDEODRIVER_OPENGL3_3_PLATFORM_H
 #define LWVIDEODRIVER_OPENGL3_3_PLATFORM_H
 #include <gl/glew.h>
@@ -132,8 +170,10 @@ struct LWOpenGL3_3Context {
 
 #endif
 #endif
+#endif
 
 #ifdef LWVIDEODRIVER_OPENGL2_1_H
+#ifdef LWVIDEO_IMPLEMENTED_OPENGL2_1
 #ifndef LWVIDEODRIVER_OPENGL2_1_PLATFORM_H
 #define LWVIDEODRIVER_OPENGL2_1_PLATFORM_H
 #include <gl/glew.h>
@@ -146,21 +186,20 @@ struct LWOpenGL2_1Context {
 
 #endif
 #endif
+#endif
 
 #ifdef LW_USEOPENAL
 
 #ifdef LWAUDIODRIVER_H
 #ifndef LWAUDIODRIVER_PLATFORM_H
 #define LWAUDIODRIVER_PLATFORM_H
-#define XSTR(x) #x
-#define STR(x) XSTR(x)
 
-#include STR(LW_OPENALPATH/include/al.h)
-#include STR(LW_OPENALPATH/include/alc.h)
+#include LWSTR(LW_OPENALPATH/include/al.h)
+#include LWSTR(LW_OPENALPATH/include/alc.h)
 #if LWARCH_ID == LWARCH_X64
-#pragma comment(lib, STR(LW_OPENALPATH/libs/Win64/OpenAL32.lib))
+#pragma comment(lib, LWSTR(LW_OPENALPATH/libs/Win64/OpenAL32.lib))
 #else
-#pragma comment(lib, STR(LW_OPENALPATH/libs/Win32/OpenAL32.lib))
+#pragma comment(lib, LWSTR(LW_OPENALPATH/libs/Win32/OpenAL32.lib))
 #endif
 
 struct LWAudioDriverContext {

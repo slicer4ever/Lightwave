@@ -62,7 +62,7 @@ LWEUIListBox *LWEUIListBox::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager
 	}
 	if (FontAttr) {
 		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), FontAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		Font = (LWFont*)FindAsset(Manager->GetAssetManager(), Res, LWEAsset::Font);
+		Font = Manager->GetAssetManager()->GetAsset<LWFont>(Res);
 	}
 	if (MinimumHeightAttr) {
 		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), MinimumHeightAttr->m_Value, ActiveComponent, ActiveComponentNode);
@@ -92,127 +92,121 @@ LWEUIListBox *LWEUIListBox::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager
 	return ListBox;
 }
 
-LWEUI &LWEUIListBox::UpdateSelf(LWEUIManager *Manager, float Scale, uint64_t lCurrentTime) {
-	LWWindow *Wnd = Manager->GetWindow();
+void LWEUIListBox::Destroy(void) {
+	LWAllocator::Destroy(this);
+	return;
+}
+
+LWEUI &LWEUIListBox::UpdateSelf(LWEUIManager &Manager, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime) {
+	const float ScrollScale = 0.1f;
+	LWWindow *Wnd = Manager.GetWindow();
 	LWMouse *Mouse = Wnd->GetMouseDevice();
 	LWTouch *Touch = Wnd->GetTouchDevice();
 	
-	uint32_t Flag = m_Flag;
-	m_Flag &= ~(MouseOver | MouseDown);
-	bool OverAll = false;
+	bool wasOver = (m_Flag&MouseOver) != 0;
+	bool wasLDown = (m_Flag&MouseLDown) != 0;
+	bool wasMDown = (m_Flag&MouseMDown) != 0;
+	bool wasRDown = (m_Flag&MouseRDown) != 0;
+	uint64_t Flag = (m_Flag&~(MouseOver|MouseLDown|MouseMDown|MouseRDown)) | (m_TimeOver ? MouseOver : 0);
+	bool isOver = (Flag&MouseOver) != 0;
+	bool Changed = false;
+	if (!isOver) m_OverItem = NullItem;
 
 	if (Mouse) {
-		LWVector2i MP = Mouse->GetPosition();
-		LWVector2f MousePnt = LWVector2f((float)MP.x, (float)MP.y);
-		bool Over = LWEUI::PointInside(MousePnt, 0.0f, m_VisiblePosition, m_VisibleSize);
-		if (Over) {
-			Manager->DispatchEvent(this, Event_TempOverInc);
-			m_Flag |= MouseOver;
+		LWVector2f MP = Mouse->GetPositionf();
+		if (isOver) {
 			int32_t Scroll = Mouse->GetScroll();
-			if(Scroll){
-				if(Scroll>0) SetScroll(m_Scroll - GetScrollPageSize()*0.1f, Scale);
-				else SetScroll(m_Scroll + GetScrollPageSize()*0.1f, Scale);
-				Manager->DispatchEvent(this, Event_Changed);
+			if (Scroll != 0) {
+				Changed = true;
+				if (Scroll > 0) SetScroll(m_Scroll - GetScrollPageSize()*ScrollScale, Scale);
+				else SetScroll(m_Scroll + GetScrollPageSize()*ScrollScale, Scale);
 			}
-			if (Mouse->ButtonDown(LWMouseKey::Left)) m_Flag |= MouseDown;
-
-			float TotalDist = ((m_VisiblePosition.y + m_VisibleSize.y) - MousePnt.y) + m_Scroll;
-			m_OverItem = (uint32_t)(TotalDist / (GetCellHeight(Scale)));
-			m_OverItem = m_OverItem >= m_ItemCount ? 0xFFFFFFFF : m_OverItem;
-			OverAll = true;
-		} else m_OverItem = 0xFFFFFFFF;
+			if (Mouse->ButtonDown(LWMouseKey::Left)) Flag |= (isOver ? MouseLDown : 0);
+			if (Mouse->ButtonDown(LWMouseKey::Right)) Flag |= (isOver ? MouseRDown : 0);
+			if (Mouse->ButtonDown(LWMouseKey::Middle)) Flag |= (isOver ? MouseMDown : 0);
+			float TotalDist = ((VisiblePos.y + VisibleSize.y) - MP.y) + m_Scroll;
+			uint32_t Item = (uint32_t)(TotalDist / GetCellHeight(Scale));
+			m_OverItem = Item >= m_ItemCount ? NullItem : Item;
+		}
 	}
 	if (Touch) {
 		const LWGesture &Gest = Touch->GetGesture();
 		if (Gest.m_Type == LWGesture::Drag || Gest.m_Type == LWGesture::PressAndDrag) {
 			if (m_InitScroll <= -1000.0f) m_InitScroll = m_Scroll;
 			SetScroll(m_InitScroll + Gest.m_Direction.y, Scale);
-		}else if(Gest.m_Type==LWGesture::Flick){
+			Changed = true;
+		} else if (Gest.m_Type == LWGesture::Flick) {
 			m_ScrollAcceleration = Gest.m_Direction.y*10.0f;
-		}else m_InitScroll = -1000.0f;
-		for (uint32_t i = 0; i < Touch->GetPointCount(); i++) {
-			const LWTouchPoint *TP = Touch->GetPoint(i);
-			if (TP->m_State != LWTouchPoint::UP) {
-				LWVector2f T = LWVector2f((float)TP->m_Position.x, (float)TP->m_Position.y);
-				bool Over = LWEUI::PointInside(T, TP->m_Size*Scale, m_VisiblePosition, m_VisibleSize);
-				if (Over) {
-					Manager->DispatchEvent(this, Event_TempOverInc | (i << Event_OverOffset));
-					OverAll = true;
-					m_Flag |= MouseOver;
-					if (TP->m_State == LWTouchPoint::DOWN) m_Flag |= MouseDown;
-					float TotalDist = ((m_VisiblePosition.y + m_VisibleSize.y) - TP->m_Position.y) + m_Scroll;
-					m_OverItem = (uint32_t)(TotalDist / (GetCellHeight(Scale)));
-					m_OverItem = m_OverItem >= m_ItemCount ? 0xFFFFFFFF : m_OverItem;
-				}
-			}
-			if (!OverAll) m_OverItem = 0xFFFFFFFF;
+		} else m_InitScroll = -1000.0f;
+		uint32_t TouchPntCnt = Touch->GetPointCount();
+		for (uint32_t i = 0; i < TouchPntCnt; i++) {
+			const LWTouchPoint &TP = Touch->GetPoint(i);
+			if (TP.m_State == LWTouchPoint::UP) continue;
+			LWVector2f TPos = TP.m_Position.CastTo<float>();
+			bool Over = PointInside(TPos, TP.m_Size*Scale);
+			if (!Over) continue;
+			Flag |= MouseLDown;
+			float TotalDist = ((VisiblePos.y + VisibleSize.y) - TPos.y) + m_Scroll;
+			uint32_t Item = (uint32_t)(TotalDist / GetCellHeight(Scale));
+			m_OverItem = Item >= m_ItemCount ? NullItem : Item;
 		}
 	}
-	SetScroll(m_Scroll + m_ScrollAcceleration, Scale);
-	m_ScrollAcceleration *= 0.9f;
-	if (m_Flag&MouseOver && (Flag&MouseOver) == 0) Manager->DispatchEvent(this, Event_MouseOver);
-	if ((m_Flag&MouseOver) == 0 && Flag&MouseOver) Manager->DispatchEvent(this, Event_MouseOff);
-	if ((m_Flag&(MouseDown | MouseOver)) == MouseOver && Flag&MouseDown) {
-		Manager->DispatchEvent(this, Event_Released);
-		if (m_Flag&FocusAble) Manager->SetFocused(this);
+	if (m_ScrollAcceleration > std::numeric_limits<float>::epsilon()) {
+		Changed = true;
+		SetScroll(m_Scroll + m_ScrollAcceleration, Scale);
+		m_ScrollAcceleration *= 0.9f;
 	}
-	if ((m_Flag&(MouseDown | MouseOver)) == (MouseDown | MouseOver) && (Flag&MouseDown) == 0) {
-		Manager->DispatchEvent(this, Event_Pressed);
+	bool isLDown = (Flag&MouseLDown) != 0;
+	bool isRDown = (Flag&MouseRDown) != 0;
+	bool isMDown = (Flag&MouseMDown) != 0;
+	bool isFocusable = (Flag&FocusAble) != 0;
+	m_Flag = Flag;
+
+	Manager.DispatchEvent(this, Event_Changed, Changed);
+	Manager.DispatchEvent(this, Event_MouseOver, isOver && !wasOver);
+	Manager.DispatchEvent(this, Event_MouseOver, !isOver && wasOver);
+	Manager.DispatchEvent(this, Event_Pressed, isOver && isLDown && !wasLDown);
+	Manager.DispatchEvent(this, Event_RPressed, isOver && isRDown && !wasRDown);
+	Manager.DispatchEvent(this, Event_MPressed, isOver && isMDown && !wasMDown);
+	if (Manager.DispatchEvent(this, Event_Released, isOver && !isLDown && wasLDown)) {
+		if (isFocusable) Manager.SetFocused(this);
+	}
+	if (Manager.DispatchEvent(this, Event_RReleased, isOver && !isRDown && wasRDown)) {
+		if (isFocusable) Manager.SetFocused(this);
+	}
+	if (Manager.DispatchEvent(this, Event_MReleased, isOver && !isMDown && wasMDown)) {
+		if (isFocusable) Manager.SetFocused(this);
 	}
 	return *this;
 }
 
-LWEUI &LWEUIListBox::DrawSelf(LWEUIManager *Manager, LWEUIFrame *Frame, float Scale, uint64_t lCurrentTime) {
-	auto DrawRect = [](LWEUIMaterial *Mat, const LWVector2f &Pos, const LWVector2f &Size, LWEUIFrame *F)->bool {
-		if (!Mat) return false;
-		if (!F->SetActiveTexture(Mat->m_Texture, false)) return false;
-		LWVector4f SubRegion = Mat->m_SubRegion;
-
-		uint32_t c = LWVertexUI::WriteRectangle(F->m_Mesh, Pos + LWVector2f(0.0f, Size.y), Pos + LWVector2f(Size.x, 0.0f), Mat->m_Color, LWVector2f(SubRegion.x, SubRegion.y), LWVector2f(SubRegion.z, SubRegion.w));
-		F->m_VertexCount[F->m_TextureCount - 1] += c;
-		return c != 0;
-	};
-
-	auto DrawClippedRect = [](LWEUIMaterial *Mat, const LWVector2f &Pos, const LWVector2f &Size, LWEUIFrame *F, const LWVector4f &AABB)->bool {
-		if (!Mat) return false;
-		if (!F->SetActiveTexture(Mat->m_Texture, false)) return false;
-		LWVector4f SubRegion = Mat->m_SubRegion;
-
-		uint32_t c = LWVertexUI::WriteRectangle(F->m_Mesh, Pos + LWVector2f(0.0f, Size.y), Pos + LWVector2f(Size.x, 0.0f), Mat->m_Color, LWVector2f(SubRegion.x, SubRegion.y), LWVector2f(SubRegion.z, SubRegion.w), AABB);
-		F->m_VertexCount[F->m_TextureCount - 1] += c;
-		if (F->m_VertexCount[F->m_TextureCount - 1] == 0) F->m_TextureCount--;
-		return c != 0;
-	};
-
-	auto DrawClippedText = [](LWEUIMaterial *Mat, const LWText &Text, LWFont *Fnt, const LWVector2f &Pos, float Scale, const LWVector4f &AABB, LWEUIFrame *F)->bool {
-		if (!Fnt) return false;
-		LWVector4f Clr = Mat ? Mat->m_Color : LWVector4f(0.0f, 0.0f, 0.0f, 1.0f);
-		Fnt->DrawClippedTextm(Text, Pos, Scale, Clr, AABB, F, &LWEUIFrame::WriteFontGlyph);
-		return true;
-
-	};
-
-	DrawRect(m_BackgroundMaterial, m_VisiblePosition - m_BorderSize, m_VisibleSize + m_BorderSize*2.0f, Frame);
+LWEUI &LWEUIListBox::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime) {
+	Frame.WriteRect(m_BackgroundMaterial, VisiblePos - m_BorderSize, VisibleSize + m_BorderSize*2.0f);
 	float CellHeight = GetCellHeight(Scale);
+	float LineSize = 0.0f;
+	if (m_Font) LineSize = m_Font->GetLineSize()*m_FontScale*Scale;
 	uint32_t n = (uint32_t)((m_Scroll) / CellHeight);
-	uint32_t c = (uint32_t)((GetScrollPageSize()) / CellHeight);
+	uint32_t c = (uint32_t)(ceilf(GetScrollPageSize() / CellHeight));
 	n = n > 0 ? n - 1 : n;
 	n = std::min<uint32_t>(n, m_ItemCount);
 	c = std::min<uint32_t>(n + c + 2, m_ItemCount);
 	for (uint32_t i = n; i < c; i++) {
-		float CellPos = (float)i*CellHeight - (m_Scroll);
+		float CellPos = (float)i*CellHeight - m_Scroll;
 		LWEUIListBoxItem &Item = m_ItemList[i];
 		LWEUIMaterial *Mat = Item.m_OffMaterial?Item.m_OffMaterial:m_OffMaterial;
 		if (i == m_OverItem) {
 			Mat = Item.m_OverMaterial ? Item.m_OverMaterial : m_OverMaterial;
-			if (m_Flag&MouseDown) Mat = Item.m_DownMaterial ? Item.m_DownMaterial : m_DownMaterial;
+			if (m_Flag&(MouseLDown | MouseMDown | MouseRDown)) {
+				Mat = Item.m_DownMaterial ? Item.m_DownMaterial : m_DownMaterial;
+			}
 		}
-		LWVector2f CellP = LWVector2f(m_VisiblePosition.x, m_VisiblePosition.y + (m_VisibleSize.y - CellPos - CellHeight));
-		DrawClippedRect(Mat, CellP, LWVector2f(m_VisibleSize.x, CellHeight), Frame, LWVector4f(m_VisiblePosition, m_VisibleSize));
-		CellP.y += (m_MinimumBoxHeight*0.5f*Scale) + ((m_Font->GetLineSize()*m_FontScale*Scale) - (m_ItemList[i].m_TextSize.y*Scale))*0.5f*Scale;
-		if (m_Flag&LabelRightAligned) CellP.x += m_VisibleSize.x - Item.m_TextSize.x*Scale;
-		else if (m_Flag&LabelCenterAligned) CellP.x += m_VisibleSize.x*0.5f - Item.m_TextSize.x*0.5f*Scale;
-		DrawClippedText(m_FontMaterial, Item.m_Name, m_Font, CellP, m_FontScale*Scale, LWVector4f(m_VisiblePosition, m_VisibleSize), Frame);
+		LWVector2f CellP = LWVector2f(VisiblePos.x, VisiblePos.y + (VisibleSize.y - CellPos - CellHeight));
+		Frame.WriteClippedRect(Mat, CellP, LWVector2f(VisibleSize.x, CellHeight), LWVector4f(VisiblePos, VisibleSize));
+		
+		CellP.y += (CellHeight*0.5f) - (Item.m_TextSize.y*0.5f)*Scale - Item.m_TextUnderhang*Scale;
+		if (m_Flag&LabelRightAligned) CellP.x += VisibleSize.x - Item.m_TextSize.x*Scale;
+		else if (m_Flag&LabelCenterAligned) CellP.x += VisibleSize.x*0.5f - Item.m_TextSize.x*0.5f*Scale;
+		Frame.WriteClippedText(m_FontMaterial, Item.m_Name, m_Font, CellP, m_FontScale*Scale, LWVector4f(VisiblePos, VisibleSize));
 	}
 	return *this;
 }
@@ -223,13 +217,24 @@ bool LWEUIListBox::PushItem(const LWText &ItemName, void *UserData, LWEUIMateria
 	m_ItemList[m_ItemCount].m_UserData = UserData;
 	LWVector4f BV = LWVector4f();
 	if (m_Font) BV = m_Font->MeasureText(ItemName, m_FontScale);
-	m_ItemList[m_ItemCount].m_TextSize = LWVector2f(BV.z - BV.x, BV.y);
+	m_ItemList[m_ItemCount].m_TextSize = LWVector2f(BV.z - BV.x, BV.y-BV.w);
+	m_ItemList[m_ItemCount].m_TextUnderhang = BV.w;
 	m_ItemList[m_ItemCount].m_OffMaterial = OffMat;
 	m_ItemList[m_ItemCount].m_OverMaterial = OverMat;
 	m_ItemList[m_ItemCount].m_DownMaterial = DownMat;
 	m_ItemCount++;
 	return true;
 }
+
+bool LWEUIListBox::PushItemf(const char *Fmt, void *UserData, LWEUIMaterial *OffMat, LWEUIMaterial *OverMat, LWEUIMaterial *DownMat, ...) {
+	char Buffer[256];
+	va_list lst;
+	va_start(lst, DownMat);
+	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
+	va_end(lst);
+	return PushItem(Buffer, UserData, OffMat, OverMat, DownMat);
+}
+
 
 bool LWEUIListBox::Clear(void) {
 	m_ItemCount = 0;
@@ -365,6 +370,6 @@ float LWEUIListBox::GetFontScale(void) const {
 	return m_FontScale;
 }
 
-LWEUIListBox::LWEUIListBox(LWEUIMaterial *BackgroundMaterial, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial, LWEUIMaterial *FntMaterial, LWFont *Font, float MinimumHeight, float BorderSize, const LWVector4f &Position, const LWVector4f &Size, uint32_t Flag) : LWEUI(Position, Size, Flag), m_BackgroundMaterial(BackgroundMaterial), m_OffMaterial(OffMaterial), m_DownMaterial(DownMaterial), m_OverMaterial(OverMaterial), m_FontMaterial(FntMaterial), m_Font(Font), m_ItemCount(0), m_OverItem(0xFFFFFFFF), m_MinimumBoxHeight(MinimumHeight), m_BorderSize(BorderSize), m_Scroll(0.0f), m_ScrollAcceleration(0.0f) {}
+LWEUIListBox::LWEUIListBox(LWEUIMaterial *BackgroundMaterial, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial, LWEUIMaterial *FntMaterial, LWFont *Font, float MinimumHeight, float BorderSize, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : LWEUI(Position, Size, Flag), m_BackgroundMaterial(BackgroundMaterial), m_OffMaterial(OffMaterial), m_DownMaterial(DownMaterial), m_OverMaterial(OverMaterial), m_FontMaterial(FntMaterial), m_Font(Font), m_ItemCount(0), m_OverItem(0xFFFFFFFF), m_MinimumBoxHeight(MinimumHeight), m_BorderSize(BorderSize), m_Scroll(0.0f), m_ScrollAcceleration(0.0f) {}
 
 LWEUIListBox::~LWEUIListBox() {}

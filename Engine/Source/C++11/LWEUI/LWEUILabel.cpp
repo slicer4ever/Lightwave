@@ -57,7 +57,7 @@ LWEUILabel *LWEUILabel::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Ma
 	LWEUIMaterial *Mat = nullptr;
 	if (FontAttr) {
 		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), FontAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		Font = (LWFont*)FindAsset(Manager->GetAssetManager(), Res, LWEAsset::Font);
+		Font = Manager->GetAssetManager()->GetAsset<LWFont>(Res);
 	}
 	if (MaterAttr) {
 		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), MaterAttr->m_Value, ActiveComponent, ActiveComponentNode);
@@ -89,43 +89,26 @@ LWEUILabel *LWEUILabel::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Ma
 	return Label;
 }
 
-LWEUI &LWEUILabel::UpdateSelf(LWEUIManager *Manager, float Scale, uint64_t lCurrentTime) {
-	LWWindow *Wnd = Manager->GetWindow();
-	LWMouse *Mouse = Wnd->GetMouseDevice();
-	LWTouch *Touch = Wnd->GetTouchDevice();
-	uint32_t Flag = m_Flag;
-	if (Mouse) {
-		LWVector2i MP = Mouse->GetPosition();
-		LWVector2f MousePnt = LWVector2f((float)MP.x, (float)MP.y);
-		if (MousePnt.x >= m_VisiblePosition.x && MousePnt.x <= m_VisiblePosition.x + m_VisibleSize.x && MousePnt.y >= m_VisiblePosition.y && MousePnt.y <= m_VisiblePosition.y + m_VisibleSize.y) {
-			Manager->DispatchEvent(this, Event_TempOverInc);
-			m_Flag |= MouseOver;
-		} else m_Flag &= ~MouseOver;
-	} 
-	if (Touch) {
-		for (uint32_t i = 0; i < Touch->GetPointCount(); i++) {
-			auto Pnt = Touch->GetPoint(i);
-			LWVector2f TouchPnt = LWVector2f((float)Pnt->m_Position.x, (float)Pnt->m_Position.y);
-			bool Over = TouchPnt.x + Pnt->m_Size >= m_VisiblePosition.x && TouchPnt.x - Pnt->m_Size <= m_VisiblePosition.x + m_VisibleSize.x && TouchPnt.y + Pnt->m_Size >= m_VisiblePosition.y && TouchPnt.y - Pnt->m_Size <= m_VisiblePosition.y + m_VisibleSize.y;
-			if (Over) {
-				Manager->DispatchEvent(this, Event_TempOverInc | (i << Event_OverOffset));
-				m_Flag |= MouseOver;
-			} else m_Flag &= ~MouseOver;
-		}
-	}
-	
-	if (m_Flag&MouseOver && (Flag&MouseOver) == 0) Manager->DispatchEvent(this, Event_MouseOver);
-	if ((m_Flag&MouseOver) == 0 && Flag&MouseOver) Manager->DispatchEvent(this, Event_MouseOff);
+LWEUI &LWEUILabel::UpdateSelf(LWEUIManager &Manager, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime) {
+	bool wasOver = (m_Flag&MouseOver) != 0;
+	m_Flag = (m_Flag&~MouseOver) | (m_TimeOver ? MouseOver : 0);
+	bool isOver = (m_Flag&MouseOver) != 0;
+	Manager.DispatchEvent(this, Event_MouseOver, isOver && !wasOver);
+	Manager.DispatchEvent(this, Event_MouseOff, !isOver && wasOver);
 	return *this;
 }
 
-LWEUI &LWEUILabel::DrawSelf(LWEUIManager *Manager, LWEUIFrame *Frame, float Scale, uint64_t lCurrentTime) {
+LWEUI &LWEUILabel::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime) {
 	if (!m_Font) return *this;
 
-	//uint32_t p = Frame->m_Mesh->GetActiveCount();
-	uint32_t Align = (m_Flag&(LabelLeftAligned | LabelCenterAligned | LabelRightAligned));
-	LWVector2f Pos = m_VisiblePosition - LWVector2f(0.0f, m_UnderHang * Scale);
-	if (Align == LabelLeftAligned) m_Font->DrawTextm(m_Text, Pos, m_FontScale*Scale, m_Material->m_Color, Frame, &LWEUIFrame::WriteFontGlyph);
+	uint32_t HoriAlign = (m_Flag&(LabelLeftAligned | LabelCenterAligned | LabelRightAligned));
+	uint32_t VertAlign = (m_Flag&(LabelBottomAligned | LabelVCenterAligned | LabelTopAligned));
+	LWVector2f TSize = m_TextSize * Scale;
+	LWVector2f Pos = VisiblePos - LWVector2f(0.0f, m_UnderHang * Scale);
+	if (VertAlign == LabelVCenterAligned) Pos.y += (VisibleSize.y - TSize.y)*0.5f;
+	else if (VertAlign == LabelTopAligned) Pos.y += (VisibleSize.y - TSize.y);
+
+	if (HoriAlign == LabelLeftAligned) m_Font->DrawTextm(m_Text, Pos, m_FontScale*Scale, m_Material->m_ColorA, &Frame, &LWEUIFrame::WriteFontGlyph);
 	else {
 		const uint8_t *C = m_Text.GetCharacters();
 		const uint8_t *N = LWText::FirstToken(C, '\n');
@@ -134,14 +117,18 @@ LWEUI &LWEUILabel::DrawSelf(LWEUIManager *Manager, LWEUIFrame *Frame, float Scal
 			uint32_t Len = N ? (uint32_t)(uintptr_t)(N - C) : 0xFFFFFFFF;
 			LWVector4f LineSize = m_Font->MeasureText(C, Len, m_FontScale*Scale);
 			float LS = (LineSize.z - LineSize.x);
-			if (Align == LabelCenterAligned) Pos.x = (m_VisiblePosition.x + m_VisibleSize.x*0.5f - LS*0.5f);
-			else Pos.x = m_VisiblePosition.x + m_VisibleSize.x - LS;
-			m_Font->DrawTextm(C, Len, Pos, m_FontScale*Scale, m_Material->m_Color, Frame, &LWEUIFrame::WriteFontGlyph);
+			if (HoriAlign == LabelCenterAligned) Pos.x = (VisiblePos.x + VisibleSize.x*0.5f - LS*0.5f);
+			else Pos.x = VisiblePos.x + VisibleSize.x - LS;
+			m_Font->DrawTextm(C, Len, Pos, m_FontScale*Scale, m_Material->m_ColorA, &Frame, &LWEUIFrame::WriteFontGlyph);
 			Pos.y -= m_Font->GetLineSize()*m_FontScale*Scale;
 		}
 	}
-	//Frame->m_VertexCount[Frame->m_TextureCount - 1] += (Frame->m_Mesh->GetActiveCount() - p);
 	return *this;
+}
+
+void LWEUILabel::Destroy(void) {
+	LWAllocator::Destroy(this);
+	return;
 }
 
 LWEUILabel &LWEUILabel::SetText(const LWText &Text) {
@@ -150,7 +137,7 @@ LWEUILabel &LWEUILabel::SetText(const LWText &Text) {
 }
 
 LWEUILabel &LWEUILabel::SetTextf(const char *Format, ...) {
-	char Buffer[256];
+	char Buffer[1024];
 	va_list lst;
 	va_start(lst, Format);
 	vsnprintf(Buffer, sizeof(Buffer), Format, lst);
@@ -162,8 +149,9 @@ LWEUILabel &LWEUILabel::SetFont(LWFont *Font) {
 	m_Font = Font;
 	if (m_Font) {
 		LWVector4f TextSize = Font->MeasureText(m_Text, m_FontScale);
-		m_Size.z = (TextSize.z - TextSize.x);
-		m_Size.w = (TextSize.y - TextSize.w);
+		m_TextSize = LWVector2f(TextSize.z - TextSize.x, TextSize.y-TextSize.w);
+		if ((m_Flag&NoAutoWidthSize) == 0) m_Size.z = m_TextSize.x;
+		if ((m_Flag&NoAutoHeightSize) == 0) m_Size.w = m_TextSize.y;
 		m_UnderHang = TextSize.w;
 	}
 	return *this;
@@ -195,7 +183,7 @@ float LWEUILabel::GetFontScale(void) const {
 	return m_FontScale;
 }
 
-LWEUILabel::LWEUILabel(const LWText &Text, LWFont *Font, LWAllocator &Allocator, LWEUIMaterial *Material, const LWVector4f &Position, const LWVector4f &Size, uint32_t Flag) : LWEUI(Position, Size, Flag), m_Text(LWText(Text.GetCharacters(), Allocator)), m_Font(Font), m_Material(Material), m_FontScale(1.0f) {
+LWEUILabel::LWEUILabel(const LWText &Text, LWFont *Font, LWAllocator &Allocator, LWEUIMaterial *Material, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : LWEUI(Position, Size, Flag), m_Text(LWText(Text.GetCharacters(), Allocator)), m_Font(Font), m_Material(Material), m_FontScale(1.0f) {
 	SetFont(Font);
 }
 

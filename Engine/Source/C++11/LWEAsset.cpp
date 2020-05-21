@@ -124,13 +124,14 @@ bool LWEAssetManager::XMLParseFont(LWEXMLNode *N, LWEAssetManager *AM) {
 	LWFileStream FontFile;
 	const char *PathValue = PathAttr->m_Value;
 	if (Localize) PathValue = Localize->ParseLocalization(SBuffer, sizeof(SBuffer), PathAttr->m_Value);
-	uint32_t ExtType = LWFileStream::IsExtensions(PathValue, 2, "ttf", "fnt");
-	if (!LWFileStream::OpenStream(FontFile, PathValue, ExtType == 0 ? (LWFileStream::BinaryMode | LWFileStream::ReadMode) : LWFileStream::ReadMode, *AM->GetAllocator())) {
+	uint32_t ExtType = LWFileStream::IsExtensions(PathValue, 3, "ttf", "fnt", "arfont");
+	if (!LWFileStream::OpenStream(FontFile, PathValue, LWFileStream::ReadMode | ((ExtType == 0 || ExtType==2) ? LWFileStream::BinaryMode : 0), *AM->GetAllocator())) {
 		std::cout << "Error opening font file: '" << PathValue << "'" << std::endl;
 		return false;
 	}
 	if (ExtType == 0) F = LWFont::LoadFontTTF(&FontFile, AM->GetDriver(), Size, GlpyhCount, GlyphFirst, GlyphLens, *AM->GetAllocator());
 	else if (ExtType == 1) F = LWFont::LoadFontFNT(&FontFile, AM->GetDriver(), *AM->GetAllocator());
+	else if (ExtType == 2) F = LWFont::LoadFontAR(&FontFile, AM->GetDriver(), *AM->GetAllocator());
 	if (!F) {
 		std::cout << "Error creating font file!" << std::endl;
 		return false;
@@ -588,7 +589,7 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 		snprintf(CBuffer, sizeof(CBuffer), "%s.%s%s", CPath, CompiledNames[Type], DriverNames[DriverID]);
 		CPath = CBuffer;
 	}
-	uint32_t n = LWText::CompareMultiple(Path, 4, "Font", "UITexture", "UIColor", "UIYUVTexture");
+	uint32_t n = LWText::CompareMultiple(Path, 7, "FontVertex", "FontColor", "FontMSDF", "UIVertex", "UITexture", "UIColor", "UIYUVTexture");
 	char *Source = nullptr;
 	char *DelSource = nullptr;
 	uint64_t ModifiedTime = 0;
@@ -635,10 +636,13 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 		}
 	} else {
 		strncat(AssetPath, Path, sizeof(AssetPath));
-		if (n == 0) Res = Driver->ParseShader(Type, LWFont::GetFontShaderSource(), Allocator, DefineCount, (const char**)DefineMap, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
-		else if (n == 1) Res = Driver->ParseShader(Type, LWEUIManager::GetTextureShaderSource(), Allocator, DefineCount, (const char**)DefineMap, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
-		else if (n == 2) Res = Driver->ParseShader(Type, LWEUIManager::GetColorShaderSource(), Allocator, DefineCount, (const char**)DefineMap, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
-		else if (n == 3) Res = Driver->ParseShader(Type, LWEUIManager::GetYUVTextureShaderSource(), Allocator, DefineCount, (const char**)DefineMap, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
+		if (n == 0) Res = Driver->ParseShader(Type, LWFont::GetVertexShaderSource(), Allocator, DefineCount, (const char**)DefineMap, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
+		else if (n == 1) Res = Driver->ParseShader(Type, LWFont::GetPixelColorShaderSource(), Allocator, DefineCount, (const char**)DefineMap, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
+		else if (n == 2) Res = Driver->ParseShader(Type, LWFont::GetPixelMSDFShaderSource(), Allocator, DefineCount, (const char**)DefineMap, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
+		else if (n == 3) Res = Driver->ParseShader(Type, LWEUIManager::GetVertexShaderSource(), Allocator, DefineCount, (const char**)DefineMap, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
+		else if (n == 4) Res = Driver->ParseShader(Type, LWEUIManager::GetTextureShaderSource(), Allocator, DefineCount, (const char**)DefineMap, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
+		else if (n == 5) Res = Driver->ParseShader(Type, LWEUIManager::GetColorShaderSource(), Allocator, DefineCount, (const char**)DefineMap, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
+		else if (n == 6) Res = Driver->ParseShader(Type, LWEUIManager::GetYUVTextureShaderSource(), Allocator, DefineCount, (const char**)DefineMap, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
 		if (Res) Res->SetInputMap(3, "Position", LWShaderInput::Vec4, 1, "Color", LWShaderInput::Vec4, 1, "TexCoord", LWShaderInput::Vec4, 1);
 	}
 	LWAllocator::Destroy(DelSource);
@@ -883,16 +887,19 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 	uint64_t ModifiedTime = 0;
 	const char *Source = nullptr;
 	char *DelSource = nullptr;
-	uint32_t n = LWText::CompareMultiple(PathAttr->m_Value, 4, "Font", "UITexture", "UIColor", "UIYUVTexture");
+	uint32_t n = LWText::CompareMultiple(PathAttr->m_Value, 7, "FontVertex", "FontColor", "FontMSDF", "UIVertex", "UITexture", "UIColor", "UIYUVTexture");
 	if (n == -1) {
 		uint32_t Len = 0;
 		Source = DelSource = ParsePath(PathAttr->m_Value, Len, ModifiedTime, *AM->GetAllocator(), nullptr);
 		if (!Source) return false;
 	} else {
-		if (n == 0) Source = LWFont::GetFontShaderSource();
-		else if (n == 1) Source = LWEUIManager::GetTextureShaderSource();
-		else if (n == 2) Source = LWEUIManager::GetColorShaderSource();
-		else if (n == 3) Source = LWEUIManager::GetYUVTextureShaderSource();
+		if (n == 0) Source = LWFont::GetVertexShaderSource();
+		else if (n == 1) Source = LWFont::GetPixelColorShaderSource();
+		else if (n == 2) Source = LWFont::GetPixelMSDFShaderSource();
+		else if (n == 3) Source = LWEUIManager::GetVertexShaderSource();
+		else if (n == 4) Source = LWEUIManager::GetTextureShaderSource();
+		else if (n == 5) Source = LWEUIManager::GetColorShaderSource();
+		else if (n == 6) Source = LWEUIManager::GetYUVTextureShaderSource();
 		InputCount = BuildDefaultInputMap(3, InputList, "Position", LWShaderInput::Vec4, 1, "Color", LWShaderInput::Vec4, 1, "TexCoord", LWShaderInput::Vec4, 1);
 	}
 	for (LWEXMLNode *C = N->m_FirstChild; C; C = C->m_Next) {

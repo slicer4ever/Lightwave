@@ -100,6 +100,8 @@ public:
 
 	static uint32_t UnEscapeString(const char *String, char *Buffer, uint32_t BufferLen);
 
+	static bool LoadFile(LWEJson &Json, const LWText &Path, LWAllocator &Allocator, LWEJObject *Parent = nullptr, LWFileStream *ExistingStream = nullptr);
+
 	static bool Parse(LWEJson &JSon, const char *Buffer, LWEJObject *Parent = nullptr);
 
 	uint32_t Serialize(char *Buffer, uint32_t BufferLen, bool Format);

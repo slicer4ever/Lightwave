@@ -9,7 +9,7 @@
 class LWVideoDriver_DirectX11_1 : public LWVideoDriver{
 public:
 
-	static LWVideoDriver_DirectX11_1 *MakeVideoDriver(LWWindow *Window);
+	static LWVideoDriver_DirectX11_1 *MakeVideoDriver(LWWindow *Window, uint32_t Type);
 
 	static bool DestroyVideoContext(LWVideoDriver_DirectX11_1 *Driver);
 

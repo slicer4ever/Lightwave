@@ -14,15 +14,57 @@
 struct LWEGLTFAnimTween{
 
 	//Constructs a matrix for the given time code, if Loop is set to true then Time will be Time%TotalTime to continously loop the animation.
-	LWMatrix4f GetFrame(uint64_t Time, bool Loop = false);
+	LWMatrix4f GetFrame(float Time, bool Loop = false);
 
-	uint64_t GetTotalTime(void) const;
+	float GetTotalTime(void) const;
 
 	LWEGLTFAnimTween() = default;
 
 	LWETween<LWVector3f> m_Translation;
 	LWETween<LWQuaternionf> m_Rotation;
 	LWETween<LWVector3f> m_Scale;
+};
+
+
+struct LWEGLTFAccessor {
+	enum {
+		//Component Type possible values, Based on openGL values, the Byte2-4 are unlikely to be ever used but are added for completness sake.
+		Byte = 0,
+		UByte,
+		Short,
+		UShort,
+		Int,
+		UInt,
+		Float,
+		Byte2,
+		Byte3,
+		Byte4,
+		Double,
+
+		//Type possible values, indicates how many of ComponentType are to be read.
+		Scalar = 0,
+		Vec2,
+		Vec3,
+		Vec4,
+		Mat2,
+		Mat3,
+		Mat4,
+
+		Normalized = 0x1 //Flag indicating the value should be normalized when read out.
+	};
+
+	static bool ParseJSON(LWEGLTFAccessor &Buf, LWEJson &J, LWEJObject *Obj);
+
+	LWEGLTFAccessor(uint32_t BufferID, uint32_t Offset, uint32_t ComponentType, uint32_t Count, uint32_t Type, uint32_t Flag);
+
+	LWEGLTFAccessor() = default;
+
+	uint32_t m_BufferID = -1;
+	uint32_t m_Offset = 0;
+	uint32_t m_ComponentType = 0;
+	uint32_t m_Count = 0;
+	uint32_t m_Type = 0;
+	uint32_t m_Flag = 0;
 };
 
 struct LWEGLTFAccessorView {
@@ -32,27 +74,27 @@ struct LWEGLTFAccessorView {
 	Type GetValueAt(uint8_t *Position){
 		if (m_ComponentType == LWEGLTFAccessor::Byte) {
 			int8_t Val = *((int8_t*)Position);
-			if (m_Normalize) return (Type)Val / 127;
+			if (m_Normalize) return (Type)(Val / 127);
 			return (Type)Val;
 		} else if (m_ComponentType == LWEGLTFAccessor::UByte) {
 			uint8_t Val = *Position;
-			if (m_Normalize) return (Type)Val / 255;
+			if (m_Normalize) return (Type)(Val / 255);
 			return (Type)Val;
 		} else if (m_ComponentType == LWEGLTFAccessor::Short) {
 			int16_t Val = *((int16_t*)Position);
-			if (m_Normalize) return (Type)Val / 32767;
+			if (m_Normalize) return (Type)(Val / 32767);
 			return (Type)Val;
 		} else if (m_ComponentType == LWEGLTFAccessor::UShort) {
 			uint16_t Val = *((uint16_t*)Position);
-			if (m_Normalize) return (Type)Val / 65535;
+			if (m_Normalize) return (Type)(Val / 65535);
 			return (Type)Val;
 		} else if (m_ComponentType == LWEGLTFAccessor::Int) {
 			int32_t Val = *((int32_t*)Position);
-			if (m_Normalize) return (Type)Val / 2147483647;
+			if (m_Normalize) return (Type)(Val / 2147483647);
 			return (Type)Val;
 		} else if (m_ComponentType == LWEGLTFAccessor::UInt) {
 			uint32_t Val = *((uint32_t*)Position);
-			if (m_Normalize) return (Type)Val / 4294967295;
+			if (m_Normalize) return (Type)(Val / 4294967295);
 			return (Type)Val;
 		} else if (m_ComponentType == LWEGLTFAccessor::Float) {
 			float Val = *((float*)Position);
@@ -127,48 +169,6 @@ struct LWEGLTFBufferView {
 	uint32_t m_Offset = 0;
 	uint32_t m_Length = 0;
 	uint32_t m_Stride = 0;
-};
-
-
-struct LWEGLTFAccessor {
-	enum {
-		//Component Type possible values, Based on openGL values, the Byte2-4 are unlikely to be ever used but are added for completness sake.
-		Byte = 0,
-		UByte,
-		Short,
-		UShort,
-		Int,
-		UInt,
-		Float,
-		Byte2,
-		Byte3,
-		Byte4,
-		Double,
-
-		//Type possible values, indicates how many of ComponentType are to be read.
-		Scalar=0,
-		Vec2,
-		Vec3,
-		Vec4,
-		Mat2,
-		Mat3,
-		Mat4,
-
-		Normalized = 0x1 //Flag indicating the value should be normalized when read out.
-	};
-
-	static bool ParseJSON(LWEGLTFAccessor &Buf, LWEJson &J, LWEJObject *Obj);
-
-	LWEGLTFAccessor(uint32_t BufferID, uint32_t Offset, uint32_t ComponentType, uint32_t Count, uint32_t Type, uint32_t Flag);
-
-	LWEGLTFAccessor() = default;
-
-	uint32_t m_BufferID = -1;
-	uint32_t m_Offset = 0;
-	uint32_t m_ComponentType = 0;
-	uint32_t m_Count = 0;
-	uint32_t m_Type = 0;
-	uint32_t m_Flag = 0;
 };
 
 
@@ -250,7 +250,7 @@ struct LWEGLTFPrimitive {
 
 	static bool ParseJSON(LWEGLTFPrimitive &Primitive, LWEJson &J, LWEJObject *Obj);
 
-	//returns -1 if not found, otherwise returns the attributes hash.
+	//returns -1 if not found, otherwise returns the attributes index.
 	uint32_t FindAttributeAccessor(uint32_t AttributeHash);
 
 	LWEGLTFPrimitive(uint32_t MaterialID, uint32_t IndiceID, uint32_t AttributeCount);
@@ -425,6 +425,7 @@ struct LWEGLTFNode {
 	uint32_t m_LightID = -1;
 	uint32_t m_MeshID = -1;
 	uint32_t m_SkinID = -1;
+	uint32_t m_NodeID = 0;
 
 };
 
@@ -509,7 +510,6 @@ public:
 	/*!< \brief constructs a tween of type for the passed in channel. */
 	template<class Type>
 	bool BuildChannelTween(LWETween<Type> &Tween, LWEGLTFAnimChannel &Channel) {
-		const uint64_t Resolution = LWTimer::GetResolution();
 		Tween = LWETween<Type>(Channel.m_Interpolation);
 		LWEGLTFAccessorView InputView;
 		LWEGLTFAccessorView OutputView;
@@ -519,23 +519,22 @@ public:
 			float Time = 0.0f;
 			Type Vals[3];
 			InputView.ReadValues<float>(&Time, 0, 1);
-			uint64_t Time64 = (uint64_t)(Resolution*Time);
 			if (Channel.m_Interpolation == LWEGLTFAnimChannel::CUBICSPLINE) {
 				OutputView.ReadValues<float>(&Vals[0].x, sizeof(Type), 3);
-				Tween.Push(Vals[0], Vals[1], Vals[2], Time64);
+				Tween.Push(Vals[0], Vals[1], Vals[2], Time);
 			} else {
 				OutputView.ReadValues<float>(&Vals[0].x, 0, 1);
-				Tween.Push(Vals[0], Time64);
+				Tween.Push(Vals[0], Time);
 			}
 		}
 		return true;
 	};
 
 	//Returns the length of the animation, if no animation channels then the Animation will be populated with a single frame of the bound world translation/rotation/scaling, so can still be used if neccessary.  This function searchs all animations.
-	uint64_t BuildNodeAnimation(LWEGLTFAnimTween &Animation, uint32_t NodeID);
+	float BuildNodeAnimation(LWEGLTFAnimTween &Animation, uint32_t NodeID);
 
 	//Returns the length of the animation, if no animation channels in the specified animationID is found, then the animation will be populated with a single frame of the bound world translation/rotation/scaling, so can still be used if necessary.
-	uint64_t BuildNodeAnimation(LWEGLTFAnimTween &Animation, uint32_t AnimationID, uint32_t NodeID);
+	float BuildNodeAnimation(LWEGLTFAnimTween &Animation, uint32_t AnimationID, uint32_t NodeID);
 
 	//Calculates the world transform for the specified node.
 	LWMatrix4f GetNodeWorldTransform(uint32_t NodeID);

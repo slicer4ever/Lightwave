@@ -664,10 +664,12 @@ bool LWVideoDriver_OpenGL4_5::UpdateTextureCubeArray(LWTexture *Texture, uint32_
 }
 
 bool LWVideoDriver_OpenGL4_5::UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const uint8_t *Buffer, uint32_t Length) {
+	if (!Length) return true;
 	LWOpenGL4_5Buffer *VB = (LWOpenGL4_5Buffer*)VideoBuffer;
 	int32_t GTypes[] = { GL_ARRAY_BUFFER, GL_UNIFORM_BUFFER, GL_ELEMENT_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER, GL_SHADER_STORAGE_BUFFER};
 	
 	int32_t Type = GTypes[VB->GetType()];
+
 	glBindBuffer(Type, VB->GetContext());
 	uint8_t *B = (uint8_t*)glMapBuffer(Type, GL_WRITE_ONLY);
 	if (!B) return false;

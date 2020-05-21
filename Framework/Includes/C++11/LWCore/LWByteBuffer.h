@@ -1,6 +1,9 @@
 #ifndef LWBYTEBUFFER_H
 #define LWBYTEBUFFER_H
 #include "LWCore/LWTypes.h"
+#include "LWCore/LWSVector.h"
+#include "LWCore/LWSMatrix.h"
+#include "LWCore/LWSQuaternion.h"
 #include "LWCore/LWVector.h"
 #include "LWCore/LWMatrix.h"
 #include "LWCore/LWQuaternion.h"
@@ -17,7 +20,7 @@
 	
 */
 
-class LWByteBuffer{
+class LWByteBuffer {
 public:
 
 	/*! \defgroup LWByteBufferFlag LWByteBufferFlag
@@ -35,7 +38,7 @@ public:
 		\return the network order resultant number.
 	*/
 	static int8_t MakeNetwork(int8_t Value);
-	
+
 	/*!
 		\overload uint8_t LWByteBuffer::MakeNetwork(uint8_t)
 	*/
@@ -75,7 +78,7 @@ public:
 		\overload uint64_t LWByteBuffer::MakeNetwork(uint64_t)
 	*/
 	static uint64_t MakeNetwork(uint64_t Value);
-	
+
 	/*!
 		\brief Encodes a float into an network order uint32_t.
 		\overload uint32_t LWByteBuffer::MakeNetwork(float);
@@ -281,10 +284,16 @@ public:
 		\note Buffer can be null, in which case the total number of bytes that would have been written is returned.
 	*/
 	template<class Type>
-	static int32_t Write(const Type Value, int8_t *Buffer){
-		if(Buffer) *(Type*)Buffer = Value;
+	static int32_t Write(const Type Value, int8_t *Buffer) {
+		if (Buffer) *(Type*)Buffer = Value;
 		return sizeof(Type);
 	}
+	/*! \overload int32_t Write(const LWSQuaternion<Type> &, int8_t *) */
+	template<class Type>
+	static int32_t Write(const LWSQuaternion<Type> &Value, int8_t *Buffer) {
+		return Write(Value.AsQuaternion(), Buffer);
+	}
+
 
 	/*! \overload int32_t Write(const LWQuaternion<Type> &, int8_t *)
 	*/
@@ -299,50 +308,62 @@ public:
 		return sizeof(Type) * 4;
 	}
 
+	/*! \overload int32_t Write(const LWSVector4<Type> &, int8_t *) */
+	template<class Type>
+	static int32_t Write(const LWSVector4<Type> &Value, int8_t *Buffer) {
+		return Write(Value.AsVec4(), Buffer);
+	}
+
 	/*!
 		\overload int32_t Write(const LWVector4<Type> &, int8_t *)
 	*/
 	template<class Type>
-	static int32_t Write(const LWVector4<Type> &Value, int8_t *Buffer){
-		if (Buffer){
+	static int32_t Write(const LWVector4<Type> &Value, int8_t *Buffer) {
+		if (Buffer) {
 			*((Type*)Buffer + 0) = Value.x;
 			*((Type*)Buffer + 1) = Value.y;
 			*((Type*)Buffer + 2) = Value.z;
 			*((Type*)Buffer + 3) = Value.w;
 		}
-		return sizeof(Type)* 4;
+		return sizeof(Type) * 4;
 	}
 
 	/*!
 		\overload int32_t Write(const LWVector3<Type> &, int8_t *)
 	*/
 	template<class Type>
-	static int32_t Write(const LWVector3<Type> &Value, int8_t *Buffer){
-		if (Buffer){
+	static int32_t Write(const LWVector3<Type> &Value, int8_t *Buffer) {
+		if (Buffer) {
 			*((Type*)Buffer + 0) = Value.x;
 			*((Type*)Buffer + 1) = Value.y;
 			*((Type*)Buffer + 2) = Value.z;
 		}
-		return sizeof(Type)* 3;
+		return sizeof(Type) * 3;
 	}
 
 	/*!
 		\overload int32_t Write(const LWVector2<Type> &, int8_t *)
 	*/
 	template<class Type>
-	static int32_t Write(const LWVector2<Type> &Value, int8_t *Buffer){
-		if (Buffer){
+	static int32_t Write(const LWVector2<Type> &Value, int8_t *Buffer) {
+		if (Buffer) {
 			*((Type*)Buffer + 0) = Value.x;
 			*((Type*)Buffer + 1) = Value.y;
 		}
-		return sizeof(Type)* 2;
+		return sizeof(Type) * 2;
+	}
+
+	/*! \overload int32_t Write(const LWSMatrix4<Type> &, int8_t *) */
+	template<class Type>
+	static int32_t Write(const LWSMatrix4<Type> &Value, int8_t *Buffer) {
+		return Write(Value.AsMat4(), Buffer);
 	}
 
 	/*! \overload int32_t Write(const LWMatrix4<Type> &, int8_t *)
 	*/
 	template<class Type>
-	static int32_t Write(const LWMatrix4<Type> &Value, int8_t *Buffer){
-		if (Buffer){
+	static int32_t Write(const LWMatrix4<Type> &Value, int8_t *Buffer) {
+		if (Buffer) {
 			*((Type*)Buffer + 0) = Value.m_Rows[0].x;
 			*((Type*)Buffer + 1) = Value.m_Rows[0].y;
 			*((Type*)Buffer + 2) = Value.m_Rows[0].z;
@@ -360,14 +381,14 @@ public:
 			*((Type*)Buffer + 14) = Value.m_Rows[3].z;
 			*((Type*)Buffer + 15) = Value.m_Rows[3].w;
 		}
-		return sizeof(Type)* 16;
+		return sizeof(Type) * 16;
 	}
 
 	/*! \overload int32_t Write(const LWMatrix3<Type> &, int8_t*)
 	*/
 	template<class Type>
-	static int32_t Write(const LWMatrix3<Type> &Value, int8_t *Buffer){
-		if (Buffer){
+	static int32_t Write(const LWMatrix3<Type> &Value, int8_t *Buffer) {
+		if (Buffer) {
 			*((Type*)Buffer + 0) = Value.m_Rows[0].x;
 			*((Type*)Buffer + 1) = Value.m_Rows[0].y;
 			*((Type*)Buffer + 2) = Value.m_Rows[0].z;
@@ -378,19 +399,19 @@ public:
 			*((Type*)Buffer + 7) = Value.m_Rows[2].y;
 			*((Type*)Buffer + 8) = Value.m_Rows[2].z;
 		}
-		return sizeof(Type)* 9;
+		return sizeof(Type) * 9;
 	}
-	
+
 	/*! \overload int32_t Write(const LWMatrix2<Type> &, int8_t *) */
 	template<class Type>
-	static int32_t Write(const LWMatrix2<Type> &Value, int8_t *Buffer){
-		if (Buffer){
+	static int32_t Write(const LWMatrix2<Type> &Value, int8_t *Buffer) {
+		if (Buffer) {
 			*((Type*)Buffer + 0) = Value.m_Rows[0].x;
 			*((Type*)Buffer + 1) = Value.m_Rows[0].y;
 			*((Type*)Buffer + 2) = Value.m_Rows[1].x;
 			*((Type*)Buffer + 3) = Value.m_Rows[1].y;
 		}
-		return sizeof(Type)* 4;
+		return sizeof(Type) * 4;
 	}
 
 	/*! \brief writes a utf-8 text to the buffer stream. */
@@ -413,9 +434,24 @@ public:
 		\note Buffer can be null, in which case the total number of bytes that would have been written is returned.
 	*/
 	template<class Type>
-	static int32_t Write(uint32_t Len, const Type *Values, int8_t *Buffer){
+	static int32_t Write(uint32_t Len, const Type *Values, int8_t *Buffer) {
 		if (Buffer)	for (uint32_t i = 0; i < Len; i++) *(((Type*)Buffer) + i) = Values[i];
-		return sizeof(Type)*Len;
+		return sizeof(Type) * Len;
+	}
+
+	/*! \overload int32_t Write(uint32_t, const LWSQuaternion<Type> *, int8_t *) */
+	template<class Type>
+	static int32_t Write(uint32_t Len, const LWSQuaternion<Type> *Values, int8_t *Buffer) {
+		if (Buffer) {
+			for (uint32_t i = 0; i < Len; i++) {
+				LWQuaternion<Type> V = Values[i].AsQuaternion();
+				*((Type*)Buffer + i * 4 + 0) = V.x;
+				*((Type*)Buffer + i * 4 + 1) = V.y;
+				*((Type*)Buffer + i * 4 + 2) = V.z;
+				*((Type*)Buffer + i * 4 + 3) = V.w;
+			}
+		}
+		return sizeof(Type) * 4 * Len;
 	}
 
 	/*! \overload int32_t Write(uint32_t, const LWQuaternion<Type> *, int8_t *)
@@ -428,6 +464,21 @@ public:
 				*((Type*)Buffer + i * 4 + 1) = Value[i].y;
 				*((Type*)Buffer + i * 4 + 2) = Value[i].z;
 				*((Type*)Buffer + i * 4 + 3) = Value[i].w;
+			}
+		}
+		return sizeof(Type) * 4 * Len;
+	}
+
+	/*! \overload int32_t Write(uint32_t, const LWSVector4<Type> *, int8_t *)*/
+	template<class Type>
+	static int32_t Write(uint32_t Len, const LWSVector4<Type> *Values, int8_t *Buffer) {
+		if (Buffer) {
+			for (uint32_t i = 0; i < Len; i++) {
+				LWVector4<Type> V = Values[i].AsVec4();
+				*((Type*)Buffer + i * 4 + 0) = V.x;
+				*((Type*)Buffer + i * 4 + 1) = V.y;
+				*((Type*)Buffer + i * 4 + 2) = V.z;
+				*((Type*)Buffer + i * 4 + 3) = V.w;
 			}
 		}
 		return sizeof(Type) * 4 * Len;
@@ -476,6 +527,33 @@ public:
 			}
 		}
 		return sizeof(Type)* 2 * Len;
+	}
+
+	/*! \overload int32_t Write(uint32_t, const LWSMatrix4<Type> *, int8_t *) */
+	template<class Type>
+	static int32_t Write(uint32_t Len, const LWSMatrix4<Type> *Values, int8_t *Buffer) {
+		if (Buffer) {
+			for (uint32_t i = 0; i < Len; i++) {
+				LWMatrix4<Type> V = Values[i].AsMat4();
+				*((Type*)Buffer + i * 16 + 0) = V.m_Rows[0].x;
+				*((Type*)Buffer + i * 16 + 1) = V.m_Rows[0].y;
+				*((Type*)Buffer + i * 16 + 2) = V.m_Rows[0].z;
+				*((Type*)Buffer + i * 16 + 3) = V.m_Rows[0].w;
+				*((Type*)Buffer + i * 16 + 4) = V.m_Rows[1].x;
+				*((Type*)Buffer + i * 16 + 5) = V.m_Rows[1].y;
+				*((Type*)Buffer + i * 16 + 6) = V.m_Rows[1].z;
+				*((Type*)Buffer + i * 16 + 7) = V.m_Rows[1].w;
+				*((Type*)Buffer + i * 16 + 8) = V.m_Rows[2].x;
+				*((Type*)Buffer + i * 16 + 9) = V.m_Rows[2].y;
+				*((Type*)Buffer + i * 16 + 10) = V.m_Rows[2].z;
+				*((Type*)Buffer + i * 16 + 11) = V.m_Rows[2].w;
+				*((Type*)Buffer + i * 16 + 12) = V.m_Rows[3].x;
+				*((Type*)Buffer + i * 16 + 13) = V.m_Rows[3].y;
+				*((Type*)Buffer + i * 16 + 14) = V.m_Rows[3].z;
+				*((Type*)Buffer + i * 16 + 15) = V.m_Rows[3].w;
+			}
+		}
+		return sizeof(Type) * 16 * Len;
 	}
 
 	/*! \overload int32_t Write(uint32_t, const LWMatrix4<Type> *, int8_t *)
@@ -580,6 +658,12 @@ public:
 		return sizeof(Type);
 	}
 
+	/*! \overload int32_t WriteNetwork(const LWSQuaternion<Type> &, int8_t *) */
+	template<class Type>
+	static int32_t WriteNetwork(const LWSQuaternion<Type> &Value, int8_t *Buffer) {
+		return WriteNetwork(Value.AsSQuaternion(), Buffer);
+	}
+
 	/*!
 	\overload int32_t WriteNetwork(const LWQuaternion<Type> &, int8_t *)
 	*/
@@ -592,6 +676,12 @@ public:
 			*((Type*)Buffer + 3) = MakeNetwork(Value.w);
 		}
 		return sizeof(Type) * 4;
+	}
+
+	/*! \overload int32_t WriteNetwork(const LWSVector4<Type> &, int8_t *) */
+	template<class Type>
+	static int32_t WriteNetwork(const LWSVector4<Type> &Value, int8_t *Buffer) {
+		return WriteNetwork(Value.AsVec4(), Buffer);
 	}
 
 	/*!
@@ -631,6 +721,12 @@ public:
 			*((Type*)Buffer + 1) = MakeNetwork(Value.y);
 		}
 		return sizeof(Type)* 2;
+	}
+
+	/*! \overload int32_t WriteNetwork(const LWSMatrix4<Type> &, int8_t *) */
+	template<class Type>
+	static int32_t WriteNetwork(const LWSMatrix4<Type> &Value, int8_t *Buffer) {
+		return WriteNetwork(Value.AsMat4(), Buffer);
 	}
 
 	/*!
@@ -710,6 +806,21 @@ public:
 		return sizeof(Type)*Len;
 	}
 
+	/*! \overload int32_t WriteNetwork(uint32_t, const LWSQuaternion<Type> *, int8_t *) */
+	template<class Type>
+	static int32_t WriteNetwork(uint32_t Len, const LWSQuaternion<Type> *Value, int8_t *Buffer) {
+		if (Buffer) {
+			for (uint32_t i = 0; i < Len; i++) {
+				LWQuaternion<Type> V = Value[i].AsQuaternion();
+				*((Type*)Buffer + i * 4 + 0) = MakeNetwork(V.x);
+				*((Type*)Buffer + i * 4 + 1) = MakeNetwork(V.y);
+				*((Type*)Buffer + i * 4 + 2) = MakeNetwork(V.z);
+				*((Type*)Buffer + i * 4 + 3) = MakeNetwork(V.w);
+			}
+		}
+		return sizeof(Type) * 4 * Len;
+	}
+
 	/*! \overload int32_t WriteNetwork(uint32_t, const LWQuaternion<Type> *, int8_t *)
 	*/
 	template<class Type>
@@ -720,6 +831,21 @@ public:
 				*((Type*)Buffer + i * 4 + 1) = MakeNetwork(Value[i].y);
 				*((Type*)Buffer + i * 4 + 2) = MakeNetwork(Value[i].z);
 				*((Type*)Buffer + i * 4 + 3) = MakeNetwork(Value[i].w);
+			}
+		}
+		return sizeof(Type) * 4 * Len;
+	}
+
+	/*! \overload int32_t WriteNetwork(uint32_t, const LWSVector4<Type> *, int8_t*) */
+	template<class Type>
+	static int32_t WriteNetwork(uint32_t Len, const LWSVector4<Type> *Values, int8_t *Buffer) {
+		if (Buffer) {
+			for (uint32_t i = 0; i < Len; i++) {
+				LWVector4<Type> V = Values[i].AsVec4();
+				*((Type*)Buffer + i * 4 + 0) = MakeNetwork(V.x);
+				*((Type*)Buffer + i * 4 + 1) = MakeNetwork(V.y);
+				*((Type*)Buffer + i * 4 + 2) = MakeNetwork(V.z);
+				*((Type*)Buffer + i * 4 + 3) = MakeNetwork(V.w);
 			}
 		}
 		return sizeof(Type) * 4 * Len;
@@ -768,6 +894,33 @@ public:
 			}
 		}
 		return sizeof(Type)* 2 * Len;
+	}
+
+	/*! \overload int32_t WriteNetwork(uint32_t, const LWSMatrix4<Type> *, int8_t*) */
+	template<class Type>
+	static int32_t WriteNetwork(uint32_t Len, const LWSMatrix4<Type> *Values, int8_t *Buffer) {
+		if (Buffer) {
+			for (uint32_t i = 0; i < Len; i++) {
+				LWSMatrix4<Type> V = Values[i].AsMat4();
+				*((Type*)Buffer + i * 16 + 0) = MakeNetwork(V.m_Rows[0].x);
+				*((Type*)Buffer + i * 16 + 1) = MakeNetwork(V.m_Rows[0].y);
+				*((Type*)Buffer + i * 16 + 2) = MakeNetwork(V.m_Rows[0].z);
+				*((Type*)Buffer + i * 16 + 3) = MakeNetwork(V.m_Rows[0].w);
+				*((Type*)Buffer + i * 16 + 4) = MakeNetwork(V.m_Rows[1].x);
+				*((Type*)Buffer + i * 16 + 5) = MakeNetwork(V.m_Rows[1].y);
+				*((Type*)Buffer + i * 16 + 6) = MakeNetwork(V.m_Rows[1].z);
+				*((Type*)Buffer + i * 16 + 7) = MakeNetwork(V.m_Rows[1].w);
+				*((Type*)Buffer + i * 16 + 8) = MakeNetwork(V.m_Rows[2].x);
+				*((Type*)Buffer + i * 16 + 9) = MakeNetwork(V.m_Rows[2].y);
+				*((Type*)Buffer + i * 16 + 10) = MakeNetwork(V.m_Rows[2].z);
+				*((Type*)Buffer + i * 16 + 11) = MakeNetwork(V.m_Rows[2].w);
+				*((Type*)Buffer + i * 16 + 12) = MakeNetwork(V.m_Rows[3].x);
+				*((Type*)Buffer + i * 16 + 13) = MakeNetwork(V.m_Rows[3].y);
+				*((Type*)Buffer + i * 16 + 14) = MakeNetwork(V.m_Rows[3].z);
+				*((Type*)Buffer + i * 16 + 15) = MakeNetwork(V.m_Rows[3].w);
+			}
+		}
+		return sizeof(Type) * 16 * Len;
 	}
 
 	/*! \overload int32_t WriteNetwork(uint32_t, const LWMatrix4<Type> *, int8_t*)
@@ -883,6 +1036,61 @@ public:
 		return sizeof(Type);
 	}
 
+	/*! \overload int32_t Read(LWSQuaternion<Type> *Out, const int8_t *Buffer) */
+
+	template<class Type>
+	static int32_t Read(LWSQuaternion<Type> *Out, const int8_t *Buffer) {
+		if (Out) {
+			Type v[4];
+			v[0] = *((Type*)Buffer + 0);
+			v[1] = *((Type*)Buffer + 1);
+			v[2] = *((Type*)Buffer + 2);
+			v[3] = *((Type*)Buffer + 3);
+			*Out = LWSQuaternion<Type>(v[3], v[0], v[1], v[2]);
+		}
+		return sizeof(Type) * 4;
+	}
+
+	/*! \overload int32_t Read(LWSVector4<Type> *Out, const int8_t *Buffer) */
+	template<class Type>
+	static int32_t Read(LWSVector4<Type> *Out, const int8_t *Buffer) {
+		if (Out) {
+			Type v[4];
+			v[0] = *((Type*)Buffer + 0);
+			v[1] = *((Type*)Buffer + 1);
+			v[2] = *((Type*)Buffer + 2);
+			v[3] = *((Type*)Buffer + 3);
+			*Out = LWSVector4<Type>(v[0], v[1], v[2], v[3]);
+		}
+		return sizeof(Type) * 4;
+	}
+
+	/*! \overload int32_t Read(LWSMatrix4<Type> *Out, const int8_t *Buffer) */
+	template<class Type>
+	static int32_t Read(LWSMatrix4<Type> *Out, const int8_t *Buffer) {
+		if (Out) {
+			Type v[16];
+			v[0] = *((Type*)Buffer + 0);
+			v[1] = *((Type*)Buffer + 1);
+			v[2] = *((Type*)Buffer + 2);
+			v[3] = *((Type*)Buffer + 3);
+			v[4] = *((Type*)Buffer + 4);
+			v[5] = *((Type*)Buffer + 5);
+			v[6] = *((Type*)Buffer + 6);
+			v[7] = *((Type*)Buffer + 7);
+			v[8] = *((Type*)Buffer + 8);
+			v[9] = *((Type*)Buffer + 9);
+			v[10] = *((Type*)Buffer + 10);
+			v[11] = *((Type*)Buffer + 11);
+			v[12] = *((Type*)Buffer + 12);
+			v[13] = *((Type*)Buffer + 13);
+			v[14] = *((Type*)Buffer + 14);
+			v[15] = *((Type*)Buffer + 15);
+			*Out = LWSMatrix4<Type>(LWSVector4<Type>(v[0], v[1], v[2], v[3]), LWSVector4<Type>(v[4], v[5], v[6], v[7]), LWSVector4<Type>(v[8], v[9], v[10], v[11]), LWSVector4<Type>(v[12], v[13], v[14], v[15]));
+		}
+		return sizeof(Type) * 16;
+	}
+
 	/*! \brief reads back an utf8 string from the buffer, and stores it into Out.
 		\param Out the buffer to receive the utf-8 text.
 		\param OutLen the length of the out buffer for storage.
@@ -922,6 +1130,66 @@ public:
 		return sizeof(Type)*Len;
 	}
 
+	/*! \overload int32_t Read(LWSQuaternion<Type> *Out, uint32_t Len, const int8_t *Buffer) */
+	template<class Type>
+	static int32_t Read(LWSQuaternion<Type> *Out, uint32_t Len, const int8_t *Buffer) {
+		if (Out) {
+			for (uint32_t i = 0; i < Len; i++) {
+				Type v[4];
+				v[0] = *((Type*)Buffer + i * 4 + 0);
+				v[1] = *((Type*)Buffer + i * 4 + 1);
+				v[2] = *((Type*)Buffer + i * 4 + 2);
+				v[3] = *((Type*)Buffer + i * 4 + 3);
+				Out[i] = LWSQuaternion<Type>(v[3], v[0], v[1], v[2]);
+			}
+		}
+		return sizeof(Type) * 4 * Len;
+	}
+
+	/*! \overload int32_t Read(LWSVector4<Type> *Out, uint32_t Len, const int8_t *Buffer) */
+	template<class Type>
+	static int32_t Read(LWSVector4<Type> *Out, uint32_t Len, const int8_t *Buffer) {
+		if (Out) {
+			for (uint32_t i = 0; i < Len; i++) {
+				Type v[4];
+				v[0] = *((Type*)Buffer + i * 4 + 0);
+				v[1] = *((Type*)Buffer + i * 4 + 1);
+				v[2] = *((Type*)Buffer + i * 4 + 2);
+				v[3] = *((Type*)Buffer + i * 4 + 3);
+				Out[i] = LWSVector4<Type>(v[0], v[1], v[2], v[3]);
+			}
+		}
+		return sizeof(Type) * 4 * Len;
+	}
+
+	/*! \overload int32_t Read(LWSMatrix4<Type> *Out, uint32_t Len, const int8_t *Buffer) */
+	template<class Type>
+	static int32_t Read(LWSMatrix4<Type> *Out, uint32_t Len, const int8_t *Buffer) {
+		if (Out) {
+			for (uint32_t i = 0; i < Len; i++) {
+				Type v[16];
+				v[0] = *((Type*)Buffer + i * 16 + 0);
+				v[1] = *((Type*)Buffer + i * 16 + 1);
+				v[2] = *((Type*)Buffer + i * 16 + 2);
+				v[3] = *((Type*)Buffer + i * 16 + 3);
+				v[4] = *((Type*)Buffer + i * 16 + 4);
+				v[5] = *((Type*)Buffer + i * 16 + 5);
+				v[6] = *((Type*)Buffer + i * 16 + 6);
+				v[7] = *((Type*)Buffer + i * 16 + 7);
+				v[8] = *((Type*)Buffer + i * 16 + 8);
+				v[9] = *((Type*)Buffer + i * 16 + 9);
+				v[10] = *((Type*)Buffer + i * 16 + 10);
+				v[11] = *((Type*)Buffer + i * 16 + 11);
+				v[12] = *((Type*)Buffer + i * 16 + 12);
+				v[13] = *((Type*)Buffer + i * 16 + 13);
+				v[14] = *((Type*)Buffer + i * 16 + 14);
+				v[15] = *((Type*)Buffer + i * 16 + 15);
+				Out[i] = LWSMatrix4<Type>(LWSVector4<Type>(v[0], v[1], v[2], v[3]), LWSVector4<Type>(v[4], v[5], v[6], v[7]), LWSVector4<Type>(v[8], v[9], v[10], v[11]), LWSVector4<Type>(v[12], v[13], v[14], v[15]));
+			}
+		}
+		return sizeof(Type) * 16 * Len;
+	}
+
 	/*! \brief reads back a network encoded value from buffer and transforms it to host form.
 		\param Out the value to write to.
 		\param Buffer the buffer to read from.
@@ -932,6 +1200,20 @@ public:
 	static int32_t ReadNetwork(Type *Out, const int8_t *Buffer){
 		if (Out) *Out = MakeHost(*((Type*)Buffer));
 		return sizeof(Type);
+	}
+
+	/*! \overload int32_t ReadNetwork(LWSQuaternion<Type> *, const int8_t *) */
+	template<class Type>
+	static int32_t ReadNetwork(LWSQuaternion<Type> *Out, const int8_t *Buffer) {
+		if (Out) {
+			float v[3];
+			v[0] = MakeHost(*((Type*)Buffer + 0));
+			v[1] = MakeHost(*((Type*)Buffer + 1));
+			v[2] = MakeHost(*((Type*)Buffer + 2));
+			v[3] = MakeHost(*((Type*)Buffer + 3));
+			*Out = LWSQuaternion<Type>(v[3], v[0], v[1], v[2]);
+		}
+		return sizeof(Type) * 4;
 	}
 
 	/*
@@ -945,6 +1227,19 @@ public:
 			Out->y = MakeHost(*((Type*)Buffer + 1));
 			Out->z = MakeHost(*((Type*)Buffer + 2));
 			Out->w = MakeHost(*((Type*)Buffer + 3));
+		}
+		return sizeof(Type) * 4;
+	}
+
+	/*! \overload int32_t ReadNetwork(LWSVector4<Type> *, const int8_t *) */
+	template<class Type>
+	static int32_t ReadNetwork(LWSVector4<Type> *Out, const int8_t *Buffer) {
+		if (Out) {
+			Type v[4];
+			v[0] = MakeHost(*((Type*)Buffer + 0));
+			v[1] = MakeHost(*((Type*)Buffer + 1));
+			v[2] = MakeHost(*((Type*)Buffer + 2));
+			v[3] = MakeHost(*((Type*)Buffer + 3));
 		}
 		return sizeof(Type) * 4;
 	}
@@ -986,6 +1281,32 @@ public:
 			Out->y = MakeHost(*((Type*)Buffer + 1));
 		}
 		return sizeof(Type)* 2;
+	}
+
+	/*! \overload int32_t ReadNetwork(LWSMatrix4<Type> *, const int8_t *) */
+	template<class Type>
+	static int32_t ReadNetwork(LWSMatrix4<Type> *Out, const int8_t *Buffer) {
+		if (Out) {
+			Type v[16];
+			v[0] = MakeHost(*((Type*)Buffer + 0));
+			v[1] = MakeHost(*((Type*)Buffer + 1));
+			v[2] = MakeHost(*((Type*)Buffer + 2));
+			v[3] = MakeHost(*((Type*)Buffer + 3));
+			v[4] = MakeHost(*((Type*)Buffer + 4));
+			v[5] = MakeHost(*((Type*)Buffer + 5));
+			v[6] = MakeHost(*((Type*)Buffer + 6));
+			v[7] = MakeHost(*((Type*)Buffer + 7));
+			v[8] = MakeHost(*((Type*)Buffer + 8));
+			v[9] = MakeHost(*((Type*)Buffer + 9));
+			v[10] = MakeHost(*((Type*)Buffer + 10));
+			v[11] = MakeHost(*((Type*)Buffer + 11));
+			v[12] = MakeHost(*((Type*)Buffer + 12));
+			v[13] = MakeHost(*((Type*)Buffer + 13));
+			v[14] = MakeHost(*((Type*)Buffer + 14));
+			v[15] = MakeHost(*((Type*)Buffer + 15));
+			*Out = LWSMatrix4<Type>(LWSVector4<Type>(v[0], v[1], v[2], v[3]), LWSVector4<Type>(v[4], v[5], v[6], v[7]), LWSVector4<Type>(v[8], v[9], v[10], v[11]), LWSVector4<Type>(v[12], v[13], v[14], v[15]));
+		}
+		return sizeof(Type) * 16;
 	}
 
 	/*! \overload int32_t ReadNetwork(LWMatrix4<Type> *, const int8_t *)
@@ -1072,6 +1393,22 @@ public:
 		return sizeof(Type)*Len;
 	}
 
+	/*! \overload int32_t ReadNetwork(LWSVector4<Type>*, uint32_t, const int8_t *) */
+	template<class Type>
+	static int32_t ReadNetwork(LWSQuaternion<Type> *Out, uint32_t Len, const int8_t *Buffer) {
+		if (Out) {
+			for (uint32_t i = 0; i < Len; i++) {
+				Type v[4];
+				v[0] = MakeHost(*((Type*)Buffer + i * 4 + 0));
+				v[1] = MakeHost(*((Type*)Buffer + i * 4 + 1));
+				v[2] = MakeHost(*((Type*)Buffer + i * 4 + 2));
+				v[3] = MakeHost(*((Type*)Buffer + i * 4 + 3));
+				Out[i] = LWSQuaternion<Type>(v[3], v[0], v[1], v[2]);
+			}
+		}
+		return sizeof(Type) * 4 * Len;
+	}
+
 	/*!
 		\overload int32_t ReadNetwork(LWVector4<Type>*, uint32_t, const int8_t *)
 	*/
@@ -1086,6 +1423,22 @@ public:
 			}
 		}
 		return sizeof(Type) * 4 * Len;
+	}
+
+	/*! \overload int32_t ReadNetwork(LWSVector4<Type>*, uint32_t, const int8_t *) */
+	template<class Type>
+	static int32_t ReadNetwork(LWSVector4<Type> *Out, uint32_t Len, const int8_t *Buffer) {
+		if (Out) {
+			for (uint32_t i = 0; i < Len; i++) {
+				Type v[4];
+				v[0] = MakeHost(*((Type*)Buffer + i * 4 + 0));
+				v[1] = MakeHost(*((Type*)Buffer + i * 4 + 1));
+				v[2] = MakeHost(*((Type*)Buffer + i * 4 + 2));
+				v[3] = MakeHost(*((Type*)Buffer + i * 4 + 3));
+				Out[i] = LWSVector4<Type>(v[0], v[1], v[2], v[3]);
+			}
+		}
+		return sizeof(uint32_t) * 4 * Len;
 	}
 
 	/*!
@@ -1131,6 +1484,34 @@ public:
 			}
 		}
 		return sizeof(Type)* 2 * Len;
+	}
+
+	/*! \overload int32_t ReadNetwork(LWSMatrix4<Type> *, uint32_t, const int8_t *) */
+	template<class Type>
+	static int32_t ReadNetwork(LWSMatrix4<Type> *Out, uint32_t Len, const int8_t *Buffer) {
+		if (Out) {
+			for (uint32_t i = 0; i < Len; i++) {
+				Type v[16];
+				v[0] = MakeHost(*((Type*)Buffer + i * 16 + 0));
+				v[1] = MakeHost(*((Type*)Buffer + i * 16 + 1));
+				v[2] = MakeHost(*((Type*)Buffer + i * 16 + 2));
+				v[3] = MakeHost(*((Type*)Buffer + i * 16 + 3));
+				v[4] = MakeHost(*((Type*)Buffer + i * 16 + 4));
+				v[5] = MakeHost(*((Type*)Buffer + i * 16 + 5));
+				v[6] = MakeHost(*((Type*)Buffer + i * 16 + 6));
+				v[7] = MakeHost(*((Type*)Buffer + i * 16 + 7));
+				v[8] = MakeHost(*((Type*)Buffer + i * 16 + 8));
+				v[9] = MakeHost(*((Type*)Buffer + i * 16 + 9));
+				v[10] = MakeHost(*((Type*)Buffer + i * 16 + 10));
+				v[11] = MakeHost(*((Type*)Buffer + i * 16 + 11));
+				v[12] = MakeHost(*((Type*)Buffer + i * 16 + 12));
+				v[13] = MakeHost(*((Type*)Buffer + i * 16 + 13));
+				v[14] = MakeHost(*((Type*)Buffer + i * 16 + 14));
+				v[15] = MakeHost(*((Type*)Buffer + i * 16 + 15));
+				Out[i] = LWSMatrix4<Type>(LWSVector4<Type>(v[0], v[1], v[2], v[3]), LWSVector4<Type>(v[4], v[5], v[6], v[7]), LWSVector4<Type>(v[8], v[9], v[10], v[11]), LWSVector4<Type>(v[12], v[13], v[14], v[15]));
+			}
+		}
+		return sizeof(Type) * 16 * Len;
 	}
 
 	/*! \overload int32_t ReadNetwork(LWMatrix4<Type> *, uint32_t, const int8_t *)
@@ -1215,12 +1596,36 @@ public:
 		return Len;
 	}
 
+	/*! \overload int32_t Write(const LWSQuaternion<Type> &) */
+	template<class Type>
+	int32_t Write(const LWSQuaternion<Type> &Value) {
+		typedef int32_t(*Func_T)(const LWSQuaternion<Type> &, int8_t *);
+		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
+		uint32_t Len = sizeof(Type) * 4;
+		if (m_Position + Len > m_BufferSize) return Len;
+		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		m_BytesWritten += Len;
+		return Len;
+	}
+
 	/*!
 		\overload int32_t Write(const LWQuaternion<Type> &)
 	*/
 	template<class Type>
 	int32_t Write(const LWQuaternion<Type> &Value) {
 		typedef int32_t(*Func_T)(const LWQuaternion<Type> &, int8_t *);
+		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
+		int32_t Len = sizeof(Type) * 4;
+		if (m_Position + Len > m_BufferSize) return Len;
+		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		m_BytesWritten += Len;
+		return Len;
+	}
+
+	/*! \overload int32_t Write(const LWSVector4<Type> &) */
+	template<class Type>
+	int32_t Write(const LWSVector4<Type> &Value) {
+		typedef int32_t(*Func_T)(const LWSVector4<Type> &, int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Len = sizeof(Type) * 4;
 		if (m_Position + Len > m_BufferSize) return Len;
@@ -1265,6 +1670,18 @@ public:
 		typedef int32_t(*Func_T)(const LWVector2<Type> &, int8_t *);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Len = sizeof(Type)* 2;
+		if (m_Position + Len > m_BufferSize) return Len;
+		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		m_BytesWritten += Len;
+		return Len;
+	}
+
+	/*! \overload int32_t Write(const LWSMatrix4<Type> &) */
+	template<class Type>
+	int32_t Write(const LWSMatrix4<Type> &Value) {
+		typedef int32_t(*Func_T)(const LWSMatrix4<Type> &, int8_t *);
+		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
+		int32_t Len = sizeof(Type) * 16;
 		if (m_Position + Len > m_BufferSize) return Len;
 		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
 		m_BytesWritten += Len;
@@ -1330,6 +1747,42 @@ public:
 		typedef int32_t (*Func_T)(uint32_t, const Type *, int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Length = sizeof(Type)*Len;
+		if (m_Position + Length > m_BufferSize) return Length;
+		m_Position += Funcs[m_SelectedFunc](Len, Values, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		m_BytesWritten += Length;
+		return Length;
+	}
+
+	/*! \overload int32_t Write(uint32_t Len, const LWSQuaternion<Type> *Values) */
+	template<class Type>
+	int32_t Write(uint32_t Len, const LWSQuaternion<Type> *Values) {
+		typedef int32_t(*Func_T)(uint32_t, const LWSQuaternion<Type> *, int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
+		int32_t Length = sizeof(Type) * 4 * Len;
+		if (m_Position + Length > m_BufferSize) return Length;
+		m_Position += Funcs[m_SelectedFunc](Len, Values, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		m_BytesWritten += Length;
+		return Length;
+	}
+
+	/*! \overload int32_t Write(uint32_t Len, const LWSVector4<Type> *Values) */
+	template<class Type>
+	int32_t Write(uint32_t Len, const LWSVector4<Type> *Values) {
+		typedef int32_t(*Func_T)(uint32_t, const LWSVector4<Type>*, int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
+		int32_t Length = sizeof(Type) * 4 * Len;
+		if (m_Position + Length > m_BufferSize) return Length;
+		m_Position += Funcs[m_SelectedFunc](Len, Values, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		m_BytesWritten += Length;
+		return Length;
+	}
+
+	/*! \overload int32_t Write(uint32_t Len, const LWSMatrix4<Type> *Values) */
+	template<class Type>
+	int32_t Write(uint32_t Len, const LWSMatrix4<Type> *Values) {
+		typedef int32_t(*Func_T)(uint32_t, const LWSMatrix4<Type>*, int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
+		int32_t Length = sizeof(Type) * 16 * Len;
 		if (m_Position + Length > m_BufferSize) return Length;
 		m_Position += Funcs[m_SelectedFunc](Len, Values, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
 		m_BytesWritten += Length;
@@ -1529,6 +1982,47 @@ public:
 		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
 	}
 
+	/*!< \brief reads a svec4 of type from the internal buffer.*/
+	template<class Type>
+	LWSVector4<Type> ReadSVec4(void) {
+		typedef int32_t(*Func_T)(LWSVector4<Type> *, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		LWSVector4<Type> Res;
+		if (m_Position >= m_BufferSize) return Res;
+		int32_t Length = Funcs[m_SelectedFunc](&Res, m_ReadBuffer + m_Position);
+		m_Position += Length;
+		return Res;
+	}
+
+	/*!< \brief reads a SVec4 of type from the internal buffer at the specified location. */
+	template<class Type>
+	LWSVector4<Type> ReadSVec4(int32_t Position) {
+		typedef int32_t(*Func_T)(LWSVector4<Type> *, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		LWSVector4<Type> Res;
+		Funcs[m_SelectedFunc](&Res, m_ReadBuffer + Position);
+		return Res;
+	}
+
+	/*!< \brief reads an array of vec4 of type from the internal buffer. */
+	template<class Type>
+	int32_t ReadSVec4(LWSVector4<Type> *Values, uint32_t Len) {
+		typedef int32_t(*Func_T)(LWSVector4<Type> *, uint32_t, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		if (m_Position >= m_BufferSize) return 0;
+		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + m_Position);
+		m_Position += Length;
+		return Length;
+	}
+
+	/*!< \brief reads an array of vec4 of type from the internal buffer at the specified location. */
+	template<class Type>
+	int32_t ReadSVec4(LWSVector4<Type> *Values, uint32_t Len, int32_t Position) {
+		typedef int32_t(*Func_T)(LWSVector4<Type> *, uint32_t, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
+	}
+
 	/*!< \brief reads a Quaternion of type from the internal buffer.*/
 	template<class Type>
 	LWQuaternion<Type> ReadQuaternion(void) {
@@ -1566,6 +2060,48 @@ public:
 	template<class Type>
 	int32_t ReadQuaternion(LWQuaternion<Type> *Values, uint32_t Len, int32_t Position) {
 		typedef int32_t(*Func_T)(LWQuaternion<Type> *, uint32_t, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
+	}
+
+
+	/*!< \brief reads a SIMD Quaternion of type from the internal buffer.*/
+	template<class Type>
+	LWSQuaternion<Type> ReadSQuaternion(void) {
+		typedef int32_t(*Func_T)(LWSQuaternion<Type> *, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		LWSQuaternion<Type> Res;
+		if (m_Position >= m_BufferSize) return Res;
+		int32_t Length = Funcs[m_SelectedFunc](&Res, m_ReadBuffer + m_Position);
+		m_Position += Length;
+		return Res;
+	}
+
+	/*!< \brief reads a SIMD Quaternion of type from the internal buffer at the specified location. */
+	template<class Type>
+	LWSQuaternion<Type> ReadSQuaternion(int32_t Position) {
+		typedef int32_t(*Func_T)(LWSQuaternion<Type> *, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		LWSQuaternion<Type> Res;
+		Funcs[m_SelectedFunc](&Res, m_ReadBuffer + Position);
+		return Res;
+	}
+
+	/*!< \brief reads an array of SIMD Quaternion of type from the internal buffer. */
+	template<class Type>
+	int32_t ReadSQuaternion(LWSQuaternion<Type> *Values, uint32_t Len) {
+		typedef int32_t(*Func_T)(LWSQuaternion<Type> *, uint32_t, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		if (m_Position >= m_BufferSize) return 0;
+		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + m_Position);
+		m_Position += Length;
+		return Length;
+	}
+
+	/*!< \brief reads an array of Quaternion of type from the internal buffer at the specified location. */
+	template<class Type>
+	int32_t ReadSQuaternion(LWSQuaternion<Type> *Values, uint32_t Len, int32_t Position) {
+		typedef int32_t(*Func_T)(LWSQuaternion<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
 	}
@@ -1693,6 +2229,48 @@ public:
 		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
 	}
 
+
+	/*!< \brief reads a SIMD matrix4 of type from the internal buffer.*/
+	template<class Type>
+	LWSMatrix4<Type> ReadSMat4(void) {
+		typedef int32_t(*Func_T)(LWSMatrix4<Type> *, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		LWSMatrix4<Type> Res;
+		if (m_Position >= m_BufferSize) return Res;
+		int32_t Length = Funcs[m_SelectedFunc](&Res, m_ReadBuffer + m_Position);
+		m_Position += Length;
+		return Res;
+	}
+
+	/*!< \brief reads a SIMD matrix4 of type from the internal buffer at the specified location. */
+	template<class Type>
+	LWSMatrix4<Type> ReadSMat4(int32_t Position) {
+		typedef int32_t(*Func_T)(LWSMatrix4<Type> *, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		LWSMatrix4<Type> Res;
+		Funcs[m_SelectedFunc](&Res, m_ReadBuffer + Position);
+		return Res;
+	}
+
+	/*!< \brief reads an array of SIMD matrix4 of type from the internal buffer. */
+	template<class Type>
+	int32_t ReadSMat4(LWSMatrix4<Type> *Values, uint32_t Len) {
+		typedef int32_t(*Func_T)(LWSMatrix4<Type> *, uint32_t, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		if (m_Position >= m_BufferSize) return 0;
+		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + m_Position);
+		m_Position += Length;
+		return Length;
+	}
+
+	/*!< \brief reads an array of SIMD matrix4 of type from the internal buffer at the specified location. */
+	template<class Type>
+	int32_t ReadSMat4(LWSMatrix4<Type> *Values, uint32_t Len, int32_t Position) {
+		typedef int32_t(*Func_T)(LWSMatrix4<Type> *, uint32_t, const int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
+	}
+
 	/*! \brief reads an array of variables of type from the internal buffer at position.
 		\param Values an array to store the values from.
 		\param Len the length of elements to write into values.
@@ -1756,6 +2334,11 @@ public:
 		\return Returns the LWByteBuffer object.
 	*/
 	LWByteBuffer &SetPosition(int32_t Position);
+
+	/*! \brief offset's the position to the next alignment. 
+		\param Write, add the offset to bytesWritten.
+	*/
+	LWByteBuffer &AlignPosition(uint32_t Alignment, bool Write=false);
 
 	/*! \brief Offset's the position of the buffer stream.
 		\param Offset the offset to apply to position.
@@ -1862,6 +2445,55 @@ inline int32_t LWByteBuffer::WriteNetwork<double>(const LWQuaternion<double> &Va
 	return sizeof(uint64_t) * 4;
 }
 
+
+template<>
+inline int32_t LWByteBuffer::WriteNetwork<float>(const LWSQuaternion<float> &Value, int8_t *Buffer) {
+	if (Buffer) {
+		LWQuaternion<float> v = Value.AsQuaternion();
+		*((uint32_t*)Buffer + 0) = MakeNetwork(v.x);
+		*((uint32_t*)Buffer + 1) = MakeNetwork(v.y);
+		*((uint32_t*)Buffer + 2) = MakeNetwork(v.z);
+		*((uint32_t*)Buffer + 3) = MakeNetwork(v.w);
+	}
+	return sizeof(uint32_t) * 4;
+}
+
+template<>
+inline int32_t LWByteBuffer::WriteNetwork<double>(const LWSQuaternion<double> &Value, int8_t *Buffer) {
+	if (Buffer) {
+		LWQuaternion<double> v = Value.AsQuaternion();
+		*((uint64_t*)Buffer + 0) = MakeNetwork(v.x);
+		*((uint64_t*)Buffer + 1) = MakeNetwork(v.y);
+		*((uint64_t*)Buffer + 2) = MakeNetwork(v.z);
+		*((uint64_t*)Buffer + 3) = MakeNetwork(v.w);
+	}
+	return sizeof(uint64_t) * 4;
+}
+
+template<>
+inline int32_t LWByteBuffer::WriteNetwork<float>(const LWSVector4<float> &Value, int8_t *Buffer) {
+	if (Buffer) {
+		LWVector4<float> v = Value.AsVec4();
+		*((uint32_t*)Buffer + 0) = MakeNetwork(v.x);
+		*((uint32_t*)Buffer + 1) = MakeNetwork(v.y);
+		*((uint32_t*)Buffer + 2) = MakeNetwork(v.z);
+		*((uint32_t*)Buffer + 3) = MakeNetwork(v.w);
+	}
+	return sizeof(uint32_t) * 4;
+}
+
+template<>
+inline int32_t LWByteBuffer::WriteNetwork<double>(const LWSVector4<double> &Value, int8_t *Buffer) {
+	if (Buffer) {
+		LWVector4<double> v = Value.AsVec4();
+		*((uint64_t*)Buffer + 0) = MakeNetwork(v.x);
+		*((uint64_t*)Buffer + 1) = MakeNetwork(v.y);
+		*((uint64_t*)Buffer + 2) = MakeNetwork(v.z);
+		*((uint64_t*)Buffer + 3) = MakeNetwork(v.w);
+	}
+	return sizeof(uint64_t) * 4;
+}
+
 template<>
 inline int32_t LWByteBuffer::WriteNetwork<float>(const LWVector4<float> &Value, int8_t *Buffer){
 	if (Buffer){
@@ -1920,6 +2552,55 @@ inline int32_t LWByteBuffer::WriteNetwork<double>(const LWVector2<double> &Value
 		*((uint64_t*)Buffer + 1) = MakeNetwork(Value.y);
 	}
 	return sizeof(uint64_t)* 2;
+}
+
+
+template<>
+inline int32_t LWByteBuffer::WriteNetwork<float>(const LWSMatrix4<float> &Value, int8_t *Buffer) {
+	if (Buffer) {
+		LWMatrix4<float> v = Value.AsMat4();
+		*((uint32_t*)Buffer + 0) = MakeNetwork(v.m_Rows[0].x);
+		*((uint32_t*)Buffer + 1) = MakeNetwork(v.m_Rows[0].y);
+		*((uint32_t*)Buffer + 2) = MakeNetwork(v.m_Rows[0].z);
+		*((uint32_t*)Buffer + 3) = MakeNetwork(v.m_Rows[0].w);
+		*((uint32_t*)Buffer + 4) = MakeNetwork(v.m_Rows[1].x);
+		*((uint32_t*)Buffer + 5) = MakeNetwork(v.m_Rows[1].y);
+		*((uint32_t*)Buffer + 6) = MakeNetwork(v.m_Rows[1].z);
+		*((uint32_t*)Buffer + 7) = MakeNetwork(v.m_Rows[1].w);
+		*((uint32_t*)Buffer + 8) = MakeNetwork(v.m_Rows[2].x);
+		*((uint32_t*)Buffer + 9) = MakeNetwork(v.m_Rows[2].y);
+		*((uint32_t*)Buffer + 10) = MakeNetwork(v.m_Rows[2].z);
+		*((uint32_t*)Buffer + 11) = MakeNetwork(v.m_Rows[2].w);
+		*((uint32_t*)Buffer + 12) = MakeNetwork(v.m_Rows[3].x);
+		*((uint32_t*)Buffer + 13) = MakeNetwork(v.m_Rows[3].y);
+		*((uint32_t*)Buffer + 14) = MakeNetwork(v.m_Rows[3].z);
+		*((uint32_t*)Buffer + 15) = MakeNetwork(v.m_Rows[3].w);
+	}
+	return sizeof(uint32_t) * 16;
+}
+
+template<>
+inline int32_t LWByteBuffer::WriteNetwork<double>(const LWSMatrix4<double> &Value, int8_t *Buffer) {
+	if (Buffer) {
+		LWMatrix4<double> v = Value.AsMat4();
+		*((uint64_t*)Buffer + 0) = MakeNetwork(v.m_Rows[0].x);
+		*((uint64_t*)Buffer + 1) = MakeNetwork(v.m_Rows[0].y);
+		*((uint64_t*)Buffer + 2) = MakeNetwork(v.m_Rows[0].z);
+		*((uint64_t*)Buffer + 3) = MakeNetwork(v.m_Rows[0].w);
+		*((uint64_t*)Buffer + 4) = MakeNetwork(v.m_Rows[1].x);
+		*((uint64_t*)Buffer + 5) = MakeNetwork(v.m_Rows[1].y);
+		*((uint64_t*)Buffer + 6) = MakeNetwork(v.m_Rows[1].z);
+		*((uint64_t*)Buffer + 7) = MakeNetwork(v.m_Rows[1].w);
+		*((uint64_t*)Buffer + 8) = MakeNetwork(v.m_Rows[2].x);
+		*((uint64_t*)Buffer + 9) = MakeNetwork(v.m_Rows[2].y);
+		*((uint64_t*)Buffer + 10) = MakeNetwork(v.m_Rows[2].z);
+		*((uint64_t*)Buffer + 11) = MakeNetwork(v.m_Rows[2].w);
+		*((uint64_t*)Buffer + 12) = MakeNetwork(v.m_Rows[3].x);
+		*((uint64_t*)Buffer + 13) = MakeNetwork(v.m_Rows[3].y);
+		*((uint64_t*)Buffer + 14) = MakeNetwork(v.m_Rows[3].z);
+		*((uint64_t*)Buffer + 15) = MakeNetwork(v.m_Rows[3].w);
+	}
+	return sizeof(uint64_t) * 16;
 }
 
 template<>
@@ -2036,6 +2717,35 @@ inline int32_t LWByteBuffer::WriteNetwork<double>(uint32_t Len, const double *Va
 	return sizeof(double)*Len;
 }
 
+
+template<>
+inline int32_t LWByteBuffer::WriteNetwork<float>(uint32_t Len, const LWSQuaternion<float> *Values, int8_t *Buffer) {
+	if (Buffer) {
+		for (uint32_t i = 0; i < Len; i++) {
+			LWQuaternion<float> v = Values[i].AsQuaternion();
+			*((uint32_t*)Buffer + i * 4 + 0) = MakeNetwork(v.x);
+			*((uint32_t*)Buffer + i * 4 + 1) = MakeNetwork(v.y);
+			*((uint32_t*)Buffer + i * 4 + 2) = MakeNetwork(v.z);
+			*((uint32_t*)Buffer + i * 4 + 3) = MakeNetwork(v.w);
+		}
+	}
+	return sizeof(uint32_t) * 4 * Len;
+}
+
+template<>
+inline int32_t LWByteBuffer::WriteNetwork<double>(uint32_t Len, const LWSQuaternion<double> *Values, int8_t *Buffer) {
+	if (Buffer) {
+		for (uint32_t i = 0; i < Len; i++) {
+			LWQuaternion<double> v = Values[i].AsQuaternion();
+			*((uint64_t*)Buffer + i * 4 + 0) = MakeNetwork(v.x);
+			*((uint64_t*)Buffer + i * 4 + 1) = MakeNetwork(v.y);
+			*((uint64_t*)Buffer + i * 4 + 2) = MakeNetwork(v.z);
+			*((uint64_t*)Buffer + i * 4 + 3) = MakeNetwork(v.w);
+		}
+	}
+	return sizeof(uint64_t) * 4 * Len;
+}
+
 template<>
 inline int32_t LWByteBuffer::WriteNetwork<float>(uint32_t Len, const LWQuaternion<float> *Values, int8_t *Buffer) {
 	if (Buffer) {
@@ -2057,6 +2767,35 @@ inline int32_t LWByteBuffer::WriteNetwork<double>(uint32_t Len, const LWQuaterni
 			*((uint64_t*)Buffer + i * 4 + 1) = MakeNetwork(Values[i].y);
 			*((uint64_t*)Buffer + i * 4 + 2) = MakeNetwork(Values[i].z);
 			*((uint64_t*)Buffer + i * 4 + 3) = MakeNetwork(Values[i].w);
+		}
+	}
+	return sizeof(uint64_t) * 4 * Len;
+}
+
+
+template<>
+inline int32_t LWByteBuffer::WriteNetwork<float>(uint32_t Len, const LWSVector4<float> *Values, int8_t *Buffer) {
+	if (Buffer) {
+		for (uint32_t i = 0; i < Len; i++) {
+			LWVector4<float> v = Values[i].AsVec4();
+			*((uint32_t*)Buffer + i * 4 + 0) = MakeNetwork(v.x);
+			*((uint32_t*)Buffer + i * 4 + 1) = MakeNetwork(v.y);
+			*((uint32_t*)Buffer + i * 4 + 2) = MakeNetwork(v.z);
+			*((uint32_t*)Buffer + i * 4 + 3) = MakeNetwork(v.w);
+		}
+	}
+	return sizeof(uint32_t) * 4 * Len;
+}
+
+template<>
+inline int32_t LWByteBuffer::WriteNetwork<double>(uint32_t Len, const LWSVector4<double> *Values, int8_t *Buffer) {
+	if (Buffer) {
+		for (uint32_t i = 0; i < Len; i++) {
+			LWVector4<double> v = Values[i].AsVec4();
+			*((uint64_t*)Buffer + i * 4 + 0) = MakeNetwork(v.x);
+			*((uint64_t*)Buffer + i * 4 + 1) = MakeNetwork(v.y);
+			*((uint64_t*)Buffer + i * 4 + 2) = MakeNetwork(v.z);
+			*((uint64_t*)Buffer + i * 4 + 3) = MakeNetwork(v.w);
 		}
 	}
 	return sizeof(uint64_t) * 4 * Len;
@@ -2132,6 +2871,59 @@ inline int32_t LWByteBuffer::WriteNetwork<double>(uint32_t Len, const LWVector2<
 		}
 	}
 	return sizeof(uint64_t)* 2 * Len;
+}
+
+
+template<>
+inline int32_t LWByteBuffer::WriteNetwork<float>(uint32_t Len, const LWSMatrix4<float> *Values, int8_t *Buffer) {
+	if (Buffer) {
+		for (uint32_t i = 0; i < Len; i++) {
+			LWMatrix4<float> v = Values[i].AsMat4();
+			*((uint32_t*)Buffer + i * 16 + 0) = MakeNetwork(v.m_Rows[0].x);
+			*((uint32_t*)Buffer + i * 16 + 1) = MakeNetwork(v.m_Rows[0].y);
+			*((uint32_t*)Buffer + i * 16 + 2) = MakeNetwork(v.m_Rows[0].z);
+			*((uint32_t*)Buffer + i * 16 + 3) = MakeNetwork(v.m_Rows[0].w);
+			*((uint32_t*)Buffer + i * 16 + 4) = MakeNetwork(v.m_Rows[1].x);
+			*((uint32_t*)Buffer + i * 16 + 5) = MakeNetwork(v.m_Rows[1].y);
+			*((uint32_t*)Buffer + i * 16 + 6) = MakeNetwork(v.m_Rows[1].z);
+			*((uint32_t*)Buffer + i * 16 + 7) = MakeNetwork(v.m_Rows[1].w);
+			*((uint32_t*)Buffer + i * 16 + 8) = MakeNetwork(v.m_Rows[2].x);
+			*((uint32_t*)Buffer + i * 16 + 9) = MakeNetwork(v.m_Rows[2].y);
+			*((uint32_t*)Buffer + i * 16 + 10) = MakeNetwork(v.m_Rows[2].z);
+			*((uint32_t*)Buffer + i * 16 + 11) = MakeNetwork(v.m_Rows[2].w);
+			*((uint32_t*)Buffer + i * 16 + 12) = MakeNetwork(v.m_Rows[3].x);
+			*((uint32_t*)Buffer + i * 16 + 13) = MakeNetwork(v.m_Rows[3].y);
+			*((uint32_t*)Buffer + i * 16 + 14) = MakeNetwork(v.m_Rows[3].z);
+			*((uint32_t*)Buffer + i * 16 + 15) = MakeNetwork(v.m_Rows[3].w);
+		}
+	}
+	return sizeof(uint32_t) * 16 * Len;
+}
+
+template<>
+inline int32_t LWByteBuffer::WriteNetwork<double>(uint32_t Len, const LWSMatrix4<double> *Values, int8_t *Buffer) {
+	if (Buffer) {
+		for (uint32_t i = 0; i < Len; i++) {
+			LWMatrix4<double> v = Values[i].AsMat4();
+			*((uint64_t*)Buffer + i * 16 + 0) = MakeNetwork(v.m_Rows[0].x);
+			*((uint64_t*)Buffer + i * 16 + 1) = MakeNetwork(v.m_Rows[0].y);
+			*((uint64_t*)Buffer + i * 16 + 2) = MakeNetwork(v.m_Rows[0].z);
+			*((uint64_t*)Buffer + i * 16 + 3) = MakeNetwork(v.m_Rows[0].w);
+			*((uint64_t*)Buffer + i * 16 + 4) = MakeNetwork(v.m_Rows[1].x);
+			*((uint64_t*)Buffer + i * 16 + 5) = MakeNetwork(v.m_Rows[1].y);
+			*((uint64_t*)Buffer + i * 16 + 6) = MakeNetwork(v.m_Rows[1].z);
+			*((uint64_t*)Buffer + i * 16 + 7) = MakeNetwork(v.m_Rows[1].w);
+			*((uint64_t*)Buffer + i * 16 + 8) = MakeNetwork(v.m_Rows[2].x);
+			*((uint64_t*)Buffer + i * 16 + 9) = MakeNetwork(v.m_Rows[2].y);
+			*((uint64_t*)Buffer + i * 16 + 10) = MakeNetwork(v.m_Rows[2].z);
+			*((uint64_t*)Buffer + i * 16 + 11) = MakeNetwork(v.m_Rows[2].w);
+			*((uint64_t*)Buffer + i * 16 + 12) = MakeNetwork(v.m_Rows[3].x);
+			*((uint64_t*)Buffer + i * 16 + 13) = MakeNetwork(v.m_Rows[3].y);
+			*((uint64_t*)Buffer + i * 16 + 14) = MakeNetwork(v.m_Rows[3].z);
+			*((uint64_t*)Buffer + i * 16 + 15) = MakeNetwork(v.m_Rows[3].w);
+		}
+	}
+	return sizeof(uint64_t) * 16 * Len;
 }
 
 template<>
@@ -2271,6 +3063,33 @@ inline int32_t LWByteBuffer::ReadNetwork<double>(double *Out, const int8_t *Buff
 	return sizeof(double);
 }
 
+
+template<>
+inline int32_t LWByteBuffer::ReadNetwork<float>(LWSQuaternion<float> *Out, const int8_t *Buffer) {
+	if (Out) {
+		float v[4];
+		v[0] = MakeHostf(*((uint32_t*)Buffer + 0));
+		v[1] = MakeHostf(*((uint32_t*)Buffer + 1));
+		v[2] = MakeHostf(*((uint32_t*)Buffer + 2));
+		v[3] = MakeHostf(*((uint32_t*)Buffer + 3));
+		*Out = LWSQuaternion<float>(v[3], v[0], v[1], v[2]);
+	}
+	return sizeof(float) * 4;
+}
+
+template<>
+inline int32_t LWByteBuffer::ReadNetwork<double>(LWSQuaternion<double> *Out, const int8_t *Buffer) {
+	if (Out) {
+		double v[4];
+		v[0] = MakeHostf(*((uint64_t*)Buffer + 0));
+		v[1] = MakeHostf(*((uint64_t*)Buffer + 1));
+		v[2] = MakeHostf(*((uint64_t*)Buffer + 2));
+		v[3] = MakeHostf(*((uint64_t*)Buffer + 3));
+		*Out = LWSQuaternion<double>(v[3], v[0], v[1], v[2]);
+	}
+	return sizeof(double) * 4;
+}
+
 template<>
 inline int32_t LWByteBuffer::ReadNetwork<float>(LWQuaternion<float> *Out, const int8_t *Buffer) {
 	if (Out) {
@@ -2289,6 +3108,32 @@ inline int32_t LWByteBuffer::ReadNetwork<double>(LWQuaternion<double> *Out, cons
 		Out->y = MakeHostf(*((uint64_t*)Buffer + 1));
 		Out->z = MakeHostf(*((uint64_t*)Buffer + 2));
 		Out->w = MakeHostf(*((uint64_t*)Buffer + 3));
+	}
+	return sizeof(double) * 4;
+}
+
+template<>
+inline int32_t LWByteBuffer::ReadNetwork<float>(LWSVector4<float> *Out, const int8_t *Buffer) {
+	if (Out) {
+		float v[4];
+		v[0] = MakeHostf(*((uint32_t*)Buffer + 0));
+		v[1] = MakeHostf(*((uint32_t*)Buffer + 1));
+		v[2] = MakeHostf(*((uint32_t*)Buffer + 2));
+		v[3] = MakeHostf(*((uint32_t*)Buffer + 3));
+		*Out = LWSVector4<float>(v[0], v[1], v[2], v[3]);
+	}
+	return sizeof(float) * 4;
+}
+
+template<>
+inline int32_t LWByteBuffer::ReadNetwork<double>(LWSVector4<double> *Out, const int8_t *Buffer) {
+	if (Out) {
+		double v[4];
+		v[0] = MakeHostf(*((uint64_t*)Buffer + 0));
+		v[1] = MakeHostf(*((uint64_t*)Buffer + 1));
+		v[2] = MakeHostf(*((uint64_t*)Buffer + 2));
+		v[3] = MakeHostf(*((uint64_t*)Buffer + 3));
+		*Out = LWSVector4<double>(v[0], v[1], v[2], v[3]);
 	}
 	return sizeof(double) * 4;
 }
@@ -2351,6 +3196,56 @@ inline int32_t LWByteBuffer::ReadNetwork<double>(LWVector2<double> *Out, const i
 		Out->y = MakeHostf(*((uint64_t*)Buffer + 1));
 	}
 	return sizeof(double)* 2;
+}
+
+template<>
+inline int32_t LWByteBuffer::ReadNetwork<float>(LWSMatrix4<float> *Out, const int8_t *Buffer) {
+	if (Out) {
+		float v[16];
+		v[0] = MakeHostf(*((uint32_t*)Buffer + 0));
+		v[1] = MakeHostf(*((uint32_t*)Buffer + 1));
+		v[2] = MakeHostf(*((uint32_t*)Buffer + 2));
+		v[3] = MakeHostf(*((uint32_t*)Buffer + 3));
+		v[4] = MakeHostf(*((uint32_t*)Buffer + 4));
+		v[5] = MakeHostf(*((uint32_t*)Buffer + 5));
+		v[6] = MakeHostf(*((uint32_t*)Buffer + 6));
+		v[7] = MakeHostf(*((uint32_t*)Buffer + 7));
+		v[8] = MakeHostf(*((uint32_t*)Buffer + 8));
+		v[9] = MakeHostf(*((uint32_t*)Buffer + 9));
+		v[10] = MakeHostf(*((uint32_t*)Buffer + 10));
+		v[11] = MakeHostf(*((uint32_t*)Buffer + 11));
+		v[12] = MakeHostf(*((uint32_t*)Buffer + 12));
+		v[13] = MakeHostf(*((uint32_t*)Buffer + 13));
+		v[14] = MakeHostf(*((uint32_t*)Buffer + 14));
+		v[15] = MakeHostf(*((uint32_t*)Buffer + 15));
+		*Out = LWSMatrix4<float>(LWSVector4<float>(v[0], v[1], v[2], v[3]), LWSVector4<float>(v[4], v[5], v[6], v[7]), LWSVector4<float>(v[8], v[9], v[10], v[11]), LWSVector4<float>(v[12], v[13], v[14], v[15]));
+	}
+	return sizeof(float) * 16;
+}
+
+template<>
+inline int32_t LWByteBuffer::ReadNetwork<double>(LWSMatrix4<double> *Out, const int8_t *Buffer) {
+	if (Out) {
+		double v[16];
+		v[0] = MakeHostf(*((uint64_t*)Buffer + 0));
+		v[1] = MakeHostf(*((uint64_t*)Buffer + 1));
+		v[2] = MakeHostf(*((uint64_t*)Buffer + 2));
+		v[3] = MakeHostf(*((uint64_t*)Buffer + 3));
+		v[4] = MakeHostf(*((uint64_t*)Buffer + 4));
+		v[5] = MakeHostf(*((uint64_t*)Buffer + 5));
+		v[6] = MakeHostf(*((uint64_t*)Buffer + 6));
+		v[7] = MakeHostf(*((uint64_t*)Buffer + 7));
+		v[8] = MakeHostf(*((uint64_t*)Buffer + 8));
+		v[9] = MakeHostf(*((uint64_t*)Buffer + 9));
+		v[10] = MakeHostf(*((uint64_t*)Buffer + 10));
+		v[11] = MakeHostf(*((uint64_t*)Buffer + 11));
+		v[12] = MakeHostf(*((uint64_t*)Buffer + 12));
+		v[13] = MakeHostf(*((uint64_t*)Buffer + 13));
+		v[14] = MakeHostf(*((uint64_t*)Buffer + 14));
+		v[15] = MakeHostf(*((uint64_t*)Buffer + 15));
+		*Out = LWSMatrix4<double>(LWSVector4<double>(v[0], v[1], v[2], v[3]), LWSVector4<double>(v[4], v[5], v[6], v[7]), LWSVector4<double>(v[8], v[9], v[10], v[11]), LWSVector4<double>(v[12], v[13], v[14], v[15]));
+	}
+	return sizeof(double) * 16;
 }
 
 template<>
@@ -2466,6 +3361,37 @@ inline int32_t LWByteBuffer::ReadNetwork<double>(double *Out, uint32_t Len, cons
 	return sizeof(double)*Len;
 }
 
+
+template<>
+inline int32_t LWByteBuffer::ReadNetwork<float>(LWSQuaternion<float> *Out, uint32_t Len, const int8_t *Buffer) {
+	if (Out) {
+		for (uint32_t i = 0; i < Len; i++) {
+			float v[4];
+			v[0] = MakeHostf(*((uint32_t*)Buffer + i * 4 + 0));
+			v[1] = MakeHostf(*((uint32_t*)Buffer + i * 4 + 1));
+			v[2] = MakeHostf(*((uint32_t*)Buffer + i * 4 + 2));
+			v[3] = MakeHostf(*((uint32_t*)Buffer + i * 4 + 3));
+			Out[i] = LWSQuaternion<float>(v[3], v[0], v[1], v[2]);
+		}
+	}
+	return sizeof(float) * 4 * Len;
+}
+
+template<>
+inline int32_t LWByteBuffer::ReadNetwork<double>(LWSQuaternion<double> *Out, uint32_t Len, const int8_t *Buffer) {
+	if (Out) {
+		for (uint32_t i = 0; i < Len; i++) {
+			double v[4];
+			v[0] = MakeHostf(*((uint64_t*)Buffer + i * 4 + 0));
+			v[1] = MakeHostf(*((uint64_t*)Buffer + i * 4 + 1));
+			v[2] = MakeHostf(*((uint64_t*)Buffer + i * 4 + 2));
+			v[3] = MakeHostf(*((uint64_t*)Buffer + i * 4 + 3));
+			Out[i] = LWSQuaternion<double>(v[3], v[0], v[1], v[2]);
+		}
+	}
+	return sizeof(double) * 4 * Len;
+}
+
 template<>
 inline int32_t LWByteBuffer::ReadNetwork<float>(LWQuaternion<float> *Out, uint32_t Len, const int8_t *Buffer) {
 	if (Out) {
@@ -2487,6 +3413,36 @@ inline int32_t LWByteBuffer::ReadNetwork<double>(LWQuaternion<double> *Out, uint
 			Out[i].y = MakeHostf(*((uint64_t*)Buffer + i * 4 + 1));
 			Out[i].z = MakeHostf(*((uint64_t*)Buffer + i * 4 + 2));
 			Out[i].w = MakeHostf(*((uint64_t*)Buffer + i * 4 + 3));
+		}
+	}
+	return sizeof(double) * 4 * Len;
+}
+
+template<>
+inline int32_t LWByteBuffer::ReadNetwork<float>(LWSVector4<float> *Out, uint32_t Len, const int8_t *Buffer) {
+	if (Out) {
+		for (uint32_t i = 0; i < Len; i++) {
+			float v[4];
+			v[0] = MakeHostf(*((uint32_t*)Buffer + i * 4 + 0));
+			v[1] = MakeHostf(*((uint32_t*)Buffer + i * 4 + 1));
+			v[2] = MakeHostf(*((uint32_t*)Buffer + i * 4 + 2));
+			v[3] = MakeHostf(*((uint32_t*)Buffer + i * 4 + 3));
+			Out[i] = LWSVector4<float>(v[0], v[1], v[2], v[3]);
+		}
+	}
+	return sizeof(float) * 4 * Len;
+}
+
+template<>
+inline int32_t LWByteBuffer::ReadNetwork<double>(LWSVector4<double> *Out, uint32_t Len, const int8_t *Buffer) {
+	if (Out) {
+		for (uint32_t i = 0; i < Len; i++) {
+			double v[4];
+			v[0] = MakeHostf(*((uint64_t*)Buffer + i * 4 + 0));
+			v[1] = MakeHostf(*((uint64_t*)Buffer + i * 4 + 1));
+			v[2] = MakeHostf(*((uint64_t*)Buffer + i * 4 + 2));
+			v[3] = MakeHostf(*((uint64_t*)Buffer + i * 4 + 3));
+			Out[i] = LWSVector4<double>(v[0], v[1], v[2], v[3]);
 		}
 	}
 	return sizeof(double) * 4 * Len;
@@ -2562,6 +3518,60 @@ inline int32_t LWByteBuffer::ReadNetwork<double>(LWVector2<double> *Out, uint32_
 		}
 	}
 	return sizeof(double)* 2 * Len;
+}
+
+template<>
+inline int32_t LWByteBuffer::ReadNetwork<float>(LWSMatrix4<float> *Out, uint32_t Len, const int8_t *Buffer) {
+	if (Out) {
+		for (uint32_t i = 0; i < Len; i++) {
+			float v[16];
+			v[0] = MakeHostf(*((uint32_t*)Buffer + i * 16 + 0));
+			v[1] = MakeHostf(*((uint32_t*)Buffer + i * 16 + 1));
+			v[2] = MakeHostf(*((uint32_t*)Buffer + i * 16 + 2));
+			v[3] = MakeHostf(*((uint32_t*)Buffer + i * 16 + 3));
+			v[4] = MakeHostf(*((uint32_t*)Buffer + i * 16 + 4));
+			v[5] = MakeHostf(*((uint32_t*)Buffer + i * 16 + 5));
+			v[6] = MakeHostf(*((uint32_t*)Buffer + i * 16 + 6));
+			v[7] = MakeHostf(*((uint32_t*)Buffer + i * 16 + 7));
+			v[8] = MakeHostf(*((uint32_t*)Buffer + i * 16 + 8));
+			v[9] = MakeHostf(*((uint32_t*)Buffer + i * 16 + 9));
+			v[10] = MakeHostf(*((uint32_t*)Buffer + i * 16 + 10));
+			v[11] = MakeHostf(*((uint32_t*)Buffer + i * 16 + 11));
+			v[12] = MakeHostf(*((uint32_t*)Buffer + i * 16 + 12));
+			v[13] = MakeHostf(*((uint32_t*)Buffer + i * 16 + 13));
+			v[14] = MakeHostf(*((uint32_t*)Buffer + i * 16 + 14));
+			v[15] = MakeHostf(*((uint32_t*)Buffer + i * 16 + 15));
+			Out[i] = LWSMatrix4<float>(LWSVector4<float>(v[0], v[1], v[2], v[3]), LWSVector4<float>(v[4], v[5], v[6], v[7]), LWSVector4<float>(v[8], v[9], v[10], v[11]), LWSVector4<float>(v[12], v[13], v[14], v[15]));
+		}
+	}
+	return sizeof(float) * 16 * Len;
+}
+
+template<>
+inline int32_t LWByteBuffer::ReadNetwork<double>(LWSMatrix4<double> *Out, uint32_t Len, const int8_t *Buffer) {
+	if (Out) {
+		for (uint32_t i = 0; i < Len; i++) {
+			double v[16];
+			v[0] = MakeHostf(*((uint64_t*)Buffer + i * 16 + 0));
+			v[1] = MakeHostf(*((uint64_t*)Buffer + i * 16 + 1));
+			v[2] = MakeHostf(*((uint64_t*)Buffer + i * 16 + 2));
+			v[3] = MakeHostf(*((uint64_t*)Buffer + i * 16 + 3));
+			v[4] = MakeHostf(*((uint64_t*)Buffer + i * 16 + 4));
+			v[5] = MakeHostf(*((uint64_t*)Buffer + i * 16 + 5));
+			v[6] = MakeHostf(*((uint64_t*)Buffer + i * 16 + 6));
+			v[7] = MakeHostf(*((uint64_t*)Buffer + i * 16 + 7));
+			v[8] = MakeHostf(*((uint64_t*)Buffer + i * 16 + 8));
+			v[9] = MakeHostf(*((uint64_t*)Buffer + i * 16 + 9));
+			v[10] = MakeHostf(*((uint64_t*)Buffer + i * 16 + 10));
+			v[11] = MakeHostf(*((uint64_t*)Buffer + i * 16 + 11));
+			v[12] = MakeHostf(*((uint64_t*)Buffer + i * 16 + 12));
+			v[13] = MakeHostf(*((uint64_t*)Buffer + i * 16 + 13));
+			v[14] = MakeHostf(*((uint64_t*)Buffer + i * 16 + 14));
+			v[15] = MakeHostf(*((uint64_t*)Buffer + i * 16 + 15));
+			Out[i] = LWSMatrix4<double>(LWSVector4<double>(v[0], v[1], v[2], v[3]), LWSVector4<double>(v[4], v[5], v[6], v[7]), LWSVector4<double>(v[8], v[9], v[10], v[11]), LWSVector4<double>(v[12], v[13], v[14], v[15]));
+		}
+	}
+	return sizeof(double) * 16 * Len;
 }
 
 template<>

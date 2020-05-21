@@ -192,7 +192,7 @@ uint32_t LWEHttpRequest::GZipDecompress(const char *In, uint32_t InLen, char *Bu
 		Stream.next_out = (Bytef*)Buffer + o;
 		Stream.avail_out = BufferLen - o;
 		int32_t r = inflate(&Stream, Z_SYNC_FLUSH);
-		if (r == Z_OK || r == Z_STREAM_END) o = Stream.total_out;
+		if (r == Z_OK || r == Z_STREAM_END) o = (uint32_t)Stream.total_out;
 		if (r != Z_OK) {
 			if (Stream.msg) std::cout << "error: " << Stream.msg << std::endl;
 			Finished = true;

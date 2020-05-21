@@ -2,6 +2,7 @@
 #define LWVIDEODRIVER_H
 #include "LWCore/LWTypes.h"
 #include "LWCore/LWVector.h"
+#include "LWCore/LWAllocator.h"
 #include "LWPlatform/LWTypes.h"
 #include "LWPlatform/LWPlatform.h"
 #include "LWVideo/LWTypes.h"
@@ -29,7 +30,8 @@ public:
 	static const uint32_t DirectX9C = 0x40;  /*!< \brief Driver type for passing to CreateVideoContext which creates an DirectX9C context. */
 	static const uint32_t OpenGLES3 = 0x80;  /*!< \brief Driver type for passing to CreateVideoContext which creates an OpenGL ES 3.0 context. */
 	static const uint32_t Metal = 0x100; /*!< \brief Driver type for passing to CreateVideoContext which creates an iOS Metal context. */
-	static const uint32_t OpenGLVulkan = 0x200; /*!< \brief Driver type for passing to CreateVideoContext which creates an OpenGL Vulkan context. */
+	static const uint32_t Vulkan = 0x200; /*!< \brief Driver type for passing to CreateVideoContext which creates an OpenGL Vulkan context. */
+	static const uint32_t DebugLayer = 0x80000000; /*!< \brief flag to add to MakeVideoDriver Type paramater which will enable a debug layer output if the driver api supports it(such as directX). */
 	enum{
 		Points = 0, /*!< \brief drawing expects a series of points per-vertex. */
 		LineStrip, /*!< \brief drawing expected input is a line strip. */
@@ -575,18 +577,30 @@ public:
 
 	/*!< \brief returns the indexed padded position in buffer for the requested type. */
 	template<class Type>
-	Type *GetUniformPaddedAt(uint32_t Index, void *Buffer) {
+	Type *GetUniformPaddedAt(uint32_t Index, void *Buffer) const {
 		return (Type*)((uint8_t*)Buffer + GetUniformBlockPaddedSize(sizeof(Type))*Index);
 	}
 
 	/*!< \brief returns the padded size of the requested type of length. */
 	template<class Type>
-	uint32_t GetUniformPaddedLength(uint32_t Length) {
+	uint32_t GetUniformPaddedLength(uint32_t Length) const {
 		return GetUniformBlockPaddedSize(sizeof(Type))*Length;
+	}
+
+	/*!< \brief allocates an array of bytes for the padded type of length to occupy. */
+	template<class Type>
+	char *AllocatePaddedArray(uint32_t Length, LWAllocator &Allocator) {
+		return Allocator.AllocateArray<char>(GetUniformBlockPaddedSize(sizeof(Type))*Length);
 	}
 
 	/*!< \brief calculates the uniform block's offset from the rawsize(taking into account how many uniform blocks are taken up by the struct.) */
 	uint32_t GetUniformBlockOffset(uint32_t RawSize, uint32_t Offset) const;
+
+	/*!< \brief calculates the uniform block's offset from the supplied type. */
+	template<class Type>
+	uint32_t GetUniformBlockOffset(uint32_t Offset) const {
+		return GetUniformBlockOffset(sizeof(Type), Offset);
+	}
 
 	/*! \brief returns the parent window object.*/
 	LWWindow *GetWindow(void) const;
@@ -641,8 +655,8 @@ protected:
 #define LWVIDEO_STUBBED_DRIVER(DriverName) \
 class DriverName : public LWVideoDriver { \
 public: \
-	static LWVideoDriver *MakeVideoDriver(LWWindow *Window){ return nullptr; } \
-	static bool DestroyVideoContext(DriverName *Driver){ return false; } \
+	static LWVideoDriver *MakeVideoDriver(LWWindow *, uint32_t){ return nullptr; } \
+	static bool DestroyVideoContext(DriverName *){ return false; } \
 };
 
 #ifndef LWVIDEO_IMPLEMENTED_DIRECTX11
@@ -681,8 +695,8 @@ LWVIDEO_STUBBED_DRIVER(LWVideoDriver_OpenGLES3)
 LWVIDEO_STUBBED_DRIVER(LWVideoDriver_Metal)
 #endif
 
-#ifndef LWVIDEO_IMPLEMENTED_OPENGLVULKAN
-LWVIDEO_STUBBED_DRIVER(LWVideoDriver_OpenGLVulkan)
+#ifndef LWVIDEO_IMPLEMENTED_VULKAN
+LWVIDEO_STUBBED_DRIVER(LWVideoDriver_Vulkan)
 #endif
 
 /*! \endcond */

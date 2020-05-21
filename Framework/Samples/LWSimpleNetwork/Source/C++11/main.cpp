@@ -89,12 +89,12 @@ bool TestUDP(void) {
 	std::cout << "Beginning local UDP tests!" << std::endl;
 	LWSocket UDPA;
 	LWSocket UDPB;
-	uint32_t Result = LWSocket::CreateSocket(UDPA, LWSocket::UdpNoConnReset, 0);
+	uint32_t Result = LWSocket::CreateSocket(UDPA, 0, 0);
 	if (Result) {
 		std::cout << "Failed to create UDPA socket with error: " << Errors[Result] << " Network: " << LWProtocolManager::GetError() << std::endl;
 		return false;
 	}
-	Result = LWSocket::CreateSocket(UDPB, 5052, LWSocket::Udp | LWSocket::UdpNoConnReset, 0);
+	Result = LWSocket::CreateSocket(UDPB, 5052, LWSocket::Udp, 0);
 	if (Result) {
 		std::cout << "Failed to create UDPB socket with error: " << Errors[Result] << " Network: " << LWProtocolManager::GetError() << std::endl;
 		return false;

@@ -1,6 +1,10 @@
 #ifndef LWPLATFORM_H
 #define LWPLATFORM_H
 
+//Simple string concation tools.
+#define LWXSTR(x) #x
+#define LWSTR(x) LWXSTR(x)
+
 #define LWARCH_UNKNOWN 0
 #define LWARCH_X86 1
 #define LWARCH_X64 2

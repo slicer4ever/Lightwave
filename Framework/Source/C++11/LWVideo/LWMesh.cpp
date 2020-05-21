@@ -143,6 +143,8 @@ LWMesh<LWVertexUI> *LWVertexUI::MakeMesh(LWAllocator &Allocator, LWVideoBuffer *
 	return Allocator.Allocate<LWMesh<LWVertexUI>>(VertexBuffer, CurrentVertexCount);
 }
 
+LWVertexUI::LWVertexUI(const LWVector4f &Position, const LWVector4f &Color, const LWVector4f &TexCoord) : m_Position(Position), m_Color(Color), m_TexCoord(TexCoord) {}
+
 uint32_t LWVertexPosition::WriteVertex(LWBaseMesh *Mesh, const LWVector4f &Position){
 	if (!Mesh->CanWriteVertices(1)) return 0;
 	LWVertexPosition *V = ((LWMesh<LWVertexPosition>*)Mesh)->GetVertexAt(Mesh->WriteVertices(1));
@@ -189,6 +191,8 @@ LWMesh<LWVertexPosition> *LWVertexPosition::MakeMesh(LWAllocator &Allocator, LWV
 LWMesh<LWVertexPosition> *LWVertexPosition::MakeMesh(LWAllocator &Allocator, LWVideoBuffer *VertexBuffer, uint32_t CurrentVertexCount){
 	return Allocator.Allocate<LWMesh<LWVertexPosition>>(VertexBuffer, CurrentVertexCount);
 }
+
+LWVertexPosition::LWVertexPosition(const LWVector4f &Position) : m_Position(Position) {}
 
 uint32_t LWVertexColor::WriteVertex(LWBaseMesh *Mesh, const LWVector4f &Position, const LWVector4f &Color){
 	if (!Mesh->CanWriteVertices(1)) return 0;
@@ -276,6 +280,8 @@ LWMesh<LWVertexColor> *LWVertexColor::MakeMesh(LWAllocator &Allocator, LWVideoBu
 	return Allocator.Allocate<LWMesh<LWVertexColor>>(VertexBuffer, CurrentVertexCount);
 }
 
+LWVertexColor::LWVertexColor(const LWVector4f &Position, const LWVector4f &Color) : m_Position(Position), m_Color(Color) {}
+
 uint32_t LWVertexTexture::WriteVertex(LWBaseMesh *Mesh, const LWVector4f &Position, const LWVector2f &TexCoord){
 	if (!Mesh->CanWriteVertices(1)) return 0;
 	LWVertexTexture *V = ((LWMesh<LWVertexTexture>*)Mesh)->GetVertexAt(Mesh->WriteVertices(1));
@@ -310,6 +316,9 @@ LWMesh<LWVertexTexture> *LWVertexTexture::MakeMesh(LWAllocator &Allocator, LWVid
 LWMesh<LWVertexTexture> *LWVertexTexture::MakeMesh(LWAllocator &Allocator, LWVideoBuffer *VertexBuffer, uint32_t CurrentVertexCount){
 	return Allocator.Allocate<LWMesh<LWVertexTexture>>(VertexBuffer, CurrentVertexCount);
 }
+
+LWVertexTexture::LWVertexTexture(const LWVector4f &Position, const LWVector4f &TexCoord) : m_Position(Position), m_TexCoord(TexCoord) {}
+
 
 LWBaseMesh &LWBaseMesh::Finished(void){
 	m_VertexBuffer->SetEditLength(m_TypeSize*m_ActiveVertexCount);

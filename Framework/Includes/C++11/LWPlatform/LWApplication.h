@@ -3,8 +3,32 @@
 #include "LWTypes.h"
 #include <functional>
 
+const uint32_t LWSignal_CtrlC = 0; /*!< \brief console has recievied a ctrl+c close event. */
+const uint32_t LWSignal_Break = 1; /*!< \brief console has receivied a ctrl+break close event. */
+const uint32_t LWSignal_Close = 2; /*!< \brief console has been asked to close nicely(i.e: os x has been clicked. */
+const uint32_t LWSignal_Logoff = 3; /*!< \brief user has logged off. */
+const uint32_t LWSignal_Shutdown = 4; /*!< \brief platform is shutting off. */
+const uint32_t LWSignal_Unknown = 5; /*!< \brief if this value is received it means the signal received was an unknown type. */
+
+/*!< \brief Signal handler function defintion. */
+typedef std::function<bool(uint32_t, void*)> LWSignalHandlerFunc;
+
 /*!< \brief this is the new entry point if including LWPlatform library. */
-int LWMain(int argc, char **argv);
+int32_t LWMain(int32_t argc, char **argv);
+
+/*!< \brief registers for different signal capturing and handling.
+	 \param SignalHandler callback to be called when signal is caught, pass true if the application is handling the signal, false if not to pass to the next handler.
+	 \param Signal the signal the function is to be registered for.
+	 \param UserData to be passed to the SingalHandler function.
+*/
+void LWRegisterSignal(LWSignalHandlerFunc Handler, uint32_t Signal, void *UserData);
+
+/*!< \brief registers a class's method for signal capture and handling. */
+template<class Method, class Obj>
+void LWRegisterSignalm(Obj *A, Method CB, uint32_t Signal, void *UserData) {
+	 LWRegisterSignal(std::bind(CB, A, std::placeholders::_1, std::placeholders::_2), Signal, UserData);
+	 return;
+}
 
 /*!< \brief attempts to execute the specefied platform, may not be implementing on some platform. */
 bool LWExecute(const char *BinaryPath, const char *Parameters);

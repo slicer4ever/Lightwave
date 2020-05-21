@@ -30,6 +30,10 @@ bool LWWindow::MakeLoadFileDialog(const LWText &Filter, char *Buffer, uint32_t B
 	return false;
 }
 
+uint32_t LWWindow::MakeLoadFileMultipleDialog(const LWText &Filter, char **Bufer, uint32_t BufferLen, uint32_t BufferCount) {
+	return 0;
+}
+
 bool LWWindow::WriteClipboardText(const LWText &Text) {
 	NSPasteboard *Paste = [NSPasteboard generalPasteboard];
 	[Paste clearContents];
@@ -238,6 +242,10 @@ LWAllocator *LWWindow::GetAllocator(void) const{
 	return m_Allocator;
 }
 
+bool LWWindow::isFinished(void) const {
+	return (m_Flag&Terminate) != 0;
+}
+
 bool LWWindow::isFocused(void) const {
 	return (m_Flag&Focused) != 0;
 }
@@ -256,6 +264,10 @@ bool LWWindow::FocusUpdated(void) const {
 
 bool LWWindow::isVisible(void) const {
 	return (m_Flag&Visible) != 0;
+}
+
+bool LWWindow::isVirtualKeyboardPresent(void) const {
+	return (m_Flag&KeyboardPresent) != 0;
 }
 
 LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocator, uint32_t Flag, const LWVector2i &Position, const LWVector2i &Size) : m_Allocator(&Allocator), m_FirstDevice(nullptr), m_Title(LWText(Title.GetCharacters(), Allocator)), m_Name(LWText(Name.GetCharacters(), Allocator)), m_Position(Position), m_Size(Size), m_Flag(Flag){

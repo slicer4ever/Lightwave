@@ -13,10 +13,10 @@ struct LWEJob {
 	uint64_t m_UpdateFrequency;
 	uint64_t m_NextUpdate;
 	uint64_t m_ElapsedTime;
-	uint32_t m_LockIDs;
-	uint32_t m_UnlockIDs;
-	uint32_t m_LockedOutIDs;
-	uint32_t m_LockedInIDs;
+	uint32_t m_LockIDs; //Flag for what bits of the lock flag to set when the job runs.
+	uint32_t m_UnlockIDs; //Flag for what bits of the lock flag to remove when the job finishs.
+	uint32_t m_LockedOutIDs; //Flag for what bits of the lock flag must not be set in order for the job to be startable.
+	uint32_t m_LockedInIDs; //Flag for what bits of the lock flag must be set in order for the job to be startable.
 	uint32_t m_ThreadLimit;
 	uint32_t m_RunCount;
 	uint32_t m_LoopCount;
@@ -40,12 +40,13 @@ struct LWEJobThread {
 class LWEJobQueue {
 public:
 	enum {
-		MaxThreads=32,
-		MaxJobs=64,
+		MaxThreads = 32,
+		MaxJobs = 64,
 
-		Finished=0x1,
-		Paused=0x2,
-		AlwaysSleep=0x4,
+		Finished = 0x1,
+		Paused = 0x2,
+		AlwaysSleep = 0x4,
+		Joined = 0x8,
 
 		JobNull = 0,
 		JobOpen = 1,
@@ -68,7 +69,9 @@ public:
 
 	LWEJobQueue &OutputJobTimings(void);
 
-	LWEJobQueue &SetFinished(void);
+	LWEJobQueue &SetFinished(bool isFinished);
+
+	LWEJobQueue &WaitForAllJoined(void);
 
 	LWEJobQueue &Pause(void);
 
@@ -85,6 +88,10 @@ public:
 	uint32_t GetThreadCount(void) const;
 
 	uint32_t GetJobCount(void) const;
+
+	bool isFinished(void) const;
+
+	bool isJoined(void) const;
 
 	LWEJobQueue(uint32_t ThreadCnt = 0);
 

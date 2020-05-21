@@ -25,7 +25,7 @@ void LWEJobQueue::RunThread(LWEJobThread *Thread, LWEJobQueue *Queue) {
 	uint32_t Flag = Queue->GetFlag();
 	uint32_t JobIdx = 0;
 	uint32_t JobSleepCnt = 0;
-	while (!(Queue->GetFlag()&LWEJobQueue::Finished)) {
+	while(!Queue->isFinished()){
 		Flag = Queue->GetFlag();
 		if (Flag&LWEJobQueue::Paused) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -158,8 +158,15 @@ LWEJobQueue &LWEJobQueue::OutputJobTimings(void) {
 	return *this;
 }
 
-LWEJobQueue &LWEJobQueue::SetFinished(void) {
-	m_Flag |= Finished;
+LWEJobQueue &LWEJobQueue::SetFinished(bool isFinished) {
+	m_Flag |= isFinished ? Finished : 0;
+	return *this;
+}
+
+LWEJobQueue &LWEJobQueue::WaitForAllJoined(void) {
+	if (isJoined()) return *this;
+	for (uint32_t i = 1; i < m_ThreadCount; i++) m_Threads[i].m_Thread.join();
+	m_Flag |= Joined;
 	return *this;
 }
 
@@ -198,6 +205,14 @@ uint32_t LWEJobQueue::GetJobCount(void) const {
 	return m_JobCount;
 }
 
+bool LWEJobQueue::isFinished(void) const {
+	return (m_Flag&Finished) != 0;
+}
+
+bool LWEJobQueue::isJoined(void) const {
+	return (m_Flag&Joined) != 0;
+}
+
 LWEJobQueue::LWEJobQueue(uint32_t ThreadCnt) : m_ThreadCount(0), m_JobCount(0), m_LockedFlag(0), m_ReserveJobCount(0), m_Flag(Paused) {
 	for (uint32_t i = 0; i < MaxJobs; i++) m_JobState[i].store(JobNull);
 	if (!ThreadCnt) ThreadCnt = std::thread::hardware_concurrency()-1;
@@ -212,5 +227,5 @@ LWEJobQueue::LWEJobQueue(uint32_t ThreadCnt) : m_ThreadCount(0), m_JobCount(0), 
 
 LWEJobQueue::~LWEJobQueue() {
 	m_Flag |= Finished;
-	for (uint32_t i = 1; i < m_ThreadCount; i++) m_Threads[i].m_Thread.join();
+	WaitForAllJoined();
 }

@@ -287,6 +287,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2D(uint32_t TextureState, uin
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
 	};
+
 	bool MakeMipmaps = (TextureState&LWTexture::MakeMipmaps);
 	bool Compressed = LWImage::CompressedType(PackType);
 	bool DepthTex = LWImage::DepthType(PackType);
@@ -867,7 +868,7 @@ bool LWVideoDriver_DirectX11_1::SetRasterState(uint64_t Flags, float Bias, float
 		if (!doDepthBias) Bias = SlopedScaleBias = 0.0f;
 
 		D3D11_RASTERIZER_DESC1 RastDesc = { FillModes[FillMode], CullModes[CullMode],
-											true, (int32_t)(Depth24Scalar*Bias), 0.0f, SlopedScaleBias, true, false, false, false, 0 };
+											true, (int32_t)(Depth24Scalar*Bias), 0.0f, SlopedScaleBias, true, false, true, false, 0 };
 		D3D11_DEPTH_STENCIL_DESC DepthDesc = { (Flags&(LWPipeline::DEPTH_TEST)) != 0,
 												((Flags&(LWPipeline::No_Depth)) == 0 ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO),
 												CompFuncs[DepthCompareFunc], (Flags&LWPipeline::STENCIL_TEST) != 0,
@@ -1055,7 +1056,7 @@ LWVideoDriver &LWVideoDriver_DirectX11_1::ClearDepth(float Depth) {
 		if (!Slot.m_Source) View = nullptr;
 		else View = ((LWDirectX11_1Texture*)Slot.m_Source)->GetContext().GetDepthStencilView(Slot.m_Layer, Slot.m_Face, Slot.m_Mipmap, Slot.m_Source, m_Context);
 	}
-	m_Context.m_DXDeviceContext->ClearDepthStencilView(View, D3D11_CLEAR_DEPTH, Depth, 0);
+	if(View) m_Context.m_DXDeviceContext->ClearDepthStencilView(View, D3D11_CLEAR_DEPTH, Depth, 0);
 	return *this;
 }
 
@@ -1067,7 +1068,7 @@ LWVideoDriver &LWVideoDriver_DirectX11_1::ClearStencil(uint8_t Stencil) {
 		if (!Slot.m_Source) View = nullptr;
 		else View = ((LWDirectX11_1Texture*)Slot.m_Source)->GetContext().GetDepthStencilView(Slot.m_Layer, Slot.m_Face, Slot.m_Mipmap, Slot.m_Source, m_Context);
 	}
-	m_Context.m_DXDeviceContext->ClearDepthStencilView(View, D3D11_CLEAR_STENCIL, 0.0f, Stencil);
+	if(View) m_Context.m_DXDeviceContext->ClearDepthStencilView(View, D3D11_CLEAR_STENCIL, 0.0f, Stencil);
 	return *this;
 }
 

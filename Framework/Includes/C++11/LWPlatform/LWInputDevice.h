@@ -354,7 +354,7 @@ public:
 	virtual LWInputDevice &Update(LWWindow *Window, uint64_t lCurrentTime);
 
 	/*!< \brief returns the specified point. */
-	const LWTouchPoint *GetPoint(uint32_t i) const;
+	const LWTouchPoint &GetPoint(uint32_t i) const;
 
 	/*!< \brief returns the gesture. */
 	const LWGesture &GetGesture() const;

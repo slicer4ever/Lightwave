@@ -58,18 +58,24 @@ public:
 	/*! \brief constructs a system dialog for the user, use this only if an error occurs. */
 	static uint32_t MakeDialog(const LWText &Text, const LWText &Header, uint32_t DialogFlags);
 
-	/*!< \brief constructs a the os system's standard save dialog, currently only windows implementation is made at the moment.
+	/*!< \brief constructs the os system's standard save dialog, currently only windows implementation is made at the moment.
 		 \note Filter is a seperated list of terminated strings, the first string is the pattern to match(i.e: *.txt) and the second string is the user friendly name(i.e: Text Files), they are specified like so: "*.txt\0Text Files\0\0" an empty string indicates the end of the filter list. 
 		 \return true if the dialog save button was pressed, results are written into Buffer.
 	*/
 
 	static bool MakeSaveFileDialog(const LWText &Filter, char *Buffer, uint32_t BufferLen);
 
-	/*!< \brief constructs a the os system's standard load dialog, currently only windows implementation is made at the moment.
+	/*!< \brief constructs the os system's standard load dialog, currently only windows implementation is made at the moment.
 		 \note Filter is a seperated list of terminated strings, the first string is the pattern to match(i.e: *.txt) and the second string is the user friendly name(i.e: Text Files), they are specified like so: "*.txt\0Text Files\0\0" an empty string indicates the end of the filter list.
 		 \return true if the dialog save button was pressed, results are written into Buffer.
 	*/
 	static bool MakeLoadFileDialog(const LWText &Filter, char *Buffer, uint32_t BufferLen);
+
+	/*!< \brief constructs the os system's standard load dialog with support for multiple items. currently only windows implementation is made the moment.
+		 \note Filter is a seperated list of terminated strings, the first string is the pattern to match(i.e: *.txt) and the second string is the user friendly name(i.e: Text Files), they are specified like so: "*.txt\0Text Files\0\0" an empty string indicates the end of the filter list.
+		\return the number of items selected, 0 if none were selected.
+	*/
+	static uint32_t MakeLoadFileMultipleDialog(const LWText &Filter, char **Bufer, uint32_t BufferLen, uint32_t BufferCount);
 
 	/*!< \brief writes to the internal clipboard buffer the text specified. 
 		 \return true on success, false on failure.
@@ -215,6 +221,9 @@ public:
 	/*! \brief returns the allocator used for the window. */
 	LWAllocator *GetAllocator(void) const;
 
+	/*!< \brief returns true if the window has been requested to be closed. */
+	bool isFinished(void) const;
+
 	/*!< \brief returns true if the window is currently focused or not. */
 	bool isFocused(void) const;
 
@@ -229,6 +238,9 @@ public:
 
 	/*!< \brief returns true if the window is set to be visible or not. */
 	bool isVisible(void) const;
+
+	/*!< \brief returns true if the on screen keyboard is present. */
+	bool isVirtualKeyboardPresent(void) const;
 
 	/*! \brief Constructor for the window, if an error occurs, the error flag is set for the object.
 		\param Title the window's title.

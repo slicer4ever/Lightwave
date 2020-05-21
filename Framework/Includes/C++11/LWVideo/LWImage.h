@@ -4,7 +4,7 @@
 #include "LWCore/LWAllocator.h"
 #include "LWPlatform/LWTypes.h"
 
-/*!< \brief the basic image class which supports loading png, tga, and dds files.*/
+/*!< \brief the basic image class which supports loading png, tga, ktx2, and dds files.*/
 class LWImage{
 public:
 	enum{
@@ -77,6 +77,12 @@ public:
 
 	/*!< \brief loads a dds file from a memory buffer. */
 	static bool LoadImageDDS(LWImage &Image, const uint8_t *Buffer, uint32_t BufferLen, LWAllocator &Allocator);
+
+	/*! \brief loads a ktx2 file. */
+	static bool LoadImageKTX2(LWImage &Image, const LWText &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream = nullptr);
+
+	/*! \brief loads a ktx2 file from a memory buffer. */
+	static bool LoadImageKTX2(LWImage &Image, const uint8_t *Buffer, uint32_t BufferLen, LWAllocator &Allocator);
 
 	/*!< \brief copys n texels into buffer at a certain weight.
 		 \param PackType the pack type of the texels.
