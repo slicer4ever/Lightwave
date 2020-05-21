@@ -14,6 +14,16 @@ struct LWSMatrix4<double> {
 
 	LWMatrix4<double> AsMat4(void) const;
 
+	double *AsArray(void);
+
+	const double *AsArray(void) const;
+
+	LWSMatrix4<double> &sRC(uint32_t Row, uint32_t Column, double Value);
+
+	LWSVector4<double> DecomposeScale(bool doTranspose3x3) const;
+
+	void Decompose(LWSVector4<double> &Scale, LWSQuaternion<double> &Rotation, LWSVector4<double> &Translation, bool doTranspose3x3) const;
+
 	LWSMatrix4<double> TransformInverse(void) const;
 
 	LWSMatrix4<double> Inverse(void) const;
@@ -115,6 +125,8 @@ struct LWSMatrix4<double> {
 	static LWSMatrix4<double> LookAt(const LWSVector4<double>& Position, const LWSVector4<double>& Target, const LWSVector4<double>& Up);
 
 	LWSMatrix4(const LWSQuaternion<double>& Q);
+
+	LWSMatrix4(const LWMatrix4<double> &M);
 
 	LWSMatrix4(__m256d Row0, __m256d Row1, __m256d Row2, __m256d Row3);
 

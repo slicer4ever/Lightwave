@@ -13,6 +13,7 @@ struct LWGlyph {
 	LWVector2f m_Size; /*!< \brief pixel size of the glyph. */
 	LWVector2f m_Advance; /*!< \brief horizontal, and vertical advance(vertical is not used in default rendering methods) */
 	LWVector2f m_Bearing; /*!< \brief bearing offsets. */
+	LWVector2f m_SignedRange; /*! \brief signed distance range which is encoded into z+w of TexCoord for sdf calculations(this encoding is Range/TexSize of texImage). */
 	uint32_t m_Character; /*!< \brief utf-32 character code. */
 	uint32_t m_TextureIndex; /*!< \brief texture index the glyph is on. */
 };
@@ -25,7 +26,7 @@ struct LWGlyph {
 	 \param Color the color of the glyph.
 	 \return true if written, false if failure(if false is returned then the font writer will stop.)
 */
-typedef std::function<bool(LWTexture *Tex, const LWVector2f &Position, const LWVector2f &Size, const LWVector4f &TexCoord, const LWVector4f &Color)> LWFontWriteCallback;
+typedef std::function<bool(LWTexture *Tex, const LWVector2f &Position, const LWVector2f &Size, const LWVector4f &TexCoord, const LWVector2f &DistanceField, const LWVector4f &Color)> LWFontWriteCallback;
 
 /*!\ \brief a very simple font writer that demonstrates how to draw text into a mesh. */
 struct LWFontSimpleWriter {
@@ -38,8 +39,10 @@ struct LWFontSimpleWriter {
 	/*!< \brief changes the texture if needed. */
 	bool WriteTexture(LWTexture *Tex);
 
-	/*!< \brief function passed to the font object for writing. */
-	bool WriteGlyph(LWTexture *Tex, const LWVector2f &Position, const LWVector2f &Size, const LWVector4f &TexCoord, const LWVector4f &Color);
+	/*!< \brief function passed to the font object for writing. 
+		 \note DistanceField should be written to the z+w components of TexCoord.
+	*/
+	bool WriteGlyph(LWTexture *Tex, const LWVector2f &Position, const LWVector2f &Size, const LWVector4f &TexCoord, const LWVector2f &DistanceField, const LWVector4f &Color);
 
 	/*!< \brief constructor for the writer. */
 	LWFontSimpleWriter(LWMesh<LWVertexUI> *Mesh);
@@ -52,6 +55,12 @@ struct LWFontSimpleWriter {
 class LWFont {
 public:
 	static const uint32_t MaxTextures = 16; /*!< \brief max number of "pages" the glyphs can inhabit. */
+
+	/*!< \brief attempts to load an artery atlas file format, this format is the simpliest output to use for a multi-signed distance font generator (https://github.com/Chlumsky/msdf-atlas-gen) if a msdf font is used be sure to use the correct pixel shaders for rendering. 
+		 \note LWFont does not support multiple variants of fonts, as such the last variant that supports unicode is selected.
+	*/
+	static LWFont *LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAllocator &Allocator);
+
 	/*!< \brief attempts to load a bitmap fnt file, an angel font type(text format). the font size and characters are prebaked, so not many options are available.  only single page fonts are supported. */
 	static LWFont *LoadFontFNT(LWFileStream *Stream, LWVideoDriver *Driver, LWAllocator &Allocator);
 
@@ -78,11 +87,14 @@ public:
 	*/
 	static LWFont *LoadFontTTF(LWFileStream *Stream, LWVideoDriver *Driver, uint32_t emSize, uint32_t RangeCount, const uint32_t *FirstChar, const uint32_t *NbrChars, LWAllocator &Allocator);
 
-	/*!< \brief returns the default shader for rendering font, embedded into the code. */
-	static const char *GetFontShaderSource(void);
+	/*! \brief returns the default vertex shader for rendering font, embedded into the code. */
+	static const char *GetVertexShaderSource(void);
 
-	/*!< \brief returns the shader for use with rendering signed distance field font's, embedded into the code. */
-	static const char *GetSDFFontShaderSource(void);
+	/*!< \brief returns the default pixel shader for rendering font, embedded into the code. */
+	static const char *GetPixelColorShaderSource(void);
+
+	/*!< \brief returns the pixel shader for use with rendering multiple signed distance field font's, embedded into the code. */
+	static const char *GetPixelMSDFShaderSource(void);
 
 	/*!< \brief sets the texture for the font. */
 	LWFont &SetTexture(uint32_t TextureIndex, LWTexture *Tex);
@@ -114,7 +126,7 @@ public:
 	/*!< \brief convenience function that automatically binds a class's method as the writer function. */
 	template<class Obj, class CallBack>
 	LWVector4f DrawTextm(const LWText &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, Obj *O, CallBack C) {
-		return DrawText(Text, Position, Scale, Color, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+		return DrawText(Text, Position, Scale, Color, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 	}
 
 	/*!< \brief convenience function that automatically binds a class's method as the writer function. */
@@ -125,13 +137,13 @@ public:
 		va_start(lst, C);
 		vsnprintf(Buffer, sizeof(Buffer), (const char*)Fmt.GetCharacters(), lst);
 		va_end(lst);
-		return DrawText(Buffer, Position, Scale, Color, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+		return DrawText(Buffer, Position, Scale, Color, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 	}
 
 	/*!< \brief convenience function that automatically binds a class's method as the writer function. */
 	template<class Obj, class CallBack>
 	LWVector4f DrawTextm(const LWText &Text, uint32_t CharCount, const LWVector2f &Position, float Scale, const LWVector4f &Color, Obj *O, CallBack C){
-		return DrawText(Text, CharCount, Position, Scale, Color, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+		return DrawText(Text, CharCount, Position, Scale, Color, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 	}
 
 	/*!< \brief convenience function that automatically binds a class's method as the writer function. */
@@ -142,13 +154,13 @@ public:
 		va_start(lst, C);
 		vsnprintf(Buffer, sizeof(Buffer), (const char*)Fmt.GetCharacters(), lst);
 		va_end(lst);
-		return DrawText(Buffer, CharCount, Position, Scale, Color, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+		return DrawText(Buffer, CharCount, Position, Scale, Color, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 	}
 
 	/*!< \brief convenience function that automatically binds a class's method as the writer function. */
 	template<class Obj, class CallBack>
 	LWVector4f DrawClippedTextm(const LWText &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, Obj *O, CallBack C) {
-		return DrawClippedText(Text, Position, Scale, Color, AABB, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+		return DrawClippedText(Text, Position, Scale, Color, AABB, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 	}
 
 	/*!< \brief convenience function that automatically binds a class's method as the writer function. */
@@ -159,13 +171,13 @@ public:
 		va_start(lst, C);
 		vsnprintf(Buffer, sizeof(Buffer), (const char*)Fmt.GetCharacters(), lst);
 		va_end(lst);
-		return DrawClippedText(Buffer, Position, Scale, Color, AABB, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+		return DrawClippedText(Buffer, Position, Scale, Color, AABB, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 	}
 
 	/*!< \brief convenience function that automatically binds a class's method as the writer function. */
 	template<class Obj, class CallBack>
 	LWVector4f DrawClippedTextm(const LWText &Text, uint32_t CharCount, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, Obj *O, CallBack C) {
-		return DrawClippedText(Text, CharCount, Position, Scale, Color, AABB, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+		return DrawClippedText(Text, CharCount, Position, Scale, Color, AABB, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 	}
 
 	/*!< \brief convenience function that automatically binds a class's method as the writer function. */
@@ -176,7 +188,7 @@ public:
 		va_start(lst, C);
 		vsnprintf(Buffer, sizeof(Buffer), (const char*)Fmt.GetCharacters(), lst);
 		va_end(lst);
-		return DrawClippedText(Buffer, CharCount, Position, Scale, Color, AABB, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+		return DrawClippedText(Buffer, CharCount, Position, Scale, Color, AABB, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 	}
 
 	/*!< \brief renders text to the writer function. 

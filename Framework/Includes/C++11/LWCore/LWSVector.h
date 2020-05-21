@@ -14,6 +14,39 @@ struct LWSVector4 {
 		return LWVector4<Type>(m_x, m_y, m_z, m_w);
 	}
 
+	/*! \brief returns the underlying value as an array. */
+	Type *AsArray(void) {
+		return &m_x;
+	}
+
+	/*! \brief returns the underlying value as an const array for reading. */
+	const Type *AsArray(void) const {
+		return &m_x;
+	}
+
+	/*! \brief set's the x value the vector4, this is the safer method for setting individual component's. */
+	LWSVector4<Type> &sX(Type Value) {
+		m_x = Value;
+		return *this;
+	}
+
+	/*! \brief set's the y value the vector4, this is the safer method for setting individual component's. */
+	LWSVector4<Type> &sY(Type Value) {
+		m_y = Value;
+		return *this;
+	}
+	/*! \brief set's the z value the vector4, this is the safer method for setting individual component's. */
+	LWSVector4<Type> &sZ(Type Value) {
+		m_z = Value;
+		return *this;
+	}
+
+	/*! \brief set's the w value the vector4, this is the safer method for setting individual component's. */
+	LWSVector4<Type> &sW(Type Value) {
+		m_w = Value;
+		return *this;
+	}
+
 	/*!< \brief normalizes the vec4. */
 	LWSVector4<Type> Normalize(void) const {
 		Type L = m_x * m_x + m_y * m_y + m_z * m_z + m_w * m_w;
@@ -59,7 +92,7 @@ struct LWSVector4 {
 	}
 
 	/*!< \brief returns the 4 component sum of the vec4. */
-	Type Sum(void) const {
+	Type Sum4(void) const {
 		return m_x + m_y + m_z + m_w;
 	};
 
@@ -117,6 +150,18 @@ struct LWSVector4 {
 	LWSVector4<Type> Cross3(const LWSVector4<Type> &O) const {
 		return LWSVector4<Type>(m_y*O.m_z - m_z * O.m_y, m_z*O.m_x - m_x * O.m_z, m_x*O.m_y - m_y * O.m_x, m_w);
 	}
+
+	/*!< \brief attempts to constructs orthogonal direction vectors from the supplied vector, treated as vec3's. */
+	void Orthogonal3(LWSVector4<Type> &Right, LWSVector4<Type> &Up) const {
+		const LWSVector4<Type> XAxis = LWSVector4<Type>(1, 0, 0, 0);
+		const LWSVector4<Type> YAxis = LWSVector4<Type>(0, 1, 0, 0);
+		LWSVector4<Type> A = XAxis;
+		Type d = (Type)abs(Dot3(A));
+		if (d > 0.8) A = YAxis;
+		Right = Cross3(A).Normalize3();
+		Up = Cross3(Right);
+		return;
+	};
 
 	/*!< \brief calculates a perpindicular xy components of the simd, treated as vec2's. */
 	LWSVector4<Type> Perpindicular2(void) const{
@@ -187,6 +232,163 @@ struct LWSVector4 {
 	/*!< \brief return's the squared distance betweent his and O of the x, and y components. */
 	Type DistanceSquared2(const LWSVector4<Type> &O) const {
 		return (O - *this).LengthSquared2();
+	}
+
+	/*! \brief returns the absolute value of each component. */
+	LWSVector4<Type> Abs(void) const {
+		return LWSVector4<Type>((Type)abs(m_x), (Type)abs(m_y), (Type)abs(m_z), (Type)abs(m_w));
+	}
+
+	/*! \brief returns the absolute value of x,y, and z component. */
+	LWSVector4<Type> Abs3(void) const {
+		return LWSVector4<Type>((Type)abs(m_x), (Type)abs(m_y), (Type)abs(m_z), m_w);
+	}
+
+	/*! \brief returns the absolute value of x, and y component. */
+	LWSVector4<Type> Abs2(void) const {
+		return LWSVector4<Type>((Type)abs(m_x), (Type)abs(m_y), m_z, m_w);
+	}
+
+
+	/*! \brief compares each component, if component is < rhs, then stores Value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_Less(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		return LWSVector4<Type>(m_x < Rhs.m_x ? Value.m_x : m_x, m_y < Rhs.m_y ? Value.m_y : m_y, m_z < Rhs.m_z ? Value.m_z : m_z, m_w < Rhs.m_w ? Value.m_w : m_w);
+	}
+
+	/*! \brief compares x, y, and z component, if component is < rhs than store's value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_Less3(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		return LWSVector4<Type>(m_x < Rhs.m_x ? Value.m_x : m_x, m_y < Rhs.m_y ? Value.m_y : m_y, m_z < Rhs.m_z ? Value.m_z : m_z, m_w);
+	}
+
+	/*! \brief compares x, and y component, if component is < rhs than store's value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_Less2(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		return LWSVector4<Type>(m_x < Rhs.m_x ? Value.m_x : m_x, m_y < Rhs.m_y ? Value.m_y : m_y, m_z, m_w);
+	}
+
+	/*! \brief compares each component, if component is <= rhs, than stores Value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_LessEqual(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		return LWSVector4<Type>(m_x <= Rhs.m_x ? Value.m_x : m_x, m_y <= Rhs.m_y ? Value.m_y : m_y, m_z <= Rhs.m_z ? Value.m_z : m_z, m_w <= Rhs.m_w ? Value.m_w : m_w);
+	}
+
+	/*! \brief compares x, y, and z component, if component is <= rhs, than stores Value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_LessEqual3(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		return LWSVector4<Type>(m_x <= Rhs.m_x ? Value.m_x : m_x, m_y <= Rhs.m_y ? Value.m_y : m_y, m_z <= Rhs.m_z ? Value.m_z : m_z, m_w);
+	}
+	/*! \brief compares x, and y component, if component is <= rhs, than stores Value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_LessEqual2(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		return LWSVector4<Type>(m_x <= Rhs.m_x ? Value.m_x : m_x, m_y <= Rhs.m_y ? Value.m_y : m_y, m_z, m_w);
+	}
+
+	/*! \brief compares each component, if component is > rhs than stores Value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_Greater(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		return LWSVector4<Type>(m_x > Rhs.m_x ? Value.m_x : m_x, m_y > Rhs.m_y ? Value.m_y : m_y, m_z > Rhs.m_z ? Value.m_z : m_z, m_w > Rhs.m_w ? Value.m_w : m_w);
+	}
+	/*! \brief compares x, y, and z component, if component is > rhs than stores Value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_Greater3(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		return LWSVector4<Type>(m_x > Rhs.m_x ? Value.m_x : m_x, m_y > Rhs.m_y ? Value.m_y : m_y, m_z > Rhs.m_z ? Value.m_z : m_z, m_w);
+	}
+
+	/*! \brief compares x, and y component, if component is > rhs than stores Value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_Greater2(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		return LWSVector4<Type>(m_x > Rhs.m_x ? Value.m_x : m_x, m_y > Rhs.m_y ? Value.m_y : m_y, m_z, m_w);
+	}
+
+	/*! \brief compares each component if component is >= rhs than stores value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_GreaterEqual(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		return LWSVector4<Type>(m_x >= Rhs.m_x ? Value.m_x : m_x, m_y >= Rhs.m_y ? Value.m_y : m_y, m_z >= Rhs.m_z ? Value.m_z : m_z, m_w >= Rhs.m_w ? Value.m_w : m_w);
+	}
+
+	/*! \brief compares x, y, and z component if component is >= rhs than stores value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_GreaterEqual3(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		return LWSVector4<Type>(m_x >= Rhs.m_x ? Value.m_x : m_x, m_y >= Rhs.m_y ? Value.m_y : m_y, m_z >= Rhs.m_z ? Value.m_z : m_z, m_w);
+	}
+
+	/*! \brief compares x, and y component if component is >= rhs than stores value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_GreaterEqual2(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		return LWSVector4<Type>(m_x >= Rhs.m_x ? Value.m_x : m_x, m_y >= Rhs.m_y ? Value.m_y : m_y, m_z, m_w);
+	}
+
+	/*! \brief compares each component, if component is == rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_Equal(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
+		LWSVector4<Type> Diff = (Rhs - *this).Abs();
+		return LWSVector4<Type>(Diff.x <= e ? Value.m_x : m_x, Diff.y <= e ? Value.m_y : m_y, Diff.z <= e ? Value.m_z : m_z, Diff.w <= e ? Value.m_w : m_w);
+	}
+
+
+	/*! \brief compares x, y, and z component, if component is == rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_Equal3(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
+		LWSVector4<Type> Diff = (Rhs - *this).Abs();
+		return LWSVector4<Type>(Diff.x <= e ? Value.m_x : m_x, Diff.y <= e ? Value.m_y : m_y, Diff.z <= e ? Value.m_z : m_z, m_w);
+	}
+
+	/*! \brief compares x, and y component, if component is == rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_Equal2(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
+		LWSVector4<Type> Diff = (Rhs - *this).Abs();
+		return LWSVector4<Type>(Diff.x <= e ? Value.m_x : m_x, Diff.y <= e ? Value.m_y : m_y, m_z, m_w);
+	}
+
+	/*! \brief compares each component, if component is != rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_NotEqual(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
+		LWSVector4<Type> Diff = (Rhs - *this).Abs();
+		return LWSVector4<Type>(Diff.x > e ? Value.m_x : m_x, Diff.y > e ? Value.m_y : m_y, Diff.z > e ? Value.m_z : m_z, Diff.w > e ? Value.m_w : m_w);
+	}
+
+	/*! \brief compares x, y, and z component, if component is != rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_NotEqual3(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
+		LWSVector4<Type> Diff = (Rhs - *this).Abs();
+		return LWSVector4<Type>(Diff.x > e ? Value.m_x : m_x, Diff.y > e ? Value.m_y : m_y, Diff.z > e ? Value.m_z : m_z, m_w);
+	}
+
+	/*! \brief compares x, and y component, if component is != rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWSVector4<Type> Blend_NotEqual2(const LWSVector4<Type> &Rhs, const LWSVector4<Type> &Value) const {
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
+		LWSVector4<Type> Diff = (Rhs - *this).Abs();
+		return LWSVector4<Type>(Diff.x > e ? Value.m_x : m_x, Diff.y > e ? Value.m_y : m_y, m_z, m_w);
+	}
+
+	/*! \brief returns true if the first 3 components are < than the first 3 components of rhs. */
+	bool Less3(const LWSVector4<Type> &Rhs) const {
+		return m_x < Rhs.m_x && m_y < Rhs.m_y && m_z < Rhs.m_z;
+	}
+
+	/*! \brief returns true if the first 2 components are < than the first 2 components of rhs. */
+	bool Less2(const LWSVector4<Type> &Rhs) const {
+		return m_x < Rhs.m_x && m_y < Rhs.m_y;
+	}
+
+	/*! \brief returns true if the first 3 components are <= than the first 3 components of rhs. */
+	bool LessEqual3(const LWSVector4<Type> &Rhs) const {
+		return m_x <= Rhs.m_x && m_y <= Rhs.m_y && m_z <= Rhs.m_z;
+	}
+
+	/*! \brief returns true if the first 2 components are <= than the first 2 components of rhs. */
+	bool LessEqual2(const LWSVector4<Type> &Rhs) const {
+		return m_x <= Rhs.m_x && m_y <= Rhs.m_y;
+	}
+
+	/*! \brief returns true if the first 3 components are > than the first 3 components of rhs. */
+	bool Greater3(const LWSVector4<Type> &Rhs) const {
+		return m_x > Rhs.m_x && m_y > Rhs.m_y && m_z > Rhs.m_z;
+	}
+
+	/*! \brief returns true if the first 2 components are > than the first 2 components of rhs. */
+	bool Greater2(const LWSVector4<Type> &Rhs) const {
+		return m_x > Rhs.m_x && m_y > Rhs.m_y;
+	}
+
+	/*! \brief returns true if the first 3 components are > than the first 3 components of rhs. */
+	bool GreaterEqual3(const LWSVector4<Type> &Rhs) const {
+		return m_x >= Rhs.m_x && m_y >= Rhs.m_y && m_z >= Rhs.m_z;
+	}
+
+	/*! \brief returns true if the first 2 components are > than the first 2 components of rhs. */
+	bool GreaterEqual2(const LWSVector4<Type> &Rhs) const {
+		return m_x >= Rhs.m_x && m_y >= Rhs.m_y;
 	}
 
 	LWSVector4<Type> &operator = (const LWSVector4<Type> &Rhs) {
@@ -269,6 +471,26 @@ struct LWSVector4 {
 		return LWSVector4<Type>(-Rhs.m_x, -Rhs.m_y, -Rhs.m_z, -Rhs.m_w);
 	}
 
+	/*! \brief returns true if all components are > than rhs components. */
+	bool operator > (const LWSVector4<Type> &Rhs) const {
+		return m_x > Rhs.m_x && m_y > Rhs.m_y && m_z > Rhs.m_z && m_w > Rhs.m_w;
+	}
+
+	/*! \brief returns true if all componets are >= than rhs components. */
+	bool operator >= (const LWSVector4<Type> &Rhs) const {
+		return m_x >= Rhs.m_x && m_y >= Rhs.m_y && m_z >= Rhs.m_z && m_w >= Rhs.m_w;
+	}
+
+	/*! \brief returns true if all components are < than rhs components. */
+	bool operator < (const LWSVector4<Type> &Rhs) const {
+		return m_x < Rhs.m_x && m_y < Rhs.m_y && m_z < Rhs.m_z && m_w<Rhs.m_w;
+	}
+
+	/*! \brief returns true if all components are <= than rhs components. */
+	bool operator <= (const LWSVector4<Type> &Rhs) const {
+		return m_x <= Rhs.m_x && m_y <= Rhs.m_y && m_z <= Rhs.m_z && m_w<=Rhs.m_w;
+	}
+
 	bool operator == (const LWSVector4<Type> &Rhs) const {
 		return m_x == Rhs.m_x && m_y == Rhs.m_y && m_z == Rhs.m_z && m_w == Rhs.m_w;
 	}
@@ -333,7 +555,7 @@ struct LWSVector4 {
 
 	/*!< \brief returns xyz from A, and w from B. */
 	LWSVector4<Type> AAAB(const LWSVector4<Type> &B) const {
-		return { A.m_x, A.m_y, A.m_z, B.m_w };
+		return { m_x, m_y, m_z, B.m_w };
 	}
 
 	/*!< \brief returns xyw from A(this), and z from B. */
@@ -388,17 +610,17 @@ struct LWSVector4 {
 
 	/*!< \brief returns zw from A(this), and xy from B. */
 	LWSVector4<Type> BBAA(const LWSVector4<Type> &B) const {
-		return { B.m_x, B.m_y, m_z, A.m_w };
+		return { B.m_x, B.m_y, m_z, m_w };
 	}
 
 	/*!< \brief returns z from A(this), and xyw from B. */
 	LWSVector4<Type> BBAB(const LWSVector4<Type> &B) const {
-		return { B.m_x, B.m_y, A.m_z, B.m_w };
+		return { B.m_x, B.m_y, m_z, B.m_w };
 	}
 
 	/*!< \brief returns w from A(this), and xyz from B. */
 	LWSVector4<Type> BBBA(const LWSVector4<Type> &B) const {
-		return { B.m_x, B.m_y, B.m_z, A.m_w };
+		return { B.m_x, B.m_y, B.m_z, m_w };
 	}
 
 	LWSVector4<Type> xxxx(void) const {

@@ -27,6 +27,13 @@ public:
 	*/
 	static uint32_t Base64Decode(const char *InBuffer, uint32_t InBufferLen, char *OutBuffer, uint32_t OutBufferLen);
 
+	/*! \brief generates a crc32 value on set of data. 
+		\param Data the data to work on.
+		\param DataLen the amount of data to generate a crc for.
+		\param CRCCurr if the crc is to be worked on over multiple pieces of data then feed the previous result of CRC32 CRCCurr to continue operation.
+		\param Finished if this is the last data block set finished to true(also can pass no data with Finished set to true) to do a final operation on the crc value.
+	*/
+	static uint32_t CRC32(const uint8_t *Data, uint32_t DataLen, uint32_t CRCCurr=0xFFFFFFFF, bool Finished=true);
 };
 
 #endif

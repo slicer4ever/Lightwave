@@ -142,6 +142,7 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolTLS.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolWebSocket.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolWebSocketSecure.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWESGeometry3D.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWETween.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWETypes.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEUIManager.h" />
@@ -163,8 +164,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\C++11\LWEAsset.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWEGeometry2D.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWEGeometry3D.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEGLTFParser.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEJobQueue.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEJson.cpp" />

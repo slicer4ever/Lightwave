@@ -7,10 +7,11 @@
 #include <algorithm>
 
 bool LWImage::LoadImage(LWImage &Image, const LWText &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream){
-	uint32_t Result = LWFileStream::IsExtensions(FilePath, 6, "DDS", "dds", "PNG", "png", "TGA", "tga");
+	uint32_t Result = LWFileStream::IsExtensions(FilePath, 8, "DDS", "dds", "PNG", "png", "TGA", "tga", "ktx2", "KTX2");
 	if (Result < 2) return LoadImageDDS(Image, FilePath, Allocator, ExistingStream);
 	else if (Result < 4) return LoadImagePNG(Image, FilePath, Allocator, ExistingStream);
 	else if (Result < 6) return LoadImageTGA(Image, FilePath, Allocator, ExistingStream);
+	else if (Result < 8) return LoadImageKTX2(Image, FilePath, Allocator, ExistingStream);
 	return false;
 }
 
@@ -313,6 +314,8 @@ bool LWImage::LoadImageDDS(LWImage &Image, const uint8_t *Buffer, uint32_t Buffe
 	const uint32_t DXT6Header = 0x36545844;
 	const uint32_t DXT7Header = 0x37545844;
 
+	const uint32_t DXT_ABGR32F = 116; //D3DFormat::D3DFMT_A32B32G32R32F, support for HDR images.
+
 	const uint32_t DDSCAPS2_CUBEMAP = 0x200;
 	const uint32_t DDSCAPS2_VOLUME = 0x200000;
 
@@ -322,7 +325,6 @@ bool LWImage::LoadImageDDS(LWImage &Image, const uint8_t *Buffer, uint32_t Buffe
 	const uint32_t DDPF_RGB = 0x40;
 	const uint32_t DDPF_YUV = 0x200;
 	const uint32_t DDPF_LUMINANCE = 0x20000;
-
 
 	struct DDS_PixelFormat {
 		uint32_t m_Flags;
@@ -389,7 +391,7 @@ bool LWImage::LoadImageDDS(LWImage &Image, const uint8_t *Buffer, uint32_t Buffe
 	if (!ReadHeader(ByteBuf, dHeader)) return false;
 	uint32_t PackType = -1;
 	DDS_PixelFormat &PForm = dHeader.m_PixelFormat;
-	if (PForm.m_Flags&DDPF_FOURCC) {
+	if (PForm.m_Flags & DDPF_FOURCC) {
 		if (PForm.m_Format == DXT1Header) PackType = DXT1;
 		else if (PForm.m_Format == DXT2Header) PackType = DXT2;
 		else if (PForm.m_Format == DXT3Header) PackType = DXT3;
@@ -397,39 +399,57 @@ bool LWImage::LoadImageDDS(LWImage &Image, const uint8_t *Buffer, uint32_t Buffe
 		else if (PForm.m_Format == DXT5Header) PackType = DXT5;
 		else if (PForm.m_Format == DXT6Header) PackType = DXT6;
 		else if (PForm.m_Format == DXT7Header) PackType = DXT7;
+		else if (PForm.m_Format == DXT_ABGR32F) PackType = RGBA32F;
 	} else {
-		if ((PForm.m_Flags&(DDPF_RGB | DDPF_ALPHA)) != 0 && PForm.m_BitCount == 32) PackType = RGBA8U;
-		else if ((PForm.m_Flags&(DDPF_RGB)) != 0 && PForm.m_BitCount == 24) PackType = RGBA8U;
-		else if (PForm.m_Flags&(DDPF_LUMINANCE) && PForm.m_BitCount == 8) PackType = R8U;
+		if ((PForm.m_Flags & (DDPF_RGB | DDPF_ALPHA)) != 0 && PForm.m_BitCount == 32) PackType = RGBA8U;
+		else if ((PForm.m_Flags & (DDPF_RGB)) != 0 && PForm.m_BitCount == 24) PackType = RGBA8U;
+		else if (PForm.m_Flags & (DDPF_LUMINANCE) && PForm.m_BitCount == 8) PackType = R8U;
 	}
 	if (PackType == -1) return false;
-	if (dHeader.m_Depth <= 1) Image = LWImage(LWVector2i(dHeader.m_Width, dHeader.m_Height), PackType | (((dHeader.m_Caps2&DDSCAPS2_CUBEMAP) != 0) ? LWImage::ImageCubeMap : 0), nullptr, dHeader.m_MipmapCount ? (dHeader.m_MipmapCount - 1) : 0, Allocator);
+	if (dHeader.m_Depth <= 1) Image = LWImage(LWVector2i(dHeader.m_Width, dHeader.m_Height), PackType | (((dHeader.m_Caps2 & DDSCAPS2_CUBEMAP) != 0) ? LWImage::ImageCubeMap : 0), nullptr, dHeader.m_MipmapCount ? (dHeader.m_MipmapCount - 1) : 0, Allocator);
 	else {
-		if ((dHeader.m_Caps2&DDSCAPS2_VOLUME) == 0) return false;
+		if ((dHeader.m_Caps2 & DDSCAPS2_VOLUME) == 0) return false;
 		Image = LWImage(LWVector3i(dHeader.m_Width, dHeader.m_Height, dHeader.m_Depth), PackType, nullptr, dHeader.m_MipmapCount ? (dHeader.m_MipmapCount - 1) : 0, Allocator);
 	}
 	uint32_t o = ByteBuf.GetPosition();
 	uint32_t TexelCnt = (Image.GetMipmapCount() + 1);
 	uint32_t ArrayCnt = Image.GetType() == LWImage::ImageCubeMap ? 6 : 1;
+
+	bool HasAlpha = (PForm.m_Flags & DDPF_ALPHAPIXELS) != 0;
+	uint32_t RIdx = PForm.m_RBitMask == 0xFF000000 ? 3 : (PForm.m_RBitMask == 0xFF0000) ? 2 : (PForm.m_RBitMask == 0xFF00 ? 1 : 0);
+	uint32_t GIdx = PForm.m_GBitMask == 0xFF000000 ? 3 : (PForm.m_GBitMask == 0xFF0000) ? 2 : (PForm.m_GBitMask == 0xFF00 ? 1 : 0);
+	uint32_t BIdx = PForm.m_BBitMask == 0xFF000000 ? 3 : (PForm.m_BBitMask == 0xFF0000) ? 2 : (PForm.m_BBitMask == 0xFF00 ? 1 : 0);
+	uint32_t AIdx = 3;
+	if(HasAlpha) AIdx = PForm.m_ABitMask == 0xFF000000 ? 3 : (PForm.m_ABitMask == 0xFF0000) ? 2 : (PForm.m_ABitMask == 0xFF00 ? 1 : 0);
 	for (uint32_t d = 0; d < ArrayCnt; d++) {
 		for (uint32_t i = 0; i < TexelCnt; i++) {
 			LWVector3i Size = i == 0 ? Image.GetSize3D() : Image.GetMipmapSize3D(i - 1);
 			uint32_t Len = LWImage::GetLength3D(Size, PackType);
-			uint8_t *Texels = Image.GetTexels(d*TexelCnt + i);
+			uint8_t *Texels = Image.GetTexels(d * TexelCnt + i);
+
 			if (PackType == RGBA8U) { //we need to potentially fix the rgb format if they are not layed out in the same order.
 				bool RGB = PForm.m_BitCount == 24;
-				uint32_t RIdx = PForm.m_RBitMask == 0xFF000000 ? 3 : (PForm.m_RBitMask == 0xFF0000) ? 2 : (PForm.m_RBitMask == 0xFF00 ? 1 : 0);
-				uint32_t GIdx = PForm.m_GBitMask == 0xFF000000 ? 3 : (PForm.m_GBitMask == 0xFF0000) ? 2 : (PForm.m_GBitMask == 0xFF00 ? 1 : 0);
-				uint32_t BIdx = PForm.m_BBitMask == 0xFF000000 ? 3 : (PForm.m_BBitMask == 0xFF0000) ? 2 : (PForm.m_BBitMask == 0xFF00 ? 1 : 0);
-				uint32_t AIdx = PForm.m_ABitMask == 0xFF000000 ? 3 : (PForm.m_ABitMask == 0xFF0000) ? 2 : (PForm.m_ABitMask == 0xFF00 ? 1 : 0);
-				if (RGB) Len = Size.x*Size.y*Size.z * 3;
-				for (int32_t n = 0; n < Size.x*Size.y*Size.z; n++) {
+				if (RGB) Len = Size.x * Size.y * Size.z * 3;
+				for (int32_t n = 0; n < Size.x * Size.y * Size.z; n++) {
 					uint8_t *T = Texels + n * 4;
 					uint8_t *BT = (uint8_t*)Buffer + o + n * (RGB ? 3 : 4);
 					T[0] = BT[RIdx];
 					T[1] = BT[GIdx];
 					T[2] = BT[BIdx];
 					T[3] = RGB ? 0xFF : BT[AIdx];
+				}
+			} else if (PackType == RGBA32F && PForm.m_Format == DXT_ABGR32F) {
+				//Need to fix the order to RGBA32
+				bool RGB = PForm.m_BitCount == 96;
+				if (RGB) Len = Size.x * Size.y * Size.z * 12;
+				for (int32_t n = 0; n < Size.x * Size.y * Size.z; n++) {
+					float *T = (float*)(Texels + n * 16);
+					float *BT = (float*)(Buffer + o + n * (RGB ? 12 : 16));
+					//Temp patch for abgr32f images...
+					T[0] = BT[0];
+					T[1] = BT[1];
+					T[2] = BT[2];
+					T[3] = RGB ? 1.0f : BT[AIdx];
 				}
 			} else std::copy(Buffer + o, Buffer + o + Len, Texels);
 			o += Len;
@@ -439,7 +459,253 @@ bool LWImage::LoadImageDDS(LWImage &Image, const uint8_t *Buffer, uint32_t Buffe
 	return true;
 };
 
+bool LWImage::LoadImageKTX2(LWImage &Image, const LWText &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream) {
+	LWFileStream Stream;
+	if (!LWFileStream::OpenStream(Stream, FilePath, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, ExistingStream)) return false;
+	uint8_t *MemBuffer = Allocator.AllocateArray<uint8_t>(Stream.Length());
+	Stream.Read(MemBuffer, Stream.Length());
+	bool Result = LoadImageKTX2(Image, MemBuffer, Stream.Length(), Allocator);
+	LWAllocator::Destroy(MemBuffer);
+	return Result;
+}
 
+bool LWImage::LoadImageKTX2(LWImage &Image, const uint8_t *Buffer, uint32_t BufferLen, LWAllocator &Allocator) {
+	const uint32_t isETC1S = 0x1;
+	const uint32_t isIFrame = 0x2;
+	const uint32_t hasAlphaSlices = 0x4;
+	struct KTXHeader {
+		char m_Identifier[12];
+		uint32_t m_vkFormat;
+		uint32_t m_TypeSize;
+		uint32_t m_PixelWidth;
+		uint32_t m_PixelHeight;
+		uint32_t m_PixelDepth;
+		uint32_t m_LayerCount;
+		uint32_t m_FaceCount;
+		uint32_t m_LevelCount;
+		uint32_t m_CompressionScheme;
+
+		uint32_t m_dfOffset; //Dascriptor Field
+		uint32_t m_dfLength;
+		uint32_t m_kvOffset; //Key/Value
+		uint32_t m_kvLength;
+		uint64_t m_sgOffset; //SuperCompression Global data
+		uint64_t m_sgLength;
+
+		static bool Deserialize(KTXHeader &Header, LWByteBuffer &Buf) {
+			const uint32_t IdentLen = 12;
+			const char Ident[] = "«KTX 20»\r\n\x1A\n";
+			Buf.Read<char>(Header.m_Identifier, IdentLen);
+			if (!std::equal(Header.m_Identifier, Header.m_Identifier + IdentLen, Ident)) return false;
+			Header.m_vkFormat = Buf.Read<uint32_t>();
+			Header.m_TypeSize = Buf.Read<uint32_t>();
+			Header.m_PixelWidth = Buf.Read<uint32_t>();
+			Header.m_PixelHeight = Buf.Read<uint32_t>();
+			Header.m_PixelDepth = Buf.Read<uint32_t>();
+			Header.m_LayerCount = std::max<uint32_t>(1, Buf.Read<uint32_t>());
+			Header.m_FaceCount = std::max<uint32_t>(1, Buf.Read<uint32_t>());
+			Header.m_LevelCount = std::max<uint32_t>(1, Buf.Read<uint32_t>());
+			Header.m_CompressionScheme = Buf.Read<uint32_t>();
+
+			Header.m_dfOffset = Buf.Read<uint32_t>();
+			Header.m_dfLength = Buf.Read<uint32_t>();
+			Header.m_kvOffset = Buf.Read<uint32_t>();
+			Header.m_kvLength = Buf.Read<uint32_t>();
+			Header.m_sgOffset = Buf.Read<uint64_t>();
+			Header.m_sgLength = Buf.Read<uint64_t>();
+			return true;
+		};
+
+		uint32_t MapFormatToLWImage(void) {
+			//Only a subset of VKFormats are supported, if an unsupported format is detected -1 is returned and the loading will fail.
+			if (m_vkFormat == 13) return LWImage::R8U; //VK_FORMAT_R8_UINT
+			else if (m_vkFormat == 14) return LWImage::R8; //VK_FORMAT_R8_SINT
+			else if (m_vkFormat == 20) return LWImage::RG8U; //VK_FORMAT_R8G8_UINT
+			else if (m_vkFormat == 21) return LWImage::RG8; //VK_FORMAT_R8G8_SINT
+			else if (m_vkFormat == 41) return LWImage::RGBA8U; //VK_FORMAT_R8G8B8A8_UINT
+			else if (m_vkFormat == 42) return LWImage::RGBA8; //VK_FORMAT_R8G8B8A8_SINT
+			else if (m_vkFormat == 74) return LWImage::R16U; //VK_FORMAT_R16_UINT
+			else if (m_vkFormat == 75) return LWImage::R16; //VK_FORMAT_R16_SINT
+			else if (m_vkFormat == 81) return LWImage::RG16U; //VK_FORMAT_R16G16_UINT
+			else if (m_vkFormat == 82) return LWImage::RG16; //VK_FORMAT_R16G16_SINT
+			else if (m_vkFormat == 95) return LWImage::RGBA16U; //VK_FORMAT_R16G16B16A16_UINT
+			else if (m_vkFormat == 96) return LWImage::RGBA16; //VK_FORMAT_R16G16B16A16_SINT
+			else if (m_vkFormat == 98) return LWImage::R32U; //VK_FORMAT_R32_UINT
+			else if (m_vkFormat == 99) return LWImage::R32; //VK_FORMAT_R32_SINT
+			else if (m_vkFormat == 100) return LWImage::R32F; //VK_FORMAT_R32_SFLOAT
+			else if (m_vkFormat == 101) return LWImage::RG32U; //VK_FORMAT_R32G32_UINT
+			else if (m_vkFormat == 102) return LWImage::RG32; //VK_FORMAT_R32G32_SINT
+			else if (m_vkFormat == 103) return LWImage::RG32F; //VK_FORMAT_R32G32_SFLOAT
+			else if (m_vkFormat == 107) return LWImage::RGBA32U; //VK_FORMAT_R32G32B32A32_UINT
+			else if (m_vkFormat == 108) return LWImage::RGBA32; //VK_FORMAT_R32G32B32A32_SINT
+			else if (m_vkFormat == 109) return LWImage::RGBA32F; //VK_FORMAT_R32G32B32A32_SFLOAT
+			else if (m_vkFormat == 124) return LWImage::DEPTH16; //VK_FORMAT_D16_UNORM
+			else if (m_vkFormat == 126) return LWImage::DEPTH32; //VK_FORMAT_D32_SFLOAT
+			else if (m_vkFormat == 129) return LWImage::DEPTH24STENCIL8; //VK_FORMAT_D24_UNORM_S8_UINT
+			else if (m_vkFormat == 131) return LWImage::DXT1; //VK_FORMAT_BC1_UNORM_BLOCK
+			else if (m_vkFormat == 132) return LWImage::DXT1; //VK_FORMAT_BC1_SRGB_BLOCK
+			else if (m_vkFormat == 135) return LWImage::DXT2; //VK_FORMAT_BC2_UNORM_BLOCK
+			else if (m_vkFormat == 136) return LWImage::DXT2; //VK_FORMAT_BC2_SRGB_BLOCK
+			else if (m_vkFormat == 137) return LWImage::DXT3; //VK_FORMAT_BC3_UNORM_BLOCK
+			else if (m_vkFormat == 138) return LWImage::DXT3; //VK_FORMAT_BC3_SRGB_BLOCK
+			else if (m_vkFormat == 139) return LWImage::DXT4; //VK_FORMAT_BC4_UNORM_BLOCK
+			else if (m_vkFormat == 140) return LWImage::DXT4; //VK_FORMAT_BC4_SRGB_BLOCK
+			else if (m_vkFormat == 141) return LWImage::DXT5; //VK_FORMAT_BC5_UNORM_BLOCK
+			else if (m_vkFormat == 142) return LWImage::DXT5; //VK_FORMAT_BC5_SNORM_BLOCK
+			else if (m_vkFormat == 143) return LWImage::DXT6; //VK_FORMAT_BC6H_UFLOAT_BLOCK
+			else if (m_vkFormat == 144) return LWImage::DXT6; //VK_FORMAT_BC6H_SFLOAT_BLOCK
+			else if (m_vkFormat == 145) return LWImage::DXT7; //VK_FORMAT_BC7_UNORM_BLOCK
+			else if (m_vkFormat == 146) return LWImage::DXT7; //VK_FORMAT_BC7_SRGB_BLOCK
+			return -1;
+		}
+	};
+
+	struct KTXImageDesc {
+		uint32_t m_Flag;
+		uint32_t m_rgbSliceOffset;
+		uint32_t m_rgbSliceLength;
+		uint32_t m_alphaSliceOffset;
+		uint32_t m_alphaSliceLength;
+
+		static bool Deserialize(KTXImageDesc &Desc, LWByteBuffer &Buf) {
+			Desc.m_Flag = Buf.Read<uint32_t>();
+			Desc.m_rgbSliceOffset = Buf.Read<uint32_t>();
+			Desc.m_rgbSliceLength = Buf.Read<uint32_t>();
+			Desc.m_alphaSliceOffset = Buf.Read<uint32_t>();
+			Desc.m_alphaSliceLength = Buf.Read<uint32_t>();
+			return true;
+		};
+
+		//Copy 8 bit texels.
+		void CopyTexels(LWVector2i ImgSize, uint8_t *TargetTexels, const uint8_t *Buffer) {
+			const uint8_t *rgbTexels = (const uint8_t*)Buffer + m_rgbSliceOffset;
+			const uint8_t *alphaTexels = (const uint8_t*)Buffer + m_alphaSliceOffset;
+			for (int32_t i = 0; i < ImgSize.x * ImgSize.y; i++) {
+				uint8_t *T = TargetTexels + i * 4;
+				const uint8_t *rgb = rgbTexels + i * 3;
+				const uint8_t *a = rgbTexels + i;
+				T[0] = rgb[0];
+				T[1] = rgb[1];
+				T[2] = rgb[2];
+				T[3] = a[0];
+			}
+		};
+
+		//Copy 16 bit texels.
+		void CopyTexels(LWVector2i ImgSize, uint16_t *TargetTexels, const uint8_t *Buffer) {
+			const uint16_t *rgbTexels = (const uint16_t*)Buffer + m_rgbSliceOffset;
+			const uint16_t *alphaTexels = (const uint16_t*)Buffer + m_alphaSliceOffset;
+			for (int32_t i = 0; i < ImgSize.x * ImgSize.y; i++) {
+				uint16_t *T = TargetTexels + i * 4;
+				const uint16_t *rgb = rgbTexels + i * 3;
+				const uint16_t *a = rgbTexels + i;
+				T[0] = rgb[0];
+				T[1] = rgb[1];
+				T[2] = rgb[2];
+				T[3] = a[0];
+			}
+		};
+
+		//Copy 32 bit texels.
+		void CopyTexels(LWVector2i ImgSize, uint32_t *TargetTexels, const uint8_t *Buffer) {
+			const uint32_t *rgbTexels = (const uint32_t*)Buffer + m_rgbSliceOffset;
+			const uint32_t *alphaTexels = (const uint32_t*)Buffer + m_alphaSliceOffset;
+			for (int32_t i = 0; i < ImgSize.x * ImgSize.y; i++) {
+				uint32_t *T = TargetTexels + i * 4;
+				const uint32_t *rgb = rgbTexels + i * 3;
+				const uint32_t *a = rgbTexels + i;
+				T[0] = rgb[0];
+				T[1] = rgb[1];
+				T[2] = rgb[2];
+				T[3] = a[0];
+			}
+		};
+	};
+
+	struct KTXGlobalData {
+		
+		uint32_t m_Flag;
+		uint16_t m_EndpointCount;
+		uint16_t m_SelectorCount;
+		uint32_t m_EndpointLength;
+		uint32_t m_SelectorLength;
+		uint32_t m_TableLength;
+		uint32_t m_ExtenededLength;
+
+		KTXImageDesc *m_ImageDescriptors = nullptr;
+		const int8_t *m_Endpoints = nullptr;
+		const int8_t *m_Selectors = nullptr;
+		const int8_t *m_Tables = nullptr;
+		const int8_t *m_Extended = nullptr;
+
+		static bool Deserialize(KTXGlobalData &GD, const KTXHeader &Header, LWByteBuffer &Buf, LWAllocator &Allocator) {
+			Buf.SetPosition(Header.m_dfOffset);
+			GD.m_Flag = Buf.Read<uint32_t>();
+			GD.m_EndpointCount = Buf.Read<uint16_t>();
+			GD.m_SelectorCount = Buf.Read<uint16_t>();
+			GD.m_EndpointLength = Buf.Read<uint32_t>();
+			GD.m_SelectorLength = Buf.Read<uint32_t>();
+			GD.m_TableLength = Buf.Read<uint32_t>();
+			GD.m_ExtenededLength = Buf.Read<uint32_t>();
+			uint32_t DescCnt = Header.m_LevelCount * Header.m_LayerCount * Header.m_FaceCount;
+			GD.m_ImageDescriptors = Allocator.AllocateArray<KTXImageDesc>(DescCnt);
+			for (uint32_t i = 0; i < DescCnt; i++) {
+				if (!KTXImageDesc::Deserialize(GD.m_ImageDescriptors[i], Buf)) return false;
+			}
+			GD.m_Endpoints = Buf.GetReadBuffer() + Buf.GetPosition();
+			Buf.OffsetPosition(GD.m_EndpointLength);
+			GD.m_Selectors = Buf.GetReadBuffer() + Buf.GetPosition();
+			Buf.OffsetPosition(GD.m_SelectorLength);
+			GD.m_Tables = Buf.GetReadBuffer() + Buf.GetPosition();
+			Buf.OffsetPosition(GD.m_TableLength);
+			GD.m_Extended = Buf.GetReadBuffer() + Buf.GetPosition();
+			return true;
+		};
+
+		~KTXGlobalData() {
+			LWAllocator::Destroy(m_ImageDescriptors);
+		};
+		
+	};
+
+	LWByteBuffer Buf((const int8_t*)Buffer, BufferLen, LWByteBuffer::BufferNotOwned);
+	KTXHeader Header;
+	KTXGlobalData GlobalData;
+	if (!KTXHeader::Deserialize(Header, Buf)) return false;
+	uint32_t IFmt = Header.MapFormatToLWImage();
+	if (IFmt == -1) return false;
+	if (Header.m_CompressionScheme != 0) return false; //Don't support supercompression at the moment.
+	if (Header.m_LayerCount != 1) return false;//Don't support layer image's at the moment.
+	if (!KTXGlobalData::Deserialize(GlobalData, Header, Buf, Allocator)) return false;
+	if (Header.m_FaceCount > 1) {
+		Image = LWImage(LWVector2i(Header.m_PixelWidth, Header.m_PixelHeight), IFmt | LWImage::ImageCubeMap, nullptr, Header.m_LevelCount, Allocator);
+	} else {
+		Image = LWImage(LWVector2i(Header.m_PixelWidth, Header.m_PixelHeight), IFmt, nullptr, Header.m_LevelCount, Allocator);
+	}
+	bool hasAlpha = (GlobalData.m_Flag & hasAlphaSlices) != 0;
+	for (uint32_t lv = 0; lv < Header.m_LevelCount; lv++) {
+		for(uint32_t la =0;la<Header.m_LayerCount;la++){
+			for (uint32_t f = 0; f < Header.m_FaceCount; f++) {
+				uint32_t rlv = Header.m_LevelCount - (lv + 1); //KTX2 stores miplevels in smallest to largest order.
+				KTXImageDesc &KImg = GlobalData.m_ImageDescriptors[f + la * Header.m_FaceCount + lv * Header.m_FaceCount * Header.m_LayerCount];
+				uint8_t *Texels = Image.GetTexels(f * Header.m_LevelCount + rlv);
+				LWVector2i TSize = LWImage::MipmapSize2D(LWVector2i(Header.m_PixelWidth, Header.m_PixelHeight), rlv);
+				uint32_t PackSize = LWImage::GetBitSize(IFmt) / 8;
+
+				if (LWImage::CompressedType(IFmt) || LWImage::DepthType(IFmt) || !hasAlpha) {
+					const uint8_t *SrcTexels = (const uint8_t*)Buffer + KImg.m_rgbSliceOffset;
+					std::copy(SrcTexels, SrcTexels+KImg.m_rgbSliceLength, Texels);
+				} else if (hasAlpha) { //Assumed Alphaformat is rgba format.
+					if (PackSize == 32) KImg.CopyTexels(TSize, Texels, Buffer); //8 bit rgba format
+					else if (PackSize == 64) KImg.CopyTexels(TSize, (uint16_t*)Texels, Buffer); //16
+					else if (PackSize == 128) KImg.CopyTexels(TSize, (uint32_t*)Texels, Buffer); //32 bit rgba format.
+				} else return false;
+			}
+		}
+	}
+
+	return true;
+}
 
 template<class Type>
 uint32_t WriteWeightedTexel(uint32_t TexelCnt, const Type **TexelPtr, const float *Weights, uint32_t ComponentCnt, Type *Buffer) {

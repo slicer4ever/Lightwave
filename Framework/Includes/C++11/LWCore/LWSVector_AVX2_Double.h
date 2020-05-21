@@ -11,6 +11,18 @@ struct LWSVector4<double> {
 
 	LWVector4<double> AsVec4(void) const;
 
+	double *AsArray(void);
+
+	const double *AsArray(void) const;
+
+	LWSVector4<double> &sX(double Value);
+
+	LWSVector4<double> &sY(double Value);
+
+	LWSVector4<double> &sZ(double Value);
+
+	LWSVector4<double> &sW(double Value);
+
 	LWSVector4<double> Normalize(void) const;
 
 	LWSVector4<double> Normalize3(void) const;
@@ -49,6 +61,8 @@ struct LWSVector4<double> {
 
 	LWSVector4<double> Cross3(const LWSVector4<double>& O) const;
 
+	void Orthogonal3(LWSVector4<double> &Right, LWSVector4<double> &Up) const;
+
 	LWSVector4<double> Perpindicular2(void) const;
 
 	double Length(void) const;
@@ -75,6 +89,85 @@ struct LWSVector4<double> {
 
 	double DistanceSquared2(const LWSVector4<double>& O) const;
 
+	/*! \brief returns the absolute value of each component. */
+	LWSVector4<double> Abs(void) const;
+
+	/*! \brief returns the absolute value of x,y, and z component. */
+	LWSVector4<double> Abs3(void) const;
+
+	/*! \brief returns the absolute value of x, and y component. */
+	LWSVector4<double> Abs2(void) const;
+
+	/*! \brief compares each component, if component is < rhs, then stores Value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_Less(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares x, y, and z component, if component is < rhs than store's value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_Less3(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares x, and y component, if component is < rhs than store's value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_Less2(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares each component, if component is <= rhs, than stores Value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_LessEqual(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares x, y, and z component, if component is <= rhs, than stores Value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_LessEqual3(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares x, and y component, if component is <= rhs, than stores Value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_LessEqual2(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares each component, if component is > rhs than stores Value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_Greater(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares x, y, and z component, if component is > rhs than stores Value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_Greater3(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares x, and y component, if component is > rhs than stores Value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_Greater2(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares each component if component is >= rhs than stores value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_GreaterEqual(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares x, y, and z component if component is >= rhs than stores value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_GreaterEqual3(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares x, and y component if component is >= rhs than stores value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_GreaterEqual2(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares each component, if component is == rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_Equal(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares x, y, and z component, if component is == rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_Equal3(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares x, and y component, if component is == rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_Equal2(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares each component, if component is != rhs(use's double float for comparison) than stores value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_NotEqual(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares x, y, and z component, if component is != rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_NotEqual3(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	/*! \brief compares x, and y component, if component is != rhs(use's float epsilon for comparison) than stores value's component, otherwise keeps current component. */
+	LWSVector4<double> Blend_NotEqual2(const LWSVector4<double> &Rhs, const LWSVector4<double> &Value) const;
+
+	bool Less3(const LWSVector4<double> &Rhs) const;
+
+	bool Less2(const LWSVector4<double> &Rhs) const;
+
+	bool LessEqual3(const LWSVector4<double> &Rhs) const;
+
+	bool LessEqual2(const LWSVector4<double> &Rhs) const;
+
+	bool Greater3(const LWSVector4<double> &Rhs) const;
+
+	bool Greater2(const LWSVector4<double> &Rhs) const;
+
+	bool GreaterEqual3(const LWSVector4<double> &Rhs) const;
+
+	bool GreaterEqual2(const LWSVector4<double> &Rhs) const;
+
 	LWSVector4<double>& operator = (const LWSVector4<double>& Rhs);
 
 	LWSVector4<double>& operator += (const LWSVector4<double>& Rhs);
@@ -96,6 +189,14 @@ struct LWSVector4<double> {
 	friend LWSVector4<double> operator + (const LWSVector4<double> &Rhs);
 
 	friend LWSVector4<double> operator - (const LWSVector4<double>& Rhs);
+
+	bool operator > (const LWSVector4<double> &Rhs) const;
+
+	bool operator >= (const LWSVector4<double> &Rhs) const;
+
+	bool operator < (const LWSVector4<double> &Rhs) const;
+
+	bool operator <= (const LWSVector4<double> &Rhs) const;
 
 	bool operator == (const LWSVector4<double>& Rhs) const;
 

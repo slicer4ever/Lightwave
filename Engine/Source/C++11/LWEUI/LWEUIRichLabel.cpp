@@ -150,6 +150,7 @@ LWEUI &LWEUIRichLabel::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float 
 	for (uint32_t i = 0; i < Count; i++) {
 		LWEUITextStyle &Style = m_StyleList[i];
 		float LScale = Style.m_Scale*m_FontScale*Scale;
+		float iLScale = 1.0f / LScale;
 		LWVector4f LColor = Color * Style.m_ColorMult;
 		Style.m_VisibileBounds = Style.m_Bounds*Scale + LWVector4f(TextPos, TextPos);
 		
@@ -180,7 +181,7 @@ LWEUI &LWEUIRichLabel::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float 
 					if (G->m_Size.x) {
 						LWVector2f Ps = LWVector2f(TextPos.x + Kern + G->m_Bearing.x*LScale, TextPos.y - G->m_Bearing.y*LScale);
 						LWVector2f Size = G->m_Size*LScale;
-						if (!Frame.WriteFontGlyph(m_Font->GetTexture(G->m_TextureIndex), Ps, Size, G->m_TexCoord, LColor)) break;
+						if (!Frame.WriteFontGlyph(m_Font->GetTexture(G->m_TextureIndex), Ps, Size, G->m_TexCoord, G->m_SignedRange*iLScale, LColor)) break;
 					}
 					TextPos.x += G->m_Advance.x*LScale + Kern;
 				}

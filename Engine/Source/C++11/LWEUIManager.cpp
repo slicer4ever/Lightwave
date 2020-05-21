@@ -195,7 +195,7 @@ uint32_t LWEUIFrame::SetActiveTexture(LWTexture *Texture, bool FontTexture) {
 	return m_TextureCount-1;
 }
 
-bool LWEUIFrame::WriteFontGlyph(LWTexture *Texture, const LWVector2f &Position, const LWVector2f &Size, const LWVector4f &TexCoord, const LWVector4f &Color) {
+bool LWEUIFrame::WriteFontGlyph(LWTexture *Texture, const LWVector2f &Position, const LWVector2f &Size, const LWVector4f &TexCoord, const LWVector2f &SignedDistance, const LWVector4f &Color) {
 	uint32_t TexID = 0;
 	if ((TexID = SetActiveTexture(Texture, true)) == ExhaustedTextures) return false;
 	if (!m_Mesh->CanWriteVertices(6)) return false;
@@ -210,12 +210,12 @@ bool LWEUIFrame::WriteFontGlyph(LWTexture *Texture, const LWVector2f &Position, 
 	LWVector2f BtmRightTC = LWVector2f(TexCoord.z, TexCoord.w);
 	LWVector2f TopRightTC = LWVector2f(TexCoord.z, TexCoord.y);
 
-	*(V + 0) = { LWVector4f(BtmLeft, 0.0f, 1.0f), Color, LWVector4f(BtmLeftTC, 0.0f, 0.0f) };
-	*(V + 1) = { LWVector4f(TopRight, 0.0f, 1.0f), Color, LWVector4f(TopRightTC, 0.0f, 0.0f) };
-	*(V + 2) = { LWVector4f(TopLeft, 0.0f, 1.0f), Color, LWVector4f(TopLeftTC, 0.0f, 0.0f) };
-	*(V + 3) = { LWVector4f(BtmLeft, 0.0f, 1.0f), Color, LWVector4f(BtmLeftTC, 0.0f, 0.0f) };
-	*(V + 4) = { LWVector4f(BtmRight, 0.0f, 1.0f), Color, LWVector4f(BtmRightTC, 0.0f, 0.0f) };
-	*(V + 5) = { LWVector4f(TopRight, 0.0f, 1.0f), Color, LWVector4f(TopRightTC, 0.0f, 0.0f) };
+	*(V + 0) = { LWVector4f(BtmLeft, 0.0f, 1.0f), Color, LWVector4f(BtmLeftTC, SignedDistance) };
+	*(V + 1) = { LWVector4f(TopRight, 0.0f, 1.0f), Color, LWVector4f(TopRightTC, SignedDistance) };
+	*(V + 2) = { LWVector4f(TopLeft, 0.0f, 1.0f), Color, LWVector4f(TopLeftTC, SignedDistance) };
+	*(V + 3) = { LWVector4f(BtmLeft, 0.0f, 1.0f), Color, LWVector4f(BtmLeftTC, SignedDistance) };
+	*(V + 4) = { LWVector4f(BtmRight, 0.0f, 1.0f), Color, LWVector4f(BtmRightTC, SignedDistance) };
+	*(V + 5) = { LWVector4f(TopRight, 0.0f, 1.0f), Color, LWVector4f(TopRightTC, SignedDistance) };
 	m_VertexCount[TexID] += 6;
 	return true;
 }
@@ -396,8 +396,8 @@ bool LWEUIFrame::WriteClippedLine(LWEUIMaterial *Mat, const LWVector2f &APos, co
 	LWVector2f AAMax = AAMin + AABB.zw();
 	float Min = 0.0f;
 	float Max = 1.0f;
-	if (!LWEGeometry2D::PointInsideAABB(APos, AAMin, AAMax) || !LWEGeometry2D::PointInsideAABB(BPos, AAMin, AAMax)) {
-		if (!LWEGeometry2D::RayAABBIntersect(APos, BPos, AAMin, AAMax, &Min, &Max)) return false;
+	if (!LWEPointInsideAABB(APos, AAMin, AAMax) || !LWEPointInsideAABB(BPos, AAMin, AAMax)) {
+		if (!LWERayAABBIntersect(APos, BPos, AAMin, AAMax, &Min, &Max)) return false;
 		Min = std::max<float>(Min, 0.0f);
 		Max = std::min<float>(Max, 1.0f);
 	}
@@ -486,8 +486,8 @@ LWEUIFrame::LWEUIFrame(LWMesh<LWVertexUI> *Mesh) : m_Mesh(Mesh), m_TextureCount(
 
 LWEUIFrame::LWEUIFrame() : m_Mesh(nullptr), m_TextureCount(0) {}
 
-const char *LWEUIManager::GetTextureShaderSource(void) {
-	static const char TextureSource[] = ""\
+const char *LWEUIManager::GetVertexShaderSource(void) {
+	static const char VertexSource[] = ""\
 		"#module Vertex DirectX11_1\n"\
 		"cbuffer UIUniform{\n"\
 		"	float4x4 Matrix;\n"\
@@ -509,17 +509,6 @@ const char *LWEUIManager::GetTextureShaderSource(void) {
 		"	O.TexCoord = In.TexCoord;\n"\
 		"	return O;\n"\
 		"}\n"\
-		"#module Pixel DirectX11_1\n"\
-		"struct Pixel {\n"\
-		"	float4 Position : SV_POSITION;\n"\
-		"	float4 Color : COLOR0;\n"\
-		"	float4 TexCoord : TEXCOORD0;\n"\
-		"};\n"\
-		"Texture2D Tex;\n"\
-		"SamplerState TexSampler;\n"\
-		"float4 main(Pixel In) : SV_TARGET{\n"\
-		"	return In.Color*Tex.Sample(TexSampler, In.TexCoord.xy);\n"\
-		"}\n"\
 		"#module Vertex OpenGL3_3 OpenGL4_5\n"\
 		"#version 330\n"\
 		"layout(std140) uniform UIUniform {\n"\
@@ -535,15 +524,6 @@ const char *LWEUIManager::GetTextureShaderSource(void) {
 		"	pColor = Color;\n"\
 		"	pTexCoord = TexCoord;\n"\
 		"}\n"\
-		"#module Pixel OpenGL3_3 OpenGL4_5\n"\
-		"#version 330\n"\
-		"uniform sampler2D Tex;\n"\
-		"in vec4 pColor;\n"\
-		"in vec4 pTexCoord;\n"\
-		"out vec4 p_Color;\n"\
-		"void main(void) {\n"\
-		"	p_Color = texture(Tex, pTexCoord.xy)*pColor;\n"\
-		"}\n"\
 		"#module Vertex OpenGL2_1\n"\
 		"attribute vec4 Position;\n"\
 		"attribute vec4 Color;\n"\
@@ -557,13 +537,6 @@ const char *LWEUIManager::GetTextureShaderSource(void) {
 		"	pColor = Color;\n"\
 		"	pTexCoord = TexCoord;\n"\
 		"}\n"\
-		"#module Pixel OpenGL2_1\n"\
-		"uniform sampler2D Tex;\n"\
-		"varying vec4 pColor;\n"\
-		"varying vec4 pTexCoord;\n"\
-		"void main(void) {\n"\
-		"	gl_FragColor = texture2D(Tex, pTexCoord.xy)*pColor;\n"\
-		"}\n"\
 		"#module Vertex OpenGLES2\n"\
 		"attribute highp vec4 Position;\n"\
 		"attribute lowp vec4 Color;\n"\
@@ -576,6 +549,38 @@ const char *LWEUIManager::GetTextureShaderSource(void) {
 		"	gl_Position = Matrix*Position;\n"\
 		"	pColor = Color;\n"\
 		"	pTexCoord = TexCoord;\n"\
+		"}\n";
+	return VertexSource;
+}
+
+const char *LWEUIManager::GetTextureShaderSource(void) {
+	static const char TextureSource[] = ""\
+		"#module Pixel DirectX11_1\n"\
+		"struct Pixel {\n"\
+		"	float4 Position : SV_POSITION;\n"\
+		"	float4 Color : COLOR0;\n"\
+		"	float4 TexCoord : TEXCOORD0;\n"\
+		"};\n"\
+		"Texture2D Tex;\n"\
+		"SamplerState TexSampler;\n"\
+		"float4 main(Pixel In) : SV_TARGET{\n"\
+		"	return In.Color*Tex.Sample(TexSampler, In.TexCoord.xy);\n"\
+		"}\n"\
+		"#module Pixel OpenGL3_3 OpenGL4_5\n"\
+		"#version 330\n"\
+		"uniform sampler2D Tex;\n"\
+		"in vec4 pColor;\n"\
+		"in vec4 pTexCoord;\n"\
+		"out vec4 p_Color;\n"\
+		"void main(void) {\n"\
+		"	p_Color = texture(Tex, pTexCoord.xy)*pColor;\n"\
+		"}\n"\
+		"#module Pixel OpenGL2_1\n"\
+		"uniform sampler2D Tex;\n"\
+		"varying vec4 pColor;\n"\
+		"varying vec4 pTexCoord;\n"\
+		"void main(void) {\n"\
+		"	gl_FragColor = texture2D(Tex, pTexCoord.xy)*pColor;\n"\
 		"}\n"\
 		"#module Pixel OpenGLES2\n"\
 		"uniform sampler2D Tex;\n"\
@@ -589,27 +594,6 @@ const char *LWEUIManager::GetTextureShaderSource(void) {
 
 const char *LWEUIManager::GetColorShaderSource(void) {
 	static const char ColorSource[] = ""\
-		"#module Vertex DirectX11_1\n"\
-		"cbuffer UIUniform{\n"\
-		"	float4x4 Matrix;\n"\
-		"};\n"\
-		"struct Vertex {\n"\
-		"	float4 Position : POSITION;\n"\
-		"	float4 Color : COLOR;\n"\
-		"	float4 TexCoord : TEXCOORD;\n"\
-		"};\n"\
-		"struct Pixel {\n"\
-		"	float4 Position : SV_POSITION;\n"\
-		"	float4 Color : COLOR0;\n"\
-		"	float4 TexCoord : TEXCOORD0;\n"\
-		"};\n"\
-		"Pixel main(Vertex In) {\n"\
-		"	Pixel O;\n"\
-		"	O.Position = mul(Matrix, In.Position);\n"\
-		"	O.Color = In.Color;\n"\
-		"	O.TexCoord = In.TexCoord;\n"\
-		"	return O;\n"\
-		"}\n"\
 		"#module Pixel DirectX11_1\n"\
 		"struct Pixel {\n"\
 		"	float4 Position : SV_POSITION;\n"\
@@ -619,21 +603,6 @@ const char *LWEUIManager::GetColorShaderSource(void) {
 		"float4 main(Pixel In) : SV_TARGET{\n"\
 		"	return In.Color;\n"\
 		"}\n"\
-		"#module Vertex OpenGL3_3 OpenGL4_5\n"\
-		"#version 330\n"\
-		"layout(std140) uniform UIUniform {\n"\
-		"	mat4 Matrix;\n"\
-		"};\n"\
-		"in vec4 Position | 0;\n"\
-		"in vec4 Color | 1;\n"\
-		"in vec4 TexCoord | 2;\n"\
-		"out vec4 pColor;\n"\
-		"out vec4 pTexCoord;\n"\
-		"void main(void) {\n"\
-		"	gl_Position = Matrix*Position;\n"\
-		"	pColor = Color;\n"\
-		"	pTexCoord = TexCoord;\n"\
-		"}\n"\
 		"#module Pixel OpenGL3_3 OpenGL4_5\n"\
 		"#version 330\n"\
 		"in vec4 pColor;\n"\
@@ -642,37 +611,11 @@ const char *LWEUIManager::GetColorShaderSource(void) {
 		"void main(void) {\n"\
 		"	p_Color = pColor;\n"\
 		"}\n"\
-		"#module Vertex OpenGL2_1\n"\
-		"attribute vec4 Position;\n"\
-		"attribute vec4 Color;\n"\
-		"attribute vec4 TexCoord;\n"\
-		"varying vec4 pColor;\n"\
-		"varying vec4 pTexCoord;\n"\
-		"#block UIUniform\n"\
-		"uniform mat4 Matrix;\n"\
-		"void main(void) {\n"\
-		"	gl_Position = Matrix*Position;\n"\
-		"	pColor = Color;\n"\
-		"	pTexCoord = TexCoord;\n"\
-		"}\n"\
 		"#module Pixel OpenGL2_1\n"\
 		"varying vec4 pColor;\n"\
 		"varying vec4 pTexCoord;\n"\
 		"void main(void) {\n"\
 		"	gl_FragColor = pColor;\n"\
-		"}\n"\
-		"#module Vertex OpenGLES2\n"\
-		"attribute highp vec4 Position;\n"\
-		"attribute lowp vec4 Color;\n"\
-		"attribute lowp vec4 TexCoord;\n"\
-		"varying lowp vec4 pColor;\n"\
-		"varying lowp vec4 pTexCoord;\n"\
-		"#block UIUniform\n"\
-		"uniform highp mat4 Matrix;\n"\
-		"void main(void) {\n"\
-		"	gl_Position = Matrix*Position;\n"\
-		"	pColor = Color;\n"\
-		"	pTexCoord = TexCoord;\n"\
 		"}\n"\
 		"#module Pixel OpenGLES2\n"\
 		"varying lowp vec4 pColor;\n"\
@@ -685,31 +628,6 @@ const char *LWEUIManager::GetColorShaderSource(void) {
 
 const char *LWEUIManager::GetYUVTextureShaderSource(void) {
 	static const char YUVSource[] = ""\
-	"#module Vertex DirectX11_1\n"\
-	"	cbuffer UIUniform{\n"\
-	"		float4x4 Matrix;\n"\
-	"};\n"\
-	"struct Vertex {\n"\
-	"	float4 Position : POSITION;\n"\
-	"	float4 Color : COLOR;\n"\
-	"	float4 TexCoord : TEXCOORD;\n"\
-	"};\n"\
-	"struct Pixel {\n"\
-	"	float4 Position : SV_POSITION;\n"\
-	"	float4 Color : COLOR0;\n"\
-	"	float4 TexCoordA : TEXCOORD0;\n"\
-	"	float4 TexCoordB : TEXCOORD1;\n"\
-	"};\n"\
-	"Pixel main(Vertex In) {\n"\
-	"	const float Third = 1.0f / 3.0f;\n"\
-	"	Pixel O;\n"\
-	"	O.Position = mul(Matrix, In.Position);\n"\
-	"	O.Color = In.Color;\n"\
-	"	O.TexCoordA.xy = In.TexCoord.xy*float2(1.0f, Third*2.0f);\n"\
-	"	O.TexCoordA.zw = In.TexCoord.xy*float2(0.5f, Third) + float2(0.0f, Third*2.0f);\n"\
-	"	O.TexCoordB.xy = In.TexCoord.xy*float2(0.5f, Third) + float2(0.5f, Third*2.0f);\n"\
-	"	return O;\n"\
-	"}\n"\
 	"#module Pixel DirectX11_1\n"\
 	"	struct Pixel {\n"\
 	"	float4 Position : SV_POSITION;\n"\
@@ -731,25 +649,6 @@ const char *LWEUIManager::GetYUVTextureShaderSource(void) {
 	"float4 main(Pixel In) : SV_TARGET{\n"\
 	"	return DecodeYUV(In.TexCoordA.xy, In.TexCoordA.zw, In.TexCoordB.xy)*In.Color;\n"\
 	"}\n"\
-	"#module Vertex OpenGL3_3 OpenGL4_5\n"\
-	"#version 330\n"\
-	"layout(std140) uniform UIUniform {\n"\
-	"	mat4 Matrix;\n"\
-	"};\n"\
-	"in vec4 Position;\n"\
-	"in vec4 Color;\n"\
-	"in vec4 TexCoord;\n"\
-	"out vec4 pColor;\n"\
-	"out vec4 pTexCoordA;\n"\
-	"out vec4 pTexCoordB;\n"\
-	"void main(void) {\n"\
-	"	const float Third = 1.0f / 3.0f;\n"\
-	"	gl_Position = Matrix * Position;\n"\
-	"	pColor = Color;\n"\
-	"	pTexCoordA.xy = TexCoord.xy*vec2(1.0f, Third*2.0f);\n"\
-	"	pTexCoordA.zw = TexCoord.xy*vec2(0.5f, Third) + vec2(0.0f, Third*2.0f);\n"\
-	"	pTexCoordB.xy = TexCoord.xy*vec2(0.5f, Third) + vec2(0.5f, Third*2.0f);\n"\
-	"}\n"\
 	"#module Pixel OpenGL3_3 OpenGL4_5\n"\
 	"#version 330\n"\
 	"in vec4 pColor;\n"\
@@ -769,23 +668,6 @@ const char *LWEUIManager::GetYUVTextureShaderSource(void) {
 	"void main(void) {\n"\
 	"	p_Color = DecodeYUV(pTexCoordA.xy, pTexCoordA.zw, pTexCoordB.xy)*pColor;\n"\
 	"}\n"\
-	"#module Vertex OpenGL2_1\n"\
-	"attribute vec4 Position;\n"\
-	"attribute vec4 Color;\n"\
-	"attribute vec4 TexCoord;\n"\
-	"varying vec4 pColor;\n"\
-	"varying vec4 pTexCoordA;\n"\
-	"varying vec4 pTexCoordB;\n"\
-	"#block UIUniform\n"\
-	"uniform mat4 Matrix;\n"\
-	"void main(void) {\n"\
-	"	const float Third = 1.0f / 3.0f;\n"\
-	"	gl_Position = Matrix * Position;\n"\
-	"	pColor = Color;\n"\
-	"	pTexCoordA.xy = TexCoord.xy*vec2(1.0f, Third*2.0f);\n"\
-	"	pTexCoordA.zw = TexCoord.xy*vec2(0.5f, Third) + vec2(0.0f, Third*2.0f);\n"\
-	"	pTexCoordB.xy = TexCoord.xy*vec2(0.5f, Third) + vec2(0.5f, Third*2.0f);\n"\
-	"}\n"\
 	"#module Pixel OpenGL2_1\n"\
 	"varying vec4 pColor;\n"\
 	"varying vec4 pTexCoordA;\n"\
@@ -802,23 +684,6 @@ const char *LWEUIManager::GetYUVTextureShaderSource(void) {
 	"}\n"\
 	"void main(void) {\n"\
 	"	gl_FragColor = DecodeYUV(pTexCoordA.xy, pTexCoordA.zw, pTexCoordB.xy)*pColor;\n"\
-	"}\n"\
-	"#module Vertex OpenGLES2\n"\
-	"attribute highp vec4 Position;\n"\
-	"attribute lowp vec4 Color;\n"\
-	"attribute lowp vec4 TexCoord;\n"\
-	"varying lowp vec4 pColor;\n"\
-	"varying lowp vec4 pTexCoordA;\n"\
-	"varying lowp vec4 pTexCoordB;\n"\
-	"#block UIUniform\n"\
-	"uniform highp mat4 Matrix;\n"\
-	"void main(void) {\n"\
-	"	const float Third = 1.0f / 3.0f;\n"\
-	"	gl_Position = Matrix * Position;\n"\
-	"	pColor = Color;\n"\
-	"	pTexCoordA.xy = TexCoord.xy*vec2(1.0f, Third*2.0f);\n"\
-	"	pTexCoordA.zw = TexCoord.xy*vec2(0.5f, Third) + vec2(0.0f, Third*2.0f);\n"\
-	"	pTexCoordB.xy = TexCoord.xy*vec2(0.5f, Third) + vec2(0.5f, Third*2.0f);\n"\
 	"}\n"\
 	"#module Pixel OpenGLES2\n"\
 	"varying lowp vec4 pColor;\n"\
@@ -1268,7 +1133,7 @@ float LWEUIManager::FindScaleForSize(const LWVector2i &Size) {
 				if (!DPILen) {
 					DPIScale = m_DPIScaleMap[i].m_Scale;
 				} else {
-					float v = (float)(m_DPIScaleMap[i].m_ScreenDPI - m_ScreenDPI) / (float)DPILen;
+					float v = 1.0f-(float)(m_DPIScaleMap[i].m_ScreenDPI - m_ScreenDPI) / (float)DPILen;
 					DPIScale = m_DPIScaleMap[i - 1].m_Scale + v * (m_DPIScaleMap[i].m_Scale - m_DPIScaleMap[i - 1].m_Scale);
 				}
 				break;

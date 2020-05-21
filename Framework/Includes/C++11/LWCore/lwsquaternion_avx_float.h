@@ -67,6 +67,14 @@ struct LWSQuaternion<float> {
 
 	LWSQuaternion<float> operator-() const;
 
+	friend LWSQuaternion<float> operator * (float Lhs, const LWSQuaternion<float> &Rhs);
+
+	friend LWSQuaternion<float> operator + (float Lhs, const LWSQuaternion<float> &Rhs);
+
+	friend LWSQuaternion<float> operator - (float Lhs, const LWSQuaternion<float> &Rhs);
+
+	friend LWSQuaternion<float> operator / (float Lhs, const LWSQuaternion<float> &Rhs);
+
 	float x(void) const;
 
 	float y(void) const;
@@ -76,6 +84,8 @@ struct LWSQuaternion<float> {
 	float w(void) const;
 
 	LWSQuaternion(__m128 Data);
+
+	LWSQuaternion(const LWQuaternion<float> &Q);
 
 	LWSQuaternion(float vw, float vx, float vy, float vz);
 	

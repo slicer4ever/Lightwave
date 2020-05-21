@@ -46,10 +46,6 @@ struct LWEJobThread;
 
 class LWEJobQueue;
 
-class LWEGeometry3D;
-
-class LWEGeometry2D;
-
 class LWEGLTFParser;
 
 class LWEVideoPlayer;

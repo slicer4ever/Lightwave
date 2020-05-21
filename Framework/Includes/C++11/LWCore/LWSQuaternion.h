@@ -167,6 +167,21 @@ struct LWSQuaternion {
 		return LWSQuaternion(m_w*rhs, m_x*rhs, m_y*rhs, m_z*rhs);
 	}
 
+	friend LWSQuaternion operator * (Type Lhs, const LWSQuaternion &Rhs) {
+		return LWSQuaternion(Lhs * Rhs.m_w, Lhs * Rhs.m_x, Lhs * Rhs.m_y, Lhs * Rhs.m_z);
+	}
+
+	friend LWSQuaternion operator + (Type Lhs, const LWSQuaternion &Rhs) {
+		return LWSQuaternion(Lhs + Rhs.m_w, Lhs + Rhs.m_x, Lhs + Rhs.m_y, Lhs + Rhs.m_z);
+	}
+
+	friend LWSQuaternion operator - (Type Lhs, const LWSQuaternion &Rhs) {
+		return LWSQuaternion(Lhs - Rhs.m_w, Lhs - Rhs.m_x, Lhs - Rhs.m_y, Lhs - Rhs.m_z);
+	}
+
+	friend LWSQuaternion operator / (Type Lhs, const LWSQuaternion &Rhs) {
+		return LWSQuaternion(Lhs / Rhs.m_w, Lhs / Rhs.m_x, Lhs / Rhs.m_y, Lhs / Rhs.m_z);
+	}
 
 	friend std::ostream &operator<<(std::ostream &o, const LWSQuaternion<Type> &q) {
 		o << q.m_w << " " << q.m_x << " " << q.m_y << " " << q.m_z;
@@ -229,6 +244,8 @@ struct LWSQuaternion {
 	Type w(void) const {
 		return m_w;
 	}
+
+	LWSQuaternion(const LWQuaternion<Type> &Q) : m_w(Q.w), m_x(Q.x), m_y(Q.y), m_z(Q.z) {}
 
 	LWSQuaternion(Type vw, Type vx, Type vy, Type vz) : m_w(vw), m_x(vx), m_y(vy), m_z(vz) {}
 

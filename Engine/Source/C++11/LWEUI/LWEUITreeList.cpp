@@ -184,18 +184,18 @@ LWEUI &LWEUITreeList::UpdateSelf(LWEUIManager &Manager, float Scale, const LWVec
 		Pos.x += LineOffset * 0.5f;
 		float InitX = Pos.x;
 		Pos.x += LineOffset * 0.5f;
-		if (LWEGeometry2D::PointInsideAABB(OverPos, Pos, Pos + Size)) OverID = ID;
+		if (LWEPointInsideAABB(OverPos, Pos, Pos + Size)) OverID = ID;
 		Pos.x += Size.x;
 		if(isEditEnabled){
 			if (m_DraggingID == -1) {
 				LWVector2f AddBtnSize = m_EditAddItem.GetSize(Scale, BorderSize, 0.0f, 0.0f);
 				LWVector2f DelBtnSize = m_EditAddItem.GetSize(Scale, BorderSize, 0.0f, 0.0f);
-				if (LWEGeometry2D::PointInsideAABB(OverPos, Pos, Pos + AddBtnSize)) {
+				if (LWEPointInsideAABB(OverPos, Pos, Pos + AddBtnSize)) {
 					OverID = ID;
 					OverEditID = EditIDAdd;
 				}
 				Pos.x += AddBtnSize.x + BorderSize;
-				if (LWEGeometry2D::PointInsideAABB(OverPos, Pos, Pos + DelBtnSize)) {
+				if (LWEPointInsideAABB(OverPos, Pos, Pos + DelBtnSize)) {
 					OverID = ID;
 					OverEditID = EditIDDel;
 				}
@@ -236,7 +236,7 @@ LWEUI &LWEUITreeList::UpdateSelf(LWEUIManager &Manager, float Scale, const LWVec
 		if (m_DraggingID == -1) {
 			LWVector2f AddSize = m_EditAddItem.GetSize(Scale, BorderSize, 0.0f, 0.0f);
 			Pos += LWVector2f(BorderSize, -AddSize.y);
-			if (LWEGeometry2D::PointInsideAABB(OverPos, Pos, Pos + AddSize)) {
+			if (LWEPointInsideAABB(OverPos, Pos, Pos + AddSize)) {
 				OverEditID = EditIDAdd;
 			}
 		}

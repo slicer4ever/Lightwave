@@ -3,6 +3,8 @@
 #include "LWVideo/LWFont.h"
 #include "LWVideo/LWVideoDriver.h"
 #include "LWVideo/LWImage.h"
+#include "LWCore/LWByteBuffer.h"
+#include "LWCore/LWCrypto.h"
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include <iostream>
@@ -21,7 +23,7 @@ bool LWFontSimpleWriter::WriteTexture(LWTexture *Tex) {
 }
 
 /*!< \brief function passed to the font object for writing. */
-bool LWFontSimpleWriter::WriteGlyph(LWTexture *Tex, const LWVector2f &Position, const LWVector2f &Size, const LWVector4f &TexCoord, const LWVector4f &Color) {
+bool LWFontSimpleWriter::WriteGlyph(LWTexture *Tex, const LWVector2f &Position, const LWVector2f &Size, const LWVector4f &TexCoord, const LWVector2f &DistanceField, const LWVector4f &Color) {
 	if (!WriteTexture(Tex)) return false;
 	if (!m_Mesh->CanWriteVertices(6)) return false;
 	LWVertexUI *V = m_Mesh->GetVertexAt(m_Mesh->WriteVertices(6));
@@ -36,18 +38,425 @@ bool LWFontSimpleWriter::WriteGlyph(LWTexture *Tex, const LWVector2f &Position, 
 	LWVector2f BtmRightTC = LWVector2f(TexCoord.z, TexCoord.w);
 	LWVector2f TopRightTC = LWVector2f(TexCoord.z, TexCoord.y);
 
-	*(V + 0) = { LWVector4f(BtmLeft, 0.0f, 1.0f), Color, LWVector4f(BtmLeftTC, 0.0f, 0.0f) };
-	*(V + 1) = { LWVector4f(TopRight, 0.0f, 1.0f), Color, LWVector4f(TopRightTC, 0.0f, 0.0f) };
-	*(V + 2) = { LWVector4f(TopLeft, 0.0f, 1.0f), Color, LWVector4f(TopLeftTC, 0.0f, 0.0f) };
-	*(V + 3) = { LWVector4f(BtmLeft, 0.0f, 1.0f), Color, LWVector4f(BtmLeftTC, 0.0f, 0.0f) };
-	*(V + 4) = { LWVector4f(BtmRight, 0.0f, 1.0f), Color, LWVector4f(BtmRightTC, 0.0f, 0.0f) };
-	*(V + 5) = { LWVector4f(TopRight, 0.0f, 1.0f), Color, LWVector4f(TopRightTC, 0.0f, 0.0f) };
+	*(V + 0) = { LWVector4f(BtmLeft, 0.0f, 1.0f), Color, LWVector4f(BtmLeftTC, DistanceField) };
+	*(V + 1) = { LWVector4f(TopRight, 0.0f, 1.0f), Color, LWVector4f(TopRightTC, DistanceField) };
+	*(V + 2) = { LWVector4f(TopLeft, 0.0f, 1.0f), Color, LWVector4f(TopLeftTC, DistanceField) };
+	*(V + 3) = { LWVector4f(BtmLeft, 0.0f, 1.0f), Color, LWVector4f(BtmLeftTC, DistanceField) };
+	*(V + 4) = { LWVector4f(BtmRight, 0.0f, 1.0f), Color, LWVector4f(BtmRightTC, DistanceField) };
+	*(V + 5) = { LWVector4f(TopRight, 0.0f, 1.0f), Color, LWVector4f(TopRightTC, DistanceField) };
 	m_TextureVertices[m_TextureCount - 1] += 6;
 	return true;
 }
 
 LWFontSimpleWriter::LWFontSimpleWriter(LWMesh<LWVertexUI> *Mesh) : m_Mesh(Mesh) {}
 
+
+LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAllocator &Allocator) {
+	//Reverse engineered Artery format from: (https://github.com/Chlumsky/artery-font-format)
+
+	//Supported codepoint types.
+	const uint32_t CodepointType_Unicode = 1;
+
+	//Supported image encoding formats.
+	const uint32_t ImageEncoding_PNG = 8;
+	const uint32_t ImageEncoding_TGA = 9;
+
+	struct ARHeader {
+		char m_Tag[16];
+		uint32_t m_Magic;
+		uint32_t m_Version;
+		uint32_t m_Flag;
+		uint32_t m_RealType;
+		uint32_t m_ReservedA[4];
+
+		uint32_t m_MetaDataFormat;
+		uint32_t m_MetaDataLength;
+		uint32_t m_VariantCount;
+		uint32_t m_VariantsLength;
+		uint32_t m_ImageCount;
+		uint32_t m_ImagesLength;
+		uint32_t m_AppendixCount;
+		uint32_t m_AppendixsLength;
+		uint32_t m_ReservedB[8];
+
+		static bool Deserialize(ARHeader &Header, LWByteBuffer &Buf) {
+			const char *Artery_Font_Header_Tag = "ARTERY/FONT\0\0\0\0\0";
+			const uint32_t Artery_Header_Version = 1;
+			const uint32_t Artery_Header_Magic = 0x4d276a5cu;
+
+			Buf.Read<char>(Header.m_Tag, sizeof(ARHeader::m_Tag));
+			if (!std::equal(Header.m_Tag, Header.m_Tag + sizeof(ARHeader::m_Tag), Artery_Font_Header_Tag)) {
+				std::cout << "Font header tag is invalid: '" << Header.m_Tag << "'" << std::endl;
+				return false;
+			}
+			Header.m_Magic = Buf.Read<uint32_t>();
+			if (Header.m_Magic != Artery_Header_Magic) {
+				std::cout << "Font header magic is invalid." << std::endl;
+				return false;
+			}
+			Header.m_Version = Buf.Read<uint32_t>();
+			if (Header.m_Version != Artery_Header_Version) {
+				std::cout << "Font version is not supported: " << Header.m_Version << std::endl;
+				return false;
+			}
+			Header.m_Flag = Buf.Read<uint32_t>();
+			Header.m_RealType = Buf.Read<uint32_t>();
+			Buf.Read<uint32_t>(Header.m_ReservedA, 4);
+			Header.m_MetaDataFormat = Buf.Read<uint32_t>();
+			Header.m_MetaDataLength = Buf.Read<uint32_t>();
+			Header.m_VariantCount = Buf.Read<uint32_t>();
+			Header.m_VariantsLength = Buf.Read<uint32_t>();
+			Header.m_ImageCount = Buf.Read<uint32_t>();
+			Header.m_ImagesLength = Buf.Read<uint32_t>();
+			Header.m_AppendixCount = Buf.Read<uint32_t>();
+			Header.m_AppendixsLength = Buf.Read<uint32_t>();
+			Buf.Read<uint32_t>(Header.m_ReservedB, 8);
+			return true;
+		}
+	};
+
+	struct ARFooter {
+		uint32_t m_Salt;
+		uint32_t m_Magic;
+		uint32_t m_ReservedA[4];
+		uint32_t m_TotalLength;
+		uint32_t m_Checksum;
+
+		static bool Deserialize(ARFooter &Footer, LWByteBuffer &Buf) {
+			const uint32_t Artery_Footer_Magic = 0x55ccb363u;
+			Footer.m_Salt = Buf.Read<uint32_t>();
+			Footer.m_Magic = Buf.Read<uint32_t>();
+			if (Footer.m_Magic != Artery_Footer_Magic) {
+				std::cout << "Font Footer magic is incorrect." << std::endl;
+				return false;
+			}
+			Buf.Read<uint32_t>(Footer.m_ReservedA, 4);
+			Footer.m_TotalLength = Buf.Read<uint32_t>();
+			Footer.m_Checksum = Buf.Read<uint32_t>();
+			return true;
+		}
+	};
+
+	struct ARBounds {
+		float m_Left;
+		float m_Bottom;
+		float m_Right;
+		float m_Top;
+
+		LWVector2f GetSize(void) const {
+			return LWVector2f(m_Right - m_Left, m_Top - m_Bottom);
+		}
+
+		static bool Deserialize(ARBounds &Bounds, LWByteBuffer &Buf) {
+			Bounds.m_Left = Buf.Read<float>();
+			Bounds.m_Bottom = Buf.Read<float>();
+			Bounds.m_Right = Buf.Read<float>();
+			Bounds.m_Top = Buf.Read<float>();
+			return true;
+		}
+	};
+
+	struct ARMetrics {
+		float m_FontSize;
+		float m_DistanceRange;
+
+		float m_emSize;
+		float m_Ascender;
+		float m_Descender;
+		float m_LineHeight;
+		float m_UnderlineY;
+		float m_UnderlineThickness;
+		float m_ReservedA[24];
+
+		static bool Deserialize(ARMetrics &Metrics, LWByteBuffer &Buf) {
+			Metrics.m_FontSize = Buf.Read<float>();
+			Metrics.m_DistanceRange = Buf.Read<float>();
+			Metrics.m_emSize = Buf.Read<float>();
+			Metrics.m_Ascender = Buf.Read<float>();
+			Metrics.m_Descender = Buf.Read<float>();
+			Metrics.m_LineHeight = Buf.Read<float>();
+			Metrics.m_UnderlineY = Buf.Read<float>();
+			Metrics.m_UnderlineThickness = Buf.Read<float>();
+			Buf.Read<float>(Metrics.m_ReservedA, 24);
+			return true;
+		};
+	};
+
+	struct ARAdvance {
+		float m_Horizontal;
+		float m_Vertical;
+
+		static bool Deserialize(ARAdvance &Advance, LWByteBuffer &Buf) {
+			Advance.m_Horizontal = Buf.Read<float>();
+			Advance.m_Vertical = Buf.Read<float>();
+			return true;
+		}
+	};
+
+	struct ARGlyph {
+		uint32_t m_CodePoint;
+		uint32_t m_Image;
+		ARBounds m_PlaneBounds;
+		ARBounds m_ImageBounds;
+		ARAdvance m_Advance;
+
+		static bool Deserialize(ARGlyph &Glyph, LWByteBuffer &Buf) {
+			Glyph.m_CodePoint = Buf.Read<uint32_t>();
+			Glyph.m_Image = Buf.Read<uint32_t>();
+			if (!ARBounds::Deserialize(Glyph.m_PlaneBounds, Buf)) return false;
+			if (!ARBounds::Deserialize(Glyph.m_ImageBounds, Buf)) return false;
+			if (!ARAdvance::Deserialize(Glyph.m_Advance, Buf)) return false;
+			return true;
+		}
+	};
+
+	struct ARKernPair {
+		uint32_t m_CodePointA;
+		uint32_t m_CodePointB;
+		ARAdvance m_Advance;
+
+		static bool Deserialize(ARKernPair &Kern, LWByteBuffer &Buf) {
+			Kern.m_CodePointA = Buf.Read<uint32_t>();
+			Kern.m_CodePointB = Buf.Read<uint32_t>();
+			if (!ARAdvance::Deserialize(Kern.m_Advance, Buf)) return false;
+			return true;
+		}
+	};
+
+	struct ARFontVariant {
+		uint32_t m_Flag;
+		uint32_t m_Weight;
+		uint32_t m_CodePointType;
+		uint32_t m_ImageType;
+		uint32_t m_FallbackVariant;
+		uint32_t m_FallbackGlyph;
+		uint32_t m_ReservedA[6];
+		ARMetrics m_Metrics;
+		uint32_t m_NameLength;
+		uint32_t m_MetaDataLength;
+		uint32_t m_GlyphCount;
+		uint32_t m_KernCount;
+		char *m_Name = nullptr;
+		char *m_MetaData = nullptr;
+		ARGlyph *m_GlyphList = nullptr;
+		ARKernPair *m_KernList = nullptr;
+
+		static bool Deserialize(ARFontVariant &V, LWByteBuffer &Buf, LWAllocator &Allocator) {
+			V.m_Flag = Buf.Read<uint32_t>();
+			V.m_Weight = Buf.Read<uint32_t>();
+			V.m_CodePointType = Buf.Read<uint32_t>();
+			V.m_ImageType = Buf.Read<uint32_t>();
+			V.m_FallbackVariant = Buf.Read<uint32_t>();
+			V.m_FallbackGlyph = Buf.Read<uint32_t>();
+			Buf.Read<uint32_t>(V.m_ReservedA, 6);
+			if (!ARMetrics::Deserialize(V.m_Metrics, Buf)) return false;
+			V.m_NameLength = Buf.Read<uint32_t>();
+			V.m_MetaDataLength = Buf.Read<uint32_t>();
+			V.m_GlyphCount = Buf.Read<uint32_t>();
+			V.m_KernCount = Buf.Read<uint32_t>();
+			if (V.m_NameLength) {
+				V.m_Name = Allocator.AllocateArray<char>(V.m_NameLength + 1);
+				Buf.ReadText(V.m_Name, V.m_NameLength + 1);
+				Buf.AlignPosition(4);
+			}
+			if (V.m_MetaDataLength) {
+				V.m_MetaData = Allocator.AllocateArray<char>(V.m_MetaDataLength + 1);
+				Buf.ReadText(V.m_MetaData, V.m_MetaDataLength + 1);
+				Buf.AlignPosition(4);
+			}
+			V.m_GlyphList = Allocator.AllocateArray<ARGlyph>(V.m_GlyphCount);
+			V.m_KernList = Allocator.AllocateArray<ARKernPair>(V.m_KernCount);
+			for (uint32_t i = 0; i < V.m_GlyphCount; i++) {
+				if (!ARGlyph::Deserialize(V.m_GlyphList[i], Buf)) return false;
+			}
+			for (uint32_t i = 0; i < V.m_KernCount; i++) {
+				if (!ARKernPair::Deserialize(V.m_KernList[i], Buf)) return false;
+			}
+			return true;
+		}
+
+		~ARFontVariant() {
+			LWAllocator::Destroy(m_Name);
+			LWAllocator::Destroy(m_MetaData);
+			LWAllocator::Destroy(m_GlyphList);
+			LWAllocator::Destroy(m_KernList);
+		}
+	};
+
+	struct ARImageHeader {
+		uint32_t m_Flags;
+		uint32_t m_Encoding;
+		uint32_t m_Width;
+		uint32_t m_Height;
+		uint32_t m_Channels;
+		uint32_t m_PixelFormat;
+		uint32_t m_ImageType;
+		uint32_t m_RowLength;
+		uint32_t m_Orientation;
+		uint32_t m_ChildImages;
+		uint32_t m_TextureFlags;
+		uint32_t m_ReservedA[3];
+		uint32_t m_MetaDataLength;
+		uint32_t m_DataLength;
+		char *m_MetaData = nullptr;
+		const int8_t *m_Data = nullptr;
+
+
+		static bool Deserialize(ARImageHeader &Image, LWByteBuffer &Buf, LWAllocator &Allocator) {
+			Image.m_Flags = Buf.Read<uint32_t>();
+			Image.m_Encoding = Buf.Read<uint32_t>();
+			Image.m_Width = Buf.Read<uint32_t>();
+			Image.m_Height = Buf.Read<uint32_t>();
+			Image.m_Channels = Buf.Read<uint32_t>();
+			Image.m_PixelFormat = Buf.Read<uint32_t>();
+			Image.m_ImageType = Buf.Read<uint32_t>();
+			Image.m_RowLength = Buf.Read<uint32_t>();
+			Image.m_Orientation = Buf.Read<uint32_t>();
+			Image.m_ChildImages = Buf.Read<uint32_t>();
+			Image.m_TextureFlags = Buf.Read<uint32_t>();
+			Buf.Read<uint32_t>(Image.m_ReservedA, 3);
+			Image.m_MetaDataLength = Buf.Read<uint32_t>();
+			Image.m_DataLength = Buf.Read<uint32_t>();
+			if (Image.m_MetaDataLength) {
+				Image.m_MetaData = Allocator.AllocateArray<char>(Image.m_MetaDataLength + 1);
+				Buf.ReadText(Image.m_MetaData, Image.m_MetaDataLength + 1);
+				Buf.AlignPosition(4);
+			}
+			Image.m_Data = Buf.GetReadBuffer() + Buf.GetPosition();
+			Buf.OffsetPosition(Image.m_DataLength);
+			Buf.AlignPosition(4);
+			return true;
+		};
+	};
+
+	struct ARAppendix {
+		uint32_t m_MetaDataLength;
+		uint32_t m_DataLength;
+		char *m_MetaData = nullptr;
+		const int8_t *m_Data = nullptr;
+
+		static bool Deserialize(ARAppendix &Appendix, LWByteBuffer &Buf, LWAllocator &Allocator) {
+			Appendix.m_MetaDataLength = Buf.Read<uint32_t>();
+			Appendix.m_DataLength = Buf.Read<uint32_t>();
+			if (Appendix.m_MetaDataLength) {
+				Appendix.m_MetaData = Allocator.AllocateArray<char>(Appendix.m_MetaDataLength + 1);
+				Buf.ReadText(Appendix.m_MetaData, Appendix.m_MetaDataLength + 1);
+				Buf.AlignPosition(4);
+			}
+			Appendix.m_Data = Buf.GetReadBuffer() + Buf.GetPosition();
+			Buf.OffsetPosition(Appendix.m_DataLength);
+			Buf.AlignPosition(4);
+			return true;
+		}
+
+		~ARAppendix() {
+			LWAllocator::Destroy(m_MetaData);
+		}
+	};
+
+	auto Cleanup = [](char *Buffer, ARFontVariant *Variants, ARImageHeader *Images, ARAppendix *Appendixs, LWFont *Font)->LWFont* {
+		LWAllocator::Destroy(Buffer);
+		LWAllocator::Destroy(Variants);
+		LWAllocator::Destroy(Images);
+		LWAllocator::Destroy(Appendixs);
+		LWAllocator::Destroy(Font);
+		return nullptr;
+	};
+
+	char *FileBuffer = Allocator.AllocateArray<char>(Stream->Length());
+	Stream->Read(FileBuffer, Stream->Length());
+	LWByteBuffer Buf = LWByteBuffer((const int8_t*)FileBuffer, Stream->Length(), LWByteBuffer::BufferNotOwned);
+	ARHeader Header;
+	ARFooter Footer;
+	if (!ARHeader::Deserialize(Header, Buf)) return Cleanup(FileBuffer, nullptr, nullptr, nullptr, nullptr);
+	uint32_t pPos = Buf.GetPosition();
+	ARFontVariant *Variants = Allocator.AllocateArray<ARFontVariant>(Header.m_VariantCount);
+	ARImageHeader *Images = Allocator.AllocateArray<ARImageHeader>(Header.m_ImageCount);
+	ARAppendix *Appendixs = Allocator.AllocateArray<ARAppendix>(Header.m_AppendixCount);
+	uint32_t SelectedVariant = -1;
+	for (uint32_t i = 0; i < Header.m_VariantCount; i++) {
+		if (!ARFontVariant::Deserialize(Variants[i], Buf, Allocator)) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
+		if (Variants[i].m_CodePointType == CodepointType_Unicode) SelectedVariant = i;
+	}
+	if ((Buf.GetPosition() - pPos) != Header.m_VariantsLength) {
+		std::cout << "Error font's variants lengths invalid." << std::endl;
+		return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
+	}
+	pPos = Buf.GetPosition();
+	for (uint32_t i = 0; i < Header.m_ImageCount; i++) {
+		if (!ARImageHeader::Deserialize(Images[i], Buf, Allocator)) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
+	}
+	if ((Buf.GetPosition() - pPos) != Header.m_ImagesLength) {
+		std::cout << "Error font's images lengths invalid." << std::endl;
+		return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
+	}
+	pPos = Buf.GetPosition();
+	for (uint32_t i = 0; i < Header.m_AppendixCount; i++) {
+		if (!ARAppendix::Deserialize(Appendixs[i], Buf, Allocator)) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
+	}
+	if ((Buf.GetPosition() - pPos) != Header.m_AppendixsLength) {
+		std::cout << "Error font's appendixes lengths invalid." << std::endl;
+		return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
+	}
+	if (!ARFooter::Deserialize(Footer, Buf)) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
+	uint32_t CRC = LWCrypto::CRC32((uint8_t*)FileBuffer, Buf.GetPosition() - 4, ~0, false); //Have to set CRC32 finished to false as artery file does not do final ^0xFFFFFFFF to checksum.
+	if (CRC != Footer.m_Checksum) {
+		std::cout << "Checksum for font file is incorrect." << std::endl;
+		return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
+	}
+	if (SelectedVariant == -1) {
+		std::cout << "No supported font variant was found for font." << std::endl;
+		return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
+	}
+	ARFontVariant &SelV = Variants[SelectedVariant];
+	LWFont *Fnt = Allocator.Allocate<LWFont>(Driver, SelV.m_Metrics.m_LineHeight*SelV.m_Metrics.m_FontSize);
+	for (uint32_t i = 0; i < Header.m_ImageCount; i++) {
+		ARImageHeader &I = Images[i];
+		LWImage TexImg;
+		if (I.m_Encoding == ImageEncoding_PNG) {
+			if (!LWImage::LoadImagePNG(TexImg, (const uint8_t*)I.m_Data, I.m_DataLength, Allocator)) {
+				std::cout << "Error loading font png image." << std::endl;
+				continue;
+			}
+		} else if (I.m_Encoding == ImageEncoding_TGA) {
+			if (!LWImage::LoadImageTGA(TexImg, (const uint8_t*)I.m_Data, I.m_DataLength, Allocator)) {
+				std::cout << "Error loading font tga image." << std::endl;
+				continue;
+			}
+		} else {
+			std::cout << "Font contains image that is not supported." << std::endl;
+			continue;
+		}
+		LWTexture *Tex = Driver->CreateTexture(LWTexture::MinLinear | LWTexture::MagLinear, TexImg, Allocator);
+		if (!Tex) {
+			std::cout << "Failed to create texture for font." << std::endl;
+			continue;
+		}
+		Fnt->SetTexture(i, Tex);
+	}
+	Fnt->SetErrorGlyph(SelV.m_FallbackGlyph);
+	for (uint32_t i = 0; i < SelV.m_GlyphCount; i++) {
+		ARGlyph &AG = SelV.m_GlyphList[i];
+		LWGlyph *G = Fnt->GetGlyph(AG.m_CodePoint, true);
+		LWTexture *Tex = Fnt->GetTexture(AG.m_Image);
+		if(!Tex) continue;
+		LWVector2f TexSize = Tex->Get2DSize().CastTo<float>();
+		LWVector2f iTexSize = 1.0f / TexSize;
+		G->m_Character = AG.m_CodePoint;
+		G->m_TextureIndex = AG.m_Image;
+		G->m_Advance = LWVector2f(AG.m_Advance.m_Horizontal, AG.m_Advance.m_Vertical)*SelV.m_Metrics.m_FontSize;
+		G->m_Size = AG.m_ImageBounds.GetSize();
+		G->m_Bearing = LWVector2f(AG.m_PlaneBounds.m_Left, -AG.m_PlaneBounds.m_Bottom)*SelV.m_Metrics.m_FontSize;
+		G->m_SignedRange = iTexSize * SelV.m_Metrics.m_DistanceRange;
+		G->m_TexCoord = LWVector4f(LWVector2f(AG.m_ImageBounds.m_Left, TexSize.y - AG.m_ImageBounds.m_Top) * iTexSize, LWVector2f(AG.m_ImageBounds.m_Right, TexSize.y - AG.m_ImageBounds.m_Bottom) * iTexSize);
+	}
+	for(uint32_t i=0;i<SelV.m_KernCount;i++){
+		ARKernPair &K = SelV.m_KernList[i];
+		Fnt->InsertKern(K.m_CodePointA, K.m_CodePointB, K.m_Advance.m_Horizontal*SelV.m_Metrics.m_FontSize);
+	}
+	Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
+	return Fnt;
+};
 
 LWFont *LWFont::LoadFontFNT(LWFileStream *Stream, LWVideoDriver *Driver, LWAllocator &Allocator) {
 	char Buffer[512];
@@ -295,7 +704,7 @@ LWFont *LWFont::LoadFontTTF(LWFileStream *Stream, LWVideoDriver *Driver, uint32_
 	return F;
 }
 
-const char *LWFont::GetFontShaderSource(void) {
+const char *LWFont::GetVertexShaderSource(void) {
 	static const char FontSource[] = ""\
 		"#module Vertex DirectX11_1\n"\
 		"cbuffer UIUniform{\n"\
@@ -317,21 +726,6 @@ const char *LWFont::GetFontShaderSource(void) {
 		"	O.Color = In.Color;\n"\
 		"	O.TexCoord = In.TexCoord;\n"\
 		"	return O;\n"\
-		"}\n"\
-		"#module Pixel DirectX11_1\n"\
-		"struct Pixel {\n"\
-		"	float4 Position : SV_POSITION;\n"\
-		"	float4 Color : COLOR0;\n"\
-		"	float4 TexCoord : TEXCOORD0;\n"\
-		"};\n"\
-		"Texture2D FontTex;\n"\
-		"SamplerState FontTexSampler;\n"\
-		"float4 main(Pixel In) : SV_TARGET{\n"\
-		//"	float a = smoothstep(0.9f-0.25f, 0.9f+0.1f, FontTex.Sample(FontTexSampler, In.TexCoord.xy).r);\n"\
-		//"	return In.Color*float4(1.0f,1.0f, 1.0f,a);\n"\
-
-		"	return In.Color*FontTex.Sample(FontTexSampler, In.TexCoord.xy);\n"\
-
 		"}\n"\
 		"#module Vertex OpenGL3_3 OpenGL4_5\n"\
 		"#version 330\n"\
@@ -348,19 +742,6 @@ const char *LWFont::GetFontShaderSource(void) {
 		"	pColor = Color;\n"\
 		"	pTexCoord = TexCoord;\n"\
 		"}\n"\
-		"#module Pixel OpenGL3_3 OpenGL4_5\n"\
-		"#version 330\n"\
-		"uniform sampler2D FontTex;\n"\
-		"in vec4 pColor;\n"\
-		"in vec4 pTexCoord;\n"\
-		"out vec4 p_Color;\n"\
-		"void main(void) {\n"\
-		"	p_Color = texture(FontTex, pTexCoord.xy)*pColor;\n"\
-		
-		//"	float a = 1.0f-smoothstep(0.5f-0.1f, 0.5f+0.1f, 1.0f-texture2D(FontTex, pTexCoord.xy).r);\n"\
-		//"	p_Color = pColor*vec4(1.0f,1.0f, 1.0f,a);\n"\
-		
-		"}\n"\
 		"#module Vertex OpenGL2_1\n"\
 		"struct UIData{\n"\
 		"	mat4 Matrix;\n"\
@@ -376,17 +757,10 @@ const char *LWFont::GetFontShaderSource(void) {
 		"	pColor = Color;\n"\
 		"	pTexCoord = TexCoord;\n"\
 		"}\n"\
-		"#module Pixel OpenGL2_1\n"\
-		"uniform sampler2D FontTex;\n"\
-		"varying vec4 pColor;\n"\
-		"varying vec4 pTexCoord;\n"\
-		"void main(void) {\n"\
-		"	gl_FragColor = texture2D(FontTex, pTexCoord.xy)*pColor;\n"\
-		"}\n"\
 		"#module Vertex OpenGLES2\n"\
-		"attribute highp vec4 Position | 0;\n"\
-		"attribute lowp vec4 Color | 1;\n"\
-		"attribute lowp vec4 TexCoord | 2;\n"\
+		"attribute highp vec4 Position;\n"\
+		"attribute lowp vec4 Color;\n"\
+		"attribute lowp vec4 TexCoord;\n"\
 		"varying lowp vec4 pColor;\n"\
 		"varying lowp vec4 pTexCoord;\n"\
 		"#block UIUniform\n"\
@@ -395,6 +769,38 @@ const char *LWFont::GetFontShaderSource(void) {
 		"	gl_Position = Matrix*Position;\n"\
 		"	pColor = Color;\n"\
 		"	pTexCoord = TexCoord;\n"\
+		"}\n";
+	return FontSource;
+}
+
+const char *LWFont::GetPixelColorShaderSource(void) {
+	static const char FontSource[] = ""\
+		"#module Pixel DirectX11_1\n"\
+		"struct Pixel {\n"\
+		"	float4 Position : SV_POSITION;\n"\
+		"	float4 Color : COLOR0;\n"\
+		"	float4 TexCoord : TEXCOORD0;\n"\
+		"};\n"\
+		"Texture2D FontTex;\n"\
+		"SamplerState FontTexSampler;\n"\
+		"float4 main(Pixel In) : SV_TARGET{\n"\
+		"	return In.Color*FontTex.Sample(FontTexSampler, In.TexCoord.xy);\n"\
+		"}\n"\
+		"#module Pixel OpenGL3_3 OpenGL4_5\n"\
+		"#version 330\n"\
+		"uniform sampler2D FontTex;\n"\
+		"in vec4 pColor;\n"\
+		"in vec4 pTexCoord;\n"\
+		"out vec4 p_Color;\n"\
+		"void main(void) {\n"\
+		"	p_Color = texture(FontTex, pTexCoord.xy)*pColor;\n"\
+		"}\n"\
+		"#module Pixel OpenGL2_1\n"\
+		"uniform sampler2D FontTex;\n"\
+		"varying vec4 pColor;\n"\
+		"varying vec4 pTexCoord;\n"\
+		"void main(void) {\n"\
+		"	gl_FragColor = texture2D(FontTex, pTexCoord.xy)*pColor;\n"\
 		"}\n"\
 		"#module Pixel OpenGLES2\n"\
 		"uniform sampler2D FontTex;\n"\
@@ -407,29 +813,8 @@ const char *LWFont::GetFontShaderSource(void) {
 
 }
 
-const char *LWFont::GetSDFFontShaderSource(void) {
+const char *LWFont::GetPixelMSDFShaderSource(void) {
 	static const char FontSource[] = ""\
-		"#module Vertex DirectX11_1\n"\
-		"cbuffer UIUniform{\n"\
-		"	float4x4 Matrix;\n"\
-		"};\n"\
-		"struct Vertex {\n"\
-		"	float4 Position : POSITION;\n"\
-		"	float4 Color : COLOR;\n"\
-		"	float4 TexCoord : TEXCOORD;\n"\
-		"};\n"\
-		"struct Pixel {\n"\
-		"	float4 Position : SV_POSITION;\n"\
-		"	float4 Color : COLOR0;\n"\
-		"	float4 TexCoord : TEXCOORD0;\n"\
-		"};\n"\
-		"Pixel main(Vertex In) {\n"\
-		"	Pixel O;\n"\
-		"	O.Position = mul(Matrix, In.Position);\n"\
-		"	O.Color = In.Color;\n"\
-		"	O.TexCoord = In.TexCoord;\n"\
-		"	return O;\n"\
-		"}\n"\
 		"#module Pixel DirectX11_1\n"\
 		"struct Pixel {\n"\
 		"	float4 Position : SV_POSITION;\n"\
@@ -438,79 +823,63 @@ const char *LWFont::GetSDFFontShaderSource(void) {
 		"};\n"\
 		"Texture2D FontTex;\n"\
 		"SamplerState FontTexSampler;\n"\
-		"float4 main(Pixel In) : SV_TARGET{\n"\
-		"	float a = smoothstep(0.7f, 1.0f, FontTex.Sample(FontTexSampler, In.TexCoord.xy).r);\n"\
-		"	return In.Color*float4(1.0f, 1.0f, 1.0f, a);\n"\
+		"float Median(float r, float g, float b){\n"\
+		"	return max(min(r, g), min(max(r, g), b));\n"\
 		"}\n"\
-		"#module Vertex OpenGL3_3 OpenGL4_5\n"\
-		"#version 330\n"\
-		"layout(std140) uniform UIUniform {\n"\
-		"	mat4 Matrix;\n"\
-		"};\n"\
-		"in vec4 Position | 0;\n"\
-		"in vec4 Color | 1;\n"\
-		"in vec4 TexCoord | 2;\n"\
-		"out vec4 pColor;\n"\
-		"out vec4 pTexCoord;\n"\
-		"void main(void) {\n"\
-		"	gl_Position = Matrix*Position;\n"\
-		"	pColor = Color;\n"\
-		"	pTexCoord = TexCoord;\n"\
+		"float4 main(Pixel In) : SV_TARGET{\n"\
+		"	float2 mUnit = In.TexCoord.zw;\n"\
+		"	float4 Sample = FontTex.Sample(FontTexSampler, In.TexCoord.xy);\n"\
+		"	float sigDist = Median(Sample.r, Sample.g, Sample.b)-0.5f;\n"\
+		"	sigDist *= dot(mUnit, 0.5f/fwidth(In.TexCoord.xy));\n"\
+		"	float a = clamp(sigDist+0.5f, 0.0f, 1.0f);\n"\
+		"	return In.Color*float4(1.0f, 1.0f, 1.0f, a);\n"\
 		"}\n"\
 		"#module Pixel OpenGL3_3 OpenGL4_5\n"\
 		"#version 330\n"\
 		"uniform sampler2D FontTex;\n"\
 		"in vec4 pColor;\n"\
 		"in vec4 pTexCoord;\n"\
-		"out vec4 p_Color | 0 | Output;\n"\
-		"void main(void) {\n"\
-
-		"	float a = smoothstep(0.5f, 0.6f, 1.0f-texture(FontTex, pTexCoord.xy).r);\n"\
-		"	p_Color = pColor*vec4(1.0f,1.0f, 1.0f,1.0f-a);\n"\
-
+		"out vec4 oColor;\n"\
+		"float Median(float r, float g, float b){\n"\
+		"	return max(min(r, g), min(max(r, g), b));\n"\
 		"}\n"\
-		"#module Vertex OpenGL2_1\n"\
-		"attribute vec4 Position | 0;\n"\
-		"attribute vec4 Color | 1;\n"\
-		"attribute vec4 TexCoord | 2;\n"\
-		"varying vec4 pColor;\n"\
-		"varying vec4 pTexCoord;\n"\
-		"#block UIUniform\n"\
-		"uniform mat4 Matrix;\n"\
 		"void main(void) {\n"\
-		"	gl_Position = Matrix*Position;\n"\
-		"	pColor = Color;\n"\
-		"	pTexCoord = TexCoord;\n"\
+		"	vec2 mUnit = pTexCoord.zw;\n"\
+		"	vec4 Sample = texture(FontTex, pTexCoord.xy);\n"\
+		"	float sigDist = Median(Sample.r, Sample.g, Sample.b)-0.5f;\n"\
+		"	sigDist *= dot(mUnit, 0.5f/fwidth(pTexCoord.xy));\n"\
+		"	float a = clamp(sigDist+0.5f, 0.0f, 1.0f);\n"\
+		"	oColor = pColor*vec4(1.0f, 1.0f, 1.0f, a);\n"\
 		"}\n"\
 		"#module Pixel OpenGL2_1\n"\
 		"uniform sampler2D FontTex;\n"\
 		"varying vec4 pColor;\n"\
 		"varying vec4 pTexCoord;\n"\
-		"void main(void) {\n"\
-		"	float a = smoothstep(0.5f, 0.6f, 1.0f-texture2D(FontTex, pTexCoord.xy).r);\n"\
-		"	gl_FragColor = pColor*vec4(1.0f,1.0f, 1.0f,1.0f-a);\n"\
+		"float Median(float r, float g, float b){\n"\
+		"	return max(min(r, g), min(max(r, g), b));\n"\
 		"}\n"\
-		"#module Vertex OpenGLES2\n"\
-		"attribute highp vec4 Position | 0;\n"\
-		"attribute lowp vec4 Color | 1;\n"\
-		"attribute lowp vec4 TexCoord | 2;\n"\
-		"varying lowp vec4 pColor;\n"\
-		"varying lowp vec4 pTexCoord;\n"\
-		"#block UIUniform\n"\
-		"uniform highp mat4 Matrix;\n"\
 		"void main(void) {\n"\
-		"	gl_Position = Matrix*Position;\n"\
-		"	pColor = Color;\n"\
-		"	pTexCoord = TexCoord;\n"\
+		"	vec2 mUnit = pTexCoord.zw;\n"\
+		"	vec4 Sample = texture2D(FontTex, pTexCoord.xy);\n"\
+		"	float sigDist = Median(Sample.r, Sample.g, Sample.b)-0.5f;\n"\
+		"	sigDist *= dot(mUnit, 0.5f/fwidth(pTexCoord.xy));\n"\
+		"	float a = clamp(sigDist+0.5, 0.0, 1.0);\n"\
+		"	gl_FragColor = pColor*vec4(1.0, 1.0, 1.0, a);\n"\
 		"}\n"\
 		"#module Pixel OpenGLES2\n"\
 		"uniform sampler2D FontTex;\n"\
 		"varying lowp vec4 pColor;\n"\
 		"varying lowp vec4 pTexCoord;\n"\
+		"float Median(float r, float g, float b){\n"\
+		"	return max(min(r, g), min(max(r, g), b));\n"\
+		"}\n"\
 		"void main(void) {\n"\
-		"	lowp float a = smoothstep(0.5, 0.6, 1.0-texture2D(FontTex, pTexCoord.xy).r);\n"\
-		"	gl_FragColor = pColor*vec4(1.0,1.0, 1.0,1.0-a);\n"\
-
+		"	vec2 mUnit = pTexCoord.zw;\n"\
+		"	vec4 Sample = texture2D(FontTex, pTexCoord.xy);\n"\
+		"	float sigDist = Median(Sample.r, Sample.g, Sample.b)-0.5;\n"\
+		"	sigDist *= dot(mUnit, 0.5/fwidth(pTexCoord.xy));\n"\
+		"	float a = clamp(sigDist+0.5, 0.0, 1.0);\n"\
+		"	gl_FragColor = pColor*vec4(1.0, 1.0, 1.0, a);\n"\
 		"}\n";
 	return FontSource;
 
@@ -646,6 +1015,7 @@ LWVector4f LWFont::DrawText(const LWText &Text, uint32_t CharCount, const LWVect
 	LWVector2f Pos = Position;
 	LWGlyph *P = nullptr;
 	LWVector4f BoundingVolume = LWVector4f(Pos, Pos);
+	float iScale = 1.0f / Scale;
 	const uint8_t *S = LWText::FirstCharacter(Text.GetCharacters());
 	for (; S && CharCount; S = LWText::Next(S), CharCount--) {
 		uint32_t UTF = LWText::GetCharacter(S);
@@ -668,7 +1038,7 @@ LWVector4f LWFont::DrawText(const LWText &Text, uint32_t CharCount, const LWVect
 			LWVector2f Size = G->m_Size*Scale;
 			LWVector2f BtmLeftPnt = Position;
 			LWVector2f TopRightPnt = Position + Size;
-			if (!Writer(m_TextureList[G->m_TextureIndex], Position, Size, G->m_TexCoord, Color)) break;
+			if (!Writer(m_TextureList[G->m_TextureIndex], Position, Size, G->m_TexCoord, G->m_SignedRange*iScale, Color)) break;
 			BoundingVolume.x = std::min<float>(BtmLeftPnt.x, BoundingVolume.x);
 			BoundingVolume.z = std::max<float>(TopRightPnt.x, BoundingVolume.z);
 			BoundingVolume.y = std::max<float>(TopRightPnt.y, BoundingVolume.y);
@@ -705,6 +1075,7 @@ LWVector4f LWFont::DrawClippedText(const LWText &Text, uint32_t CharCount, const
 	LWVector2f Pos = Position;
 	LWGlyph *P = nullptr;
 	LWVector4f BoundingVolume = LWVector4f(Pos, Pos);
+	float iScale = 1.0f / Scale;
 	const uint8_t *S = LWText::FirstCharacter(Text.GetCharacters());
 	for (; S && CharCount; S = LWText::Next(S), CharCount--) {
 		uint32_t UTF = LWText::GetCharacter(S);
@@ -748,7 +1119,7 @@ LWVector4f LWFont::DrawClippedText(const LWText &Text, uint32_t CharCount, const
 				LWVector2f BtmLeftTC = LWVector2f(G->m_TexCoord.x, G->m_TexCoord.w);
 				LWVector2f TopRightTC = BtmLeftTC + LWVector2f(TexWidth, TexHeight)*LWVector2f(RightRatio, TopRatio);
 				BtmLeftTC = BtmLeftTC + LWVector2f(TexWidth, TexHeight)*LWVector2f(LeftRatio, BtmRatio);
-				if (!Writer(m_TextureList[G->m_TextureIndex], BtmLeftPnt, (TopRightPnt - BtmLeftPnt), LWVector4f(BtmLeftTC.x, TopRightTC.y, TopRightTC.x, BtmLeftTC.y), Color)) break;
+				if (!Writer(m_TextureList[G->m_TextureIndex], BtmLeftPnt, (TopRightPnt - BtmLeftPnt), LWVector4f(BtmLeftTC.x, TopRightTC.y, TopRightTC.x, BtmLeftTC.y), G->m_SignedRange*iScale, Color)) break;
 
 				BoundingVolume.x = std::min<float>(BtmLeftPnt.x, BoundingVolume.x);
 				BoundingVolume.z = std::max<float>(TopRightPnt.x, BoundingVolume.z);

@@ -80,8 +80,8 @@ LWSVector4<double> LWSQuaternion<double>::ToEuler(void) const {
 
 	_mm256_store_pd(vals, m_Data);
 
-	if (_mm256_test_all_ones(GE)) return LWSVector4<double>(LW_PI_2, 2.0 * atan2(vals[0], vals[3]), 0.0);
-	if (_mm256_test_all_ones(LE)) return LWSVector4<double>(-LW_PI_2, -2.0 * atan2(vals[0], vals[3]), 0.0);
+	if (_mm256_test_all_ones(GE)) return LWSVector4<double>(LW_PI_2, 2.0 * atan2(vals[0], vals[3]), 0.0, 0.0);
+	if (_mm256_test_all_ones(LE)) return LWSVector4<double>(-LW_PI_2, -2.0 * atan2(vals[0], vals[3]), 0.0, 0.0);
 	__m256d YSq = _mm256_xor_pd(Sq, _mm256_set_pd(0.0, -0.0,-0.0,  0.0));
 	__m256d RSq = _mm256_xor_pd(Sq, _mm256_set_pd(0.0, -0.0, 0.0, -0.0));
 	YSq = _mm256_hadd_pd(YSq, YSq);
@@ -263,23 +263,41 @@ LWSQuaternion<double> LWSQuaternion<double>::operator-() const {
 	return _mm256_xor_pd(m_Data, _mm256_set1_pd(-0.0));
 }
 
+LWSQuaternion<double> operator * (double Lhs, const LWSQuaternion<double> &Rhs) {
+	return _mm256_mul_pd(_mm256_set1_pd(Lhs), Rhs.m_Data);
+}
+
+LWSQuaternion<double> operator + (double Lhs, const LWSQuaternion<double> &Rhs) {
+	return _mm256_add_pd(_mm256_set1_pd(Lhs), Rhs.m_Data);
+}
+
+LWSQuaternion<double> operator - (double Lhs, const LWSQuaternion<double> &Rhs) {
+	return _mm256_sub_pd(_mm256_set1_pd(Lhs), Rhs.m_Data);
+}
+
+LWSQuaternion<double> operator / (double Lhs, const LWSQuaternion<double> &Rhs) {
+	return _mm256_div_pd(_mm256_set1_pd(Lhs), Rhs.m_Data);
+}
+
 double LWSQuaternion<double>::x(void) const {
-	return _mm256_cvtsd_f64(_mm256_permute4x64_pd(m_Data, _MM_SHUFFLE(0, 0, 0, 0)));
+	return ((double*)&m_Data)[0];
 }
 
 double LWSQuaternion<double>::y(void) const {
-	return _mm256_cvtsd_f64(_mm256_permute4x64_pd(m_Data, _MM_SHUFFLE(1, 1, 1, 1)));
+	return ((double*)&m_Data)[1];
 }
 
 double LWSQuaternion<double>::z(void) const {
-	return _mm256_cvtsd_f64(_mm256_permute4x64_pd(m_Data, _MM_SHUFFLE(2, 2, 2, 2)));
+	return ((double*)&m_Data)[2];
 }
 
 double LWSQuaternion<double>::w(void) const {
-	return _mm256_cvtsd_f64(_mm256_permute4x64_pd(m_Data, _MM_SHUFFLE(3, 3, 3, 3)));
+	return ((double*)&m_Data)[3];
 }
 
 LWSQuaternion<double>::LWSQuaternion(__m256d Data) : m_Data(Data) {}
+
+LWSQuaternion<double>::LWSQuaternion(const LWQuaternion<double> &Q) : m_Data(_mm256_set_pd(Q.w, Q.z, Q.y, Q.x)) {}
 
 LWSQuaternion<double>::LWSQuaternion(double vw, double vx, double vy, double vz) : m_Data(_mm256_set_pd(vw, vz, vy, vx)) {}
 

@@ -10,8 +10,46 @@ template<class Type>
 struct LWSMatrix4 {
 	LWSVector4<Type> m_Rows[4];
 
+	/*! \brief returns a mat4 version of the SMatrix. */
 	LWMatrix4<Type> AsMat4(void) const {
 		return LWMatrix4<Type>(m_Rows[0].AsVec4(), m_Rows[1].AsVec4(), m_Rows[2].AsVec4(), m_Rows[3].AsVec4());
+	}
+
+	/*! \brief returns the internal components as a array of data. */
+	Type *AsArray(void) {
+		return m_Rows[0].AsArray();
+	}
+
+	/*! \brief returns the internal components as a const array of data. */
+	const Type *AsArray(void) const {
+		return m_Rows[0].AsArray();
+	}
+
+	/*! \brief set's a row*4+column of the matrix to value. */
+	LWMatrix4<Type> &sRC(uint32_t Row, uint32_t Column, Type Value) {
+		Type *V = AsArray();
+		V[Row * 4 + Column] = Value;
+		return *this;
+	}
+
+	/*!< \brief decomposes 4x4 matrix to get the scalar for each axis.
+		 \param Transpose will transpose the 3x3 rotation+scale matrix before calculating the scale/rotation. */
+	LWSVector4<Type> DecomposeScale(bool doTranspose3x3) const {
+		LWSMatrix4<Type> v = doTranspose3x3 ? Transpose3x3() : *this;
+		return LWSVector4<Type>(v.m_Rows[0].Length3(), v.m_Rows[1].Length3(), v.m_Rows[2].Length3(), 1.0f);
+	};
+
+	/*!< \brief decomposes 4x4 matrix to get scale, rotation, and translation.
+		 \param Transpose will transpose the 3x3 rotation+scale matrix before calculating the scale/rotation.*/
+	void Decompose(LWSVector4<Type> &Scale, LWSQuaternion<Type> &Rotation, LWSVector4<Type> &Translation, bool doTranspose3x3) const {
+		LWSMatrix4<Type> v = doTranspose3x3 ? Transpose3x3() : *this;
+		Scale = LWSVector4<Type>(v.m_Rows[0].Length3(), v.m_Rows[1].Length3(), v.m_Rows[2].Length3(), 1.0f);
+		LWSVector4<Type> iScale = 1.0 / Scale;
+		v = LWSMatrix4<Type>(v.m_Rows[0] * iScale.xxxx(), v.m_Rows[1] * iScale.yyyy(), v.m_Rows[2] * iScale.zzzz(), v.m_Rows[3]);
+
+		Rotation = LWSQuaternion<Type>(v);
+		Translation = v.m_Rows[3];
+		return;
 	}
 
 	LWSMatrix4 TransformInverse(void) const {
@@ -491,7 +529,7 @@ struct LWSMatrix4 {
 		\param Position the translation to apply.
 	*/
 	static LWSMatrix4 Translation(const LWSVector4<Type> &Position) {
-		return LWSMatrix4({ 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, Position);
+		return LWSMatrix4({ 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, Position.AAAB(LWSVector4<Type>(1)));
 	}
 
 	/*!< \brief constructs a rotation matrix from the directional vector which is relative to the supplied up vector.
@@ -596,6 +634,14 @@ struct LWSMatrix4 {
 		return LWSMatrix4(Rght, U, -Fwrd, Position);
 	}
 
+	/*! \brief copys the LWMatrix4 to LWSMatrix4. */
+	LWSMatrix4(const LWMatrix4<Type> &M) {
+		m_Rows[0] = LWSVector4<Type>(M.m_Rows[0]);
+		m_Rows[1] = LWSVector4<Type>(M.m_Rows[1]);
+		m_Rows[2] = LWSVector4<Type>(M.m_Rows[2]);
+		m_Rows[3] = LWSVector4<Type>(M.m_Rows[3]);
+	}
+
 	/*!< \brief constructs a 4x4 rotational matrix from the specified quaternion. */
 
 	LWSMatrix4(const LWSQuaternion<Type> &Q) {
@@ -616,7 +662,7 @@ struct LWSMatrix4 {
 
 		m_Rows[0] = (A.ABAA(C)).AABA(B.xxxx());
 		m_Rows[1] = (B.yyww().ABAA(A)).AABA(C);
-		m_Rows[2] = (C.ABAA(C.zzzz())).AABA(A);
+		m_Rows[2] = (C.ABAA(B.zzzz())).AABA(A);
 		m_Rows[3] = LWSVector4<Type>(0, 0, 0, 1);
 
 	}
@@ -657,7 +703,7 @@ struct LWSMatrix4 {
 
 		m_Rows[0] = ((A.ABAA(C)).AABA(B.xxxx()))*Scale.xxxw();
 		m_Rows[1] = ((B.yyww().ABAA(A)).AABA(C))*Scale.yyyw();
-		m_Rows[2] = ((C.ABAA(C.zzzz())).AABA(A))*Scale.zzzw();
+		m_Rows[2] = ((C.ABAA(B.zzzz())).AABA(A))*Scale.zzzw();
 		m_Rows[3] = Pos;
 	};
 };

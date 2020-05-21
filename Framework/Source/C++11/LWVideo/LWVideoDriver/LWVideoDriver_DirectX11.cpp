@@ -868,7 +868,7 @@ bool LWVideoDriver_DirectX11_1::SetRasterState(uint64_t Flags, float Bias, float
 		if (!doDepthBias) Bias = SlopedScaleBias = 0.0f;
 
 		D3D11_RASTERIZER_DESC1 RastDesc = { FillModes[FillMode], CullModes[CullMode],
-											true, (int32_t)(Depth24Scalar*Bias), 0.0f, SlopedScaleBias, true, false, false, false, 0 };
+											true, (int32_t)(Depth24Scalar*Bias), 0.0f, SlopedScaleBias, true, false, true, false, 0 };
 		D3D11_DEPTH_STENCIL_DESC DepthDesc = { (Flags&(LWPipeline::DEPTH_TEST)) != 0,
 												((Flags&(LWPipeline::No_Depth)) == 0 ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO),
 												CompFuncs[DepthCompareFunc], (Flags&LWPipeline::STENCIL_TEST) != 0,

@@ -251,6 +251,22 @@ struct LWQuaternion {
 		return LWQuaternion(-w, -x, -y, -z);
 	}
 
+	friend LWQuaternion operator * (Type Lhs, const LWQuaternion &Rhs) {
+		return LWQuaternion(Lhs * Rhs.w, Lhs * Rhs.x, Lhs * Rhs.y, Lhs * Rhs.z);
+	}
+
+	friend LWQuaternion operator + (Type Lhs, const LWQuaternion &Rhs) {
+		return LWQuaternion(Lhs + Rhs.w, Lhs + Rhs.x, Lhs + Rhs.y, Lhs + Rhs.z);
+	}
+
+	friend LWQuaternion operator - (Type Lhs, const LWQuaternion &Rhs) {
+		return LWQuaternion(Lhs - Rhs.w, Lhs - Rhs.x, Lhs - Rhs.y, Lhs - Rhs.z);
+	}
+
+	friend LWQuaternion operator / (Type Lhs, const LWQuaternion &Rhs) {
+		return LWQuaternion(Lhs / Rhs.w, Lhs / Rhs.x, Lhs / Rhs.y, Lhs / Rhs.z);
+	}
+
 	LWQuaternion(Type w, Type x, Type y, Type z) : w(w), x(x), y(y), z(z){}
 
 	LWQuaternion(const LWMatrix3<Type> &Mat) {
