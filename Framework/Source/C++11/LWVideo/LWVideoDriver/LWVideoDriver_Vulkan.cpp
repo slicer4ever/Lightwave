@@ -57,7 +57,7 @@ bool LWVideoDriver_Vulkan::SetRasterState(uint64_t Flags, float Bias, float Slop
 	return false;
 }
 
-bool LWVideoDriver_Vulkan::SetFrameBuffer(LWFrameBuffer *Buffer) {
+bool LWVideoDriver_Vulkan::SetFrameBuffer(LWFrameBuffer *Buffer, bool ChangeViewport) {
 	return false;
 }
 

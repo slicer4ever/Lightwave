@@ -1,6 +1,7 @@
 #ifndef LWEASSET_H
 #define LWEASSET_H
 #include <LWCore/LWTypes.h>
+#include <LWCore/LWText.h>
 #include <LWVideo/LWTypes.h>
 #include <LWAudio/LWTypes.h>
 #include <LWVideo/LWFont.h>

@@ -500,9 +500,9 @@ const int8_t *LWByteBuffer::GetReadBuffer(void){
 	return m_ReadBuffer;
 }
 
-LWByteBuffer::LWByteBuffer(int8_t *Buffer, uint32_t BufferSize, int8_t Flag) : m_WriteBuffer(Flag&ReadOnly ? nullptr : Buffer), m_ReadBuffer(Buffer), m_BufferSize(BufferSize), m_SelectedFunc((Flag&Network) ? 1 : 0), m_Flag(Flag){}
+LWByteBuffer::LWByteBuffer(int8_t *Buffer, uint32_t BufferSize, uint8_t Flag) : m_WriteBuffer(Flag&ReadOnly ? nullptr : Buffer), m_ReadBuffer(Buffer), m_BufferSize(BufferSize), m_SelectedFunc((Flag&Network) ? 1 : 0), m_Flag(Flag){}
 
-LWByteBuffer::LWByteBuffer(const int8_t *ReadBuffer, uint32_t BufferSize, int8_t Flag) : m_ReadBuffer(ReadBuffer), m_BufferSize(BufferSize), m_SelectedFunc((Flag&Network) ? 1 : 0), m_Flag(Flag | ReadOnly){}
+LWByteBuffer::LWByteBuffer(const int8_t *ReadBuffer, uint32_t BufferSize, uint8_t Flag) : m_ReadBuffer(ReadBuffer), m_BufferSize(BufferSize), m_SelectedFunc((Flag&Network) ? 1 : 0), m_Flag(Flag | ReadOnly){}
 
 LWByteBuffer::~LWByteBuffer(){
 	if (!(m_Flag&BufferNotOwned)) LWAllocator::Destroy(m_WriteBuffer);

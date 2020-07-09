@@ -758,15 +758,17 @@ const char *LWFont::GetVertexShaderSource(void) {
 		"	pTexCoord = TexCoord;\n"\
 		"}\n"\
 		"#module Vertex OpenGLES2\n"\
+		"struct UIData{\n"\
+		"	mat4 Matrix;\n"\
+		"};\n"\
 		"attribute highp vec4 Position;\n"\
 		"attribute lowp vec4 Color;\n"\
 		"attribute lowp vec4 TexCoord;\n"\
 		"varying lowp vec4 pColor;\n"\
 		"varying lowp vec4 pTexCoord;\n"\
-		"#block UIUniform\n"\
-		"uniform highp mat4 Matrix;\n"\
+		"uniform UIData UIUniform;\n"\
 		"void main(void) {\n"\
-		"	gl_Position = Matrix*Position;\n"\
+		"	gl_Position = UIUniform.Matrix*Position;\n"\
 		"	pColor = Color;\n"\
 		"	pTexCoord = TexCoord;\n"\
 		"}\n";

@@ -162,8 +162,8 @@ bool LWEAssetManager::XMLParseTexture(LWEXMLNode *N, LWEAssetManager *AM) {
 	LWXMLAttribute *NameAttr = N->FindAttribute("Name");
 	LWXMLAttribute *StateAttr = N->FindAttribute("State");
 	if (!PathAttr || !NameAttr) return false;
-	const uint32_t FlagValues[] = { LWTexture::MinNearest, LWTexture::MagNearest, LWTexture::WrapSClampToEdge, LWTexture::WrapTClampToEdge, LWTexture::WrapRClampToEdge, LWTexture::CompareNone, LWTexture::MinLinear, LWTexture::MinNearestMipmapNearest, LWTexture::MinLinearMipmapNearest, LWTexture::MinNearestMipmapLinear, LWTexture::MinLinearMipmapLinear, LWTexture::MagLinear, LWTexture::WrapSClampToBorder, LWTexture::WrapSMirroredRepeat, LWTexture::WrapSRepeat, LWTexture::WrapTClampToBorder, LWTexture::WrapTMirroredRepeat, LWTexture::WrapTRepeat, LWTexture::WrapRClampToBorder, LWTexture::WrapRMirroredRepeat, LWTexture::WrapRRepeat, LWTexture::RenderTarget, LWTexture::RenderBuffer };
-	const char FlagNames[][32]  = { "MinNearest",          "MagNearest",          "WrapSClampToEdge",          "WrapTClampToEdge",          "WrapRClampToEdge",          "CompareNone",          "MinLinear",          "MinNearestMipmapNearest",          "MinLinearMipmapNearest",          "MinNearestMipmapLinear",          "MinLinearMipmapLinear",          "MagLinear",          "WrapSClampToBorder",          "WrapSMirroredRepeat",          "WrapSRepeat",          "WrapTClampToBorder",          "WrapTMirroredRepeat",          "WrapTRepeat",          "WrapRClampToBorder",          "WrapRMirroredRepeat",          "WrapRRepeat",          "RenderTarget",          "RenderBuffer" };
+	const uint32_t FlagValues[] = { LWTexture::MinNearestMipmapNearest, LWTexture::MinLinearMipmapNearest, LWTexture::MinNearestMipmapLinear, LWTexture::MinLinearMipmapLinear, LWTexture::MinNearest, LWTexture::MagNearest, LWTexture::WrapSClampToEdge, LWTexture::WrapTClampToEdge, LWTexture::WrapRClampToEdge, LWTexture::CompareNone, LWTexture::MinLinear, LWTexture::MagLinear, LWTexture::WrapSClampToBorder, LWTexture::WrapSMirroredRepeat, LWTexture::WrapSRepeat, LWTexture::WrapTClampToBorder, LWTexture::WrapTMirroredRepeat, LWTexture::WrapTRepeat, LWTexture::WrapRClampToBorder, LWTexture::WrapRMirroredRepeat, LWTexture::WrapRRepeat, LWTexture::RenderTarget, LWTexture::RenderBuffer };
+	const char FlagNames[][32]  = { "MinNearestMipmapNearest",          "MinLinearMipmapNearest",          "MinNearestMipmapLinear",          "MinLinearMipmapLinear",          "MinNearest",          "MagNearest",          "WrapSClampToEdge",          "WrapTClampToEdge",          "WrapRClampToEdge",          "CompareNone",          "MinLinear",          "MagLinear",          "WrapSClampToBorder",          "WrapSMirroredRepeat",          "WrapSRepeat",          "WrapTClampToBorder",          "WrapTMirroredRepeat",          "WrapTRepeat",          "WrapRClampToBorder",          "WrapRMirroredRepeat",          "WrapRRepeat",          "RenderTarget",          "RenderBuffer" };
 	const uint32_t TotalValues = sizeof(FlagValues) / sizeof(uint32_t);
 	const char *PathValue = PathAttr->m_Value;
 	if (Localize) PathValue = Localize->ParseLocalization(SBuffer, sizeof(SBuffer), PathAttr->m_Value);
@@ -176,10 +176,9 @@ bool LWEAssetManager::XMLParseTexture(LWEXMLNode *N, LWEAssetManager *AM) {
 	if (StateAttr) {
 		for (char *C = StateAttr->m_Value; *C;C++) {
 			uint32_t i = 0;
-			for (uint32_t i = 0; i < TotalValues; i++) {
+			for (; i < TotalValues; i++) {
 				if (LWText::Compare(C, FlagNames[i], (uint32_t)strlen(FlagNames[i]))) break;
 			}
-
 			if (i >= TotalValues) {
 				std::cout << "Encountered invalid flag: '" << C << "' for: '" << NameAttr->m_Value << "'" << std::endl;
 			} else {
@@ -219,7 +218,8 @@ bool LWEAssetManager::XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM) {
 		LWXMLAttribute *NameAttr = N->FindAttribute("Name");
 		LWXMLAttribute *OffsetAttr = N->FindAttribute("Offset");
 		LWXMLAttribute *SlotAttr = N->FindAttribute("Slot");
-		if (!NameAttr || !SlotAttr) {
+		LWXMLAttribute *SlotNameAttr = N->FindAttribute("SlotName");
+		if (!NameAttr || (!SlotAttr && !SlotNameAttr)) {
 			std::cout << "Block node does not have required parameters." << std::endl;
 			return;
 		}
@@ -228,7 +228,12 @@ bool LWEAssetManager::XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM) {
 			std::cout << "Error block could not find buffer: '" << NameAttr->m_Value << "'" << std::endl;
 			return;
 		}
-		uint32_t SlotIdx = atoi(SlotAttr->m_Value);
+		uint32_t SlotIdx = -1;
+		if (SlotAttr) SlotIdx = atoi(SlotAttr->m_Value);
+		else if (SlotNameAttr) SlotIdx = P->FindBlock(SlotNameAttr->m_Value);
+		if (SlotIdx == -1) {
+			std::cout << "Error block not found." << std::endl;
+		}
 		uint32_t Offset = OffsetAttr ? atoi(OffsetAttr->m_Value) : 0;
 		P->SetUniformBlock(SlotIdx, B, Offset);
 		return;
@@ -238,7 +243,8 @@ bool LWEAssetManager::XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM) {
 		LWXMLAttribute *NameAttr = N->FindAttribute("Name");
 		LWXMLAttribute *OffsetAttr = N->FindAttribute("Offset");
 		LWXMLAttribute *SlotAttr = N->FindAttribute("Slot");
-		if (!NameAttr || !SlotAttr) {
+		LWXMLAttribute *SlotNameAttr = N->FindAttribute("SlotName");
+		if (!NameAttr || (!SlotAttr && !SlotNameAttr)) {
 			std::cout << "Block node does not have required parameters." << std::endl;
 			return;
 		}
@@ -248,7 +254,13 @@ bool LWEAssetManager::XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM) {
 			std::cout << "Error block could not find buffer or texture: '" << NameAttr->m_Value << "'" << std::endl;
 			return;
 		}
-		uint32_t SlotIdx = atoi(SlotAttr->m_Value);
+		uint32_t SlotIdx = -1;
+		if (SlotAttr) SlotIdx = atoi(SlotAttr->m_Value);
+		else if (SlotNameAttr) SlotIdx = P->FindResource(SlotNameAttr->m_Value);
+		if (SlotIdx == -1) {
+			std::cout << "Error resource slot not found." << std::endl;
+			return;
+		}
 		uint32_t Offset = OffsetAttr ? atoi(OffsetAttr->m_Value) : 0;
 		if (B) P->SetResource(SlotIdx, B, Offset);
 		else P->SetResource(SlotIdx, T);
@@ -421,19 +433,19 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 	const char *DriverNames[] = LWVIDEODRIVER_NAMES;
 	const char *TypeNames[] = { "Vertex", "Pixel", "Geometry", "Compute" };
 	const char *CompiledNames[] = { "lwcv", "lwcp", "lwcg", "lwcc" };
-	const uint32_t MaxFileBufferLen = 1024 * 64;
-	const uint32_t MaxBufferLen = 32 * 1024;
+	const uint32_t MaxFileBufferLen = 64 * 1024;
+	const uint32_t MaxBufferLen = 1024;
 	const uint32_t MaxModules = 5;
 	const uint32_t MaxNameLen = 32;
 	const uint32_t MaxPathLen = 256;
 	const uint32_t MaxDefines = 32;
-	const uint32_t MaxDefineValue = 256;
+	const uint32_t MaxDefineValue = 64;
 	const uint32_t MaxErrorBufferLen = 4 * 1024;
 	const uint32_t TotalDriverCnt = 10;
 	char AssetPath[MaxPathLen] = "";
 	
-	char Buffer[MaxFileBufferLen];
-	char CBuffer[MaxFileBufferLen]="";
+	char Buffer[MaxBufferLen];
+	char CBuffer[MaxBufferLen]="";
 	char CompiledBuffer[MaxFileBufferLen];
 	char ErrorBuffer[MaxErrorBufferLen]="";
 	char DefineList[MaxDefines][MaxDefineValue];
@@ -497,8 +509,6 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 		S->SetBlockMap(Count, BlockNameHashs);
 		return;
 	};
-
-
 
 	std::function<char*(char*, uint32_t &, uint64_t &, LWAllocator &, LWFileStream *)> ParseSourceFunc;
 
@@ -743,7 +753,7 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 	};
 
 	auto ParseShader = [&DefineMap, &MaxDefines, &MaxDefineValue, &ParseInputMap, &ParseResourceMap, &ParseBlockMap, &InputList, &InputCount, &ResourceList, &ResoruceCount, &BlockList, &BlockCount](LWEXMLNode *N, const char *Source, uint64_t SourcesModifiedTime, LWEAssetManager *AM) ->bool {
-		const uint32_t MaxBufferLength = 1024 * 32;//32KB.
+		const uint32_t MaxBufferLength = 1024 * 64;//32KB.
 		const char *CompiledNames[] = { "lwcv", "lwcp", "lwcg", "lwcc" };
 		const char *DriverNames[] = LWVIDEODRIVER_NAMES;
 		char CompiledBuffer[MaxBufferLength];
@@ -757,6 +767,7 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 		LWXMLAttribute *NameAttr = N->FindAttribute("Name");
 		LWXMLAttribute *AutoCompileAttr = N->FindAttribute("AutoCompile");
 		LWELocalization *Localize = AM->GetLocalization();
+		LWVideoDriver *Driver = AM->GetDriver();
 		uint32_t DefineCount = 0;
 		uint32_t CompiledLen = 0;
 		if (!TypeAttr || !NameAttr) return false;
@@ -785,18 +796,20 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 		}
 		LWShader *Res = nullptr;
 		if (CompiledLen) {
-			Res = AM->GetDriver()->CreateShaderCompiled(Type, CompiledBuffer, CompiledLen, *AM->GetAllocator(), ErrorBuffer, sizeof(ErrorBuffer));
+			Res = Driver->CreateShaderCompiled(Type, CompiledBuffer, CompiledLen, *AM->GetAllocator(), ErrorBuffer, sizeof(ErrorBuffer));
 		} else {
 			CompiledLen = sizeof(CompiledBuffer);
-			Res = AM->GetDriver()->ParseShader(Type, Source, *AM->GetAllocator(), DefineCount, (const char**)DefineMap, CompiledBuffer, ErrorBuffer, &CompiledLen, sizeof(ErrorBuffer));
-			if (Res && AutoCompileAttr && CompiledPathAttr && CompiledLen) {
-				LWFileStream Stream;
-				if (!LWFileStream::OpenStream(Stream, AssetPath, LWFileStream::WriteMode | LWFileStream::BinaryMode, *AM->GetAllocator())) {
-					std::cout << "Error can't open file for writing: '" << AssetPath << "'" << std::endl;
-				} else {
-					Stream.Write(CompiledBuffer, CompiledLen);
+			if(AutoCompileAttr && CompiledPathAttr && CompiledLen){
+				Res = Driver->ParseShader(Type, Source, *AM->GetAllocator(), DefineCount, (const char**)DefineMap, CompiledBuffer, ErrorBuffer, &CompiledLen, sizeof(ErrorBuffer));
+				if (Res) {
+					LWFileStream Stream;
+					if (!LWFileStream::OpenStream(Stream, AssetPath, LWFileStream::WriteMode | LWFileStream::BinaryMode, *AM->GetAllocator())) {
+						std::cout << "Error can't open file for writing: '" << AssetPath << "'" << std::endl;
+					} else {
+						Stream.Write(CompiledBuffer, CompiledLen);
+					}
 				}
-			}
+			} else Res = Driver->ParseShader(Type, Source, *AM->GetAllocator(), DefineCount, (const char**)DefineMap, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
 			*AssetPath = '\0';
 		}
 		if (!Res) {
@@ -1074,7 +1087,11 @@ bool LWEAssetManager::XMLParseVideo(LWEXMLNode *N, LWEAssetManager *AM) {
 
 LWEAsset *LWEAssetManager::GetAsset(const LWText &Name) {
 	auto Iter = m_AssetMap.find(Name.GetHash());
-	return Iter == m_AssetMap.end() ? nullptr : Iter->second;
+	if (Iter == m_AssetMap.end()) {
+		std::cout << "Error: Could not find asset '" << Name << "'" << std::endl;
+		return nullptr;
+	}
+	return Iter->second;
 }
 
 bool LWEAssetManager::InsertAsset(const LWText &Name, void *Asset, uint32_t AssetType, const char *AssetPath) {

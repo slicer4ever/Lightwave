@@ -20,8 +20,6 @@ LWVideoDriver_OpenGL3_3 *LWVideoDriver_OpenGL3_3::MakeVideoDriver(LWWindow *Wind
 	[[View openGLContext] makeCurrentContext];
 	[WinCon.Window setContentView : View];
 	int32_t UniformBlockSize = 0;
-	glGenVertexArrays(1, &Context.m_VAOID);
-	glBindVertexArray(Context.m_VAOID);
 	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &UniformBlockSize);
 
 	return Window->GetAllocator()->Allocate<LWVideoDriver_OpenGL3_3>(Window, Context, (uint32_t)UniformBlockSize);
@@ -30,7 +28,6 @@ LWVideoDriver_OpenGL3_3 *LWVideoDriver_OpenGL3_3::MakeVideoDriver(LWWindow *Wind
 /*! \brief deallocates and destroys the specified video context, and detaches it from the associated window. */
 bool LWVideoDriver_OpenGL3_3::DestroyVideoContext(LWVideoDriver_OpenGL3_3 *Driver) {
 	LWOpenGL3_2Context &Context = Driver->GetContext();
-	glDeleteVertexArrays(1, &Context.m_VAOID);
 	LWAllocator::Destroy(Driver);
 	return true;
 }

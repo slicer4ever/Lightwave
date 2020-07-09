@@ -81,7 +81,7 @@ When using libbotan for x86 or x64 the include headers are found under libbotan/
 libvpx https://github.com/webmproject/libvpx (rename to libvpx)
 This library is used for LWEVideoPlayer, omitting LWEVideoPlayer will not require this library.
 The build steps can be followed if on non-windows platforms.  if on windows10 the Build project requires Windows Subsystem for linux with any distro installed as well with make installed(apt-get update, apt-get install make).
-It also requires the correct yasm(http://yasm.tortall.net/) (Not the VS2010 version) to be installed to the visual studio common7/Tools directoy.  (copy yasm-1.x.0-win(64|32).exe into directory and rename to yasm.exe).  after this is complete you should be able to load the msvc17 solution and build for each platform.
+It also requires the correct yasm(http://yasm.tortall.net/) (Not the VS2010 version) to be installed to the visual studio common7/Tools directoy.  (copy yasm-1.x.0-win32.exe into directory and rename to yasm.exe).  after this is complete you should be able to load the msvc17 solution and build for each platform.
 
 Older windows systems will have to follow the build process found on the project page.
 

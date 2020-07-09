@@ -99,9 +99,9 @@ struct LWEUIFrame {
 	LWTexture *m_Textures[MaxTextures];
 	uint32_t m_VertexCount[MaxTextures];
 	bool m_FontTexture[MaxTextures];
-	LWMesh<LWVertexUI> *m_Mesh;
-	uint32_t m_FirstVertex;
-	uint32_t m_TextureCount;
+	LWMesh<LWVertexUI> *m_Mesh = nullptr;
+	uint32_t m_FirstVertex = 0;
+	uint32_t m_TextureCount = 0;
 	
 	uint32_t SetActiveTexture(LWTexture *Texture, bool FontTexture);
 
@@ -221,6 +221,10 @@ public:
 
 	bool isTextInputFocused(void);
 
+	bool HasNamedUI(const LWText &Name);
+
+	bool HasNamedUIf(const char *Format, ...);
+
 	LWEUI *GetNamedUI(const LWText &Name);
 
 	LWEUI *GetNamedUIf(const char *Format, ...);
@@ -253,7 +257,7 @@ public:
 
 	bool isNavigationModeEnabled(void) const;
 
-	float GetLastScale(void) const;
+	float GetScale(void) const;
 	
 	uint32_t GetScreenDPI(void) const;
 
@@ -281,7 +285,7 @@ private:
 	LWEUI *m_FirstUI;
 	LWEUI *m_LastUI;
 	LWEUI *m_FocusedUI;
-	float m_LastScale;
+	float m_Scale;
 	float m_CachedDPIScale;
 	uint32_t m_MaterialCount;
 	uint32_t m_EventCount;

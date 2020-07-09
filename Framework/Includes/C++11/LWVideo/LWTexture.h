@@ -64,7 +64,7 @@ public:
 		DepthReadBitOffset = 0xE, /*!< \brief used for offsetting the depth/stencil reading mode to the first bit. */
 
 		RenderTarget            = 0x08000000, /*!< \brief the texture is going to be bound to a framebuffer. */
-		RenderBuffer            = 0x10000000, /*!< \brief the texture is going to be bound to a framebuffer, and only used for rendering, not used as a texture. */
+		RenderBuffer            = 0x10000000, /*!< \brief the texture is going to be bound to a framebuffer, and only used for rendering, not used as a texture(note: d3d11 doesn't respect this flag, rendertarget is more consistent across different api's). */
 		MakeMipmaps             = 0x20000000, /*!< \brief tells the driver to construct the mipmaps for the textures. */
 		Dirty                   = 0x80000000, /*!< \brief marks the texture as dirty, and requires updating. */
 
@@ -75,6 +75,8 @@ public:
 		Texture1DArray = 4, /*!< \brief texture type is a 1D array texture. */
 		Texture2DArray = 5, /*!< \brief texture type is a 2D array texture. */
 		TextureCubeMapArray = 6, /*<! \brief texture type is a cubemap array of textures. */
+		Texture2DMS = 7, /*! \brief texture type is a 2D multisampled Texture. */
+		Texture2DMSArray = 8, /*! \brief texture type is a 2D multisampled array Texture. */
 
 		Face_Negative_X = 0, /*!< \brief texture cube map face -x. */
 		Face_Positive_X, /*!< \brief texture cube map face +x. */
@@ -87,6 +89,9 @@ public:
 	/*!< \brief changes the texture state, and marks it dirty. */
 	LWTexture &SetTextureState(uint32_t TextureState);
 
+	/*! \brief constructs mipmap chain from base image upto the number of mipmaps specified on texture creation. */
+	LWTexture &GenerateMipmaps(void);
+
 	/*!< \brief returns true if the dirty flag is set. */
 	bool isDirty(void) const;
 
@@ -96,10 +101,16 @@ public:
 	/*!< \brief returns the current texture state flags. */
 	uint32_t GetTextureState(void) const;
 
-	/*!< \brief returns the number of mipmaps the texture has. 
+	/*! \brief returns true if the type is one of the two multisampled texture types. */
+	bool isMultiSampled(void) const;
+
+	/*!< \brief returns the number of mipmaps the texture has.
 		 \return 0 if no mipmaps, otherwise the number of mipmap layers(this number does not include the base texture).
 	*/
 	uint32_t GetMipmapCount(void) const;
+
+	/*! \brief returns the number of samples the texture has. */
+	uint32_t GetSamples(void) const;
 
 	/*!< \brief returns the underlying type this texture is. */
 	uint32_t GetType(void) const;

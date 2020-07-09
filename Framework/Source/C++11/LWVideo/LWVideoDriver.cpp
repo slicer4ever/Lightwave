@@ -327,7 +327,8 @@ bool LWVideoDriver::UpdatePipelineStages(LWPipeline *Pipeline) {
 	return true;
 }
 
-bool LWVideoDriver::SetFrameBuffer(LWFrameBuffer *Buffer) {
+bool LWVideoDriver::SetFrameBuffer(LWFrameBuffer *Buffer, bool ChangeViewport) {
+	if (ChangeViewport) ViewPort(Buffer);
 	bool Dirty = Buffer ? Buffer->isDirty() : false;
 	if (Buffer == m_ActiveFrameBuffer) {
 		if (!Dirty) return false;
@@ -487,6 +488,7 @@ LWVideoDriver &LWVideoDriver::ViewPort(void){
 }
 
 LWVideoDriver &LWVideoDriver::ViewPort(const LWFrameBuffer *FrameBuffer) {
+	if (!FrameBuffer) return ViewPort(LWVector4i(0, 0, m_Window->GetSize()));
 	return ViewPort(LWVector4i(0, 0, FrameBuffer->GetSize()));
 }
 
@@ -562,6 +564,10 @@ LWVideoDriver &LWVideoDriver::ClearDepth(float Depth) {
 	return *this;
 }
 
+LWVideoDriver &LWVideoDriver::ClearColor(const LWVector4f &Value) {
+	return *this;
+}
+
 LWVideoDriver &LWVideoDriver::ClearStencil(uint8_t Stencil) {
 	return *this;
 }
@@ -606,6 +612,10 @@ LWTexture *LWVideoDriver::CreateTexture2D(uint32_t TextureState, uint32_t PackTy
 	return nullptr;
 }
 
+LWTexture *LWVideoDriver::CreateTexture2DMS(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, LWAllocator &Allocator) {
+	return nullptr;
+}
+
 LWTexture *LWVideoDriver::CreateTexture3D(uint32_t TextureState, uint32_t PackType, const LWVector3i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
 	return nullptr;
 }
@@ -627,6 +637,10 @@ LWTexture *LWVideoDriver::CreateTextureCubeArray(uint32_t TextureState, uint32_t
 }
 
 LWVideoBuffer *LWVideoDriver::CreateVideoBuffer(uint32_t Type, uint32_t UsageFlag, uint32_t TypeSize, uint32_t Length, LWAllocator &Allocator, const uint8_t *Buffer) {
+	return nullptr;
+}
+
+LWTexture *LWVideoDriver::CreateTexture2DMSArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, uint32_t Layers, LWAllocator &Allocator) {
 	return nullptr;
 }
 

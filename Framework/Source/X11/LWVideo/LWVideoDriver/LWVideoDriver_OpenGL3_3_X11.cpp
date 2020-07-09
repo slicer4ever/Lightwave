@@ -15,9 +15,7 @@ LWVideoDriver_OpenGL3_3 *LWVideoDriver_OpenGL3_3::MakeVideoDriver(LWWindow *Wind
 	if (glewInit() != GLEW_OK) return nullptr;
 	if (GLEW_VERSION_3_3) {
 		int32_t UniformBlockSize = 0;
-		glGenVertexArrays(1, &GLContext.m_VAOID);
-		glBindVertexArray(GLContext.m_VAOID);
-		glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &UniformBlockSize);
+		sglGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &UniformBlockSize);
 		return Window->GetAllocator()->Allocate<LWVideoDriver_OpenGL3_3>(Window, GLContext, (uint32_t)UniformBlockSize);
 	}
 	glXMakeCurrent(WinCon.m_Display, 0, nullptr);
@@ -29,7 +27,6 @@ bool LWVideoDriver_OpenGL3_3::DestroyVideoContext(LWVideoDriver_OpenGL3_3 *Drive
 
 	LWWindowContext &WinCon = Driver->GetWindow()->GetContext();
 	LWOpenGL3_3Context &GLContext = Driver->GetContext();
-	glDeleteVertexArrays(1, &GLContext.m_VAOID);
 	glXMakeCurrent(WinCon.m_Display, 0, nullptr);
 	glXDestroyContext(WinCon.m_Display, GLContext.m_GLContext);
 	LWAllocator::Destroy(Driver);

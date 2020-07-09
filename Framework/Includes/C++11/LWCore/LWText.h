@@ -12,31 +12,32 @@
 */
 class LWText{
 public:
+	static const uint32_t FNV1AHash = 2166136261;
 	/*! \brief generates a hash for the supplied utf-8 text. this uses the fnv-1a algorithmn 
 		\note 2166136261 is the default hash value of fnv-1a.
 	*/
-	static uint32_t MakeHash(const uint8_t *Text, uint32_t Hash = 2166136261) {
+	static uint32_t MakeHash(const uint8_t *Text, uint32_t Hash = FNV1AHash) {
 		const uint32_t Prime = 16777619;
 		for (; *Text; ++Text) Hash = (Hash ^ (((uint32_t)*Text & 0xFF)))*Prime;
 		return Hash;
 	}
 
 	/*! \overload uint32_t MakeHash(const char*, uint32_t) */
-	static uint32_t MakeHash(const char *Text, uint32_t Hash = 2166136261) {
+	static uint32_t MakeHash(const char *Text, uint32_t Hash = FNV1AHash) {
 		const uint32_t Prime = 16777619;
 		for (; *Text; ++Text) Hash = (Hash ^ (((uint32_t)*Text&0xFF)))*Prime;
 		return Hash;
 	}
 
 	/*!< \brief generates a hash for the supplied buffer, this uses the fnv-1a algorithmn */
-	static uint32_t MakeHashb(const uint8_t *Buffer, uint32_t BufferLen, uint32_t Hash = 2166136261) {
+	static uint32_t MakeHashb(const uint8_t *Buffer, uint32_t BufferLen, uint32_t Hash = FNV1AHash) {
 		const uint32_t Prime = 16777619;
 		for (uint32_t i = 0; i < BufferLen; i++) Hash = (Hash ^ (((uint32_t)Buffer[i] & 0xFF)))*Prime;
 		return Hash;
 	}
 
 	/*!< \overload uint32_t MakeHash(const char*, uint32_t, uint32_t) */
-	static uint32_t MakeHashb(const char *Buffer, uint32_t BufferLen, uint32_t Hash = 2166136261) {
+	static uint32_t MakeHashb(const char *Buffer, uint32_t BufferLen, uint32_t Hash = FNV1AHash) {
 		const uint32_t Prime = 16777619;
 		for (uint32_t i = 0; i < BufferLen; i++) Hash = (Hash ^ (((uint32_t)Buffer[i]&0xFF)))*Prime;
 		return Hash;

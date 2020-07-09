@@ -154,6 +154,10 @@ LWTexture *LWVideoDriver_OpenGL2_1::CreateTextureCubeMap(uint32_t TextureState, 
 	return Allocator.Allocate<LWOpenGL2_1Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0), LWTexture::TextureCubeMap);
 }
 
+LWTexture *LWVideoDriver_OpenGL2_1::CreateTexture2DMS(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, LWAllocator &Allocator) {
+	return nullptr;
+}
+
 LWTexture *LWVideoDriver_OpenGL2_1::CreateTexture1DArray(uint32_t TextureState, uint32_t PackType, uint32_t Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
 	return nullptr;
 }
@@ -163,6 +167,10 @@ LWTexture *LWVideoDriver_OpenGL2_1::CreateTexture2DArray(uint32_t TextureState, 
 }
 
 LWTexture *LWVideoDriver_OpenGL2_1::CreateTextureCubeArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MapmapCnt, LWAllocator &Allocator) {
+	return nullptr;
+}
+
+LWTexture *LWVideoDriver_OpenGL2_1::CreateTexture2DMSArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, uint32_t Layers, LWAllocator &Allocator) {
 	return nullptr;
 }
 
@@ -314,7 +322,6 @@ LWPipeline *LWVideoDriver_OpenGL2_1::CreatePipeline(LWPipeline *Source, LWAlloca
 			LWShaderInput &In = Inputs[InputCount];
 			In = LWShaderInput(NameBuffer, Attr.AttributeType, 1);
 			In.m_VideoContext = (void*)(uintptr_t)glGetAttribLocation(Context.m_ProgramID, NameBuffer);
-			glEnableVertexAttribArray((uint32_t)(uintptr_t)In.m_VideoContext);
 			InputCount++;
 		}
 	}
@@ -626,6 +633,13 @@ LWVideoDriver &LWVideoDriver_OpenGL2_1::ClearColor(uint32_t Color) {
 	return *this;
 }
 
+LWVideoDriver &LWVideoDriver_OpenGL2_1::ClearColor(const LWVector4f &Color) {
+	SetFrameBuffer(m_ActiveFrameBuffer);
+	glClearColor(Color.x, Color.y, Color.z, Color.w);
+	glClear(GL_COLOR_BUFFER_BIT);
+	return *this;
+}
+
 LWVideoDriver &LWVideoDriver_OpenGL2_1::ClearDepth(float Depth) {
 	SetFrameBuffer(m_ActiveFrameBuffer);
 	glClearDepth(Depth);
@@ -765,20 +779,27 @@ bool LWVideoDriver_OpenGL2_1::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *V
 	}
 
 	if (VertexBuffer) {
+		//Disable previous attributes:
+		for (uint32_t i = 0; i < m_Context.m_ActiveAttribs; i++) glDisableVertexAttribArray(m_Context.m_ActiveAttributeIDs[i]);
+
 		LWOpenGL2_1Buffer *VBuffer = (LWOpenGL2_1Buffer*)VertexBuffer;
 		LWVideoDriver::UpdateVideoBuffer(VertexBuffer);
 		glBindBuffer(GL_ARRAY_BUFFER, VBuffer->GetContext().m_VideoID);
-		for (uint32_t i = 0; i < Pipeline->GetInputCount(); i++) {
+		uint32_t InputCnt = Pipeline->GetInputCount();
+		for (uint32_t i = 0; i < InputCnt; i++) {
 			LWShaderInput &I = Pipeline->GetInput(i);
 			uint32_t VideoID = (uint32_t)(uintptr_t)I.m_VideoContext;
 			int32_t GBaseType = GIBaseType[I.m_Type];
 			int32_t GCompCnt = GIComponentCnt[I.m_Type];
+			glEnableVertexAttribArray(VideoID);
+			m_Context.m_ActiveAttributeIDs[i] = VideoID;
 			if (GBaseType == GL_INT || GBaseType == GL_UNSIGNED_INT) {
 				glVertexAttribIPointer(VideoID, GCompCnt, GBaseType, VertexStride, (void*)(uintptr_t)I.m_Offset);
 			} else {
 				glVertexAttribPointer(VideoID, GCompCnt, GBaseType, false, VertexStride, (void*)(uintptr_t)I.m_Offset);
 			}
 		}
+		m_Context.m_ActiveAttribs = InputCnt;
 	}
 	if (IndiceBuffer) {
 		LWVideoDriver::UpdateVideoBuffer(IndiceBuffer);
@@ -787,9 +808,9 @@ bool LWVideoDriver_OpenGL2_1::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *V
 	return Update;
 }
 
-bool LWVideoDriver_OpenGL2_1::SetFrameBuffer(LWFrameBuffer *Buffer) {
+bool LWVideoDriver_OpenGL2_1::SetFrameBuffer(LWFrameBuffer *Buffer, bool ChangeViewport) {
 	//This is mostly for OpenGL3.2, but since OpenGL2.1 basically exists to support OpenGLES2, I kindof just leave this as is and hope for the best!
-	if (!LWVideoDriver::SetFrameBuffer(Buffer)) return false;
+	if (!LWVideoDriver::SetFrameBuffer(Buffer, ChangeViewport)) return false;
 
 	if (!Buffer) glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	else {

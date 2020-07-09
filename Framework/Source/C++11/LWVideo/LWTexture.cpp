@@ -6,12 +6,17 @@ LWTexture &LWTexture::SetTextureState(uint32_t TextureState){
 	return *this;
 }
 
+LWTexture &LWTexture::GenerateMipmaps(void) {
+	m_TextureState = (m_TextureState | LWTexture::MakeMipmaps | LWTexture::Dirty);
+	return *this;
+}
+
 bool LWTexture::isDirty(void) const {
 	return (m_TextureState&Dirty);
 }
 
 LWTexture &LWTexture::ClearDirty(void){
-	m_TextureState &= ~Dirty;
+	m_TextureState &= ~(Dirty|MakeMipmaps);
 	return *this;
 }
 
@@ -19,8 +24,18 @@ uint32_t LWTexture::GetTextureState(void) const{
 	return m_TextureState;
 }
 
+bool LWTexture::isMultiSampled(void) const {
+	return m_Type == Texture2DMS || m_Type == Texture2DMSArray;
+}
+
 uint32_t LWTexture::GetMipmapCount(void) const {
+	if (isMultiSampled()) return 0;
 	return m_MipmapCount;
+}
+
+uint32_t LWTexture::GetSamples(void) const {
+	if (isMultiSampled()) return m_MipmapCount;
+	return 0;
 }
 
 uint32_t LWTexture::GetType(void) const{

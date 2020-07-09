@@ -777,8 +777,12 @@ bool LWEUIManager::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
 		LWXMLAttribute *StyleAttr = Node->FindAttribute("Style");
 		if (!StyleAttr) return;
 		auto Iter = StyleMap.find(LWText::MakeHash(StyleAttr->m_Value));
+
+		if (Iter == StyleMap.end()) {
+			std::cout << "Error: could not find stylemap with name '" << StyleAttr->m_Value << "'" << std::endl;
+			return;
+		}
 		Node->RemoveAttribute(StyleAttr);
-		if (Iter == StyleMap.end()) return;
 		LWEXMLNode *N = Iter->second;
 		for (uint32_t i = 0; i < N->m_AttributeCount; i++) {
 			LWXMLAttribute &Attr = N->m_Attributes[i];
@@ -872,7 +876,7 @@ LWEUIManager &LWEUIManager::Update(const LWVector2f &Position, const LWVector2f 
 	m_VisibleSize = Size;
 	std::fill(m_TempCount, m_TempCount + LWTouch::MaxTouchPoints, 0);
 	m_Tooltip.m_TempTooltipedUI = nullptr;
-	m_LastScale = Scale;
+	m_Scale = Scale;
 	bool OnlyFocusedTIBox = false;
 	LWKeyboard *Keyboard = m_Window->GetKeyboardDevice();
 
@@ -953,7 +957,7 @@ LWEUIManager &LWEUIManager::Draw(LWEUIFrame &Frame, float Scale, uint64_t lCurre
 }
 
 LWEUIManager &LWEUIManager::Draw(LWEUIFrame &Frame, uint64_t lCurrentTime) {
-	return Draw(Frame, m_LastScale, lCurrentTime);
+	return Draw(Frame, m_Scale, lCurrentTime);
 }
 
 LWEUI *LWEUIManager::GetNext(LWEUI *Current, bool SkipChildren) {
@@ -1153,6 +1157,20 @@ bool LWEUIManager::isTextInputFocused(void) {
 	return dynamic_cast<LWEUITextInput*>(m_FocusedUI) != nullptr;
 }
 
+bool LWEUIManager::HasNamedUI(const LWText &Name) {
+	auto Iter = m_NameMap.find(Name.GetHash());
+	return Iter != m_NameMap.end();
+}
+
+bool LWEUIManager::HasNamedUIf(const char *Format, ...) {
+	char Buffer[256];
+	va_list lst;
+	va_start(lst, Format);
+	vsnprintf(Buffer, sizeof(Buffer), Format, lst);
+	va_end(lst);
+	return HasNamedUI(Buffer);
+}
+
 LWEUI *LWEUIManager::GetNamedUI(const LWText &Name) {
 	auto Iter = m_NameMap.find(Name.GetHash());
 	if (Iter == m_NameMap.end()) std::cout << "Could not find ui: '" << Name.GetCharacters() << "'" << std::endl;
@@ -1235,15 +1253,15 @@ bool LWEUIManager::isNavigationModeEnabled(void) const {
 	return m_Navigator.isEnabled();
 }
 
-float LWEUIManager::GetLastScale(void) const {
-	return m_LastScale;
+float LWEUIManager::GetScale(void) const {
+	return m_Scale;
 }
 
 uint32_t LWEUIManager::GetScreenDPI(void) const{
 	return m_ScreenDPI;
 }
 
-LWEUIManager::LWEUIManager(LWWindow *Window, uint32_t ScreenDPI, LWAllocator *Allocator, LWELocalization *Localization, LWEAssetManager *AssetManager) : m_Window(Window), m_AssetManager(AssetManager), m_Allocator(Allocator), m_Localization(Localization), m_FirstUI(nullptr), m_LastUI(nullptr), m_FocusedUI(nullptr), m_LastScale(1.0f), m_MaterialCount(0), m_EventCount(0), m_ScreenDPI(ScreenDPI), m_ResScaleCount(0), m_DPIScaleCount(0), m_CachedDPIScale(0.0f) {
+LWEUIManager::LWEUIManager(LWWindow *Window, uint32_t ScreenDPI, LWAllocator *Allocator, LWELocalization *Localization, LWEAssetManager *AssetManager) : m_Window(Window), m_AssetManager(AssetManager), m_Allocator(Allocator), m_Localization(Localization), m_FirstUI(nullptr), m_LastUI(nullptr), m_FocusedUI(nullptr), m_Scale(1.0f), m_MaterialCount(0), m_EventCount(0), m_ScreenDPI(ScreenDPI), m_ResScaleCount(0), m_DPIScaleCount(0), m_CachedDPIScale(0.0f) {
 	memset(m_OverCount, 0, sizeof(m_OverCount));
 }
 

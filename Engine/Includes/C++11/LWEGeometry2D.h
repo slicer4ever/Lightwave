@@ -249,4 +249,34 @@ bool LWECircleConvexHullIntersect(const LWVector2<Type> &CircCenterPnt, Type Rad
 	return true;
 }
 
+
+/*!< \brief Constructs a new AABB from the transform matrix applied to the passed in aabb's. (If TransformMatrix is not a standard scale/rotation/translation matrix then this method will produce incorrect results.) */
+template<class Type>
+static void LWETransformAABB(const LWVector2<Type> &AAMin, const LWVector2<Type> &AAMax, const LWMatrix3<Type> &TransformMatrix, LWVector2<Type> &AAMinResult, LWVector2<Type> &AAMaxResult) {
+	LWVector2<Type> xAxisA = TransformMatrix.m_Rows[0].xy() * AAMin.x;
+	LWVector2<Type> xAxisB = TransformMatrix.m_Rows[0].xy() * AAMax.x;
+
+	LWVector2<Type> yAxisA = TransformMatrix.m_Rows[1].xy() * AAMin.y;
+	LWVector2<Type> yAxisB = TransformMatrix.m_Rows[1].xy() * AAMax.y;
+
+	AAMinResult = xAxisA.Min(xAxisB) + yAxisA.Min(yAxisB) + TransformMatrix.m_Rows[3].xy();
+	AAMaxResult = xAxisA.Max(xAxisB) + yAxisA.Max(yAxisB) + TransformMatrix.m_Rows[3].xy();
+	return;
+}
+
+
+/*!< \brief Constructs a new AABB from the transform matrix applied to the passed in aabb's. (If TransformMatrix is not a standard scale/rotation matrix then this method will produce incorrect results.) */
+template<class Type>
+static void LWETransformAABB(const LWVector2<Type> &AAMin, const LWVector2<Type> &AAMax, const LWMatrix2<Type> &TransformMatrix, LWVector2<Type> &AAMinResult, LWVector2<Type> &AAMaxResult) {
+	LWVector2<Type> xAxisA = TransformMatrix.m_Rows[0] * AAMin.x;
+	LWVector2<Type> xAxisB = TransformMatrix.m_Rows[0] * AAMax.x;
+
+	LWVector2<Type> yAxisA = TransformMatrix.m_Rows[1] * AAMin.y;
+	LWVector2<Type> yAxisB = TransformMatrix.m_Rows[1] * AAMax.y;
+
+	AAMinResult = xAxisA.Min(xAxisB) + yAxisA.Min(yAxisB);
+	AAMaxResult = xAxisA.Max(xAxisB) + yAxisA.Max(yAxisB);
+	return;
+}
+
 #endif

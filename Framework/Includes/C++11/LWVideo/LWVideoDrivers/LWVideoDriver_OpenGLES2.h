@@ -19,6 +19,8 @@ public:
 
 	virtual LWVideoDriver &ClearColor(uint32_t Color);
 
+	virtual LWVideoDriver &ClearColor(const LWVector4f &Color);
+
 	virtual LWVideoDriver &ClearDepth(float Depth);
 
 	virtual LWVideoDriver &ClearStencil(uint8_t Stencil);
@@ -27,7 +29,7 @@ public:
 
 	virtual bool SetRasterState(uint64_t Flags, float Bias, float SlopedScaleBias);
 
-	virtual bool SetFrameBuffer(LWFrameBuffer *Buffer);
+	virtual bool SetFrameBuffer(LWFrameBuffer *Buffer, bool ChangeViewport = false);
 
 	virtual bool SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *VertexBuffer, LWVideoBuffer *IndiceBuffer, uint32_t VerticeStride, uint32_t Offset);
 
@@ -43,11 +45,15 @@ public:
 
 	virtual LWTexture *CreateTextureCubeMap(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator);
 
+	virtual LWTexture *CreateTexture2DMS(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, LWAllocator &Allocator);
+
 	virtual LWTexture *CreateTexture1DArray(uint32_t TextureState, uint32_t PackType, uint32_t Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator);
 
 	virtual LWTexture *CreateTexture2DArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator);
 
 	virtual LWTexture *CreateTextureCubeMapArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MapmapCnt, LWAllocator &Allocator);
+
+	virtual LWTexture *CreateTexture2DMSArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, uint32_t Layers, LWAllocator &Allocator);
 
 	virtual LWVideoBuffer *CreateVideoBuffer(uint32_t Type, uint32_t UsageFlag, uint32_t TypeSize, uint32_t Length, LWAllocator &Allocator, const uint8_t *Buffer);
 

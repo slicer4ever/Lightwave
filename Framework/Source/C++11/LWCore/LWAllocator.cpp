@@ -1,9 +1,10 @@
 #include "LWCore/LWAllocator.h"
 
 /*! \cond */
-struct LWAllocatorEnvironment{
+struct alignas(16) LWAllocatorEnvironment{
+	uint32_t m_Pad;
 	uint32_t m_Size;
-	LWAllocator *m_Allocator;
+	alignas(8) LWAllocator *m_Allocator;
 };
 /*! \endcond */
 
