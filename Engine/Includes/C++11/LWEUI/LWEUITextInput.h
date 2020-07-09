@@ -60,7 +60,7 @@ public:
 		 ButtonFontScale: The scale for the font of the touch buttons to use.
 		 ButtonFontMaterial: The colored material to use for the touch buttons text.
 	*/
-	static LWEUITextInput *XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
+	static LWEUITextInput *XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
 
 	LWEUITextInput &UpdateTouchButtons(LWEUIManager &Manager, float Scale, uint64_t lCurrentTime);
 

@@ -4,18 +4,12 @@
 #include <LWPlatform/LWWindow.h>
 #include <LWVideo/LWTexture.h>
 
-LWEUIRect *LWEUIRect::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
+LWEUIRect *LWEUIRect::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
 	char Buffer[256];
 	char SBuffer[1024 * 32];
 	LWAllocator *Allocator = Manager->GetAllocator();
 	LWELocalization *Localize = Manager->GetLocalization();
 	LWEUIRect *Rect = Allocator->Allocate<LWEUIRect>(nullptr, LWVector4f(0.0f), LWVector4f(0.0f), 0);
-	LWXMLAttribute *StyleAttr = Node->FindAttribute("Style");
-	LWEXMLNode *Style = nullptr;
-	if (StyleAttr) {
-		auto Iter = StyleMap.find(LWText::MakeHash(ParseComponentAttribute(Buffer, sizeof(Buffer), StyleAttr->m_Value, ActiveComponent, ActiveComponentNode)));
-		if (Iter != StyleMap.end()) Style = Iter->second;
-	}
 	LWEUI::XMLParse(Rect, Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 	LWXMLAttribute *MatAttr = FindAttribute(Node, Style, "Material");
 	LWXMLAttribute *ThetaAttr = FindAttribute(Node, Style, "Theta");

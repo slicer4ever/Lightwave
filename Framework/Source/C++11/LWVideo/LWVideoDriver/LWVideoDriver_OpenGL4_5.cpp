@@ -38,7 +38,6 @@ LWShader *LWVideoDriver_OpenGL4_5::CreateShader(uint32_t ShaderType, const char 
 		glDeleteShader(ShaderID);
 		return nullptr;
 	}
-
 	glProgramParameteri(ProgramID, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, CompiledBuffer?GL_TRUE:GL_FALSE);
 	glProgramParameteri(ProgramID, GL_PROGRAM_SEPARABLE, GL_TRUE);
 	glAttachShader(ProgramID, ShaderID);
@@ -198,7 +197,9 @@ LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWPipeline *Source, LWAlloca
 			if (Type == GL_SAMPLER_1D || Type == GL_SAMPLER_2D || Type == GL_SAMPLER_3D ||
 				Type == GL_SAMPLER_CUBE || Type == GL_SAMPLER_1D_SHADOW || Type == GL_SAMPLER_2D_SHADOW ||
 				Type == GL_SAMPLER_1D_ARRAY || Type == GL_SAMPLER_2D_ARRAY || Type == GL_SAMPLER_1D_ARRAY_SHADOW ||
-				Type == GL_SAMPLER_2D_ARRAY_SHADOW || Type == GL_SAMPLER_CUBE_SHADOW) {
+				Type == GL_SAMPLER_2D_ARRAY_SHADOW || Type == GL_SAMPLER_CUBE_SHADOW ||
+				Type == GL_SAMPLER_CUBE_MAP_ARRAY || Type == GL_SAMPLER_CUBE_MAP_ARRAY_SHADOW ||
+				Type == GL_SAMPLER_2D_MULTISAMPLE || Type == GL_SAMPLER_2D_MULTISAMPLE_ARRAY) {
 				Loc = InsertList(NameBuffer, LWPipeline::Texture, Length, Loc, Resources, ResourceCount);
 				glProgramUniform1i(ProgramID, glLoc, Loc);
 				if (Loc == pTexIdx) NextTexIdx++;
@@ -230,6 +231,9 @@ LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWPipeline *Source, LWAlloca
 	};
 	glGenProgramPipelines(1, &Context.m_ProgramID);
 	if (!Context.m_ProgramID) return nullptr;
+	glGenVertexArrays(1, &Context.m_VAOID);
+	if (!Context.m_VAOID) return nullptr;
+	glBindVertexArray(Context.m_VAOID);
 	if (Source->isComputePipeline()) {
 		uint32_t ComputeID = ((LWOpenGL4_5Shader*)StageList[LWPipeline::Compute])->GetContext();
 		glUseProgramStages(Context.m_ProgramID, GL_COMPUTE_SHADER_BIT, ComputeID);
@@ -247,6 +251,7 @@ LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWPipeline *Source, LWAlloca
 			int32_t NameLen = 0;
 			glGetProgramResourceiv(VertexID, GL_PROGRAM_INPUT, i, AttributePropCnt, AttributeProps, sizeof(AttributeValues), &Len, AttributeValues);
 			glGetProgramResourceName(VertexID, GL_PROGRAM_INPUT, i, sizeof(NameBuffer), &NameLen, NameBuffer);
+			if(AttributeValues[2]==-1) continue;
 			AttributeMap Map = MapAttributeType(AttributeValues[0]);
 			for (uint32_t n = 0; n < Map.RowMultiplier*AttributeValues[1]; n++) {
 				LWShaderInput &In = Inputs[InputCount];
@@ -276,10 +281,10 @@ LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWPipeline *Source, LWAlloca
 }
 
 LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture1D(uint32_t TextureState, uint32_t PackType, uint32_t Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
-	//PackTypes:                   RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16, Depth24, Depth32, Depth24Stencil8, DXT1, DXT2, DXT3, DXT4, DXT5, DXT6, DXT7
-	const int32_t GInternalFormats[] = { GL_RGBA8,         GL_RGBA8,         GL_RGBA16,         GL_RGBA16,         GL_RGBA32I,      GL_RGBA32UI,     GL_RGBA32F, GL_RG8,           GL_RG8,           GL_RG16,           GL_RG16,           GL_RG32I,        GL_RG32UI,       GL_RG32F, GL_R8,            GL_R8,            GL_R16,            GL_R16,            GL_R32I,         GL_R32UI,        GL_R32F,  0,       0,       0,       0,               0,    0,    0,    0,    0,    0,    0 };
-	const int32_t GFormats[] = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_STENCIL };
-	const int32_t GType[] = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,             GL_UNSIGNED_INT_24_8 };
+	//PackTypes:                         RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16, Depth24,     Depth32,              Depth24Stencil8,      DXT1, DXT2, DXT3, DXT4, DXT5, DXT6, DXT7
+	const int32_t GInternalFormats[] = { GL_RGBA8,         GL_RGBA8,         GL_RGBA16,         GL_RGBA16,         GL_RGBA32I,      GL_RGBA32UI,     GL_RGBA32F, GL_RG8,           GL_RG8,           GL_RG16,           GL_RG16,           GL_RG32I,        GL_RG32UI,       GL_RG32F, GL_R8,            GL_R8,            GL_R16,            GL_R16,            GL_R32I,         GL_R32UI,        GL_R32F,  0,       0,           0,                    0,                    0,    0,    0,    0,    0,    0,    0 };
+	const int32_t GFormats[]         = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_STENCIL };
+	const int32_t GType[]            = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,             GL_UNSIGNED_INT_24_8 };
 	if (GInternalFormats[PackType] == 0) return nullptr;
 
 	uint32_t VideoID = 0;
@@ -299,15 +304,15 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture1D(uint32_t TextureState, uint3
 		uint32_t S = LWImage::MipmapSize1D(Size, i);
 		glTexSubImage1D(GL_TEXTURE_1D, i, 0, S, GFormats[PackType], GType[PackType], Texels[t]);
 	}
-	if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_1D);
+	//if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_1D);
 	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0, 0), LWTexture::Texture1D);
 }
 
 LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2D(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
-	//PackTypes:                   RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16,              Depth24,              Depth32,              Depth24Stencil8,     DXT1,                            DXT2,                             DXT3                              DXT4 DXT5                              DXT6                                     DXT7
-	const int32_t GInternalFormats[] = { GL_RGBA8,         GL_RGBA8,         GL_RGBA16,         GL_RGBA16,         GL_RGBA32I,      GL_RGBA32UI,     GL_RGBA32F, GL_RG8,           GL_RG8,           GL_RG16,           GL_RG16,           GL_RG32I,        GL_RG32UI,       GL_RG32F, GL_R8,            GL_R8,            GL_R16,            GL_R16,            GL_R32I,         GL_R32UI,        GL_R32F,  GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32, GL_DEPTH24_STENCIL8, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0,   GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT, GL_COMPRESSED_RGBA_BPTC_UNORM_EXT };
-	const int32_t GFormats[] = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_STENCIL };
-	const int32_t GType[] = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,             GL_UNSIGNED_INT_24_8 };
+	//PackTypes:                         RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16,              Depth24,              Depth32,               Depth24Stencil8,     DXT1,                            DXT2,                             DXT3                              DXT4 DXT5                              DXT6                                     DXT7
+	const int32_t GInternalFormats[] = { GL_RGBA8,         GL_RGBA8,         GL_RGBA16,         GL_RGBA16,         GL_RGBA32I,      GL_RGBA32UI,     GL_RGBA32F, GL_RG8,           GL_RG8,           GL_RG16,           GL_RG16,           GL_RG32I,        GL_RG32UI,       GL_RG32F, GL_R8,            GL_R8,            GL_R16,            GL_R16,            GL_R32I,         GL_R32UI,        GL_R32F,  GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32F, GL_DEPTH24_STENCIL8, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0,   GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT, GL_COMPRESSED_RGBA_BPTC_UNORM_EXT };
+	const int32_t GFormats[]         = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,    GL_DEPTH_STENCIL };
+	const int32_t GType[]            = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,              GL_UNSIGNED_INT_24_8 };
 	if (GInternalFormats[PackType] == 0) return nullptr;
 
 	uint32_t VideoID = 0;
@@ -334,15 +339,15 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2D(uint32_t TextureState, uint3
 		if (Compressed) glCompressedTexSubImage2D(GL_TEXTURE_2D, i, 0, 0, S.x, S.y, GInternalFormats[PackType], LWImage::GetLength2D(S, PackType), Texels[t]);
 		else glTexSubImage2D(GL_TEXTURE_2D, i, 0, 0, S.x, S.y, GFormats[PackType], GType[PackType], Texels[t]);
 	}
-	if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_2D);
+	//if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_2D);
 	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0), LWTexture::Texture2D);
 }
 
 LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture3D(uint32_t TextureState, uint32_t PackType, const LWVector3i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
-	//PackTypes:                   RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16, Depth24, Depth32, Depth24Stencil8,                                            DXT1, DXT2, DXT3, DXT4, DXT5, DXT6, DXT7
-	const int32_t GInternalFormats[] = { GL_RGBA8,         GL_RGBA8,         GL_RGBA16,         GL_RGBA16,         GL_RGBA32I,      GL_RGBA32UI,     GL_RGBA32F, GL_RG8,           GL_RG8,           GL_RG16,           GL_RG16,           GL_RG32I,        GL_RG32UI,       GL_RG32F, GL_R8,            GL_R8,            GL_R16,            GL_R16,            GL_R32I,         GL_R32UI,        GL_R32F,  GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32, GL_DEPTH24_STENCIL8, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0,   GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT, GL_COMPRESSED_RGBA_BPTC_UNORM_EXT };
-	const int32_t GFormats[] = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_STENCIL };
-	const int32_t GType[] = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,             GL_UNSIGNED_INT_24_8 };
+	//PackTypes:                         RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16,              Depth24,              Depth32,               Depth24Stencil8,     DXT1, DXT2, DXT3, DXT4, DXT5, DXT6, DXT7
+	const int32_t GInternalFormats[] = { GL_RGBA8,         GL_RGBA8,         GL_RGBA16,         GL_RGBA16,         GL_RGBA32I,      GL_RGBA32UI,     GL_RGBA32F, GL_RG8,           GL_RG8,           GL_RG16,           GL_RG16,           GL_RG32I,        GL_RG32UI,       GL_RG32F, GL_R8,            GL_R8,            GL_R16,            GL_R16,            GL_R32I,         GL_R32UI,        GL_R32F,  GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32F, GL_DEPTH24_STENCIL8, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0,   GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT, GL_COMPRESSED_RGBA_BPTC_UNORM_EXT };
+	const int32_t GFormats[]         = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,    GL_DEPTH_STENCIL, };
+	const int32_t GType[]            = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,              GL_UNSIGNED_INT_24_8 };
 	if (GInternalFormats[PackType] == 0) return nullptr;
 
 	uint32_t VideoID = 0;
@@ -363,15 +368,15 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture3D(uint32_t TextureState, uint3
 		if (Compressed) glCompressedTexSubImage3D(GL_TEXTURE_3D, i, 0, 0, 0, S.x, S.y, S.z, GInternalFormats[PackType], LWImage::GetLength3D(S, PackType), Texels[t]);
 		else glTexSubImage3D(GL_TEXTURE_3D, i, 0, 0, 0, S.x, S.y, S.z, GFormats[PackType], GType[PackType], Texels[t]);
 	}
-	if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_3D);
+	//if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_3D);
 	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, Size, LWTexture::Texture3D);
 }
 
 LWTexture *LWVideoDriver_OpenGL4_5::CreateTextureCubeMap(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
-	//PackTypes:                   RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16,              Depth24,              Depth32,              Depth24Stencil8,     DXT1,                            DXT2,                             DXT3                              DXT4 DXT5                              DXT6                                     DXT7
-	const int32_t GInternalFormats[] = { GL_RGBA8,         GL_RGBA8,         GL_RGBA16,         GL_RGBA16,         GL_RGBA32I,      GL_RGBA32UI,     GL_RGBA32F, GL_RG8,           GL_RG8,           GL_RG16,           GL_RG16,           GL_RG32I,        GL_RG32UI,       GL_RG32F, GL_R8,            GL_R8,            GL_R16,            GL_R16,            GL_R32I,         GL_R32UI,        GL_R32F,  GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32, GL_DEPTH24_STENCIL8, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0,   GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT, GL_COMPRESSED_RGBA_BPTC_UNORM_EXT };
-	const int32_t GFormats[] = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_STENCIL };
-	const int32_t GType[] = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,             GL_UNSIGNED_INT_24_8 };
+	//PackTypes:                         RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16,              Depth24,              Depth32,               Depth24Stencil8,     DXT1,                            DXT2,                             DXT3                              DXT4 DXT5                              DXT6                                     DXT7
+	const int32_t GInternalFormats[] = { GL_RGBA8,         GL_RGBA8,         GL_RGBA16,         GL_RGBA16,         GL_RGBA32I,      GL_RGBA32UI,     GL_RGBA32F, GL_RG8,           GL_RG8,           GL_RG16,           GL_RG16,           GL_RG32I,        GL_RG32UI,       GL_RG32F, GL_R8,            GL_R8,            GL_R16,            GL_R16,            GL_R32I,         GL_R32UI,        GL_R32F,  GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32F, GL_DEPTH24_STENCIL8, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0,   GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT, GL_COMPRESSED_RGBA_BPTC_UNORM_EXT };
+	const int32_t GFormats[]         = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,    GL_DEPTH_STENCIL };
+	const int32_t GType[]            = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,              GL_UNSIGNED_INT_24_8 };
 	if (GInternalFormats[PackType] == 0) return nullptr;
 
 	uint32_t VideoID = 0;
@@ -395,15 +400,33 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTextureCubeMap(uint32_t TextureState, 
 			else glTexSubImage2D(GTarget, i, 0, 0, S.x, S.y, GFormats[PackType], GType[PackType], Texels[t]);
 		}
 	}
-	if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+	//if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0), LWTexture::TextureCubeMap);
 }
 
+LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2DMS(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, LWAllocator &Allocator){
+	//PackTypes:                         RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16,              Depth24,              Depth32,               Depth24Stencil8,     DXT1,                            DXT2,                             DXT3                              DXT4 DXT5                              DXT6                                     DXT7
+	const int32_t GInternalFormats[] = { GL_RGBA8,         GL_RGBA8,         GL_RGBA16,         GL_RGBA16,         GL_RGBA32I,      GL_RGBA32UI,     GL_RGBA32F, GL_RG8,           GL_RG8,           GL_RG16,           GL_RG16,           GL_RG32I,        GL_RG32UI,       GL_RG32F, GL_R8,            GL_R8,            GL_R16,            GL_R16,            GL_R32I,         GL_R32UI,        GL_R32F,  GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32F, GL_DEPTH24_STENCIL8, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0,   GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT, GL_COMPRESSED_RGBA_BPTC_UNORM_EXT };
+	const int32_t GFormats[] = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,    GL_DEPTH_STENCIL };
+	const int32_t GType[] = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,              GL_UNSIGNED_INT_24_8 };
+	if (GInternalFormats[PackType] == 0) return nullptr;
+
+	uint32_t VideoID = 0;
+	uint32_t Type = 0;
+	TextureState = (TextureState & ~(LWTexture::RenderBuffer | LWTexture::MakeMipmaps));
+	bool Compressed = LWImage::CompressedType(PackType);
+	TextureState = (TextureState & ~LWTexture::MakeMipmaps);
+	glGenTextures(1, &VideoID);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, VideoID);
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, Samples, GInternalFormats[PackType], Size.x, Size.y, true);
+	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, Samples, LWVector3i(Size, 0), LWTexture::Texture2DMS);
+}
+
 LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture1DArray(uint32_t TextureState, uint32_t PackType, uint32_t Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
-	//PackTypes:                   RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16,              Depth24,              Depth32,              Depth24Stencil8,     DXT1,                            DXT2,                             DXT3                              DXT4 DXT5                              DXT6                                     DXT7
-	const int32_t GInternalFormats[] = { GL_RGBA8,         GL_RGBA8,         GL_RGBA16,         GL_RGBA16,         GL_RGBA32I,      GL_RGBA32UI,     GL_RGBA32F, GL_RG8,           GL_RG8,           GL_RG16,           GL_RG16,           GL_RG32I,        GL_RG32UI,       GL_RG32F, GL_R8,            GL_R8,            GL_R16,            GL_R16,            GL_R32I,         GL_R32UI,        GL_R32F,  GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32, GL_DEPTH24_STENCIL8, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0,   GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT, GL_COMPRESSED_RGBA_BPTC_UNORM_EXT };
-	const int32_t GFormats[] = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_STENCIL };
-	const int32_t GType[] = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,             GL_UNSIGNED_INT_24_8 };
+	//PackTypes:                         RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16,              Depth24,              Depth32,              Depth24Stencil8,     DXT1,                            DXT2,                             DXT3                              DXT4 DXT5                              DXT6                                     DXT7
+	const int32_t GInternalFormats[] = { GL_RGBA8,         GL_RGBA8,         GL_RGBA16,         GL_RGBA16,         GL_RGBA32I,      GL_RGBA32UI,     GL_RGBA32F, GL_RG8,           GL_RG8,           GL_RG16,           GL_RG16,           GL_RG32I,        GL_RG32UI,       GL_RG32F, GL_R8,            GL_R8,            GL_R16,            GL_R16,            GL_R32I,         GL_R32UI,        GL_R32F,  GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32F, GL_DEPTH24_STENCIL8, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0,   GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT, GL_COMPRESSED_RGBA_BPTC_UNORM_EXT };
+	const int32_t GFormats[]         = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,    GL_DEPTH_STENCIL };
+	const int32_t GType[]            = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,              GL_UNSIGNED_INT_24_8 };
 	if (GInternalFormats[PackType] == 0) return nullptr;
 
 	uint32_t VideoID = 0;
@@ -425,15 +448,15 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture1DArray(uint32_t TextureState, 
 			glTexSubImage2D(GL_TEXTURE_1D_ARRAY, i, 0, l, S, 1, GFormats[PackType], GType[PackType], Texels[t]);
 		}
 	}
-	if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_1D_ARRAY);
+	//if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_1D_ARRAY);
 	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, Layers, 0), LWTexture::Texture1DArray);
 }
 
 LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2DArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
-	//PackTypes:                   RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16,              Depth24,              Depth32,              Depth24Stencil8,     DXT1,                            DXT2,                             DXT3                              DXT4 DXT5                              DXT6                                     DXT7
-	const int32_t GInternalFormats[] = { GL_RGBA8,         GL_RGBA8,         GL_RGBA16,         GL_RGBA16,         GL_RGBA32I,      GL_RGBA32UI,     GL_RGBA32F, GL_RG8,           GL_RG8,           GL_RG16,           GL_RG16,           GL_RG32I,        GL_RG32UI,       GL_RG32F, GL_R8,            GL_R8,            GL_R16,            GL_R16,            GL_R32I,         GL_R32UI,        GL_R32F,  GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32, GL_DEPTH24_STENCIL8, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0,   GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT, GL_COMPRESSED_RGBA_BPTC_UNORM_EXT };
-	const int32_t GFormats[] = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_STENCIL };
-	const int32_t GType[] = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,             GL_UNSIGNED_INT_24_8 };
+	//PackTypes:                         RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16,              Depth24,              Depth32,              Depth24Stencil8,     DXT1,                            DXT2,                             DXT3                              DXT4 DXT5                              DXT6                                     DXT7
+	const int32_t GInternalFormats[] = { GL_RGBA8,         GL_RGBA8,         GL_RGBA16,         GL_RGBA16,         GL_RGBA32I,      GL_RGBA32UI,     GL_RGBA32F, GL_RG8,           GL_RG8,           GL_RG16,           GL_RG16,           GL_RG32I,        GL_RG32UI,       GL_RG32F, GL_R8,            GL_R8,            GL_R16,            GL_R16,            GL_R32I,         GL_R32UI,        GL_R32F,  GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32F, GL_DEPTH24_STENCIL8, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0,   GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT, GL_COMPRESSED_RGBA_BPTC_UNORM_EXT };
+	const int32_t GFormats[]         = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_STENCIL };
+	const int32_t GType[]            = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,             GL_UNSIGNED_INT_24_8 };
 	if (GInternalFormats[PackType] == 0) return nullptr;
 
 	uint32_t VideoID = 0;
@@ -456,15 +479,15 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2DArray(uint32_t TextureState, 
 			else glTexSubImage3D(GL_TEXTURE_2D_ARRAY, i, 0, 0, l, S.x, S.y, 1, GFormats[PackType], GType[PackType], Texels[t]);
 		}
 	}
-	if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+	//if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
 	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, Layers), LWTexture::Texture2DArray);
 }
 
 LWTexture *LWVideoDriver_OpenGL4_5::CreateTextureCubeArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
-	//PackTypes:                   RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16,              Depth24,              Depth32,              Depth24Stencil8,     DXT1,                            DXT2,                             DXT3                              DXT4 DXT5                              DXT6                                     DXT7
-	const int32_t GInternalFormats[] = { GL_RGBA8,         GL_RGBA8,         GL_RGBA16,         GL_RGBA16,         GL_RGBA32I,      GL_RGBA32UI,     GL_RGBA32F, GL_RG8,           GL_RG8,           GL_RG16,           GL_RG16,           GL_RG32I,        GL_RG32UI,       GL_RG32F, GL_R8,            GL_R8,            GL_R16,            GL_R16,            GL_R32I,         GL_R32UI,        GL_R32F,  GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32, GL_DEPTH24_STENCIL8, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0,   GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT, GL_COMPRESSED_RGBA_BPTC_UNORM_EXT };
-	const int32_t GFormats[] = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_STENCIL };
-	const int32_t GType[] = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,             GL_UNSIGNED_INT_24_8 };
+	//PackTypes:                         RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16,              Depth24,              Depth32,               Depth24Stencil8,     DXT1,                            DXT2,                             DXT3                              DXT4 DXT5                              DXT6                                     DXT7
+	const int32_t GInternalFormats[] = { GL_RGBA8,         GL_RGBA8,         GL_RGBA16,         GL_RGBA16,         GL_RGBA32I,      GL_RGBA32UI,     GL_RGBA32F, GL_RG8,           GL_RG8,           GL_RG16,           GL_RG16,           GL_RG32I,        GL_RG32UI,       GL_RG32F, GL_R8,            GL_R8,            GL_R16,            GL_R16,            GL_R32I,         GL_R32UI,        GL_R32F,  GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32F, GL_DEPTH24_STENCIL8, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0,   GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT, GL_COMPRESSED_RGBA_BPTC_UNORM_EXT };
+	const int32_t GFormats[]         = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,    GL_DEPTH_STENCIL };
+	const int32_t GType[]            = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,              GL_UNSIGNED_INT_24_8 };
 	if (GInternalFormats[PackType] == 0) return nullptr;
 
 	uint32_t VideoID = 0;
@@ -477,7 +500,6 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTextureCubeArray(uint32_t TextureState
 	glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, VideoID);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAX_LEVEL, MipmapCnt);
 	glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, MipmapCnt + 1, GInternalFormats[PackType], Size.x, Size.y, Layers*6);
-
 	if (!Texels) return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, Layers), LWTexture::TextureCubeMapArray);
 	uint32_t Mips = MakeMipmaps ? 0 : MipmapCnt;
 	uint32_t t = 0;
@@ -488,8 +510,26 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTextureCubeArray(uint32_t TextureState
 			else glTexSubImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, i, 0, 0, l, S.x, S.y, 1, GFormats[PackType], GType[PackType], Texels[t]);
 		}
 	}
-	if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_CUBE_MAP_ARRAY);
+	//if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_CUBE_MAP_ARRAY);
 	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, Layers), LWTexture::TextureCubeMapArray);
+}
+
+LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2DMSArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, uint32_t Layers, LWAllocator &Allocator) {
+	//PackTypes:                         RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16,              Depth24,              Depth32,               Depth24Stencil8,     DXT1,                            DXT2,                             DXT3                              DXT4 DXT5                              DXT6                                     DXT7
+	const int32_t GInternalFormats[] = { GL_RGBA8,         GL_RGBA8,         GL_RGBA16,         GL_RGBA16,         GL_RGBA32I,      GL_RGBA32UI,     GL_RGBA32F, GL_RG8,           GL_RG8,           GL_RG16,           GL_RG16,           GL_RG32I,        GL_RG32UI,       GL_RG32F, GL_R8,            GL_R8,            GL_R16,            GL_R16,            GL_R32I,         GL_R32UI,        GL_R32F,  GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32F, GL_DEPTH24_STENCIL8, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0,   GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT, GL_COMPRESSED_RGBA_BPTC_UNORM_EXT };
+	const int32_t GFormats[] = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,    GL_DEPTH_STENCIL };
+	const int32_t GType[] = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,              GL_UNSIGNED_INT_24_8 };
+	if (GInternalFormats[PackType] == 0) return nullptr;
+
+	uint32_t VideoID = 0;
+	uint32_t Type = 0;
+	TextureState = (TextureState & ~(LWTexture::RenderBuffer | LWTexture::MakeMipmaps));
+	bool Compressed = LWImage::CompressedType(PackType);
+	TextureState = (TextureState & ~LWTexture::MakeMipmaps);
+	glGenTextures(1, &VideoID);
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, VideoID);
+	glTexImage3DMultisample(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, Samples, GInternalFormats[PackType], Size.x, Size.y, Layers, true);
+	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, Samples, LWVector3i(Size, Layers), LWTexture::Texture2DMSArray);
 }
 
 LWVideoBuffer *LWVideoDriver_OpenGL4_5::CreateVideoBuffer(uint32_t Type, uint32_t UsageFlag, uint32_t TypeSize, uint32_t Length, LWAllocator &Allocator, const uint8_t *Buffer) {
@@ -504,7 +544,7 @@ LWVideoBuffer *LWVideoDriver_OpenGL4_5::CreateVideoBuffer(uint32_t Type, uint32_
 	glGenBuffers(1, &VideoID);
 	glBindBuffer(GTypes[Type], VideoID);
 	glBufferData(GTypes[Type], Length*TypeSize, Buffer, GUsage);
-
+	
 	return Allocator.Allocate<LWOpenGL4_5Buffer>(Buffer, &Allocator, TypeSize, Length, UsageFlag | Type, VideoID);
 }
 
@@ -517,7 +557,7 @@ LWFrameBuffer *LWVideoDriver_OpenGL4_5::CreateFrameBuffer(const LWVector2i &Size
 bool LWVideoDriver_OpenGL4_5::UpdateTexture(LWTexture *Texture) {
 	uint32_t VideoID = ((LWOpenGL4_5Texture*)Texture)->GetContext();
 
-	int32_t GTypes[] = { GL_TEXTURE_1D, GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_CUBE_MAP, GL_TEXTURE_1D_ARRAY, GL_TEXTURE_2D_ARRAY, GL_TEXTURE_CUBE_MAP_ARRAY };
+	int32_t GTypes[] = { GL_TEXTURE_1D, GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_CUBE_MAP, GL_TEXTURE_1D_ARRAY, GL_TEXTURE_2D_ARRAY, GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_2D_MULTISAMPLE_ARRAY };
 	int32_t MinMagFilters[] = { GL_NEAREST, GL_LINEAR, GL_NEAREST_MIPMAP_NEAREST, GL_LINEAR_MIPMAP_NEAREST, GL_NEAREST_MIPMAP_LINEAR, GL_LINEAR_MIPMAP_LINEAR };
 	int32_t WrapFilters[] = { GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT, GL_REPEAT };
 	int32_t CompareModes[] = { GL_NONE, GL_COMPARE_REF_TO_TEXTURE };
@@ -528,6 +568,8 @@ bool LWVideoDriver_OpenGL4_5::UpdateTexture(LWTexture *Texture) {
 	glBindTexture(Type, VideoID);
 	if (!Texture->isDirty()) return true;
 	uint32_t State = Texture->GetTextureState();
+	bool MakeMipmaps = (State & LWTexture::MakeMipmaps) != 0;
+	bool MultiSampled = Texture->isMultiSampled();
 	uint32_t MinFilter = (State&LWTexture::MinFilterFlag) >> LWTexture::MinFilterBitOffset;
 	uint32_t MagFilter = (State&LWTexture::MagFilterFlag) >> LWTexture::MagFilterBitOffset;
 	uint32_t WrapS = (State&LWTexture::WrapSFilterFlag) >> LWTexture::WrapSFilterBitOffset;
@@ -536,15 +578,17 @@ bool LWVideoDriver_OpenGL4_5::UpdateTexture(LWTexture *Texture) {
 	uint32_t CFunc = (State&LWTexture::CompareFuncFlag) >> LWTexture::CompareFuncBitOffset;
 	uint32_t CMode = (State&LWTexture::CompareModeFlag) >> LWTexture::CompareModeBitOffset;
 	uint32_t DRMode = (State&LWTexture::DepthReadFlag) >> LWTexture::DepthReadBitOffset;
-
-	glTexParameteri(Type, GL_TEXTURE_MIN_FILTER, MinMagFilters[MinFilter]);
-	glTexParameteri(Type, GL_TEXTURE_MAG_FILTER, MinMagFilters[MagFilter]);
-	glTexParameteri(Type, GL_TEXTURE_WRAP_S, WrapFilters[WrapS]);
-	glTexParameteri(Type, GL_TEXTURE_WRAP_T, WrapFilters[WrapT]);
-	glTexParameteri(Type, GL_TEXTURE_WRAP_R, WrapFilters[WrapR]);
-	glTexParameteri(Type, GL_TEXTURE_COMPARE_FUNC, CompareFuncs[CFunc]);
-	glTexParameteri(Type, GL_TEXTURE_COMPARE_MODE, CompareModes[CMode]);
-	glTexParameteri(Type, GL_DEPTH_STENCIL_TEXTURE_MODE, DepthReadMode[DRMode]);
+	if (!MultiSampled) { //Sampler states not supported by multisamplers.
+		glTexParameteri(Type, GL_TEXTURE_MIN_FILTER, MinMagFilters[MinFilter]);
+		glTexParameteri(Type, GL_TEXTURE_MAG_FILTER, MinMagFilters[MagFilter]);
+		glTexParameteri(Type, GL_TEXTURE_WRAP_S, WrapFilters[WrapS]);
+		glTexParameteri(Type, GL_TEXTURE_WRAP_T, WrapFilters[WrapT]);
+		glTexParameteri(Type, GL_TEXTURE_WRAP_R, WrapFilters[WrapR]);
+		glTexParameteri(Type, GL_TEXTURE_COMPARE_FUNC, CompareFuncs[CFunc]);
+		glTexParameteri(Type, GL_TEXTURE_COMPARE_MODE, CompareModes[CMode]);
+		glTexParameteri(Type, GL_DEPTH_STENCIL_TEXTURE_MODE, DepthReadMode[DRMode]);
+		if (MakeMipmaps) glGenerateMipmap(Type);
+	}
 	Texture->ClearDirty();
 	
 	return true;
@@ -785,6 +829,7 @@ LWVideoDriver &LWVideoDriver_OpenGL4_5::DestroyPipeline(LWPipeline *Pipeline) {
 	if (Pipe->isInternalPipeline()) {
 		LWOpenGL4_5PipelineContext &Context = Pipe->GetContext();
 		glDeleteProgramPipelines(1, &Context.m_ProgramID);
+		glDeleteVertexArrays(1, &Context.m_VAOID);
 	}
 	LWAllocator::Destroy(Pipe);
 	return *this;
@@ -883,7 +928,6 @@ bool LWVideoDriver_OpenGL4_5::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *V
 	auto &Context = ((LWOpenGL4_5Pipeline*)Pipeline)->GetContext();
 	uint32_t BlockCount = Pipeline->GetBlockCount();
 	uint32_t ResourceCount = Pipeline->GetResourceCount();
-
 	if (Update) glBindProgramPipeline(Context.m_ProgramID);
 	for (uint32_t i = 0; i < BlockCount; i++) {
 		LWShaderResource &Block = Pipeline->GetBlock(i);
@@ -923,6 +967,7 @@ bool LWVideoDriver_OpenGL4_5::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *V
 	if (VertexBuffer) {
 		LWOpenGL4_5Buffer *VBuffer = (LWOpenGL4_5Buffer*)VertexBuffer;
 		LWVideoDriver::UpdateVideoBuffer(VBuffer);
+		glBindVertexArray(Context.m_VAOID);
 		glBindBuffer(GL_ARRAY_BUFFER, VBuffer->GetContext());
 		for (uint32_t i = 0; i < Pipeline->GetInputCount(); i++) {
 			LWShaderInput &I = Pipeline->GetInput(i);
@@ -939,21 +984,22 @@ bool LWVideoDriver_OpenGL4_5::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *V
 	if (IndiceBuffer) {
 		LWVideoDriver::UpdateVideoBuffer(IndiceBuffer);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ((LWOpenGL4_5Buffer*)IndiceBuffer)->GetContext());
-	}
+	} else glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	return Update;
 }
 
-bool LWVideoDriver_OpenGL4_5::SetFrameBuffer(LWFrameBuffer *Buffer) {
-	if (!LWVideoDriver::SetFrameBuffer(Buffer)) return false;
-	if (!Buffer) glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	else {
-
+bool LWVideoDriver_OpenGL4_5::SetFrameBuffer(LWFrameBuffer *Buffer, bool ChangeViewport) {
+	if (!LWVideoDriver::SetFrameBuffer(Buffer, ChangeViewport)) return false;
+	if (!Buffer) {
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		m_ActiveDrawCount = 1;
+	} else {
 		auto &Context = ((LWOpenGL4_5FrameBuffer*)Buffer)->GetContext();
-		const GLenum AttachmentPnts[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5, GL_DEPTH_STENCIL_ATTACHMENT };
+		GLenum AttachmentPnts[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5, GL_DEPTH_STENCIL_ATTACHMENT };
 		const GLenum GFaces[] = { GL_TEXTURE_CUBE_MAP_NEGATIVE_X, GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, GL_TEXTURE_CUBE_MAP_POSITIVE_Y,GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, GL_TEXTURE_CUBE_MAP_POSITIVE_Z };
-
+		 
 		GLenum DrawBuffers[LWFrameBuffer::Count];
-		uint32_t DrawCnt = 0;
+		m_ActiveDrawCount = 0;
 		glBindFramebuffer(GL_FRAMEBUFFER, Context);
 		for (uint32_t i = 0; i < LWFrameBuffer::Count; i++) {
 			auto &Slot = Buffer->GetAttachment(i);
@@ -961,18 +1007,24 @@ bool LWVideoDriver_OpenGL4_5::SetFrameBuffer(LWFrameBuffer *Buffer) {
 			LWOpenGL4_5Texture *Tex = (LWOpenGL4_5Texture*)Slot.m_Source;
 			uint32_t TexType = Tex->GetType();
 			uint32_t TexID = Tex->GetContext();
+			if (i == LWFrameBuffer::Depth) {
+				if (!LWImage::DepthType(TexID)) AttachmentPnts[i] = GL_STENCIL_ATTACHMENT;
+				if (!LWImage::StencilType(TexID)) AttachmentPnts[i] = GL_DEPTH_ATTACHMENT;
+			}
 			if (Tex->GetTextureState()&LWTexture::RenderBuffer) glFramebufferRenderbuffer(GL_FRAMEBUFFER, AttachmentPnts[i], GL_RENDERBUFFER, TexID);
 			else {
 				if (TexType == LWTexture::Texture1D) glFramebufferTexture1D(GL_FRAMEBUFFER, AttachmentPnts[i], GL_TEXTURE_1D, TexID, Slot.m_Mipmap);
 				else if (TexType == LWTexture::Texture2D) glFramebufferTexture2D(GL_FRAMEBUFFER, AttachmentPnts[i], GL_TEXTURE_2D, TexID, Slot.m_Mipmap);
 				else if (TexType == LWTexture::Texture3D) glFramebufferTexture3D(GL_FRAMEBUFFER, AttachmentPnts[i], GL_TEXTURE_3D, TexID, Slot.m_Mipmap, Slot.m_Layer);
 				else if (TexType == LWTexture::TextureCubeMap) glFramebufferTexture2D(GL_FRAMEBUFFER, AttachmentPnts[i], GFaces[Slot.m_Face], TexID, Slot.m_Mipmap);
+				else if (TexType == LWTexture::Texture2DMS) glFramebufferTexture2D(GL_FRAMEBUFFER, AttachmentPnts[i], GL_TEXTURE_2D_MULTISAMPLE, TexID, 0);
 				else if (TexType == LWTexture::Texture2DArray) glFramebufferTextureLayer(GL_FRAMEBUFFER, AttachmentPnts[i], TexID, Slot.m_Mipmap, Slot.m_Layer);
-				else if (TexType == LWTexture::TextureCubeMapArray) glFramebufferTextureLayer(GL_FRAMEBUFFER, AttachmentPnts[i], TexID, Slot.m_Mipmap, Slot.m_Layer*6 + Slot.m_Face);
+				else if (TexType == LWTexture::TextureCubeMapArray) glFramebufferTextureLayer(GL_FRAMEBUFFER, AttachmentPnts[i], TexID, Slot.m_Mipmap, Slot.m_Layer * 6 + Slot.m_Face);
+				else if (TexType == LWTexture::Texture2DMSArray) glFramebufferTextureLayer(GL_FRAMEBUFFER, AttachmentPnts[i], TexID, 0, Slot.m_Layer);
 			}
-			if (i < LWFrameBuffer::ColorCount) DrawBuffers[DrawCnt++] = AttachmentPnts[i];
+			if (i < LWFrameBuffer::ColorCount) DrawBuffers[m_ActiveDrawCount++] = AttachmentPnts[i];
 		}
-		glDrawBuffers(DrawCnt, DrawBuffers);
+		glDrawBuffers(m_ActiveDrawCount, DrawBuffers);
 	}
 	return true;
 }
@@ -980,22 +1032,37 @@ bool LWVideoDriver_OpenGL4_5::SetFrameBuffer(LWFrameBuffer *Buffer) {
 LWVideoDriver &LWVideoDriver_OpenGL4_5::ClearColor(uint32_t Color) {
 	SetFrameBuffer(m_ActiveFrameBuffer);
 	LWVector4f ClearClr = LWUNPACK_COLORVEC4f(Color);
-	glClearColor(ClearClr.x, ClearClr.y, ClearClr.z, ClearClr.w);
-	glClear(GL_COLOR_BUFFER_BIT);
+	for (uint32_t i = 0; i < m_ActiveDrawCount; i++) {
+		glClearBufferfv(GL_COLOR, i, &ClearClr.x);
+	}
+	/*glClearColor(ClearClr.x, ClearClr.y, ClearClr.z, ClearClr.w);
+	glClear(GL_COLOR_BUFFER_BIT);*/
+	return *this;
+}
+
+LWVideoDriver &LWVideoDriver_OpenGL4_5::ClearColor(const LWVector4f &Color) {
+	SetFrameBuffer(m_ActiveFrameBuffer);
+	for (uint32_t i = 0; i < m_ActiveDrawCount; i++) {
+		glClearBufferfv(GL_COLOR, i, &Color.x);
+	}
+	//glClearColor(Color.x, Color.y, Color.z, Color.w);
+	//glClear(GL_COLOR_BUFFER_BIT);
 	return *this;
 }
 
 LWVideoDriver &LWVideoDriver_OpenGL4_5::ClearDepth(float Depth) {
 	SetFrameBuffer(m_ActiveFrameBuffer);
-	glClearDepth(Depth);
-	glClear(GL_DEPTH_BUFFER_BIT);
+	glClearBufferfi(GL_DEPTH, 0, Depth, 0);
+	//glClearDepth(Depth);
+	//glClear(GL_DEPTH_BUFFER_BIT);
 	return *this;
 }
 
 LWVideoDriver &LWVideoDriver_OpenGL4_5::ClearStencil(uint8_t Stencil) {
 	SetFrameBuffer(m_ActiveFrameBuffer);
-	glClearStencil((int32_t)Stencil);
-	glClear(GL_STENCIL_BUFFER_BIT);
+	glClearBufferfi(GL_STENCIL, 0, 0.0f, (int32_t)Stencil);
+	//glClearStencil((int32_t)Stencil);
+	//glClear(GL_STENCIL_BUFFER_BIT);
 	return *this;
 }
 
@@ -1041,4 +1108,5 @@ LWOpenGL4_5Context &LWVideoDriver_OpenGL4_5::GetContext(void) {
 LWVideoDriver_OpenGL4_5::LWVideoDriver_OpenGL4_5(LWWindow *Window, LWOpenGL4_5Context &Context, uint32_t UniformBlockSize) : LWVideoDriver(Window, OpenGL4_5, UniformBlockSize) {
 	m_Context = Context;
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }

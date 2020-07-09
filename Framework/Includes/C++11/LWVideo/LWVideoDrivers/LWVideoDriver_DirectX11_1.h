@@ -19,13 +19,15 @@ public:
 
 	virtual LWVideoDriver &ClearColor(uint32_t Color);
 
+	virtual LWVideoDriver &ClearColor(const LWVector4f &Color);
+
 	virtual LWVideoDriver &ClearDepth(float Depth);
 
 	virtual LWVideoDriver &ClearStencil(uint8_t Stencil);
 
 	virtual LWVideoDriver &ViewPort(const LWVector4i &Viewport);
 
-	virtual bool SetFrameBuffer(LWFrameBuffer *FrameBuffer);
+	virtual bool SetFrameBuffer(LWFrameBuffer *FrameBuffer, bool ChangeViewport = false);
 
 	virtual bool SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *VertexBuffer, LWVideoBuffer *IndiceBuffer, uint32_t VerticeStride, uint32_t Offset);
 
@@ -43,11 +45,15 @@ public:
 
 	virtual LWTexture *CreateTextureCubeMap(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator);
 
+	virtual LWTexture *CreateTexture2DMS(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, LWAllocator &Allocator);
+
 	virtual LWTexture *CreateTexture1DArray(uint32_t TextureState, uint32_t PackType, uint32_t Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator);
 
 	virtual LWTexture *CreateTexture2DArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator);
 
 	virtual LWTexture *CreateTextureCubeArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MapmapCnt, LWAllocator &Allocator);
+	
+	virtual LWTexture *CreateTexture2DMSArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, uint32_t Layers, LWAllocator &Allocator);
 
 	virtual LWPipeline *CreatePipeline(LWShader **ShaderStages, uint64_t Flags, LWAllocator &Allocator);
 
@@ -160,7 +166,7 @@ struct LWDirectX11_1TextureContext {
 	std::unordered_map<uint32_t, ID3D11DepthStencilView*> m_DepthStencilViewList;
 	std::unordered_map<uint32_t, ID3D11UnorderedAccessView*> m_UnorderedViewList;
 
-	static uint32_t MakeHash(uint32_t Layer, uint32_t MipmapLevel);
+	static uint32_t MakeHash(uint32_t Layer, uint32_t Face, uint32_t MipmapLevel);
 
 	ID3D11RenderTargetView *GetRenderTargetView(uint32_t Layer, uint32_t Face, uint32_t MipmapLevel, LWTexture *Tex, LWDirectX11_1Context &DriverContext);
 

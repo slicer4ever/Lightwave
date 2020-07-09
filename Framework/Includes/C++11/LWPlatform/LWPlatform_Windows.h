@@ -26,9 +26,11 @@
 #endif
 
 #define DIRECTINPUT_VERSION DIRECTINPUT_HEADER_VERSION
+//Undef names used by Lightwave that windows headers also use(because fuck commonly used names, and let's macro them apparently)
 #undef DrawText
 #undef GetUserName
 #undef LoadImage
+#undef FindResource
 #undef max
 #undef min
 
@@ -146,8 +148,6 @@ struct LWVulkan_Context{
 struct LWOpenGL4_5Context {
 	HGLRC m_GLRC; /*!< \brief the openGL rendering context. */
 	HDC m_DC; /*!< \brief the openGL drawing context. */
-	uint32_t m_VAOID; /*!< \brief the Vertex array object id for the entire context. */
-	uint32_t m_ActiveAttribs = 0; /*!< \brief the number of currently active attribute arrays. */
 };
 
 #endif
@@ -164,8 +164,6 @@ struct LWOpenGL4_5Context {
 struct LWOpenGL3_3Context {
 	HGLRC m_GLRC; /*!< \brief the openGL rendering context. */
 	HDC m_DC; /*!< \brief the openGL drawing context. */
-	uint32_t m_VAOID; /*!< \brief the Vertex array object id for the entire context. */
-	uint32_t m_ActiveAttribs = 0; /*!< \brief the number of currently active attribute arrays. */
 };
 
 #endif
@@ -182,6 +180,7 @@ struct LWOpenGL2_1Context {
 	HGLRC m_GLRC; /*!< \brief the openGL rendering context. */
 	HDC m_DC; /*!< \brief the openGL drawing context. */
 	uint32_t m_ActiveAttribs = 0; /*!< \brief the number of currently active attribute arrays. */
+	uint32_t m_ActiveAttributeIDs[32];
 };
 
 #endif

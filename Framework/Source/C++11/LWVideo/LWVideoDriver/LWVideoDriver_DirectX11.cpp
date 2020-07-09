@@ -246,11 +246,11 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1D(uint32_t TextureState, uin
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
 	};
-	bool MakeMipmaps = (TextureState&LWTexture::MakeMipmaps);
+	bool MakeMipmaps = (TextureState & LWTexture::MakeMipmaps);
 	bool Compressed = LWImage::CompressedType(PackType);
 	bool DepthTex = LWImage::DepthType(PackType);
 	bool RenderTarget = (TextureState&(LWTexture::RenderTarget | LWTexture::RenderBuffer));
-	TextureState = (TextureState & ~LWTexture::MakeMipmaps);
+	//TextureState = (TextureState & ~LWTexture::MakeMipmaps);
 	uint32_t MipLevels = MakeMipmaps ? 0u : (MipmapCnt + 1u);
 	uint32_t BindFlags = D3D11_BIND_SHADER_RESOURCE | ((DepthTex || Compressed) ? 0 : D3D11_BIND_UNORDERED_ACCESS) | ((RenderTarget || MakeMipmaps) ? D3D11_BIND_RENDER_TARGET : 0u);
 
@@ -271,7 +271,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1D(uint32_t TextureState, uin
 			m_Context.m_DXDeviceContext->UpdateSubresource(Context.m_Texture, i, nullptr, Texels[t], LWImage::GetStride(Size, PackType), 0);
 		}
 	}
-	if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
+	//if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
 	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, 0, 0), LWTexture::Texture1D);
 }
 
@@ -309,7 +309,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2D(uint32_t TextureState, uin
 			m_Context.m_DXDeviceContext->UpdateSubresource(Context.m_Texture, i, nullptr, Texels[t], LWImage::GetStride(S.x, PackType), 0);
 		}
 	}
-	if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
+	//if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
 	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, 0), LWTexture::Texture2D);
 }
 
@@ -328,7 +328,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture3D(uint32_t TextureState, uin
 	bool Compressed = LWImage::CompressedType(PackType);
 	bool DepthTex = LWImage::DepthType(PackType);
 	bool RenderTarget = (TextureState&(LWTexture::RenderTarget|LWTexture::RenderBuffer));
-	TextureState = (TextureState & ~LWTexture::MakeMipmaps);
+	//TextureState = (TextureState & ~LWTexture::MakeMipmaps);
 	uint32_t MipLevels = MakeMipmaps ? 0u : (MipmapCnt + 1u);
 	uint32_t BindFlags = D3D11_BIND_SHADER_RESOURCE | ((DepthTex || Compressed) ? 0 : D3D11_BIND_UNORDERED_ACCESS) | ((RenderTarget || MakeMipmaps) ? D3D11_BIND_RENDER_TARGET : 0u);
 	D3D11_TEXTURE3D_DESC Desc = { (uint32_t)Size.x, (uint32_t)Size.y, (uint32_t)Size.z,
@@ -346,13 +346,14 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture3D(uint32_t TextureState, uin
 			m_Context.m_DXDeviceContext->UpdateSubresource(Context.m_Texture, i, nullptr, Texels[t], LWImage::GetStride(S.x, PackType), LWImage::GetLength2D(LWVector2i(S.x, S.y), PackType));
 		}
 	}
-	if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
+	//if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
 	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, Size, LWTexture::Texture3D);
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeMap(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
 	//PackTypes:                   RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                       Depth32,               Depth24Stencil8,          DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
-	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_D16_UNORM, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
@@ -365,7 +366,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeMap(uint32_t TextureState
 	bool Compressed = LWImage::CompressedType(PackType);
 	bool DepthTex = LWImage::DepthType(PackType);
 	bool RenderTarget = (TextureState&(LWTexture::RenderTarget|LWTexture::RenderBuffer));
-	TextureState = (TextureState & ~LWTexture::MakeMipmaps);
+	//TextureState = (TextureState & ~LWTexture::MakeMipmaps);
 	uint32_t MipLevels = MakeMipmaps ? 0u : (MipmapCnt + 1u);
 	uint32_t BindFlags = D3D11_BIND_SHADER_RESOURCE | ((DepthTex || Compressed) ? 0 : D3D11_BIND_UNORDERED_ACCESS) | ((RenderTarget || MakeMipmaps) ? (DepthTex ? D3D11_BIND_DEPTH_STENCIL : D3D11_BIND_RENDER_TARGET) : 0u);
 	uint32_t RenderFlags = (TextureState&LWTexture::RenderBuffer) == 0 ? 0 : (D3D11_DSV_READ_ONLY_DEPTH | D3D11_DSV_READ_ONLY_STENCIL);
@@ -373,7 +374,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeMap(uint32_t TextureState
 		MipLevels, 6u, Formats[PackType],{ 1u, 0u },
 		D3D11_USAGE_DEFAULT, BindFlags,
 		0u,	D3D11_RESOURCE_MISC_TEXTURECUBE | (MakeMipmaps ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0u) };
-	D3D11_SHADER_RESOURCE_VIEW_DESC ViewDesc = { Formats[PackType], D3D11_SRV_DIMENSION_TEXTURECUBE };// , { 0u, (uint32_t)-1 }
+	D3D11_SHADER_RESOURCE_VIEW_DESC ViewDesc = { VFormats[PackType], D3D11_SRV_DIMENSION_TEXTURECUBE };// , { 0u, (uint32_t)-1 }
 	ViewDesc.TextureCube = { 0u, (uint32_t)-1 };
 	
 	if (!CheckResult(m_Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, (ID3D11Texture2D**)&Context.m_Texture), "CreateTexture2D")) return nullptr;
@@ -389,8 +390,33 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeMap(uint32_t TextureState
 			}
 		}
 	}
-	if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
+	//if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
 	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, 0), LWTexture::TextureCubeMap);
+}
+
+
+LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DMS(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, LWAllocator &Allocator) {
+	//PackTypes:                   RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                          Depth32,                  Depth24Stencil8,                   DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
+	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	LWDirectX11_1TextureContext Context;
+	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
+		if (SUCCEEDED(Res)) return true;
+		std::cout << "CreateTexture2DMS Error '" << FuncName << "': " << std::hex << Res << std::dec << std::endl;
+		if (Context.m_View) Context.m_View->Release();
+		if (Context.m_Texture) Context.m_Texture->Release();
+		return false;
+	};
+	TextureState = (TextureState & ~LWTexture::MakeMipmaps); //Can't have mipmaps.
+	bool Compressed = LWImage::CompressedType(PackType);
+	bool DepthTex = LWImage::DepthType(PackType);
+	bool RenderTarget = (TextureState & (LWTexture::RenderTarget | LWTexture::RenderBuffer));
+	uint32_t BindFlags = D3D11_BIND_SHADER_RESOURCE | ((RenderTarget) ? (DepthTex ? D3D11_BIND_DEPTH_STENCIL : D3D11_BIND_RENDER_TARGET) : 0u);
+	D3D11_TEXTURE2D_DESC Desc = { (uint32_t)Size.x, (uint32_t)Size.y, 1u, 1u, Formats[PackType], {Samples, 0u}, D3D11_USAGE_DEFAULT, BindFlags, 0u, 0u };
+	D3D11_SHADER_RESOURCE_VIEW_DESC ViewDesc = { VFormats[PackType], D3D11_SRV_DIMENSION_TEXTURE2DMS, {0u} };
+	if (!CheckResult(m_Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, (ID3D11Texture2D**)&Context.m_Texture), "CreateTexture2D")) return nullptr;
+	if (!CheckResult(m_Context.m_DXDevice->CreateShaderResourceView(Context.m_Texture, &ViewDesc, &Context.m_View), "CreateShaderResourceView")) return nullptr;
+	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, Samples, LWVector3i(Size, 0), LWTexture::Texture2DMS);
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1DArray(uint32_t TextureState, uint32_t PackType, uint32_t Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
@@ -408,7 +434,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1DArray(uint32_t TextureState
 	bool Compressed = LWImage::CompressedType(PackType);
 	bool DepthTex = LWImage::DepthType(PackType);
 	bool RenderTarget = (TextureState&(LWTexture::RenderTarget | LWTexture::RenderBuffer));
-	TextureState = (TextureState & ~LWTexture::MakeMipmaps);
+	//TextureState = (TextureState & ~LWTexture::MakeMipmaps);
 
 	uint32_t MipLevels = MakeMipmaps ? 0u : (MipmapCnt + 1u);
 	uint32_t BindFlags = D3D11_BIND_SHADER_RESOURCE | ((DepthTex || Compressed) ? 0 : D3D11_BIND_UNORDERED_ACCESS) | ((RenderTarget || MakeMipmaps) ? D3D11_BIND_RENDER_TARGET : 0u);
@@ -432,7 +458,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1DArray(uint32_t TextureState
 			}
 		}
 	}
-	if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
+	//if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
 	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, Layers, 0), LWTexture::Texture1DArray);
 
 }
@@ -454,7 +480,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DArray(uint32_t TextureState
 	bool Compressed = LWImage::CompressedType(PackType);
 	bool DepthTex = LWImage::DepthType(PackType);
 	bool RenderTarget = (TextureState&(LWTexture::RenderTarget|LWTexture::RenderBuffer));
-	TextureState = (TextureState & ~LWTexture::MakeMipmaps);
+	//TextureState = (TextureState & ~LWTexture::MakeMipmaps);
 
 	uint32_t MipLevels = MakeMipmaps ? 0u : (MipmapCnt + 1u);
 	uint32_t BindFlags = D3D11_BIND_SHADER_RESOURCE | ((DepthTex || Compressed) ? 0 : D3D11_BIND_UNORDERED_ACCESS) | ((RenderTarget || MakeMipmaps) ? (DepthTex ? D3D11_BIND_DEPTH_STENCIL : D3D11_BIND_RENDER_TARGET) : 0u);
@@ -482,13 +508,14 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DArray(uint32_t TextureState
 			}
 		}
 	}
-	if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
+	//if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
 	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, Layers), LWTexture::Texture2DArray);
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
 	//PackTypes:                   RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                       Depth32,               Depth24Stencil8,          DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
-	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_D16_UNORM, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
@@ -501,7 +528,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeArray(uint32_t TextureSta
 	bool Compressed = LWImage::CompressedType(PackType);
 	bool DepthTex = LWImage::DepthType(PackType);
 	bool RenderTarget = (TextureState&(LWTexture::RenderTarget | LWTexture::RenderBuffer));
-	TextureState = (TextureState & ~LWTexture::MakeMipmaps);
+	//TextureState = (TextureState & ~LWTexture::MakeMipmaps);
 
 	uint32_t MipLevels = MakeMipmaps ? 0u : (MipmapCnt + 1u);
 	uint32_t BindFlags = D3D11_BIND_SHADER_RESOURCE | ((DepthTex || Compressed) ? 0 : D3D11_BIND_UNORDERED_ACCESS) | ((RenderTarget || MakeMipmaps) ? (DepthTex ? D3D11_BIND_DEPTH_STENCIL : D3D11_BIND_RENDER_TARGET) : 0u);
@@ -510,7 +537,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeArray(uint32_t TextureSta
 		MipLevels, 6u*Layers, Formats[PackType],{ 1u, 0u },
 		D3D11_USAGE_DEFAULT, BindFlags,
 		0u,	D3D11_RESOURCE_MISC_TEXTURECUBE | (MakeMipmaps ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0u) };
-	D3D11_SHADER_RESOURCE_VIEW_DESC ViewDesc = { Formats[PackType], D3D11_SRV_DIMENSION_TEXTURECUBEARRAY };
+	D3D11_SHADER_RESOURCE_VIEW_DESC ViewDesc = { VFormats[PackType], D3D11_SRV_DIMENSION_TEXTURECUBEARRAY };
 	ViewDesc.TextureCubeArray = { 0u, (uint32_t)-1, 0u, Layers };
 
 	if (!CheckResult(m_Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, (ID3D11Texture2D**)&Context.m_Texture), "CreateTexture2D")) return nullptr;
@@ -526,9 +553,34 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeArray(uint32_t TextureSta
 			}
 		}
 	}
-	if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
+	//if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
 	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, Layers), LWTexture::TextureCubeMapArray);
 
+}
+
+
+LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DMSArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, uint32_t Layers, LWAllocator &Allocator) {
+	//PackTypes:                   RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                          Depth32,                  Depth24Stencil8,                   DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
+	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	LWDirectX11_1TextureContext Context;
+	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
+		if (SUCCEEDED(Res)) return true;
+		std::cout << "CreateTexture2DMSArray Error '" << FuncName << "': " << std::hex << Res << std::dec << std::endl;
+		if (Context.m_View) Context.m_View->Release();
+		if (Context.m_Texture) Context.m_Texture->Release();
+		return false;
+	};
+	TextureState = (TextureState & ~LWTexture::MakeMipmaps); //Can't have mipmaps.
+	bool Compressed = LWImage::CompressedType(PackType);
+	bool DepthTex = LWImage::DepthType(PackType);
+	bool RenderTarget = (TextureState & (LWTexture::RenderTarget | LWTexture::RenderBuffer));
+	uint32_t BindFlags = D3D11_BIND_SHADER_RESOURCE | ((RenderTarget) ? (DepthTex ? D3D11_BIND_DEPTH_STENCIL : D3D11_BIND_RENDER_TARGET) : 0u);
+	D3D11_TEXTURE2D_DESC Desc = { (uint32_t)Size.x, (uint32_t)Size.y, 1u, Layers, Formats[PackType], {Samples, 0u}, D3D11_USAGE_DEFAULT, BindFlags, 0u, 0u };
+	D3D11_SHADER_RESOURCE_VIEW_DESC ViewDesc = { VFormats[PackType], D3D11_SRV_DIMENSION_TEXTURE2DMSARRAY, {0u, Layers} };
+	if (!CheckResult(m_Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, (ID3D11Texture2D**)&Context.m_Texture), "CreateTexture2D")) return nullptr;
+	if (!CheckResult(m_Context.m_DXDevice->CreateShaderResourceView(Context.m_Texture, &ViewDesc, &Context.m_View), "CreateShaderResourceView")) return nullptr;
+	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, Samples, LWVector3i(Size, Layers), LWTexture::Texture2DMSArray);
 }
 
 LWVideoBuffer *LWVideoDriver_DirectX11_1::CreateVideoBuffer(uint32_t Type, uint32_t UsageFlag, uint32_t TypeSize, uint32_t Length, LWAllocator &Allocator, const uint8_t *Buffer) {
@@ -595,6 +647,8 @@ bool LWVideoDriver_DirectX11_1::UpdateTexture(LWTexture *Texture) {
 	if (!Texture->isDirty()) return false;
 	uint32_t TextureState = Texture->GetTextureState();
 	uint32_t SamplerHash = (TextureState & (LWTexture::MinFilterFlag | LWTexture::MagFilterFlag | LWTexture::WrapSFilterFlag | LWTexture::WrapTFilterFlag | LWTexture::WrapRFilterFlag | LWTexture::CompareFuncFlag | LWTexture::CompareModeFlag | LWTexture::DepthReadFlag));
+	bool MakeMips = (TextureState & LWTexture::MakeMipmaps)!=0;
+
 	auto Iter = m_Context.m_SamplerMap.find(SamplerHash);
 	ID3D11SamplerState *SampleState = nullptr;
 	if (Iter != m_Context.m_SamplerMap.end()) SampleState = Iter->second;
@@ -626,6 +680,7 @@ bool LWVideoDriver_DirectX11_1::UpdateTexture(LWTexture *Texture) {
 	}
 	LWDirectX11_1Texture *Tex = (LWDirectX11_1Texture*)Texture;
 	LWDirectX11_1TextureContext &TexCon = Tex->GetContext();
+	if (MakeMips) m_Context.m_DXDeviceContext->GenerateMips(TexCon.m_View);
 	TexCon.m_Sampler = SampleState;
 	Texture->ClearDirty();
 	return true;
@@ -813,8 +868,8 @@ LWVideoDriver &LWVideoDriver_DirectX11_1::DestroyFrameBuffer(LWFrameBuffer *Fram
 	return *this;
 }
 
-bool LWVideoDriver_DirectX11_1::SetFrameBuffer(LWFrameBuffer *FrameBuffer) {
-	if (!LWVideoDriver::SetFrameBuffer(FrameBuffer)) return false;
+bool LWVideoDriver_DirectX11_1::SetFrameBuffer(LWFrameBuffer *FrameBuffer, bool ChangeViewport) {
+	if (!LWVideoDriver::SetFrameBuffer(FrameBuffer, ChangeViewport)) return false;
 	ID3D11RenderTargetView *ColorViews[LWFrameBuffer::ColorCount];
 	ID3D11DepthStencilView *DepthView = m_Context.m_BackBufferDepthStencilView;
 	ColorViews[0] = m_Context.m_BackBuffer;
@@ -1030,7 +1085,7 @@ bool LWVideoDriver_DirectX11_1::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer 
 }
 
 LWVideoDriver &LWVideoDriver_DirectX11_1::ClearColor(uint32_t Color) {
-	SetFrameBuffer(m_ActiveFrameBuffer);
+	SetFrameBuffer(m_ActiveFrameBuffer, false);
 	LWVector4f Clr = LWUNPACK_COLORVEC4f(Color);
 	ID3D11RenderTargetView *RViews[LWFrameBuffer::ColorCount];
 	std::fill(RViews, RViews + LWFrameBuffer::ColorCount, nullptr);
@@ -1047,6 +1102,25 @@ LWVideoDriver &LWVideoDriver_DirectX11_1::ClearColor(uint32_t Color) {
 	}
 	return *this;
 }
+
+LWVideoDriver &LWVideoDriver_DirectX11_1::ClearColor(const LWVector4f &Color) {
+	SetFrameBuffer(m_ActiveFrameBuffer, false);
+	ID3D11RenderTargetView *RViews[LWFrameBuffer::ColorCount];
+	std::fill(RViews, RViews + LWFrameBuffer::ColorCount, nullptr);
+	RViews[0] = m_Context.m_BackBuffer;
+	if (m_ActiveFrameBuffer) {
+		for (uint32_t i = 0; i < LWFrameBuffer::ColorCount; i++) {
+			auto &Slot = m_ActiveFrameBuffer->GetAttachment(LWFrameBuffer::Color0 + i);
+			if (!Slot.m_Source) RViews[i] = nullptr;
+			else RViews[i] = ((LWDirectX11_1Texture*)Slot.m_Source)->GetContext().GetRenderTargetView(Slot.m_Layer, Slot.m_Face, Slot.m_Mipmap, Slot.m_Source, m_Context);
+		}
+	}
+	for (uint32_t i = 0; i < LWFrameBuffer::ColorCount; i++) {
+		if (RViews[i]) m_Context.m_DXDeviceContext->ClearRenderTargetView(RViews[i], &Color.x);
+	}
+	return *this;
+}
+
 
 LWVideoDriver &LWVideoDriver_DirectX11_1::ClearDepth(float Depth) {
 	SetFrameBuffer(m_ActiveFrameBuffer);
@@ -1118,13 +1192,13 @@ LWVideoDriver_DirectX11_1::LWVideoDriver_DirectX11_1(LWWindow *Window, LWDirectX
 }
 
 
-uint32_t LWDirectX11_1TextureContext::MakeHash(uint32_t Layer, uint32_t MipmapLevel) {
-	return Layer | (MipmapLevel << 16);
+uint32_t LWDirectX11_1TextureContext::MakeHash(uint32_t Layer, uint32_t Face, uint32_t MipmapLevel) {
+	return (Layer | (MipmapLevel << 16) | (Face<<28));
 }
 
 ID3D11RenderTargetView *LWDirectX11_1TextureContext::GetRenderTargetView(uint32_t Layer, uint32_t Face, uint32_t MipmapLevel, LWTexture *Tex, LWDirectX11_1Context &DriverContext) {
 	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
-	uint32_t Hash = MakeHash(Layer, MipmapLevel);
+	uint32_t Hash = MakeHash(Layer, Face, MipmapLevel);
 	auto Iter = m_RenderTargetViewList.find(Hash);
 	if (Iter != m_RenderTargetViewList.end()) return Iter->second;
 	uint32_t PackType = Tex->GetPackType();
@@ -1146,17 +1220,22 @@ ID3D11RenderTargetView *LWDirectX11_1TextureContext::GetRenderTargetView(uint32_
 	} else if (TexType == LWTexture::TextureCubeMap) {
 		Layer += Face;
 		Desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
-		Desc.Texture2DArray = { MipmapLevel, Layer, 6-Layer };
+		Desc.Texture2DArray = { MipmapLevel, Layer, 1 };
 	} else if (TexType == LWTexture::Texture1DArray) {
 		Desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE1DARRAY;
-		Desc.Texture1DArray = { MipmapLevel, Layer, Size.y - Layer };
+		Desc.Texture1DArray = { MipmapLevel, Layer, 1 };
 	} else if (TexType == LWTexture::Texture2DArray) {
 		Desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
-		Desc.Texture2DArray = { MipmapLevel, Layer, Size.z - Layer };
+		Desc.Texture2DArray = { MipmapLevel, Layer, 1 };
 	} else if (TexType == LWTexture::TextureCubeMapArray) {
 		Layer = Layer * 6 + Face;
 		Desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
-		Desc.Texture2DArray = { MipmapLevel, Layer, Size.z * 6 - Layer };
+		Desc.Texture2DArray = { MipmapLevel, Layer, 1 };
+	} else if (TexType == LWTexture::Texture2DMS) {
+		Desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
+	} else if (TexType == LWTexture::Texture2DMSArray) {
+		Desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMSARRAY;
+		Desc.Texture2DMSArray = { Layer, 1 };
 	}
 	HRESULT Res = DriverContext.m_DXDevice->CreateRenderTargetView(m_Texture, &Desc, &View);
 	if (FAILED(Res)) {
@@ -1173,8 +1252,9 @@ ID3D11RenderTargetView *LWDirectX11_1TextureContext::GetRenderTargetView(uint32_
 }
 
 ID3D11DepthStencilView *LWDirectX11_1TextureContext::GetDepthStencilView(uint32_t Layer, uint32_t Face, uint32_t MipmapLevel, LWTexture *Tex, LWDirectX11_1Context &DriverContext) {
+
 	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_D16_UNORM,    DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_D32_FLOAT,    DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
-	uint32_t Hash = MakeHash(Layer, MipmapLevel);
+	uint32_t Hash = MakeHash(Layer, Face, MipmapLevel);
 	auto Iter = m_DepthStencilViewList.find(Hash);
 	if (Iter != m_DepthStencilViewList.end()) return Iter->second;
 	uint32_t PackType = Tex->GetPackType();
@@ -1188,23 +1268,28 @@ ID3D11DepthStencilView *LWDirectX11_1TextureContext::GetDepthStencilView(uint32_
 	if (TexType == LWTexture::Texture1D) {
 		Desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE1D;
 		Desc.Texture1D = { MipmapLevel };
-	} else if (TexType == LWTexture::Texture2D) {
+	} else if (TexType == LWTexture::Texture2D || TexType==LWTexture::Texture2DMS) {
 		Desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 		Desc.Texture2D = { MipmapLevel };
 	} else if (TexType == LWTexture::TextureCubeMap) {
 		Layer += Face;
 		Desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
-		Desc.Texture2DArray = { MipmapLevel, Layer, 6-Layer };
+		Desc.Texture2DArray = { MipmapLevel, Layer, 1 };
 	} else if (TexType == LWTexture::Texture1DArray) {
 		Desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE1DARRAY;
-		Desc.Texture1DArray = { MipmapLevel, Layer, Size.y - Layer };
+		Desc.Texture1DArray = { MipmapLevel, Layer, 1 };
 	} else if (TexType == LWTexture::Texture2DArray) {
 		Desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
-		Desc.Texture2DArray = { MipmapLevel, Layer, Size.z - Layer };
+		Desc.Texture2DArray = { MipmapLevel, Layer, 1 };
 	} else if (TexType == LWTexture::TextureCubeMapArray) {
 		Layer = Layer * 6 + Face;
 		Desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DARRAY;
-		Desc.Texture2DArray = { MipmapLevel, Layer, Size.z * 6 - Layer };
+		Desc.Texture2DArray = { MipmapLevel, Layer, 1 };
+	} else if (TexType == LWTexture::Texture2DMS) {
+		Desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
+	}else if (TexType == LWTexture::Texture2DMSArray){
+		Desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMSARRAY;
+		Desc.Texture2DMSArray = { Layer, 1 };
 	} else return nullptr;
 	HRESULT Res = DriverContext.m_DXDevice->CreateDepthStencilView(m_Texture, &Desc, &View);
 	if (FAILED(Res)) {
@@ -1222,7 +1307,7 @@ ID3D11DepthStencilView *LWDirectX11_1TextureContext::GetDepthStencilView(uint32_
 
 ID3D11UnorderedAccessView *LWDirectX11_1TextureContext::GetUnorderedAccessView(uint32_t Layer, uint32_t Face, uint32_t MipmapLevel, LWTexture *Tex, LWDirectX11_1Context &DriverContext) {
 	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_D16_UNORM,    DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_D32_FLOAT,    DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
-	uint32_t Hash = MakeHash(Layer, MipmapLevel);
+	uint32_t Hash = MakeHash(Layer, Face, MipmapLevel);
 	auto Iter = m_UnorderedViewList.find(Hash);
 	if (Iter != m_UnorderedViewList.end()) return Iter->second;
 	uint32_t PackType = Tex->GetPackType();
@@ -1247,17 +1332,17 @@ ID3D11UnorderedAccessView *LWDirectX11_1TextureContext::GetUnorderedAccessView(u
 	} else if (TexType == LWTexture::TextureCubeMap) {
 		Layer += Face;
 		Desc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2DARRAY;
-		Desc.Texture2DArray = { MipmapLevel, Layer, 6 - Layer };
+		Desc.Texture2DArray = { MipmapLevel, Layer, 1 };
 	} else if (TexType == LWTexture::Texture1DArray) {
 		Desc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE1DARRAY;
-		Desc.Texture1DArray = { MipmapLevel, Layer, Size.y - Layer };
+		Desc.Texture1DArray = { MipmapLevel, Layer, 1 };
 	} else if (TexType == LWTexture::Texture2DArray) {
 		Desc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2DARRAY;
-		Desc.Texture2DArray = { MipmapLevel, Layer, Size.z - Layer };
+		Desc.Texture2DArray = { MipmapLevel, Layer, 1 };
 	} else if (TexType == LWTexture::TextureCubeMapArray) {
 		Layer = Layer * 6 + Face;
 		Desc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2DARRAY;
-		Desc.Texture2DArray = { MipmapLevel, Layer, Size.z * 6 - Layer };
+		Desc.Texture2DArray = { MipmapLevel, Layer, 1 };
 	} else return nullptr;
 	HRESULT Res = DriverContext.m_DXDevice->CreateUnorderedAccessView(m_Texture, &Desc, &View);
 	if (FAILED(Res)) {

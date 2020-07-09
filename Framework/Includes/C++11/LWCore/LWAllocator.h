@@ -3,6 +3,7 @@
 #include <memory>
 #include <new>
 #include <cstdint>
+
 /*! \defgroup LWAllocator LWAllocator
 	\ingroup LWCore
 	\brief LWAllocator group of allocation schemes used by the framework.

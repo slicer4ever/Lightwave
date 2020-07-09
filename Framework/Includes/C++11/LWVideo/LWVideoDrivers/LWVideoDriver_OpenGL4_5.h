@@ -16,6 +16,8 @@ public:
 
 	virtual LWVideoDriver &ClearColor(uint32_t Color);
 
+	virtual LWVideoDriver &ClearColor(const LWVector4f &Color);
+
 	virtual LWVideoDriver &ClearDepth(float Depth);
 
 	virtual LWVideoDriver &ClearStencil(uint8_t Stencil);
@@ -24,7 +26,7 @@ public:
 
 	virtual bool SetRasterState(uint64_t Flags, float Bias, float SlopedScaleBias);
 
-	virtual bool SetFrameBuffer(LWFrameBuffer *Buffer);
+	virtual bool SetFrameBuffer(LWFrameBuffer *Buffer, bool ChangeViewport = false);
 
 	virtual bool SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *VertexBuffer, LWVideoBuffer *IndiceBuffer, uint32_t VertexStride, uint32_t Offset);
 
@@ -42,11 +44,15 @@ public:
 
 	virtual LWTexture *CreateTextureCubeMap(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator);
 
+	virtual LWTexture *CreateTexture2DMS(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, LWAllocator &Allocator);
+
 	virtual LWTexture *CreateTexture1DArray(uint32_t TextureState, uint32_t PackType, uint32_t Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator);
 
 	virtual LWTexture *CreateTexture2DArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator);
 
 	virtual LWTexture *CreateTextureCubeArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MapmapCnt, LWAllocator &Allocator);
+
+	virtual LWTexture *CreateTexture2DMSArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, uint32_t Layers, LWAllocator &Allocator);
 
 	virtual LWVideoBuffer *CreateVideoBuffer(uint32_t Type, uint32_t UsageFlag, uint32_t TypeSize, uint32_t Length, LWAllocator &Allocator, const uint8_t *Buffer);
 
@@ -114,12 +120,14 @@ protected:
 	virtual LWVideoDriver &ClonePipeline(LWPipeline *Target, LWPipeline *Source);
 
 	LWOpenGL4_5Context m_Context;
+	uint32_t m_ActiveDrawCount = 1;
 };
 
 
 /*!< \brief This context is the underlying pipeline context used in the opengl 4.4 pipeline. the application should never require accessing it directly, but it is provided here incase the application is specefically targeting the openGL api. */
 struct LWOpenGL4_5PipelineContext {
 	uint32_t m_ProgramID = 0; /*!< \brief the program id for use in opengl api calls. */
+	uint32_t m_VAOID = 0; /*!< \brief the vertex array object for the pipeline. */
 };
 
 

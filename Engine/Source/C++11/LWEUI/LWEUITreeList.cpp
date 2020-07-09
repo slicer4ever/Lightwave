@@ -39,17 +39,12 @@ LWEUITreeItem::LWEUITreeItem(const LWText &Value, void *UserData, LWFont *Font, 
 
 //LWEUITreeList
 
-LWEUITreeList *LWEUITreeList::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
+LWEUITreeList *LWEUITreeList::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
 	char Buffer[256];
 	LWAllocator *Allocator = Manager->GetAllocator();
 	LWELocalization *Localize = Manager->GetLocalization();
 	LWEUITreeList *Tree = Allocator->Allocate<LWEUITreeList>(LWVector4f(0.0f), LWVector4f(0.0f), 0);
 	LWXMLAttribute *StyleAttr = Node->FindAttribute("Style");
-	LWEXMLNode *Style = nullptr;
-	if (StyleAttr) {
-		auto Iter = StyleMap.find(LWText::MakeHash(ParseComponentAttribute(Buffer, sizeof(Buffer), StyleAttr->m_Value, ActiveComponent, ActiveComponentNode)));
-		if (Iter != StyleMap.end()) Style = Iter->second;
-	}
 	LWEUI::XMLParse(Tree, Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 
 	LWXMLAttribute *OverAttr = FindAttribute(Node, Style, "OverMaterial");

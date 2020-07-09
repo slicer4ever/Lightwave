@@ -10,19 +10,13 @@
 #include <cstdarg>
 #include <iostream>
 
-LWEUIRichLabel *LWEUIRichLabel::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
+LWEUIRichLabel *LWEUIRichLabel::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
 	char Buffer[1024*32]; //max of 32kb files.
 	char SBuffer[1024 * 32];
 	LWFileStream Stream;
 	LWAllocator *Allocator = Manager->GetAllocator();
 	LWELocalization *Localize = Manager->GetLocalization();
 	LWEUIRichLabel *Label = Allocator->Allocate<LWEUIRichLabel>("", nullptr, *Allocator, nullptr, LWVector4f(0.0f), LWVector4f(0.0f), 0);
-	LWXMLAttribute *StyleAttr = Node->FindAttribute("Style");
-	LWEXMLNode *Style = nullptr;
-	if (StyleAttr) {
-		auto Iter = StyleMap.find(LWText::MakeHash(ParseComponentAttribute(Buffer, sizeof(Buffer), StyleAttr->m_Value, ActiveComponent, ActiveComponentNode)));
-		if (Iter != StyleMap.end()) Style = Iter->second;
-	}
 	LWEUI::XMLParse(Label, Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 
 	LWXMLAttribute *FontAttr = FindAttribute(Node, Style, "Font");

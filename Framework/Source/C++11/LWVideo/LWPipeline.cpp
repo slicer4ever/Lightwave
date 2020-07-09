@@ -263,6 +263,7 @@ LWPipeline &LWPipeline::ClonePipeline(LWPipeline *Pipe) {
 	m_InputCount = Pipe->GetInputCount();
 	m_BlockCount = Pipe->GetBlockCount();
 	m_ResourceCount = Pipe->GetResourceCount();
+	
 	std::copy(InputList, InputList + m_InputCount, m_InputList);
 	for (uint32_t i = 0; i < m_BlockCount; i++) {
 		m_BlockList[i].m_NameHash = BlockList[i].m_NameHash;

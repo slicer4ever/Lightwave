@@ -34,6 +34,8 @@ struct LWEJob {
 
 struct LWEJobThread {
 	std::thread m_Thread;
+	uint64_t m_TimeInJobs = 0;
+	uint32_t m_JobsRan = 0;
 	uint32_t m_ThreadID;
 };
 
@@ -68,6 +70,8 @@ public:
 	LWEJobQueue &ForceFinished(void);
 
 	LWEJobQueue &OutputJobTimings(void);
+
+	LWEJobQueue &OutputThreadTimings(void);
 
 	LWEJobQueue &SetFinished(bool isFinished);
 

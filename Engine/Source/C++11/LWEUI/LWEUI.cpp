@@ -81,45 +81,26 @@ const char *LWEUI::ParseComponentAttribute(char *Buffer, uint32_t BufferSize, co
 
 LWEUI *LWEUI::XMLParseSubNodes(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode *> &StyleMap, std::map<uint32_t, LWEXMLNode *> &ComponentMap) {
 	char Buffer[256];
-	char NameBuffer[256];
+	LWXMLAttribute *StyleAttr = Node->FindAttribute("Style");
+	LWEXMLNode *Style = nullptr;
+	if (StyleAttr) {
+		const char *StyleName = ParseComponentAttribute(Buffer, sizeof(Buffer), StyleAttr->m_Value, ActiveComponent, ActiveComponentNode);
+		auto Iter = StyleMap.find(LWText::MakeHash(StyleName));
+		if (Iter == StyleMap.end()) std::cout << "Error could not find style with name: '" << StyleName << "'" << std::endl;
+		else Style = Iter->second;
+	}
 	uint32_t Idx = LWText::CompareMultiple(Node->m_Name, 8, "Label", "Button", "Rect", "TextInput", "ScrollBar", "ListBox", "RichLabel", "TreeList");
 	LWEUI *U = nullptr;
-	if (Idx == 0) U = LWEUILabel::XMLParse(Node, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (Idx == 1) U = LWEUIButton::XMLParse(Node, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (Idx == 2) U = LWEUIRect::XMLParse(Node, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (Idx == 3) U = LWEUITextInput::XMLParse(Node, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (Idx == 4) U = LWEUIScrollBar::XMLParse(Node, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (Idx == 5) U = LWEUIListBox::XMLParse(Node, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (Idx == 6) U = LWEUIRichLabel::XMLParse(Node, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (Idx == 7) U = LWEUITreeList::XMLParse(Node, XML, Manager, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else {
-		uint32_t NameHash = LWText::MakeHash(Node->m_Name);
-		auto Iter = ComponentMap.find(NameHash);
-		if (Iter == ComponentMap.end()) {
-			std::cout << "Error unknown node: '" << Node->m_Name << "'" << std::endl;
-			return nullptr;
-		}
-		LWEXMLNode *Component = Iter->second;
-		LWXMLAttribute *ComNameAttr = Node->FindAttribute("Name");
-		LWXMLAttribute *StyleAttr = Node->FindAttribute("Style");
-		LWEXMLNode *Style = nullptr;
-		if (StyleAttr) {
-			auto Iter = StyleMap.find(LWText::MakeHash(ParseComponentAttribute(Buffer, sizeof(Buffer), StyleAttr->m_Value, ActiveComponent, ActiveComponentNode)));
-			if (Iter != StyleMap.end()) Style = Iter->second;
-		}
-		NameBuffer[0] = '\0';
-		const char *ActiveName = NameBuffer;
-		if (ComNameAttr) {
-			if (*ActiveComponentName) snprintf(NameBuffer, sizeof(NameBuffer), "%s.%s", ActiveComponentName, ParseComponentAttribute(Buffer, sizeof(Buffer), ComNameAttr->m_Value, ActiveComponent, ActiveComponentNode));
-			else ActiveName = ParseComponentAttribute(Buffer, sizeof(Buffer), ComNameAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		} else if (*ActiveComponentName) ActiveName = ActiveComponentName;
-		U = Manager->GetAllocator()->Allocate<LWEUIComponent>(LWVector4f(0.0f), LWVector4f(0.0f), 0);
-		for (LWEXMLNode *C = XML->NextNode(nullptr, Component); C; C = XML->NextNode(C, Component, true)) {
-			LWEUI *S = LWEUI::XMLParseSubNodes(U, C, XML, Manager, ActiveName, Component, Node, StyleMap, ComponentMap);
-			if (S) ((LWEUIComponent*)U)->PushComponent(S);
-		}
-		LWEUI::XMLParse(U, Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	}
+
+	if (Idx == 0) U = LWEUILabel::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else if (Idx == 1) U = LWEUIButton::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else if (Idx == 2) U = LWEUIRect::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else if (Idx == 3) U = LWEUITextInput::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else if (Idx == 4) U = LWEUIScrollBar::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else if (Idx == 5) U = LWEUIListBox::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else if (Idx == 6) U = LWEUIRichLabel::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else if (Idx == 7) U = LWEUITreeList::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else U = LWEUIComponent::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 	if (!U) return nullptr;
 	Manager->InsertUIAfter(U, UI, UI?UI->GetLastChild():Manager->GetLastUI());
 	return U;

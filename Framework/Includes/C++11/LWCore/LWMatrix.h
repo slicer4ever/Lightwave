@@ -118,13 +118,13 @@ struct LWMatrix4{
 	}
 
 	/*!< \brief returns the specified column of the matrix. */
-	LWVector4<Type> Column(uint32_t Index) {
-		Type *Arry = &m_Rows[0].x;
+	LWVector4<Type> Column(uint32_t Index) const {
+		const Type *Arry = &m_Rows[0].x;
 		return LWVector4<Type>(Arry[Index], Arry[Index + 4], Arry[Index + 8], Arry[Index + 12]);
 	};
 
 	/*! \brief returns the specified row of the matrix(this function exists for parody to LWSMatrix4's row function.) */
-	LWVector4<Type> Row(uint32_t Index) {
+	LWVector4<Type> Row(uint32_t Index) const {
 		return m_Rows[Index];
 	}
 
@@ -979,13 +979,13 @@ struct LWMatrix3{
 
 
 	/*!< \brief returns the specified column of the matrix. */
-	LWVector3<Type> Column(uint32_t Index) {
-		Type *Arry = &m_Rows[0].x;
+	LWVector3<Type> Column(uint32_t Index) const {
+		const Type *Arry = &m_Rows[0].x;
 		return LWVector3<Type>(Arry[Index], Arry[Index + 3], Arry[Index + 6]);
 	};
 
 	/*! \brief returns the specified row of the matrix(this function exists for parody to LWSMatrix4's row function.) */
-	LWVector3<Type> Row(uint32_t Index) {
+	LWVector3<Type> Row(uint32_t Index) const {
 		return m_Rows[Index];
 	}
 
@@ -1539,13 +1539,13 @@ struct LWMatrix2{
 
 
 	/*!< \brief returns the specified column of the matrix. */
-	LWVector2<Type> Column(uint32_t Index) {
-		Type *Arry = &m_Rows[0].x;
+	LWVector2<Type> Column(uint32_t Index) const {
+		const Type *Arry = &m_Rows[0].x;
 		return LWVector2<Type>(Arry[Index], Arry[Index + 2]);
 	};
 
 	/*! \brief returns the specified row of the matrix(this function exists for parody to LWSMatrix4's row function.) */
-	LWVector2<Type> Row(uint32_t Index) {
+	LWVector2<Type> Row(uint32_t Index) const {
 		return m_Rows[Index];
 	}
 
