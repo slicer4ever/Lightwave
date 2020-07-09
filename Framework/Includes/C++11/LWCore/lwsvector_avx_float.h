@@ -850,5 +850,4 @@ struct LWSVector4<float> {
 
 	LWSVector4(float f = 0.0f);
 };
-
 #endif

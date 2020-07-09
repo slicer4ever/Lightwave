@@ -850,5 +850,4 @@ struct LWSVector4<double> {
 	LWSVector4(double f = 0.0);
 };
 
-
 #endif

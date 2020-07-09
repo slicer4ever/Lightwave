@@ -134,5 +134,4 @@ struct LWSMatrix4<float> {
 
 	LWSMatrix4(const LWSVector4<float>& Scale, const LWSQuaternion<float>& Rotation, const LWSVector4<float>& Pos);
 };
-
 #endif

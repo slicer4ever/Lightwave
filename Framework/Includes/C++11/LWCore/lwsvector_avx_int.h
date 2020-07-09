@@ -850,5 +850,4 @@ struct LWSVector4<int32_t> {
 
 	LWSVector4(int32_t f = 0);
 };
-
 #endif

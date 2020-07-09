@@ -227,4 +227,3 @@ LWVulkan_Context &LWVideoDriver_Vulkan::GetContext(void) {
 
 LWVideoDriver_Vulkan::LWVideoDriver_Vulkan(LWWindow *Window, LWVulkan_Context &Context, uint32_t UniformBlockSize) : LWVideoDriver(Window, LWVideoDriver::Vulkan, UniformBlockSize), m_Context(Context) {
 }
-

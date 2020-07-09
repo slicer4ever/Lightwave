@@ -1810,6 +1810,4 @@ struct LWSVector4 {
 #ifndef LW_NOAVX2
 #include "LWCORE/LWSVector_AVX2_Double.h"
 #endif
-
-
 #endif

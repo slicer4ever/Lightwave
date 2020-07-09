@@ -93,5 +93,4 @@ struct LWSQuaternion<float> {
 
 	LWSQuaternion();
 };
-
 #endif
