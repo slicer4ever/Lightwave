@@ -3,12 +3,12 @@
 #include <cassert>
 
 /*! \cond */
-struct LWAllocatorEnvironmentDebug {
+struct alignas(16) LWAllocatorEnvironmentDebug {
+	alignas(8) void *m_NextAlloc;
+	alignas(8) void *m_PrevAlloc;
 	uint32_t m_AllocID;
-	void *m_NextAlloc;
-	void *m_PrevAlloc;
 	uint32_t m_Size;
-	LWAllocator *m_Allocator;
+	alignas(8) LWAllocator *m_Allocator;
 };
 /*! \endcond */
 

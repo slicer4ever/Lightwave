@@ -199,8 +199,11 @@ public:
 	/*!< \brief returns true if the pack type is a compressed format type. */
 	static bool CompressedType(uint32_t PackType);
 	
-	/*!< \brief returns true if the pack type is a depth format type. */
+	/*!< \brief returns true if the pack type is a depth format type(this and stencil type may both return true if the type is a depth+stencil type). */
 	static bool DepthType(uint32_t PackType);
+
+	/*!< \brief returns true if the pack type is a stencil format type(this and depth type may both return true if the type is a depth+stencil type). */
+	static bool StencilType(uint32_t PackType);
 
 	/*!< \brief returns the mipmap size for the specified mipmap level of the source length. */
 	static uint32_t MipmapSize1D(uint32_t SrcLen, uint32_t MipmapLevel);

@@ -9,15 +9,13 @@
 #include <cstdarg>
 #include <iostream>
 
-LWEUILabel *LWEUILabel::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
+LWEUILabel *LWEUILabel::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
 	char Buffer[1024*2]; //max filesize of 2 kilobytes can be read into ValueSrc.
 	char SBuffer[1024 * 2];
 	LWFileStream Stream;
 	LWAllocator *Allocator = Manager->GetAllocator();
 	LWELocalization *Localize = Manager->GetLocalization();
 	LWEUILabel *Label = Allocator->Allocate<LWEUILabel>("", nullptr, *Allocator, nullptr, LWVector4f(0.0f), LWVector4f(0.0f), 0);
-	LWXMLAttribute *StyleAttr = Node->FindAttribute("Style");
-	LWEXMLNode *Style = nullptr;
 
 	auto FormatValue = [](const char *In, char *Buffer, uint32_t BufferLen)->uint32_t {
 		char *BE = Buffer + BufferLen;
@@ -42,10 +40,6 @@ LWEUILabel *LWEUILabel::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Ma
 		return o;
 	};
 
-	if (StyleAttr) {
-		auto Iter = StyleMap.find(LWText::MakeHash(ParseComponentAttribute(Buffer, sizeof(Buffer), StyleAttr->m_Value, ActiveComponent, ActiveComponentNode)));
-		if (Iter != StyleMap.end()) Style = Iter->second;
-	}
 	LWEUI::XMLParse(Label, Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 	
 	LWXMLAttribute *FontAttr = FindAttribute(Node, Style, "Font");

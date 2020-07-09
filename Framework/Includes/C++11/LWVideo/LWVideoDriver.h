@@ -75,6 +75,9 @@ public:
 	/*!< \brief clear's all of the currently bound framebuffer's color components or backbuffer to the 8-bit RGBA value. */
 	virtual LWVideoDriver &ClearColor(uint32_t Color);
 
+	/*!< \brief clears a color channel to floating point value. */
+	virtual LWVideoDriver &ClearColor(const LWVector4f &Value);
+
 	/*!< \brief clear's the currently bound framebuffer depth componet or backbuffer depth. */
 	virtual LWVideoDriver &ClearDepth(float Depth);
 
@@ -144,8 +147,10 @@ public:
 	/*!< \brief updates the mesh, without having to render it. */
 	LWVideoDriver &UpdateMesh(LWBaseMesh *Mesh);
 
-	/*!< \brief changes the active framebuffer for rendering. pass null to render to the backbuffer. returns true if the framebuffer was changed. */
-	virtual bool SetFrameBuffer(LWFrameBuffer *Buffer);
+	/*!< \brief changes the active framebuffer for rendering. pass null to render to the backbuffer. returns true if the framebuffer was changed. 
+		 \brief set's the viewport dimensions to the framebuffer's dimensions of ChangeViewport is set to true.
+	*/
+	virtual bool SetFrameBuffer(LWFrameBuffer *Buffer, bool ChangeViewport = false);
 
 	/*!< \brief changes the internal pipeline stages and resources if the pipeline stages have been changed. */
 	bool UpdatePipelineStages(LWPipeline *Pipeline);
@@ -265,6 +270,15 @@ public:
 	*/
 	virtual LWTexture *CreateTextureCubeMap(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator);
 
+	/*! \brief constructs a 2D multisampled texture.
+		\param TextureState is a series of Or'd texture flags that represent the current state of texture for filtering.
+		\param PackType represents the packing type of the texture, the supported types are found in LWImage
+		\param Size the width and height of the texture.
+		\param Samples the number of samples at each texel, this value should be a 2n number, and not recommended to exceed 8. 
+		\param Allocator the allocator used to create the texture object.
+	*/
+	virtual LWTexture *CreateTexture2DMS(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, LWAllocator &Allocator);
+
 	/*!< \brief constructs a 1D texture, pass null to Texels to specify no data to be passed to the texture.
 		 \param TextureState is a series of Or'd texture flags that represent the current state of the texture for filtering.
 		 \param PackType represents the packing type of the texture(s), the supported types are found in LWImage
@@ -298,6 +312,16 @@ public:
 		 \param Allocator the allocator used to create the texture object.
 	*/
 	virtual LWTexture *CreateTextureCubeArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MapmapCnt, LWAllocator &Allocator);
+
+	/*! \brief constructs a 2D multisampled array texture.
+		\param TextureState is a series of Or'd texture flags that represent the current state of texture for filtering.
+		\param PackType represents the packing type of the texture, the supported types are found in LWImage
+		\param Size the width and height of the texture.
+		\param Samples the number of samples at each texel, this value should be a 2n number, and not recommended to exceed 8. .
+		\param Allocator the allocator used to create the texture object.
+	*/
+	virtual LWTexture *CreateTexture2DMSArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, uint32_t Layers, LWAllocator &Allocator);
+
 
 	/*!< \brief constructs a video buffer for use. 
 		 \param Type the type of the video buffer to create.

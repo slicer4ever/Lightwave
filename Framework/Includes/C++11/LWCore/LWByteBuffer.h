@@ -2376,14 +2376,14 @@ public:
 		\param BufferSize the size of the buffer.
 		\param Flag the flags for the buffer to use.
 	*/
-	LWByteBuffer(int8_t *Buffer, uint32_t BufferSize, int8_t Flag = 0);
+	LWByteBuffer(int8_t *Buffer, uint32_t BufferSize, uint8_t Flag = 0);
 
 	/*! \brief Constructs a LWByteBuffer object when buffer is read only, as such the buffer is not owned by the LWByteBuffer object, and cannot destroy it.
 		\param ReadBuffer the buffer object that can be read from.
 		\param BufferSize the size of the buffer for writing to.
 		\param Flag the flags for the buffer to use.
 	*/
-	LWByteBuffer(const int8_t *ReadBuffer, uint32_t BufferSize, int8_t Flag = 0);
+	LWByteBuffer(const int8_t *ReadBuffer, uint32_t BufferSize, uint8_t Flag = 0);
 
 	/*! \brief Deconstruct that cleans up write buffer if the BufferNotOwned flag wasn't set. */
 	~LWByteBuffer();
@@ -2394,7 +2394,7 @@ private:
 	int32_t m_Position = 0;
 	int32_t m_BytesWritten = 0;
 	int32_t m_SelectedFunc = 0;
-	int8_t m_Flag = 0;
+	uint8_t m_Flag = 0;
 };
 
 /*! \cond */

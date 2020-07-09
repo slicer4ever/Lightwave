@@ -1038,6 +1038,10 @@ bool LWImage::DepthType(uint32_t PackType) {
 	return PackType == DEPTH16 || PackType == DEPTH24 || PackType == DEPTH24STENCIL8 || PackType == DEPTH32;
 }
 
+bool LWImage::StencilType(uint32_t PackType) {
+	return PackType == DEPTH24STENCIL8;
+}
+
 uint32_t LWImage::GetLength1D(int32_t Width, uint32_t PackType) {
 	return GetStride(Width, PackType);
 }

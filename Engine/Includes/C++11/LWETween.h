@@ -36,11 +36,11 @@ struct LWETweenFrame {
 		return o;
 	}
 
-	bool operator < (const LWETweenFrame &Frame) {
+	bool operator < (const LWETweenFrame &Frame) const {
 		return m_Time < Frame.m_Time;
 	}
 
-	bool operator < (float Time) {
+	bool operator < (float Time) const {
 		return m_Time < Time;
 	}
 
@@ -129,7 +129,7 @@ public:
 		return o;
 	}
 
-
+	/*
 	float GetValue(float Time, float DefValue) const {
 		auto N = std::lower_bound(m_Frames.begin(), m_Frames.end(), Time);
 		if (N == m_Frames.end()) {
@@ -142,9 +142,9 @@ public:
 		float Diff = (*N).m_Value - (*C).m_Value;
 		float d = (Time - (*C).m_Time) / Len;
 		return (*C).m_Value + Diff * d;
-	}
+	}*/
 
-	Type GetValue(float Time, const Type DefValue = Type()) {
+	Type GetValue(float Time, const Type DefValue = Type()) const {
 		auto RFrame = std::lower_bound(m_Frames.begin(), m_Frames.end(), Time);
 		if (RFrame == m_Frames.end()) {
 			if (!m_Frames.size()) return DefValue;
@@ -196,6 +196,8 @@ public:
 	LWETween(const LWETween &O) : m_Frames(O.m_Frames), m_Interpolation(O.m_Interpolation) {}
 
 	LWETween() = default;
+
+	~LWETween() {}
 private:
 	std::vector<LWETweenFrame<Type>> m_Frames;
 	uint32_t m_Interpolation = LINEAR;

@@ -21,18 +21,12 @@ LWETextInputCursor::LWETextInputCursor(uint32_t Line, const char *LineBegin, con
 	m_RawPosition = (uint32_t)(uintptr_t)(L - LineBegin);
 }
 
-LWEUITextInput *LWEUITextInput::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
+LWEUITextInput *LWEUITextInput::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
 	char Buffer[256];
 	char SBuffer[1024 * 32];
 	LWAllocator *Allocator = Manager->GetAllocator();
 	LWELocalization *Localize = Manager->GetLocalization();
 	LWEUITextInput *TextInput = Allocator->Allocate<LWEUITextInput>(LWVector4f(0.0f), LWVector4f(0.0f), FocusAble | TabAble);
-	LWXMLAttribute *StyleAttr = Node->FindAttribute("Style");
-	LWEXMLNode *Style = nullptr;
-	if (StyleAttr) {
-		auto Iter = StyleMap.find(LWText::MakeHash(ParseComponentAttribute(Buffer, sizeof(Buffer), StyleAttr->m_Value, ActiveComponent, ActiveComponentNode)));
-		if (Iter != StyleMap.end()) Style = Iter->second;
-	}
 	LWEUI::XMLParse(TextInput, Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 
 	LWXMLAttribute *BorderMaterialAttr = FindAttribute(Node, Style, "BorderMaterial");

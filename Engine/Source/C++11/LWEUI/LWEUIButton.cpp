@@ -3,17 +3,11 @@
 #include "LWELocalization.h"
 #include <iostream>
 
-LWEUIButton *LWEUIButton::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
+LWEUIButton *LWEUIButton::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
 	char Buffer[256];
 	LWAllocator *Allocator = Manager->GetAllocator();
 	LWELocalization *Localize = Manager->GetLocalization();
 	LWEUIButton *Button = Allocator->Allocate<LWEUIButton>(nullptr, nullptr, nullptr, LWVector4f(0.0f), LWVector4f(0.0f), FocusAble | TabAble);
-	LWXMLAttribute *StyleAttr = Node->FindAttribute("Style"); 
-	LWEXMLNode *Style = nullptr;
-	if (StyleAttr) {
-		auto Iter = StyleMap.find(LWText::MakeHash(ParseComponentAttribute(Buffer, sizeof(Buffer), StyleAttr->m_Value, ActiveComponent, ActiveComponentNode)));
-		if (Iter != StyleMap.end()) Style = Iter->second;
-	}
 	LWEUI::XMLParse(Button, Node, XML, Manager, Style, ActiveComponentName, ActiveComponent,  ActiveComponentNode, StyleMap, ComponentMap);
 	LWXMLAttribute *OverAttr = LWEUI::FindAttribute(Node, Style, "OverMaterial");
 	LWXMLAttribute *DownAttr = LWEUI::FindAttribute(Node, Style, "DownMaterial");
