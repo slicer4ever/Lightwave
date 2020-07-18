@@ -371,9 +371,9 @@ LWPipeline *LWVideoDriver_OpenGL2_1::CreatePipeline(LWShader **Stages, uint64_t 
 }
 
 LWFrameBuffer *LWVideoDriver_OpenGL2_1::CreateFrameBuffer(const LWVector2i &Size, LWAllocator &Allocator) {
-	uint32_t VideoID = 0;
-	glGenFramebuffersEXT(1, &VideoID);
-	return Allocator.Allocate<LWOpenGL2_1FrameBuffer>(VideoID, Size);
+	LWOpenGL2_1FrameBufferContext Con;
+	glGenFramebuffersEXT(1, &Con.m_FBOID);
+	return Allocator.Allocate<LWOpenGL2_1FrameBuffer>(Con, Size);
 }
 
 bool LWVideoDriver_OpenGL2_1::UpdateTexture(LWTexture *Texture) {
@@ -619,8 +619,8 @@ LWVideoDriver &LWVideoDriver_OpenGL2_1::DestroyTexture(LWTexture *Texture) {
 
 LWVideoDriver &LWVideoDriver_OpenGL2_1::DestroyFrameBuffer(LWFrameBuffer *FrameBuffer) {
 	LWOpenGL2_1FrameBuffer *FB = (LWOpenGL2_1FrameBuffer*)FrameBuffer;
-	uint32_t VideoID = FB->GetContext();
-	glDeleteFramebuffersEXT(1, &VideoID);
+	auto &Con = FB->GetContext();
+	glDeleteFramebuffersEXT(1, &Con.m_FBOID);
 	LWAllocator::Destroy(FB);
 	return *this;
 }
@@ -820,13 +820,18 @@ bool LWVideoDriver_OpenGL2_1::SetFrameBuffer(LWFrameBuffer *Buffer, bool ChangeV
 
 		GLenum DrawBuffers[LWFrameBuffer::Count];
 		uint32_t DrawCnt = 0;
-		glBindFramebuffer(GL_FRAMEBUFFER, Context);
+		glBindFramebuffer(GL_FRAMEBUFFER, Context.m_FBOID);
 		for (uint32_t i = 0; i < LWFrameBuffer::Count; i++) {
 			auto &Slot = Buffer->GetAttachment(i);
-			if(!Slot.m_Source) continue;
+			if (!Slot.m_Source) {
+				if (Context.m_Attached[i] != 0) glFramebufferRenderbuffer(GL_FRAMEBUFFER, Context.m_Attached[i], GL_RENDERBUFFER, 0);
+				Context.m_Attached[i] = 0;
+				continue;
+			}
 			auto Tex = (LWOpenGL2_1Texture *)Slot.m_Source;
 			uint32_t TexType = Tex->GetType();
 			uint32_t TexID = Tex->GetContext();
+			Context.m_Attached[i] = AttachmentPnts[i];
 			if (Tex->GetTextureState()&LWTexture::RenderBuffer) glFramebufferRenderbuffer(GL_FRAMEBUFFER, AttachmentPnts[i], GL_RENDERBUFFER, TexID);
 			else {
 				if (TexType == LWTexture::Texture1D) glFramebufferTexture1D(GL_FRAMEBUFFER, AttachmentPnts[i], GL_TEXTURE_1D, TexID, Slot.m_Mipmap);

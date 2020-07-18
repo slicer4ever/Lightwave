@@ -4,6 +4,7 @@
 #include "LWPlatform/LWPlatform.h"
 
 #ifdef LWVIDEO_IMPLEMENTED_OPENGL3_3
+#include "LWVideo/LWFrameBuffer.h"
 /*! \cond */
 class LWVideoDriver_OpenGL3_3 : public LWVideoDriver{
 public:
@@ -130,11 +131,17 @@ struct LWOpenGL3_3PipelineContext {
 	uint32_t m_VAOID = 0; /*!< \brief the vertex array object for the pipeline. */
 };
 
+/*!< \brief this context is the underlying framebuffer context used in the opengl 3.3 pipeline.  the application should never require accessing it directly, but it is provided here incase the application is specifically targeting the openGL api. */
+struct LWOpenGL3_3FrameBufferContext {
+	uint32_t m_FBOID = 0;
+	int32_t m_Attached[LWFrameBuffer::Count] = {};
+};
+
 typedef LWPipelineCon<LWOpenGL3_3PipelineContext> LWOpenGL3_3Pipeline;
 typedef LWTextureCon<uint32_t> LWOpenGL3_3Texture;
 typedef LWVideoBufferCon<uint32_t> LWOpenGL3_3Buffer;
 typedef LWShaderCon<uint32_t> LWOpenGL3_3Shader;
-typedef LWFrameBufferCon<uint32_t> LWOpenGL3_3FrameBuffer;
+typedef LWFrameBufferCon<LWOpenGL3_3FrameBufferContext> LWOpenGL3_3FrameBuffer;
 
 
 /*! \endcond */

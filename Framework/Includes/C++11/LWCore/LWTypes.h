@@ -15,6 +15,8 @@
 /*! \brief mods A with B depending on the function specefied. */
 #define LWMOD(A, B, ModFunc) switch(ModFunc){ case LWMOD_EQL: A = B; break; case LWMOD_OR: A|=B; break; case LWMOD_XOR: A^=B; break; case LWMOD_AND: A&=B; break; case LWMOD_NOT: A&=~B; break }; 
 
+class LWAllocator;
+
 class LWByteBuffer;
 
 class LWByteStream;

@@ -4,6 +4,8 @@
 #include "LWPlatform/LWPlatform.h"
 
 #ifdef LWVIDEO_IMPLEMENTED_OPENGL2_1
+#include "LWVideo/LWFrameBuffer.h"
+
 /*! \cond */
 class LWVideoDriver_OpenGL2_1 : public LWVideoDriver {
 public:
@@ -150,11 +152,17 @@ struct LWOpenGL2_1VideoBufferContext {
 	uint32_t m_VideoID = 0;
 };
 
+/*!< \brief this context is the underlying framebuffer context used in the opengl 2.1 pipeline.  the application should never require accessing it directly, but it is provided here incase the application is specifically targeting the openGL api. */
+struct LWOpenGL2_1FrameBufferContext {
+	uint32_t m_FBOID = 0;
+	int32_t m_Attached[LWFrameBuffer::Count] = {};
+};
+
 typedef LWPipelineCon<LWOpenGL2_1PipelineContext> LWOpenGL2_1Pipeline;
 typedef LWTextureCon<uint32_t> LWOpenGL2_1Texture;
 typedef LWVideoBufferCon<LWOpenGL2_1VideoBufferContext> LWOpenGL2_1Buffer;
 typedef LWShaderCon<uint32_t> LWOpenGL2_1Shader;
-typedef LWFrameBufferCon<uint32_t> LWOpenGL2_1FrameBuffer;
+typedef LWFrameBufferCon<LWOpenGL2_1FrameBufferContext> LWOpenGL2_1FrameBuffer;
 
 /*! \endcond */
 

@@ -4,6 +4,8 @@
 #include "LWPlatform/LWPlatform.h"
 
 #ifdef LWVIDEO_IMPLEMENTED_OPENGL4_5
+#include "LWVideo/LWFrameBuffer.h"
+
 /*! \cond */
 class LWVideoDriver_OpenGL4_5 : public LWVideoDriver {
 public:
@@ -123,19 +125,23 @@ protected:
 	uint32_t m_ActiveDrawCount = 1;
 };
 
-
-/*!< \brief This context is the underlying pipeline context used in the opengl 4.4 pipeline. the application should never require accessing it directly, but it is provided here incase the application is specefically targeting the openGL api. */
+/*!< \brief This context is the underlying pipeline context used in the opengl 4.5 pipeline. the application should never require accessing it directly, but it is provided here incase the application is specifically targeting the openGL api. */
 struct LWOpenGL4_5PipelineContext {
 	uint32_t m_ProgramID = 0; /*!< \brief the program id for use in opengl api calls. */
 	uint32_t m_VAOID = 0; /*!< \brief the vertex array object for the pipeline. */
 };
 
+/*!< \brief this context is the underlying framebuffer context used in the opengl 4.5 pipeline.  the application should never require accessing it directly, but it is provided here incase the application is specifically targeting the openGL api. */
+struct LWOpenGL4_5FrameBufferContext {
+	uint32_t m_FBOID = 0;
+	int32_t m_Attached[LWFrameBuffer::Count] = {};
+};
 
 typedef LWPipelineCon<LWOpenGL4_5PipelineContext> LWOpenGL4_5Pipeline;
 typedef LWTextureCon<uint32_t> LWOpenGL4_5Texture;
 typedef LWVideoBufferCon<uint32_t> LWOpenGL4_5Buffer;
 typedef LWShaderCon<uint32_t> LWOpenGL4_5Shader;
-typedef LWFrameBufferCon<uint32_t> LWOpenGL4_5FrameBuffer;
+typedef LWFrameBufferCon<LWOpenGL4_5FrameBufferContext> LWOpenGL4_5FrameBuffer;
 
 
 /*! \endcond */

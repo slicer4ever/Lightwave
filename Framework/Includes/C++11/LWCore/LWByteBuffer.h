@@ -2335,10 +2335,12 @@ public:
 	*/
 	LWByteBuffer &SetPosition(int32_t Position);
 
-	/*! \brief offset's the position to the next alignment. 
+	/*! \brief offset's the position to the next alignment.
 		\param Write, add the offset to bytesWritten.
+		\return the number of bytes that need to be added for alignment.
+		\note Alignment must be a power 2.
 	*/
-	LWByteBuffer &AlignPosition(uint32_t Alignment, bool Write=false);
+	int32_t AlignPosition(uint32_t Alignment, bool Write=false);
 
 	/*! \brief Offset's the position of the buffer stream.
 		\param Offset the offset to apply to position.

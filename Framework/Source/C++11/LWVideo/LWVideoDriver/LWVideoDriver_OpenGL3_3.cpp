@@ -339,9 +339,9 @@ LWVideoBuffer *LWVideoDriver_OpenGL3_3::CreateVideoBuffer(uint32_t Type, uint32_
 }
 
 LWFrameBuffer *LWVideoDriver_OpenGL3_3::CreateFrameBuffer(const LWVector2i &Size, LWAllocator &Allocator) {
-	uint32_t VideoID = 0;
-	glGenFramebuffers(1, &VideoID);
-	return Allocator.Allocate<LWOpenGL3_3FrameBuffer>(VideoID, Size);
+	LWOpenGL3_3FrameBufferContext Con;
+	glGenFramebuffers(1, &Con.m_FBOID);
+	return Allocator.Allocate<LWOpenGL3_3FrameBuffer>(Con, Size);
 }
 
 bool LWVideoDriver_OpenGL3_3::UpdateTexture(LWTexture *Texture){
@@ -583,8 +583,8 @@ LWVideoDriver &LWVideoDriver_OpenGL3_3::DestroyTexture(LWTexture *Texture){
 
 LWVideoDriver &LWVideoDriver_OpenGL3_3::DestroyFrameBuffer(LWFrameBuffer *FrameBuffer) {
 	LWOpenGL3_3FrameBuffer *FB = (LWOpenGL3_3FrameBuffer*)FrameBuffer;
-	uint32_t VideoID = FB->GetContext();
-	glDeleteFramebuffers(1, &VideoID);
+	auto &Con = FB->GetContext();
+	glDeleteFramebuffers(1, &Con.m_FBOID);
 	LWAllocator::Destroy(FB);
 	return *this;
 }
@@ -619,18 +619,18 @@ LWVideoDriver &LWVideoDriver_OpenGL3_3::ClearColor(const LWVector4f &Color) {
 }
 
 LWVideoDriver &LWVideoDriver_OpenGL3_3::ClearDepth(float Depth) {
-	SetFrameBuffer(m_ActiveFrameBuffer);
-	glClearBufferfi(GL_DEPTH, 0, Depth, 0);
-	//glClearDepth(Depth);
-	//glClear(GL_DEPTH_BUFFER_BIT);
+	//SetFrameBuffer(m_ActiveFrameBuffer);
+	//glClearBufferfi(GL_DEPTH, 0, Depth, 0);
+	glClearDepth(Depth);
+	glClear(GL_DEPTH_BUFFER_BIT);
 	return *this;
 }
 
 LWVideoDriver &LWVideoDriver_OpenGL3_3::ClearStencil(uint8_t Stencil) {
-	SetFrameBuffer(m_ActiveFrameBuffer);
-	glClearBufferfi(GL_STENCIL, 0, 0.0f, (int32_t)Stencil);
-	//glClearStencil((int32_t)Stencil);
-	//glClear(GL_STENCIL_BUFFER_BIT);
+	//SetFrameBuffer(m_ActiveFrameBuffer);
+	//glClearBufferfi(GL_STENCIL, 0, 0.0f, (int32_t)Stencil);
+	glClearStencil((int32_t)Stencil);
+	glClear(GL_STENCIL_BUFFER_BIT);
 	return *this;
 }
 
@@ -771,10 +771,14 @@ bool LWVideoDriver_OpenGL3_3::SetFrameBuffer(LWFrameBuffer *Buffer,bool ChangeVi
 
 		GLenum DrawBuffers[LWFrameBuffer::Count];
 		m_ActiveDrawCount = 0;
-		glBindFramebuffer(GL_FRAMEBUFFER, Context);
+		glBindFramebuffer(GL_FRAMEBUFFER, Context.m_FBOID);
 		for (uint32_t i = 0; i < LWFrameBuffer::Count; i++) {
 			auto &Slot = Buffer->GetAttachment(i);
-			if(!Slot.m_Source) continue;
+			if (!Slot.m_Source) {
+				if (Context.m_Attached[i] != 0) glFramebufferRenderbuffer(GL_FRAMEBUFFER, Context.m_Attached[i], GL_RENDERBUFFER, 0);
+				Context.m_Attached[i] = 0;
+				continue;
+			}
 			auto Tex = (LWOpenGL3_3Texture*)Slot.m_Source;
 			uint32_t TexType = Tex->GetType();
 			uint32_t TexID = Tex->GetContext();
@@ -782,6 +786,7 @@ bool LWVideoDriver_OpenGL3_3::SetFrameBuffer(LWFrameBuffer *Buffer,bool ChangeVi
 				if (!LWImage::DepthType(TexID)) AttachmentPnts[i] = GL_STENCIL_ATTACHMENT;
 				if (!LWImage::StencilType(TexID)) AttachmentPnts[i] = GL_DEPTH_ATTACHMENT;
 			}
+			Context.m_Attached[i] = AttachmentPnts[i];
 			if (Tex->GetTextureState()&LWTexture::RenderBuffer) glFramebufferRenderbuffer(GL_FRAMEBUFFER, AttachmentPnts[i], GL_RENDERBUFFER, TexID);
 			else {
 				if (TexType == LWTexture::Texture1D) glFramebufferTexture1D(GL_FRAMEBUFFER, AttachmentPnts[i], GL_TEXTURE_1D, TexID, Slot.m_Mipmap);

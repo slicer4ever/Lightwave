@@ -66,7 +66,6 @@ public:
 	/*!< \brief constructs an ipv4 address from 4 independent components. */
 	static uint32_t MakeIP(uint8_t First, uint8_t Second, uint8_t Third, uint8_t Fourth);
 
-
 	/*!< \brief constructs an ipv4 notation string from an ip address. 
 		 \return true on success, or false on failure.  a max of 16 bytes is the largest an ipv4 address will take up.
 	*/

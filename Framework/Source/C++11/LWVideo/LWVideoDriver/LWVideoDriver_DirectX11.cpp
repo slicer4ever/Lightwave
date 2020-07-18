@@ -1268,7 +1268,7 @@ ID3D11DepthStencilView *LWDirectX11_1TextureContext::GetDepthStencilView(uint32_
 	if (TexType == LWTexture::Texture1D) {
 		Desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE1D;
 		Desc.Texture1D = { MipmapLevel };
-	} else if (TexType == LWTexture::Texture2D || TexType==LWTexture::Texture2DMS) {
+	} else if (TexType == LWTexture::Texture2D) {
 		Desc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 		Desc.Texture2D = { MipmapLevel };
 	} else if (TexType == LWTexture::TextureCubeMap) {

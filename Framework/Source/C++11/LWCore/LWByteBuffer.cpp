@@ -460,15 +460,12 @@ LWByteBuffer &LWByteBuffer::SetPosition(int32_t Position){
 	return *this;
 }
 
-LWByteBuffer &LWByteBuffer::AlignPosition(uint32_t Alignment, bool Write) {
-	if (Alignment < 2) return *this;
-	uint32_t r = (m_Position & (Alignment - 1));
-	if (r) {
-		r = Alignment - r;
-		m_Position += r;
-		if (Write) m_BytesWritten += r;
-	}
-	return *this;
+int32_t LWByteBuffer::AlignPosition(uint32_t Alignment, bool Write) {
+	int32_t r = Alignment - (m_Position & (Alignment - 1));
+	if (m_Position + r > m_BufferSize) return r;
+	m_Position += r;
+	if (Write) m_BytesWritten += r;
+	return r;
 }
 
 LWByteBuffer &LWByteBuffer::OffsetPosition(int32_t Offset){
