@@ -42,6 +42,9 @@ public:
 	*/
 	LWFrameBuffer &SetCubeAttachment(uint32_t AttachmentID, LWTexture *Texture, uint32_t Face, uint32_t Layer = 0, uint32_t Mipmap = 0);
 
+	/*!< \brief removes all attachment's from framebuffer. */
+	LWFrameBuffer &ClearAttachments(void);
+
 	/*!< \brief returns if the dirty flag is set. */
 	bool isDirty(void) const;
 

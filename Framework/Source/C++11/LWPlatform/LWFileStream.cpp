@@ -71,8 +71,11 @@ uint32_t LWFileStream::GetExtension(const LWText &FilePath, char *Buffer, uint32
 	const char *C = (const char*)FilePath.GetCharacters();
 	const char *E = nullptr;
 	uint32_t Len = 0;
-	for (; *C; C++) if (*C == '.') E = C + 1;
-	if (E){
+	for (; *C; C++) {
+		if (*C == '.') E = C + 1;
+		else if (*C == '//' || *C == '\\') E = nullptr;
+	}
+	if (E) {
 		for (; *E; E++, Len++){
 			if (Buffer && Len + 1 < BufferLen) *Buffer++ = *E;
 		}

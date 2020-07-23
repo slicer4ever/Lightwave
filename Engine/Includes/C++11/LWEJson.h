@@ -34,6 +34,12 @@ struct LWEJObject {
 	uint32_t m_Length = 0;
 	uint32_t m_Type = 0;
 
+	/*!< \brief overload of all basic types(float,double,boolean, int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, int64_t, uint64_t */
+	template<class Type>
+	LWEJObject &SetTypeValue(LWAllocator &Allocator, Type Val) {
+		return *this;
+	}
+
 	LWEJObject &SetValue(LWAllocator &Allocator, const char *Value);
 
 	LWEJObject &SetValuef(LWAllocator &Allocator, const char *Fmt, ...);
@@ -106,6 +112,51 @@ public:
 
 	uint32_t Serialize(char *Buffer, uint32_t BufferLen, bool Format);
 
+	LWEJObject *MakeObjectElement(const char *Name, LWEJObject *Parent = nullptr);
+	
+	LWEJObject *MakeObjectElementf(const char *NameFmt, LWEJObject *Parent, ...);
+
+	LWEJObject *MakeArrayElement(const char *Name, LWEJObject *Parent = nullptr);
+
+	LWEJObject *MakeArrayElementf(const char *NameFmt, LWEJObject *Parent, ...);
+
+	LWEJObject *MakeStringElement(const char *Name, const char *Value, LWEJObject *Parent = nullptr);
+
+	LWEJObject *MakeStringElementf(const char *NameFmt, const char *ValueFmt, LWEJObject *Parent, ...);
+
+	template<class Type>
+	LWEJObject *MakeValueElement(const char *Name, Type Value, LWEJObject *Parent = nullptr) {
+		LWEJObject *Obj = MakeElement(Name, Parent);
+		if(Obj) Obj->SetTypeValue(m_Allocator, Value);
+		return Obj;
+	}
+
+	template<class Type>
+	LWEJObject *MakeValueElementf(const char *NameFmt, Type Value, LWEJObject *Parent, ...) {
+		char Buffer[256];
+		va_list lst;
+		va_start(lst, Parent);
+		vsnprintf(Buffer, sizeof(Buffer), NameFmt, lst);
+		va_end(lst);
+		return MakeValueElement(Buffer, Value, Parent);
+	}
+
+	LWEJObject *PushArrayObjectElement(LWEJObject *Parent = nullptr);
+
+	LWEJObject *PushArrayArrayElement(LWEJObject *Parent = nullptr);
+
+	LWEJObject *PushArrayStringElement(const char *Value, LWEJObject *Parent = nullptr);
+
+	LWEJObject *PushArrayStringElementf(const char *ValueFmt, LWEJObject *Parent, ...);
+
+	template<class Type>
+	LWEJObject *PushArrayValueElement(Type Value, LWEJObject *Parent = nullptr) {
+		uint32_t Len = Parent ? Parent->m_Length : m_Length;
+		LWEJObject *Obj = MakeElementf("[%d]", Parent, Len);
+		if (Obj) Obj->SetTypeValue(m_Allocator, Value);
+		return Obj;
+	}
+
 	LWEJObject *MakeElement(const char *Name, LWEJObject *Parent = nullptr);
 
 	LWEJObject *MakeElementf(const char *Fmt, LWEJObject *Parent, ...);
@@ -145,5 +196,76 @@ private:
 	uint32_t m_Type = LWEJObject::Object;
 	std::unordered_map<uint32_t, LWEJObject> m_ObjectMap;
 };
+
+// @cond
+
+template<>
+inline LWEJObject &LWEJObject::SetTypeValue<bool>(LWAllocator &Allocator, bool Value) {
+	m_Type = Boolean;
+	return SetValue(Allocator, Value ? "true" : "false");
+}
+
+template<>
+inline LWEJObject &LWEJObject::SetTypeValue<int8_t>(LWAllocator &Allocator, int8_t Value) {
+	m_Type = Number;
+	return SetValuef(Allocator, "%d", Value);
+}
+
+template<>
+inline LWEJObject &LWEJObject::SetTypeValue<uint8_t>(LWAllocator &Allocator, uint8_t Value) {
+	m_Type = Number;
+	return SetValuef(Allocator, "%u", Value);
+}
+
+template<>
+inline LWEJObject &LWEJObject::SetTypeValue<int16_t>(LWAllocator &Allocator, int16_t Value) {
+	m_Type = Number;
+	return SetValuef(Allocator, "%d", Value);
+}
+
+template<>
+inline LWEJObject &LWEJObject::SetTypeValue<uint16_t>(LWAllocator &Allocator, uint16_t Value) {
+	m_Type = Number;
+	return SetValuef(Allocator, "%u", Value);
+}
+
+template<>
+inline LWEJObject &LWEJObject::SetTypeValue<int32_t>(LWAllocator &Allocator, int32_t Value) {
+	m_Type = Number;
+	return SetValuef(Allocator, "%d", Value);
+}
+
+template<>
+inline LWEJObject &LWEJObject::SetTypeValue<uint32_t>(LWAllocator &Allocator, uint32_t Value) {
+	m_Type = Number;
+	return SetValuef(Allocator, "%u", Value);
+}
+
+template<>
+inline LWEJObject &LWEJObject::SetTypeValue<int64_t>(LWAllocator &Allocator, int64_t Value) {
+	m_Type = Number;
+	return SetValuef(Allocator, "%lld", Value);
+}
+
+template<>
+inline LWEJObject &LWEJObject::SetTypeValue<uint64_t>(LWAllocator &Allocator, uint64_t Value) {
+	m_Type = Number;
+	return SetValuef(Allocator, "%llu", Value);
+}
+
+template<>
+inline LWEJObject &LWEJObject::SetTypeValue<float>(LWAllocator &Allocator, float Value) {
+	m_Type = Number;
+	return SetValuef(Allocator, "%f", Value);
+}
+
+template<>
+inline LWEJObject &LWEJObject::SetTypeValue<double>(LWAllocator &Allocator, double Value) {
+	m_Type = Number;
+	return SetValuef(Allocator, "%f", Value);
+}
+
+
+// @endcond
 
 #endif

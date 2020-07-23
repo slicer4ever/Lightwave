@@ -248,7 +248,7 @@ bool LWImage::LoadImagePNG(LWImage &Image, const uint8_t *Buffer, uint32_t Buffe
 		return false;
 	}
 	LWByteBuffer Buf((const int8_t*)Buffer, BufferLen, LWByteBuffer::BufferNotOwned);
-	auto ReadFunc = [](png_structp png_ptr, png_bytep data, png_size_t length) {
+	auto ReadFunc = [](png_structp png_ptr, png_bytep data, png_size_t length) -> void {
 		LWByteBuffer *Buf = (LWByteBuffer*)png_get_io_ptr(png_ptr);
 		Buf->Read<unsigned char>(data, (uint32_t)length);
 		return;
@@ -705,6 +705,64 @@ bool LWImage::LoadImageKTX2(LWImage &Image, const uint8_t *Buffer, uint32_t Buff
 	}
 
 	return true;
+}
+
+bool LWImage::SaveImagePNG(LWImage &Image, const LWText &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream) {
+	LWFileStream Stream;
+	if (!LWFileStream::OpenStream(Stream, FilePath, LWFileStream::WriteMode | LWFileStream::BinaryMode, Allocator, ExistingStream)) {
+		std::cout << "Error opening file to save png: '" << FilePath << "'" << std::endl;
+		return false;
+	}
+	uint32_t Len = SaveImagePNG(Image, nullptr, 0);
+	if (!Len) return false;
+	uint8_t *Buf = Allocator.AllocateArray<uint8_t>(Len);
+	if (SaveImagePNG(Image, Buf, Len)!=Len) {
+		std::cout << "Image has incorrect size." << std::endl;
+		LWAllocator::Destroy(Buf);
+		return false;
+	}
+	Stream.Write((char*)Buf, Len);
+	LWAllocator::Destroy(Buf);
+	return true;
+}
+
+uint32_t LWImage::SaveImagePNG(LWImage &Image, uint8_t *Buffer, uint32_t BufferLen) {
+	const uint32_t RGB8 = 0xFE;
+	struct Writer {
+		LWByteBuffer Buf;
+		uint32_t BytesWritten;
+	};
+
+	Writer W = { LWByteBuffer((int8_t*)Buffer, BufferLen, LWByteBuffer::BufferNotOwned), 0 };
+	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+	if (!png_ptr) return W.BytesWritten;
+	png_infop info_ptr = png_create_info_struct(png_ptr);
+	if (!info_ptr) {
+		png_destroy_write_struct(&png_ptr, nullptr);
+		return W.BytesWritten;
+	}
+	if (setjmp(png_jmpbuf(png_ptr))) {
+		png_destroy_write_struct(&png_ptr, &info_ptr);
+		return W.BytesWritten;
+	}
+	auto WriteFunc = [](png_structp png_ptr, png_bytep data, png_size_t length) {
+		Writer *W = (Writer*)png_get_io_ptr(png_ptr);
+		W->BytesWritten += W->Buf.Write<unsigned char>((uint32_t)length, data);
+		return;
+	};
+	
+	LWVector2i Size = Image.GetSize2D();
+	png_set_write_fn(png_ptr, (void*)&W, WriteFunc, nullptr);
+	png_set_IHDR(png_ptr, info_ptr, Size.x, Size.y, 8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+	png_write_info(png_ptr, info_ptr);
+	uint8_t *p = Image.GetTexels(0);
+	uint32_t Stride = LWImage::GetStride(Size.x, Image.GetPackType());
+	for (int32_t y = 0; y < Size.y; y++) {
+		png_write_row(png_ptr, p + Stride * y);
+	}
+	png_write_end(png_ptr, info_ptr);
+	png_destroy_write_struct(&png_ptr, &info_ptr);
+	return W.BytesWritten;
 }
 
 template<class Type>

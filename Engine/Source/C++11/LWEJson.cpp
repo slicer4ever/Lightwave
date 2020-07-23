@@ -672,6 +672,85 @@ uint32_t LWEJson::Serialize(char *Buffer, uint32_t BufferLen, bool Format) {
 	return o;
 }
 
+
+LWEJObject *LWEJson::MakeObjectElement(const char *Name, LWEJObject *Parent) {
+	LWEJObject *Obj = MakeElement(Name, Parent);
+	if (Obj) Obj->m_Type = LWEJObject::Object;
+	return Obj;
+}
+
+LWEJObject *LWEJson::MakeObjectElementf(const char *NameFmt, LWEJObject *Parent, ...) {
+	char Buffer[256];
+	va_list lst;
+	va_start(lst, Parent);
+	vsnprintf(Buffer, sizeof(Buffer), NameFmt, lst);
+	va_end(lst);
+	return MakeObjectElement(Buffer, Parent);
+}
+
+LWEJObject *LWEJson::MakeArrayElement(const char *Name, LWEJObject *Parent) {
+	LWEJObject *Obj = MakeElement(Name, Parent);
+	if (Obj) Obj->m_Type = LWEJObject::Array;
+	return Obj;
+}
+
+LWEJObject *LWEJson::MakeArrayElementf(const char *NameFmt, LWEJObject *Parent, ...) {
+	char Buffer[256];
+	va_list lst;
+	va_start(lst, Parent);
+	vsnprintf(Buffer, sizeof(Buffer), NameFmt, lst);
+	va_end(lst);
+	return MakeArrayElement(Buffer, Parent);
+}
+
+LWEJObject *LWEJson::MakeStringElement(const char *Name, const char *Value, LWEJObject *Parent) {
+	LWEJObject *Obj = MakeElement(Name, Parent);
+	if (Obj) Obj->SetValue(m_Allocator, Value);
+	return Obj;
+}
+
+LWEJObject *LWEJson::MakeStringElementf(const char *NameFmt, const char *ValueFmt, LWEJObject *Parent, ...) {
+	char NameBuffer[256];
+	char ValueBuffer[256];
+	va_list lst;
+	va_start(lst, Parent);
+	vsnprintf(NameBuffer, sizeof(NameBuffer), NameFmt, lst);
+	vsnprintf(ValueBuffer, sizeof(ValueBuffer), ValueFmt, lst);
+	va_end(lst);
+	return MakeStringElement(NameBuffer, ValueBuffer, Parent);
+}
+
+LWEJObject *LWEJson::PushArrayObjectElement(LWEJObject *Parent) {
+	uint32_t Len = Parent ? Parent->m_Length : m_Length;
+	LWEJObject *Obj = MakeElementf("[%d]", Parent, Len);
+	if (Obj) Obj->m_Type = LWEJObject::Object;
+	return Obj;
+}
+
+LWEJObject *LWEJson::PushArrayArrayElement(LWEJObject *Parent){
+	uint32_t Len = Parent ? Parent->m_Length : m_Length;
+	LWEJObject *Obj = MakeElementf("[%d]", Parent, Len);
+	if (Obj) Obj->m_Type = LWEJObject::Array;
+	return Obj;
+}
+
+LWEJObject *LWEJson::PushArrayStringElement(const char *Value, LWEJObject *Parent){
+	uint32_t Len = Parent ? Parent->m_Length : m_Length;
+	LWEJObject *Obj = MakeElementf("[%d]", Parent, Len);
+	if (Obj) Obj->SetValue(m_Allocator, Value);
+	return Obj;
+}
+
+
+LWEJObject *LWEJson::PushArrayStringElementf(const char *ValueFmt, LWEJObject *Parent, ...){
+	char ValueBuffer[256];
+	va_list lst;
+	va_start(lst, Parent);
+	vsnprintf(ValueBuffer, sizeof(ValueBuffer), ValueFmt, lst);
+	va_end(lst);
+	return PushArrayStringElement(ValueBuffer, Parent);
+}
+
 LWEJObject *LWEJson::MakeElement(const char *Name, LWEJObject *Parent) {
 	const uint32_t MaxParents = 128;
 	char FullNameBuffer[1024];

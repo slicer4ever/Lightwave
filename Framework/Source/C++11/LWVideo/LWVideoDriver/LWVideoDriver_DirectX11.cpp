@@ -722,7 +722,7 @@ bool LWVideoDriver_DirectX11_1::UpdateTextureCubeMap(LWTexture *Texture, uint32_
 	uint32_t PackType = Texture->GetPackType();
 	LWDirectX11_1TextureContext &Con = ((LWDirectX11_1Texture*)Texture)->GetContext();
 	D3D11_BOX B = { (uint32_t)Position.x,  (uint32_t)Position.y, 0u,  (uint32_t)(Position.x + Size.x),  (uint32_t)(Position.y + Size.y), 0u };
-	uint32_t MipCnt = Texture->GetMipmapCount();
+	uint32_t MipCnt = Texture->GetMipmapCount()+1;
 	m_Context.m_DXDeviceContext->UpdateSubresource(Con.m_Texture, MipCnt*Face + MipmapLevel, &B, Texels, LWImage::GetStride(Size.x, PackType), 0);
 	return true;
 }
@@ -733,7 +733,7 @@ bool LWVideoDriver_DirectX11_1::UpdateTexture1DArray(LWTexture *Texture, uint32_
 	uint32_t PackType = Texture->GetPackType();
 	LWDirectX11_1TextureContext &Con = ((LWDirectX11_1Texture*)Texture)->GetContext();
 	D3D11_BOX B = { (uint32_t)Position, 0u, 0u, (uint32_t)(Position + Size), 1u, 1u };
-	uint32_t MipCnt = Texture->GetMipmapCount();
+	uint32_t MipCnt = Texture->GetMipmapCount()+1;
 	m_Context.m_DXDeviceContext->UpdateSubresource(Con.m_Texture, MipCnt*Layer + MipmapLevel, &B, Texels, LWImage::GetStride(Size, PackType), 0);
 	return true;
 }
@@ -744,7 +744,7 @@ bool LWVideoDriver_DirectX11_1::UpdateTexture2DArray(LWTexture *Texture, uint32_
 	uint32_t PackType = Texture->GetPackType();
 	LWDirectX11_1TextureContext &Con = ((LWDirectX11_1Texture*)Texture)->GetContext();
 	D3D11_BOX B = { (uint32_t)Position.x, (uint32_t)Position.y, 0u, (uint32_t)(Position.x + Size.x), (uint32_t)(Position.y + Size.y), 1u };
-	uint32_t MipCnt = Texture->GetMipmapCount();
+	uint32_t MipCnt = Texture->GetMipmapCount()+1;
 	m_Context.m_DXDeviceContext->UpdateSubresource(Con.m_Texture, MipCnt*Layer + MipmapLevel, &B, Texels, LWImage::GetStride(Size.x, PackType), 0);
 	return true;
 }
@@ -755,7 +755,7 @@ bool LWVideoDriver_DirectX11_1::UpdateTextureCubeArray(LWTexture *Texture, uint3
 	uint32_t PackType = Texture->GetPackType();
 	LWDirectX11_1TextureContext &Con = ((LWDirectX11_1Texture*)Texture)->GetContext();
 	D3D11_BOX B = { (uint32_t)Position.x, (uint32_t)Position.y, 0u, (uint32_t)(Position.x + Size.x), (uint32_t)(Position.y + Size.y), 1u };
-	uint32_t MipCnt = Texture->GetMipmapCount();
+	uint32_t MipCnt = Texture->GetMipmapCount()+1;
 	m_Context.m_DXDeviceContext->UpdateSubresource(Con.m_Texture, MipCnt*(Layer * 6) + (MipCnt*Face) + MipmapLevel, &B, Texels, LWImage::GetStride(Size.x, PackType), 0);
 	return true;
 }
@@ -781,7 +781,46 @@ bool LWVideoDriver_DirectX11_1::DownloadTexture1DArray(LWTexture *Texture, uint3
 }
 
 bool LWVideoDriver_DirectX11_1::DownloadTexture2DArray(LWTexture *Texture, uint32_t MipmapLevel, uint32_t Layer, uint8_t *Buffer) {
-	return false;
+	//Create staging texture and copy resource.
+	//PackTypes:                   RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                          Depth32,                  Depth24Stencil8,                   DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
+	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+
+	LWDirectX11_1TextureContext &Con = ((LWDirectX11_1Texture*)Texture)->GetContext();
+	LWDirectX11_1TextureContext Context;
+	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
+		if (SUCCEEDED(Res)) return true;
+		std::cout << "CreateTexture2D Error '" << FuncName << "': " << std::hex << Res << std::dec << std::endl;
+		if (Context.m_View) Context.m_View->Release();
+		if (Context.m_Texture) Context.m_Texture->Release();
+		return false;
+	};
+
+	uint32_t PackType = Texture->GetPackType();
+	bool Compressed = LWImage::CompressedType(PackType);
+	bool DepthTex = LWImage::DepthType(PackType);
+	LWVector2i Size = LWImage::MipmapSize2D(Texture->Get2DSize(), MipmapLevel);
+	uint32_t Bytes = LWImage::GetBitSize(PackType) / 8;
+	D3D11_TEXTURE2D_DESC Desc = { (uint32_t)Size.x, (uint32_t)Size.y,
+		0u, 1u, Formats[PackType], { 1u, 0u},
+		D3D11_USAGE_STAGING, 0u, D3D11_CPU_ACCESS_READ,	0u };
+	if (!CheckResult(m_Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, (ID3D11Texture2D**)&Context.m_Texture), "CreateTexture2D")) return nullptr;
+	D3D11_BOX Bx = { 0, 0, 0u, (uint32_t)Size.x, (uint32_t)Size.y, 1u };
+	uint32_t MipCnt = Texture->GetMipmapCount()+1;
+	m_Context.m_DXDeviceContext->CopySubresourceRegion(Context.m_Texture, 0, 0, 0, 0, Con.m_Texture, MipCnt*Layer+MipmapLevel, &Bx);
+	
+	D3D11_MAPPED_SUBRESOURCE MapRsc;
+	if(!CheckResult(m_Context.m_DXDeviceContext->Map(Context.m_Texture, 0, D3D11_MAP_READ, 0, &MapRsc), "Map")) return false;
+
+	uint32_t Stride = LWImage::GetStride(Size.x, PackType);
+	uint8_t *p = (uint8_t*)MapRsc.pData;
+	for (int32_t i = 0; i < Size.y; i++) {
+		uint8_t *Row = p + MapRsc.RowPitch * i;
+		std::copy(Row, Row + Stride, Buffer + Stride * i);
+	}
+	m_Context.m_DXDeviceContext->Unmap(Context.m_Texture, 0);
+	Context.m_Texture->Release();
+	return true;
 }
 
 bool LWVideoDriver_DirectX11_1::DownloadTextureCubeArray(LWTexture *Texture, uint32_t MipmapLevel, uint32_t Layer, uint32_t Face, uint8_t *Buffer) {
@@ -1120,7 +1159,6 @@ LWVideoDriver &LWVideoDriver_DirectX11_1::ClearColor(const LWVector4f &Color) {
 	}
 	return *this;
 }
-
 
 LWVideoDriver &LWVideoDriver_DirectX11_1::ClearDepth(float Depth) {
 	SetFrameBuffer(m_ActiveFrameBuffer);

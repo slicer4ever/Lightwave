@@ -53,6 +53,7 @@ public:
 
 		ImageTypeBits = 0xF00 /*!< \brief bits of flag to represent the type of image. */
 	};
+	/*!< \brief the total number of mipmaps*layers*faces the image will store. */
 	static const uint32_t MaxTextureImages = 128;
 
 	/*!< \brief image loading which automatically attempts to load an image from a file source, and deduce it's type based on the associated extension. 
@@ -83,6 +84,16 @@ public:
 
 	/*! \brief loads a ktx2 file from a memory buffer. */
 	static bool LoadImageKTX2(LWImage &Image, const uint8_t *Buffer, uint32_t BufferLen, LWAllocator &Allocator);
+
+	/*! \brief write's to filepath a png file. returns true on success, or false on failure.
+		\note currently only RGBA8 image's are supported for png.
+	*/
+	static bool SaveImagePNG(LWImage &Image, const LWText &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream = nullptr);
+
+	/*! \brief write's a png file into buffer, returns the number of bytes. 
+		\note currently only RGBA8 image's are supported for png.
+	*/
+	static uint32_t SaveImagePNG(LWImage &Image, uint8_t *Buffer, uint32_t BufferLen);
 
 	/*!< \brief copys n texels into buffer at a certain weight.
 		 \param PackType the pack type of the texels.
