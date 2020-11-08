@@ -23,6 +23,8 @@ libogg-1.3.2 https://xiph.org/ogg/ (be sure to rename the folder to libogg)
 
 libvorbis-1.3.5 https://xiph.org/vorbis/ (be sure to rename the folder to libvorbis)
 
+libfmt-7.10 https://github.com/fmtlib/fmt (be sure to rename the folder to libfmt) this library is required for LWUnicodeIterator::C_View formatting constructor.
+
 Place all library folders into the dependency directory then naviagate to the build system for that platform.  the build systems are designed to build statically linked librarys.
 The build systems were built with the above versions.  Using more upto date librarys may required modifications to the build processes, but ideally if the library hasn't had radical changes it should be interchangable.
 

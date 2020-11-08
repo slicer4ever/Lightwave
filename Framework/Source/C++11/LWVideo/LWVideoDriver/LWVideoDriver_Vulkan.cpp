@@ -31,7 +31,7 @@ bool LWVideoDriver_Vulkan::DebugResult(const char *ErrorMessage, VkResult Result
 			if (ErrorList[i] == Result) break;
 		}
 		if (i >= ErrorCount) i = UnknownID;
-		if (Verbose) std::cout << ErrorMessage << ": " << ErrorNames[i] << std::endl;
+		if (Verbose) fmt::print("{}: {}\n", ErrorMessage, ErrorNames[i]);
 		return false;
 	}
 	return true;
@@ -65,11 +65,11 @@ bool LWVideoDriver_Vulkan::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *Vert
 	return false;
 }
 
-LWShader *LWVideoDriver_Vulkan::CreateShader(uint32_t ShaderType, const char *Source, LWAllocator &Allocator, char *CompiledBuffer, char *ErrorBuffer, uint32_t *CompiledBufferLen, uint32_t ErrorBufferLen) {
+LWShader *LWVideoDriver_Vulkan::CreateShader(uint32_t ShaderType, const LWUTF8Iterator &Source, LWAllocator &Allocator, char *CompiledBuffer, char8_t *ErrorBuffer, uint32_t *CompiledBufferLen, uint32_t ErrorBufferLen) {
 	return nullptr;
 }
 
-LWShader *LWVideoDriver_Vulkan::CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledCodeLen, LWAllocator &Allocator, char *ErrorBuffer, uint32_t ErroBufferLen) {
+LWShader *LWVideoDriver_Vulkan::CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledCodeLen, LWAllocator &Allocator, char8_t *ErrorBuffer, uint32_t ErroBufferLen) {
 	return nullptr;
 }
 

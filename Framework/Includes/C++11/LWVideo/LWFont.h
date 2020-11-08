@@ -100,95 +100,21 @@ public:
 	LWFont &SetTexture(uint32_t TextureIndex, LWTexture *Tex);
 
 	/*!< \brief measures a text object, and returns the bounding rectangle which encompasses the entire text object. */
-	LWVector4f MeasureText(const LWText &Text, float Scale);
-
-	/*!< \brief measures a formatted text object, and returns the bounding rectangle which encompasses the entire text object. */
-	LWVector4f MeasureTextf(const LWText &Text, float Scale, ...);
-
-	/*!< \brief measures a text object upto n characters, and returns the bounding rectangle which encompasses the entire text object. */
-	LWVector4f MeasureText(const LWText &Text, uint32_t CharCount, float Scale);
-
-	/*!< \brief measures a formatted text object upto n characters, and returns the bounding rectangle which encompasses the entire text object. */
-	LWVector4f MeasureTextf(const LWText &Text, uint32_t CharCount, float Scale, ...);
+	LWVector4f MeasureText(const LWUTF8GraphemeIterator &Text, float Scale);
 
 	/*!< \brief measures text upto a certain width, and returns the index of the character at that position. */
-	uint32_t CharacterAt(const LWText &Text, float Width, float Scale);
-
-	/*!< \brief measures text upto a certain width, and returns the index of the character at that position. */
-	uint32_t CharacterAtf(const LWText &Text, float Width, float Scale, ...);
-
-	/*!< \brief measures text upto a certain width, and returns the index of the character at that position. */
-	uint32_t CharacterAt(const LWText &Text, float Width, uint32_t CharCount, float Scale);
-
-	/*!< \brief measures text upto a certain width, and returns the index of the character at that position. */
-	uint32_t CharacterAtf(const LWText &Text, float Width, uint32_t CharCount, float Scale, ...);
+	uint32_t CharacterAt(const LWUTF8GraphemeIterator &Text, float Width, float Scale);
 
 	/*!< \brief convenience function that automatically binds a class's method as the writer function. */
 	template<class Obj, class CallBack>
-	LWVector4f DrawTextm(const LWText &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, Obj *O, CallBack C) {
+	LWVector4f DrawTextm(const LWUTF8GraphemeIterator &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, Obj *O, CallBack C) {
 		return DrawText(Text, Position, Scale, Color, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 	}
 
 	/*!< \brief convenience function that automatically binds a class's method as the writer function. */
 	template<class Obj, class CallBack>
-	LWVector4f DrawTextmf(const LWText &Fmt, const LWVector2f &Position, float Scale, const LWVector4f &Color, Obj *O, CallBack C, ...) {
-		char Buffer[1024];
-		va_list lst;
-		va_start(lst, C);
-		vsnprintf(Buffer, sizeof(Buffer), (const char*)Fmt.GetCharacters(), lst);
-		va_end(lst);
-		return DrawText(Buffer, Position, Scale, Color, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
-	}
-
-	/*!< \brief convenience function that automatically binds a class's method as the writer function. */
-	template<class Obj, class CallBack>
-	LWVector4f DrawTextm(const LWText &Text, uint32_t CharCount, const LWVector2f &Position, float Scale, const LWVector4f &Color, Obj *O, CallBack C){
-		return DrawText(Text, CharCount, Position, Scale, Color, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
-	}
-
-	/*!< \brief convenience function that automatically binds a class's method as the writer function. */
-	template<class Obj, class CallBack>
-	LWVector4f DrawTextmf(const LWText &Fmt, uint32_t CharCount, const LWVector2f &Position, float Scale, const LWVector4f &Color, Obj *O, CallBack C, ...) {
-		char Buffer[1024];
-		va_list lst;
-		va_start(lst, C);
-		vsnprintf(Buffer, sizeof(Buffer), (const char*)Fmt.GetCharacters(), lst);
-		va_end(lst);
-		return DrawText(Buffer, CharCount, Position, Scale, Color, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
-	}
-
-	/*!< \brief convenience function that automatically binds a class's method as the writer function. */
-	template<class Obj, class CallBack>
-	LWVector4f DrawClippedTextm(const LWText &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, Obj *O, CallBack C) {
+	LWVector4f DrawClippedTextm(const LWUTF8GraphemeIterator &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, Obj *O, CallBack C) {
 		return DrawClippedText(Text, Position, Scale, Color, AABB, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
-	}
-
-	/*!< \brief convenience function that automatically binds a class's method as the writer function. */
-	template<class Obj, class CallBack>
-	LWVector4f DrawClippedTextmf(const LWText &Fmt, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, Obj *O, CallBack C, ...) {
-		char Buffer[1024];
-		va_list lst;
-		va_start(lst, C);
-		vsnprintf(Buffer, sizeof(Buffer), (const char*)Fmt.GetCharacters(), lst);
-		va_end(lst);
-		return DrawClippedText(Buffer, Position, Scale, Color, AABB, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
-	}
-
-	/*!< \brief convenience function that automatically binds a class's method as the writer function. */
-	template<class Obj, class CallBack>
-	LWVector4f DrawClippedTextm(const LWText &Text, uint32_t CharCount, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, Obj *O, CallBack C) {
-		return DrawClippedText(Text, CharCount, Position, Scale, Color, AABB, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
-	}
-
-	/*!< \brief convenience function that automatically binds a class's method as the writer function. */
-	template<class Obj, class CallBack>
-	LWVector4f DrawClippedTextmf(const LWText &Fmt, uint32_t CharCount, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, Obj *O, CallBack C, ...) {
-		char Buffer[1024];
-		va_list lst;
-		va_start(lst, C);
-		vsnprintf(Buffer, sizeof(Buffer), (const char*)Fmt.GetCharacters(), lst);
-		va_end(lst);
-		return DrawClippedText(Buffer, CharCount, Position, Scale, Color, AABB, std::bind(C, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6));
 	}
 
 	/*!< \brief renders text to the writer function. 
@@ -199,40 +125,7 @@ public:
 		 \param Color the color to mark each text character as.
 		 \return the rectangular bounding box which encompasses this text object.
 	*/
-	LWVector4f DrawText(const LWText &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, LWFontWriteCallback Writer);
-
-	/*!< \brief constructs a mesh object for rendering the formatted text with the font.
-	 	 \param Text the text to render out.
-		 \param Position the location on the screen to draw to(this is translated by the ortho matrix.)
-		 \param Scale the amount to scale the font up/down by(1.0 is default font scale based on the emSize when the font was created.)
-		 \param Mesh the mesh to render into.
-		 \param Color the color to mark each text character as.
-		 \return the rectangular bounding box which encompasses this text object.
-	*/
-	LWVector4f DrawTextf(const LWText &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, LWFontWriteCallback Writer, ...);
-
-	/*!< \brief constructs a mesh object for rendering the text upto n characters with the font.
-		 \param Text the text to render out.
-		 \param CharCount the number of characters to render upto.
-		 \param Position the location on the screen to draw to(this is translated by the ortho matrix.)
-		 \param Scale the amount to scale the font up/down by(1.0 is default font scale based on the emSize when the font was created.)
-		 \param Mesh the mesh to render into.
-		 \param Color the color to mark each text character as.
-		 \return the rectangular bounding box which encompasses this text object.
-	*/
-	LWVector4f DrawText(const LWText &Text, uint32_t CharCount, const LWVector2f &Position, float Scale, const LWVector4f &Color, LWFontWriteCallback Writer);
-
-	/*!< \brief constructs a mesh object for rendering the formatted text upto n characters with the font.
-		 \param Text the text to render out.
-		 \param CharCount the number of characters to render upto.
-		 \param Position the location on the screen to draw to(this is translated by the ortho matrix.)
-		 \param Scale the amount to scale the font up/down by(1.0 is default font scale based on the emSize when the font was created.)
-		 \param Mesh the mesh to render into.
-		 \param Color the color to mark each text character as.
-		 \return the rectangular bounding box which encompasses this text object.
-	*/
-	LWVector4f DrawTextf(const LWText &Text, uint32_t CharCount, const LWVector2f &Position, float Scale, const LWVector4f &Color, LWFontWriteCallback Writer, ...);
-
+	LWVector4f DrawText(const LWUTF8GraphemeIterator &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, LWFontWriteCallback Writer);
 
 	/*!< \brief constructs a mesh object for rendering the text with the font.
 		 \param Text the text to render out.
@@ -243,53 +136,18 @@ public:
 		 \param AABB the axis aligned bounding box to clip the text around. (left, bottom, width, height)
 		 \return the rectangular bounding box which encompasses this text object.
 	*/
-	LWVector4f DrawClippedText(const LWText &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, LWFontWriteCallback Writer);
-
-	/*!< \brief constructs a mesh object for rendering the formatted text with the font.
-		 \param Text the text to render out.
-		 \param Position the location on the screen to draw to(this is translated by the ortho matrix.)
-	 	 \param Scale the amount to scale the font up/down by(1.0 is default font scale based on the emSize when the font was created.)
-		 \param Mesh the mesh to render into.
-		 \param Color the color to mark each text character as.
-		 \param AABB the axis aligned bounding box to clip the text around. (left, bottom, width, height)
-		 \return the rectangular bounding box which encompasses this text object.
-	*/
-	LWVector4f DrawClippedTextf(const LWText &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, LWFontWriteCallback Writer, ...);
-
-	/*!< \brief constructs a mesh object for rendering the text upto n characters with the font.
-		 \param Text the text to render out.
-		 \param CharCount the number of characters to render upto.
-	 	 \param Position the location on the screen to draw to(this is translated by the ortho matrix.)
-		 \param Scale the amount to scale the font up/down by(1.0 is default font scale based on the emSize when the font was created.)
-		 \param Mesh the mesh to render into.
-		 \param Color the color to mark each text character as.
-		 \param AABB the axis aligned bounding box to clip the text around. (left, bottom, width, height)
-		 \return the rectangular bounding box which encompasses this text object.
-	*/
-	LWVector4f DrawClippedText(const LWText &Text, uint32_t CharCount, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, LWFontWriteCallback Writer);
-
-	/*!< \brief constructs a mesh object for rendering the formatted text upto n characters with the font.
-		 \param Text the text to render out.
-		 \param CharCount the number of characters to render upto.
-		 \param Position the location on the screen to draw to(this is translated by the ortho matrix.)
-		 \param Scale the amount to scale the font up/down by(1.0 is default font scale based on the emSize when the font was created.)
-		 \param Mesh the mesh to render into.
-		 \param Color the color to mark each text character as.
-		 \param AABB the axis aligned bounding box to clip the text around. (left, bottom, width, height)
-		 \return the rectangular bounding box which encompasses this text object.
-	*/
-	LWVector4f DrawClippedTextf(const LWText &Text, uint32_t CharCount, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, LWFontWriteCallback Writer, ...);
+	LWVector4f DrawClippedText(const LWUTF8GraphemeIterator &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, LWFontWriteCallback Writer);
 
 	/*!< \brief inserts the amount of horizontal kerning between the left and right characters. */
 	LWFont &InsertKern(uint32_t Left, uint32_t Right, float Kerning);
 
 	/*!< \brief inserts a glyph name into the glyph name map. */
-	LWFont &InsertGlyphName(const LWText &GlyphName, uint32_t GlyphID);
+	LWFont &InsertGlyphName(const LWUTF8Iterator &GlyphName, uint32_t GlyphID);
 
 	/*!< \brief sets the glyph character code used when encountering a character that isn't in the glyph map. */
 	LWFont &SetErrorGlyph(uint32_t Character);
 
-	/*!< \brief returns a glyph of the specified utf-32 character. 
+	/*!< \brief returns a glyph of the specified Unicode character. 
 		 \param Character the character the glyph wants.
 		 \param Insert to insert the glyph if it doesn't exist.
 	*/
@@ -299,7 +157,7 @@ public:
 		 \param GlyphName the name of the glyph to find.
 		 \return 0 on failure, otherwise the character code for that glyph.
 	*/
-	uint32_t GetGlyphName(const LWText &GlyphName) const;
+	uint32_t GetGlyphName(const LWUTF8Iterator &GlyphName) const;
 
 	/*!< \brief returns a glyph of the precalculated hash name.
 		 \param GlyphHash the hash of the glyph to find.

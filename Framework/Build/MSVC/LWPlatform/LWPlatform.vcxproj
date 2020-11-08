@@ -148,6 +148,7 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWPlatform\LWWindow.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\Source\C++11\LWPlatform\LWApplication.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWPlatform\LWDirectory.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWPlatform\LWFileByteStream.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWPlatform\LWFileStream.cpp" />

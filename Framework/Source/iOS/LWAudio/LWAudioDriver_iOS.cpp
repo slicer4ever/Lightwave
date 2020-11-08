@@ -99,7 +99,7 @@ bool LWAudioDriver::Update(uint64_t lCurrentTime, LWWindow *Window) {
 			AudioStreamPacketDescription Desc = { SeekSamples*FrameSize, 0, (SliceSamples*FrameSize) - SeekSamples*FrameSize };
 			OSStatus Err = AudioQueueEnqueueBuffer(Context->m_Queue, ABuf, 1, &Desc);
 			if (Err) {
-				std::cout << "Error enqueuing: " << Err << std::endl;
+				fmt::print("Error enqueuing: {}\n", Err);
 			}
 
 
@@ -166,13 +166,13 @@ LWSound *LWAudioDriver::CreateSound(LWAudioStream *Stream, uint32_t Flags, void 
 		0 };
 	OSStatus Err = AudioQueueNewOutput(&Desc, AudioQueueCallback, nullptr, nullptr, nullptr, 0, &SndCntx->m_Queue);
 	if (Err) {
-		std::cout << "Error making audio: " << (int32_t)Err << std::endl;
+		fmt::print("Error making audio: {}\n", (int32_t)Err);
 		return nullptr;
 	}
 	for (uint32_t i = 0; i < LWSOUND_RESERVECNT; i++) {
 		Err = AudioQueueAllocateBuffer(SndCntx->m_Queue, LWSOUND_RESERVEBUFFERSIZE, &SndCntx->m_QueueBuffers[i]);
 		if (Err) {
-			std::cout << "Error making buffer: " << (int32_t)Err << std::endl;
+			fmt::print("Error making buffer: {}\n", (int32_t)Err);
 			return nullptr;
 		} //else std::cout << "Buffer Size: " << SndCntx->m_QueueBuffers[i]->mAudioDataBytesCapacity << std::endl;
 	}

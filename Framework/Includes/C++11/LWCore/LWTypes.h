@@ -1,19 +1,23 @@
 #ifndef LWCORETYPES_H
 #define LWCORETYPES_H
 #include <cstdint>
+
+//Add libfmt support.
+#ifndef _HAS_EXCEPTIONS
+#define _HAS_EXCEPTIONS 0 //Because subsystem:Windows only supports 4096 characters, libfmt will throw an exception when such an issue is encountered, this ideally prevents it during release(and debug builds should be set to console mode, however if not then a debug build will assert).
+#endif
+#include "../../../../Dependency/libfmt/include/fmt/format.h"
+#include "../../../../Dependency/libfmt/include/fmt/chrono.h"
+#include "../../../../Dependency/libfmt/include/fmt/ostream.h"
+
 /*! \defgroup LWCore LWCore
 	\brief the core of the entire framework that is built upon these classes.
 	@{
 */
 
-#define LWMOD_EQL 0 /*!< \brief mod value to pass to ModFunc that sets A to B. */
-#define LWMOD_OR  1 /*!< \brief mod value to pass to ModFunc that or's A with B. */
-#define LWMOD_XOR 2 /*!< \brief mod value to pass to ModFunc that xor's A with B. */
-#define LWMOD_AND 3 /*!< \brief mod value to pass to ModFunc that and's A with B. */
-#define LWMOD_NOT 4 /*!< \brief mod value to pass to ModFunc that A does not have any B bits. */
-
-/*! \brief mods A with B depending on the function specefied. */
-#define LWMOD(A, B, ModFunc) switch(ModFunc){ case LWMOD_EQL: A = B; break; case LWMOD_OR: A|=B; break; case LWMOD_XOR: A^=B; break; case LWMOD_AND: A&=B; break; case LWMOD_NOT: A&=~B; break }; 
+#ifndef char8_t
+typedef char char8_t;
+#endif
 
 class LWAllocator;
 
@@ -23,7 +27,14 @@ class LWByteStream;
 
 class LWFileStream;
 
-class LWText;
+template<class Type>
+class LWUnicode;
+
+template<class Type>
+class LWUnicodeIterator;
+
+template<class Type>
+class LWUnicodeGraphemeIterator;
 
 class LWTimer;
 
@@ -72,6 +83,26 @@ class LWFIFO;
 
 template<class Type, uint32_t MaxElements>
 class LWConcurrentFIFO;
+
+typedef LWUnicode<char8_t> LWUTF8;
+typedef LWUnicode<char16_t> LWUTF16;
+typedef LWUnicode<char32_t> LWUTF32;
+
+typedef LWUnicodeIterator<char8_t> LWUTF8Iterator;
+typedef LWUnicodeIterator<char16_t> LWUTF16Iterator;
+typedef LWUnicodeIterator<char32_t> LWUTF32Iterator;
+
+typedef LWUnicodeGraphemeIterator<char8_t> LWUTF8GraphemeIterator;
+typedef LWUnicodeGraphemeIterator<char16_t> LWUTF16GraphemeIterator;
+typedef LWUnicodeGraphemeIterator<char32_t> LWUTF32GraphemeIterator;
+
+typedef LWUTF8Iterator LWUTF8I; //Shorthand for utf8 iterator.
+typedef LWUTF16Iterator LWUTF16I;
+typedef LWUTF32Iterator LWUTF32I;
+
+typedef LWUTF8GraphemeIterator LWUTF8GI; //Shorthand for utf8 grapheme iterator;
+typedef LWUTF16GraphemeIterator LWUTF16GI;
+typedef LWUTF32GraphemeIterator LWUTF32GI;
 
 /*!< \brief defined double version of the quaternion class. */
 typedef LWQuaternion<double> LWQuaterniond;

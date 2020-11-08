@@ -1,3 +1,4 @@
+#include "LWCore/LWTypes.h"
 #include "LWPlatform/LWPlatform.h"
 #include "LWPlatform/LWWindow.h"
 #include "LWPlatform/LWFileStream.h"
@@ -34,70 +35,48 @@ struct App {
 public:
 	
 
-	void SetFinished(const char *Error) {
-		std::cout << Error << std::endl;
+	void SetFinished(const LWUTF8Iterator &Error) {
+		fmt::print("Error: {}\n", Error);
 		return;
-	}
-	
-	void SetFinishedf(const char *ErrorFmt, ...) {
-		char Buffer[1024];
-		va_list lst;
-		va_start(lst, ErrorFmt);
-		vsnprintf(Buffer, sizeof(Buffer), ErrorFmt, lst);
-		va_end(lst);
-		return SetFinished(Buffer);
-	}
+	}	
 
 	void ProcessInput(void) {
 		m_Window->Update(LWTimer::GetCurrent());
 		m_AudioDriver->Update(LWTimer::GetCurrent(), m_Window);
 		if (m_Window->GetFlag()&LWWindow::Terminate) m_Finished = true;
 		if (m_Window->GetFlag()&LWWindow::OrientationChanged) {
-			std::cout << "Orientation has changed: " << ((m_Window->GetOrientation() == LWWindow::Rotation_0) ? "Portrait" : ((m_Window->GetOrientation() == LWWindow::Rotation_90) ? "Landscape" : ((m_Window->GetOrientation() == LWWindow::Rotation_180) ? "Upside down portrait" : "Upside down landscape"))) << std::endl;
+			fmt::print("Orientation has changed: {}\n", ((m_Window->GetOrientation() == LWWindow::Rotation_0) ? "Portrait" : ((m_Window->GetOrientation() == LWWindow::Rotation_90) ? "Landscape" : ((m_Window->GetOrientation() == LWWindow::Rotation_180) ? "Upside down portrait" : "Upside down landscape"))));
 		}
-		if (m_Window->GetFlag()&LWWindow::FocusChanged) std::cout << "Focus has changed: " << ((m_Window->GetFlag()&LWWindow::Focused) ? "Current" : "Not Current") << std::endl;
-		if (m_Window->GetFlag()&LWWindow::PosChanged) std::cout << "Position has changed: " << m_Window->GetPosition().x << " " << m_Window->GetPosition().y << std::endl;
+		if (m_Window->GetFlag() & LWWindow::FocusChanged) fmt::print("Focus has changed: {}\n", ((m_Window->GetFlag() & LWWindow::Focused) ? "Current" : "Not Current"));
+		if (m_Window->GetFlag() & LWWindow::PosChanged) fmt::print("Position has changed: {}\n", m_Window->GetPosition());
 		LWMouse *Mouse = m_Window->GetMouseDevice();
 		LWKeyboard *KB = m_Window->GetKeyboardDevice();
 		LWTouch *TD = m_Window->GetTouchDevice();
 		if (Mouse) {
-			if (Mouse->ButtonDown(LWMouseKey::Left)) std::cout << "Left mouse down at: " << Mouse->GetPosition().x << " " << Mouse->GetPosition().y << " scroll: " << Mouse->GetScroll() << std::endl;
-
-			if (Mouse->ButtonPressed(LWMouseKey::Left)) {
-				std::cout << "Left mouse pressed!" << std::endl;
-				/*
-				if((Wnd->GetFlag()&LWWindow::KeyboardPresent)==0) Wnd->OpenKeyboard("abc");
-				else{
-				uint32_t CursorPos = 0;
-				uint32_t EditLength = 0;
-				Wnd->GetKeyboardEditRange(CursorPos, EditLength);
-				Wnd->GetKeyboardText(TextBuffer, sizeof(TextBuffer));
-				std::cout << "Cursor: " << CursorPos << " - " << EditLength << std::endl << "'" << TextBuffer << "'" << std::endl;
-				Wnd->CloseKeyboard();
-				}*/
-			}
-			if (Mouse->ButtonReleased(LWMouseKey::Left)) std::cout << "Left mouse released!" << std::endl;
-			if (Mouse->ButtonDown(LWMouseKey::Right)) std::cout << "Right mouse down!" << std::endl;
-			if (Mouse->ButtonPressed(LWMouseKey::Right)) std::cout << "Right mouse pressed!" << std::endl;
-			if (Mouse->ButtonReleased(LWMouseKey::Right)) std::cout << "Right mouse released!" << std::endl;
-			if (Mouse->ButtonDown(LWMouseKey::Middle)) std::cout << "Middle mouse down!" << std::endl;
-			if (Mouse->ButtonPressed(LWMouseKey::Middle)) std::cout << "Middle mouse pressed!" << std::endl;
-			if (Mouse->ButtonReleased(LWMouseKey::Middle)) std::cout << "Middle mouse released!" << std::endl;
-			if (Mouse->ButtonDown(LWMouseKey::X1)) std::cout << "X1 mouse down!" << std::endl;
-			if (Mouse->ButtonPressed(LWMouseKey::X1)) std::cout << "X1 mouse pressed!" << std::endl;
-			if (Mouse->ButtonReleased(LWMouseKey::X1)) std::cout << "X1 mouse released!" << std::endl;
-			if (Mouse->ButtonDown(LWMouseKey::X2)) std::cout << "X2 mouse down!" << std::endl;
-			if (Mouse->ButtonPressed(LWMouseKey::X2)) std::cout << "X2 mouse pressed!" << std::endl;
-			if (Mouse->ButtonReleased(LWMouseKey::X2)) std::cout << "X2 mouse released!" << std::endl;
+			if (Mouse->ButtonDown(LWMouseKey::Left)) fmt::print("Left mouse down at: {} Scroll: {}\n", Mouse->GetPosition(), Mouse->GetScroll());
+			if (Mouse->ButtonPressed(LWMouseKey::Left)) fmt::print("Left mouse pressed.\n");
+			if (Mouse->ButtonReleased(LWMouseKey::Left)) fmt::print("Left mouse released!\n");
+			if (Mouse->ButtonDown(LWMouseKey::Right)) fmt::print("Right mouse down!\n");
+			if (Mouse->ButtonPressed(LWMouseKey::Right)) fmt::print("Right mouse pressed!\n");
+			if (Mouse->ButtonReleased(LWMouseKey::Right)) fmt::print("Right mouse released!\n");
+			if (Mouse->ButtonDown(LWMouseKey::Middle)) fmt::print("Middle mouse down!\n");
+			if (Mouse->ButtonPressed(LWMouseKey::Middle)) fmt::print("Middle mouse pressed!\n");
+			if (Mouse->ButtonReleased(LWMouseKey::Middle)) fmt::print("Middle mouse released!\n");
+			if (Mouse->ButtonDown(LWMouseKey::X1)) fmt::print("X1 mouse down!\n");
+			if (Mouse->ButtonPressed(LWMouseKey::X1)) fmt::print("X1 mouse pressed!\n");
+			if (Mouse->ButtonReleased(LWMouseKey::X1)) fmt::print("X1 mouse released!\n");
+			if (Mouse->ButtonDown(LWMouseKey::X2)) fmt::print("X2 mouse down!\n");
+			if (Mouse->ButtonPressed(LWMouseKey::X2)) fmt::print("X2 mouse pressed!\n");
+			if (Mouse->ButtonReleased(LWMouseKey::X2)) fmt::print("X2 mouse released!\n");
 		}
 		if (KB) {
 			for (uint32_t i = 0; i<KB->GetKeyChangeCount(); i++) {
 				uint32_t Key = KB->GetKeyChanged(i);
-				std::cout << "Key: " << Key << " is: " << (KB->ButtonDown(Key) ? "True" : "False") << std::endl;
+				fmt::print("Key: {} is: {}\n", Key, KB->ButtonDown(Key));
 			}
 			for (uint32_t i = 0; i<KB->GetCharPressed(); i++) {
 				uint32_t Char = KB->GetChar(i);
-				std::cout << "Char: " << (char)Char << std::endl;
+				fmt::print("Char: {}\n", (char)Char);
 			}
 			if (KB->ButtonDown(LWKey::A)) m_Window->SetPosition(m_Window->GetPosition() + LWVector2i(-1, 0));
 			if (KB->ButtonDown(LWKey::D)) m_Window->SetPosition(m_Window->GetPosition() + LWVector2i(1, 0));
@@ -124,12 +103,12 @@ public:
 		if (TD) {
 			for (uint32_t i = 0; i < TD->GetPointCount(); i++) {
 				const LWTouchPoint &Pnt = TD->GetPoint(i);
-				std::cout << "Point: " << Pnt.m_Position.x << " " << Pnt.m_Position.y << " State: " << Pnt.m_State << " Init: " << Pnt.m_InitPosition.x << " " << Pnt.m_InitPosition.y << " DownTime: " << Pnt.m_DownTime << " Size: " << Pnt.m_Size << std::endl;
+				fmt::print("Point: {} State: {} Init: {} DownTime: {} Size: {}\n", Pnt.m_Position, Pnt.m_State, Pnt.m_InitPosition, Pnt.m_DownTime, Pnt.m_Size);
 				if (Pnt.m_State == LWTouchPoint::DOWN) m_UseMSDF = !m_UseMSDF;
 			}
 			const LWGesture &Gest = TD->GetGesture();
 			if (Gest.m_Type != LWGesture::None) {
-				std::cout << "Gesture: " << Gest.m_Type << " Source: " << Gest.m_Source.x << " " << Gest.m_Source.y << " Dir: " << Gest.m_Direction.x << " " << Gest.m_Direction.y << " Scale: " << Gest.m_Scale << std::endl;
+				fmt::print("Gesture: {} Source: {} Dir: {} Scale: {}\n", Gest.m_Type, Gest.m_Source, Gest.m_Direction, Gest.m_Scale);
 			}
 		}
 	}
@@ -140,7 +119,7 @@ public:
 		if (!m_Driver->Update()) return;
 		
 		if (m_SizeChanged) {
-			std::cout << "Size has changed: " << m_Window->GetSize().x << " " << m_Window->GetSize().y << std::endl;
+			fmt::print("Size has changed: {}\n", m_Window->GetSize());
 			m_Driver->ViewPort();
 			LWMatrix4f Ortho = LWMatrix4f::Ortho(0.0f, m_Window->GetSizef().x, 0.0f, m_Window->GetSizef().y, 0.0f, 1.0f);
 			memcpy(m_FontUniformBuffer->GetLocalBuffer(), &Ortho, m_FontUniformBuffer->GetRawLength());
@@ -173,30 +152,38 @@ public:
 		
 	}
 
+
+
 	App(LWAllocator &Allocator) : m_Allocator(Allocator) {
+
 		char ErrorBuffer[1024];
-		m_Stream = LWAudioStream::Create("App:SampleSound.ogg", 0, Allocator);
+		const char *DriverNames[] = LWVIDEODRIVER_NAMES;
+		const char *ArchNames[] = LWARCH_NAMES;
+		const char *PlatformNames[] = LWPLATFORM_NAMES;
+
+		m_Stream = LWAudioStream::Create(u8"App:SampleSound.ogg", 0, Allocator);
 
 		if(!m_Stream){
 			SetFinished("Error opening sound: 'App:SampleSound.ogg'");
 			return;
 		}
 		auto FinishedCallback = [](LWSound *S, LWAudioDriver *AD) {
-			std::cout << "Finished: " << S->GetFinishedCount() << " " << S->GetPlayCount() << std::endl;
+			fmt::print("Finished: {} {}\n", S->GetFinishedCount(), S->GetPlayCount());
 			if(S->isFinished()) {
-				std::cout << "Releasing sound!" << std::endl;
+				fmt::print("Releasing sound.\n");
 				S->Release();
 			}
 		};
 
 		auto CreateCallback = [](LWSound *S, LWAudioDriver *AD) {
-			std::cout << "Sound created: " << LWSound::CalculateTime(S->GetAudioStream()->GetSampleLength(), S->GetAudioStream()->GetSampleRate()) << "s" << std::endl;
+			LWAudioStream *Stream = S->GetAudioStream();
+			fmt::print("Sound Created: {}s\n", LWSound::CalculateTime(Stream->GetSampleLength(), Stream->GetSampleRate()));
 		};
 
 		auto ReleaseCallback = [](LWSound *S, LWAudioDriver *AD) {
-			std::cout << "Sound released!" << std::endl;
+			fmt::print("Sound released.\n");
 		};
-		m_AudioDriver = Allocator.Allocate<LWAudioDriver>(nullptr, m_Allocator, FinishedCallback, CreateCallback, ReleaseCallback);
+		m_AudioDriver = Allocator.Create<LWAudioDriver>(nullptr, m_Allocator, FinishedCallback, CreateCallback, ReleaseCallback);
 
 		if (m_AudioDriver->GetFlag()&LWAudioDriver::Error) {
 			SetFinished("Error creating audio driver.");
@@ -205,9 +192,9 @@ public:
 
 		LWSound *Snd = m_AudioDriver->CreateSound2D(m_Stream, nullptr, 0, true, 3 );
 		if (!Snd) {
-			std::cout << "Failed to create sound..." << std::endl;
+			fmt::print("Failed to create sound...\n");
 		} else {
-			std::cout << "Sound created!" << std::endl;
+			fmt::print("Sound created!\n");
 		}
 		//AudioStream.Finished();*/
 		//while ((Wnd->Update(LWTimer::GetCurrent()).GetFlag()&LWWindow::Terminate) == 0 && !KB->ButtonDown(LWKey::Esc)){
@@ -217,16 +204,28 @@ public:
 		continue;
 		}*/
 		//}
-		auto OutputMode = [](const LWVideoMode &Mode) { std::cout << "Mode: " << Mode.GetSize().x << " " << Mode.GetSize().y << " Rate: " << Mode.GetFrequency() << " Interlaced: " << ((Mode.GetFlag()&LWVideoMode::Interlaced) ? "Yes" : "No") << " | Colored Mode: " << ((Mode.GetColorMode() == LWVideoMode::Colored4Bit) ? "4 Bit Colored" : ((Mode.GetColorMode() == LWVideoMode::Colored8Bit) ? "8 Bit Colored" : ((Mode.GetColorMode() == LWVideoMode::Colored16Bit) ? "16 Bit Colored" : ((Mode.GetColorMode() == LWVideoMode::Colored32Bit) ? "32 Bit Colored" : "Unknown colored mode")))) << " Rotation: " << ((Mode.GetRotation() == LWVideoMode::Rotation_0) ? "0" : ((Mode.GetRotation() == LWVideoMode::Rotation_90) ? "90" : ((Mode.GetRotation() == LWVideoMode::Rotation_180) ? "180" : "270"))) << " Flag: " << std::hex << Mode.GetFlag() << std::dec << std::endl; };
+		auto OutputMode = [](const LWVideoMode &Mode) {
+			uint32_t ColoredMode = Mode.GetColorMode();
+			uint32_t Rotation = Mode.GetRotation();
+			fmt::print("Mode: {} Rate: {} Interlaced: {} | Colored Mode: {} | Rotation: {} Flag: {}\n", 
+				Mode.GetSize(), Mode.GetFrequency(), Mode.isInterlaced(), ((ColoredMode == LWVideoMode::Colored4Bit) ? u8"4 Bit Colored" : ((ColoredMode == LWVideoMode::Colored8Bit) ? u8"8 Bit Colored" : ((ColoredMode == LWVideoMode::Colored16Bit) ? u8"16 Bit Colored" : ((ColoredMode == LWVideoMode::Colored32Bit) ? u8"32 Bit Colored" : u8"Unknown colored mode")))), ((Rotation == LWVideoMode::Rotation_0) ? u8"0" : ((Rotation == LWVideoMode::Rotation_90) ? u8"90" : ((Rotation == LWVideoMode::Rotation_180) ? u8"180" : u8"270"))), Mode.GetFlag());
+		};
 		LWVideoMode Active = LWVideoMode::GetActiveMode();
 
-		std::cout << "Active ";
+		fmt::print("Active ");
 		OutputMode(Active);
 		uint32_t AvailableModes = LWVideoMode::GetAllDisplayModes(nullptr, 0);
-		LWVideoMode *Modes = Allocator.AllocateArray<LWVideoMode>(AvailableModes);
-		LWVideoMode::GetAllDisplayModes(Modes, AvailableModes);
-		//for (uint32_t i = 0; i < AvailableModes; i++) OutputMode(Modes[i]);
-
+		LWVideoMode *Modes = Allocator.AllocateA<LWVideoMode>(AvailableModes);
+		uint32_t nModes = LWVideoMode::GetAllDisplayModes(Modes, AvailableModes);
+		if (nModes != AvailableModes) {
+			SetFinished(LWUTF8Iterator::C_View<256>("Error incorrect mode list encountered {}, Expected: {}\n", nModes, AvailableModes));
+			return;
+		}
+		fmt::print("Modes: {}\n", AvailableModes);
+		for (uint32_t i = 0; i < AvailableModes; i++) {
+			fmt::print("i: ");
+			OutputMode(Modes[i]);
+		}
 		LWVector2i PrevSize = LWVector2i();
 		LWVector2i PrevPos = LWVector2i();
 		LWVector2i Size = LWVector2i(800, 600);
@@ -239,31 +238,30 @@ public:
 		*ErrorBuffer = '\0';
 		LWAllocator::Destroy(Modes);
 
-		m_Window = m_Allocator.Allocate<LWWindow>("LWPlatform Testing suite.", "LWPlatformTest", m_Allocator, LWWindow::WindowedMode | LWWindow::KeyboardDevice | LWWindow::MouseDevice | LWWindow::TouchDevice, Active.GetSize() / 2 - Size / 2, Size);
+		m_Window = m_Allocator.Create<LWWindow>("LWPlatform Testing suite.", "LWPlatformTest", m_Allocator, LWWindow::WindowedMode | LWWindow::KeyboardDevice | LWWindow::MouseDevice | LWWindow::TouchDevice, Active.GetSize() / 2 - Size / 2, Size);
 		if (m_Window->GetFlag()&LWWindow::Error) {
 			SetFinished("Error creating window!");
 			return;
 		}
 		//uint32_t TargetDriver = LWVideoDriver::Vulkan | LWVideoDriver::DebugLayer;
-		uint32_t TargetDriver = LWVideoDriver::Unspecefied ;
-		std::cout << "Window created: " << m_Window->GetSize().x << " " << m_Window->GetSize().y << std::endl;
+		uint32_t TargetDriver = LWVideoDriver::OpenGL2_1;
+		fmt::print("Window created: {} Arch: {} Platform: {}\n", m_Window->GetSize(), ArchNames[LWARCH_ID], PlatformNames[LWPLATFORM_ID]);
 		m_Driver = LWVideoDriver::MakeVideoDriver(m_Window, TargetDriver);
 		if (!m_Driver) {
-			SetFinished("Error: Creating video driver.");
+			SetFinished("Creating video driver.");
 			return;
 		}
-		std::cout << "Driver created: " << m_Driver->GetDriverType() << std::endl;
-
-		
-		m_DefaultVertexShader = m_Driver->LoadShader(LWShader::Vertex, "App:DefaultShader.vlws", Allocator, 0, nullptr, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
+		fmt::print("Driver created: {}\n", DriverNames[m_Driver->GetDriverID()]);
+		uint32_t CompiledLen = 0;
+		m_DefaultVertexShader = m_Driver->LoadShader(LWShader::Vertex, "App:DefaultShader.vlws", Allocator, 0, nullptr, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
 		if (!m_DefaultVertexShader) {
-			SetFinishedf("Error loading vertex shader:\n%s\n", ErrorBuffer);
+			SetFinished(LWUTF8Iterator::C_View<256>("Error loading vertex shader:\n{}\n", ErrorBuffer));
 			return;
 		}
-		m_DefaultVertexShader->SetInputMap(2, "Position", LWShaderInput::Vec4, 1, "TexCoord", LWShaderInput::Vec4, 1);
-		m_DefaultPixelShader = m_Driver->LoadShader(LWShader::Pixel, "App:DefaultShader.plws", Allocator, 0, nullptr, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
+		m_DefaultVertexShader->SetInputMapList("Position", LWShaderInput::Vec4, 1, "TexCoord", LWShaderInput::Vec4, 1);
+		m_DefaultPixelShader = m_Driver->LoadShader(LWShader::Pixel, "App:DefaultShader.plws", Allocator, 0, nullptr, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
 		if (!m_DefaultPixelShader) {
-			SetFinishedf("Error loading pixel shader:\n%s\n", ErrorBuffer);
+			SetFinished(LWUTF8Iterator::C_View<256>("Error loading pixel shader:\n{}\n", ErrorBuffer));
 			return;
 		}
 		m_DefaultPipeline = m_Driver->CreatePipeline(m_DefaultVertexShader, nullptr, m_DefaultPixelShader, 0, 0, LWPipeline::CULL_NONE, LWPipeline::SOLID, Allocator);
@@ -281,11 +279,11 @@ public:
 		m_UniBlock = (UniformBlock*)m_UniformBuffer->GetLocalBuffer();
 		
 		LWImage Image;
-		if (!LWImage::LoadImage(Image, LWText("App:Sample.png"), Allocator)) {
+		if (!LWImage::LoadImage(Image, "App:Sample.png", Allocator)) {
 			SetFinished("Error: loading image.");
 			return;
 		}
-		std::cout << "Size: " << Image.GetSize2D().x << " " << Image.GetSize2D().y << " PackType: " << Image.GetPackType() << std::endl;
+		fmt::print("Size: {} PackType: {}\n", Image.GetSize2D(), Image.GetPackType());
 		
 		m_Tex = m_Driver->CreateTexture(0, Image, Allocator);
 		if (!m_Tex) {
@@ -315,8 +313,7 @@ public:
 		m_RectMesh = LWVertexTexture::MakeMesh(Allocator, m_VertexBuffer, 6);
 		LWVertexTexture::WriteRectangle(m_RectMesh, LWVector2f(0.75f), LWVector2f(-0.75f), LWVector2f(0.0f, 0.0f), LWVector2f(1.0f, 1.0f));
 		m_Driver->UpdateMesh(&m_RectMesh->Finished());
-		const char *DriverNames[] = LWVIDEODRIVER_NAMES;
-		m_Window->SetTitlef("LWPlatform Testing suite. | %s", DriverNames[m_Driver->GetDriverID()]);
+		m_Window->SetTitle(LWUTF8Iterator::C_View<256>("LWPlatform Simple example. | {} | {} | {}", DriverNames[m_Driver->GetDriverID()], PlatformNames[LWPLATFORM_ID], ArchNames[LWARCH_ID]));
 
 		m_UniBlock->Color = LWVector4f(1.0f);
 		m_UniformBuffer->SetEditLength(sizeof(UniformBlock));
@@ -341,18 +338,18 @@ public:
 		
 		LWFileStream FontColorStream;
 		if (!LWFileStream::OpenStream(FontColorStream, "App:Junicode-Regular.ttf", LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, nullptr)) {
-			SetFinished("Error opening Junicode-Regular.ttf");
+			SetFinished("opening Junicode-Regular.ttf");
 			return;
 		}
 		m_ColorFont = LWFont::LoadFontTTF(&FontColorStream, m_Driver, 32, 32, 96, Allocator);
 		if (!m_ColorFont) {
-			SetFinished("Error loading ttf font.");
+			SetFinished("loading ttf font.");
 			return;
 		}
 
 		LWFileStream MSDFStream;
 		if (!LWFileStream::OpenStream(MSDFStream, "App:Arial.arfont", LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, nullptr)) {
-			SetFinished("Error opening Junicode-Regular.arfont");
+			SetFinished("Error opening Arial.arfont");
 			return;
 		}
 		m_MSDFFont = LWFont::LoadFontAR(&MSDFStream, m_Driver, Allocator);
@@ -362,22 +359,22 @@ public:
 			return;
 		}
 
-		m_FontVertexShader = m_Driver->ParseShader(LWShader::Vertex, LWFont::GetVertexShaderSource(), Allocator, 0, nullptr, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
+		m_FontVertexShader = m_Driver->ParseShader(LWShader::Vertex, LWFont::GetVertexShaderSource(), Allocator, 0, nullptr, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
 		if (!m_FontVertexShader) {
-			SetFinishedf("Error creating Font vertex shader:\n%s\n", ErrorBuffer);
+			SetFinished(LWUTF8Iterator::C_View<256>("Error creating Font vertex shader:\n{}\n", ErrorBuffer));
 			return;
 		}
-		m_FontVertexShader->SetInputMap(3, "Position", LWShaderInput::Vec4, 1, "Color", LWShaderInput::Vec4, 1, "TexCoord", LWShaderInput::Vec4, 1);
+		m_FontVertexShader->SetInputMapList("Position", LWShaderInput::Vec4, 1, "Color", LWShaderInput::Vec4, 1, "TexCoord", LWShaderInput::Vec4, 1);
 
-		m_FontColorShader = m_Driver->ParseShader(LWShader::Pixel, LWFont::GetPixelColorShaderSource(), Allocator, 0, nullptr, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
+		m_FontColorShader = m_Driver->ParseShader(LWShader::Pixel, LWFont::GetPixelColorShaderSource(), Allocator, 0, nullptr, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
 		if (!m_FontColorShader) {
-			SetFinishedf("Error creating Color pixel shader:\n%s\n", ErrorBuffer);
+			SetFinished(LWUTF8Iterator::C_View<256>("Error creating Color pixel shader:\n{}\n", ErrorBuffer));
 			return;
 		}
 
-		m_FontMSDFShader = m_Driver->ParseShader(LWShader::Pixel, LWFont::GetPixelMSDFShaderSource(), Allocator, 0, nullptr, nullptr, ErrorBuffer, nullptr, sizeof(ErrorBuffer));
+		m_FontMSDFShader = m_Driver->ParseShader(LWShader::Pixel, LWFont::GetPixelMSDFShaderSource(), Allocator, 0, nullptr, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
 		if (!m_FontMSDFShader) {
-			SetFinishedf("Error creating msdf pixel shader:\n%s\n", ErrorBuffer);
+			SetFinished(LWUTF8Iterator::C_View<256>("Error creating msdf pixel shader:\n{}\n", ErrorBuffer));
 			return;
 		}
 
@@ -472,11 +469,11 @@ public:
 	bool m_SizeChanged = true;
 	bool m_Finished = false;
 	bool m_UseMSDF = true;
-
 };
-int LWMain(int, char **){
+
+int LWMain(int, LWUTF8Iterator *){
 	LWAllocator_Default *Allocator = new LWAllocator_Default();
-	App *A = Allocator->Allocate<App>(*Allocator);
+	App *A = Allocator->Create<App>(*Allocator);
 	
 	if (A->m_Finished) {
 		LWAllocator::Destroy(A);

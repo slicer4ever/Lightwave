@@ -70,6 +70,9 @@ public:
 	/*! \brief returns the rotation of the display. */
 	uint32_t GetRotation(void) const;
 
+	/*!< \brief returns if the interlaced flag is set. */
+	bool isInterlaced(void) const;
+
 	/*! \brief constructs an LWVideoMode object. */
 	LWVideoMode(const LWVector2i &Size, const LWVector2i &DPI, uint32_t Frequency, uint32_t Flag);
 

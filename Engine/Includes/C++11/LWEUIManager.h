@@ -2,7 +2,7 @@
 #define LWEUIMANAGER_H
 #include <LWCore/LWTypes.h>
 #include <LWCore/LWVector.h>
-#include <LWCore/LWText.h>
+#include <LWCore/LWUnicode.h>
 #include <LWPlatform/LWTypes.h>
 #include <LWPlatform/LWInputDevice.h>
 #include <LWVideo/LWMesh.h>
@@ -59,7 +59,7 @@ struct LWEUINavigation {
 
 	bool isEnabled(void) const;
 
-	LWEUINavigation &ProcessUI(LWEUI *UI, const LWVector2f &VisiblePosition, const LWVector2f &VisibleSize,LWEUIManager &UIManager);
+	LWEUINavigation &ProcessUI(LWEUI *UI, const LWVector2f &VisiblePosition, const LWVector2f &VisibleSize, LWEUIManager &UIManager);
 
 	LWEUINavigation &Update(LWWindow *Window, LWEUIManager &UIManager);
 
@@ -114,7 +114,7 @@ struct LWEUIFrame {
 
 	bool WriteClippedRect(LWEUIMaterial *Mat, const LWVector2f &Pos, const LWVector2f &Size, const LWVector4f &AABB);
 
-	bool WriteClippedText(LWEUIMaterial *Mat, const LWText &Text, LWFont *Fnt, const LWVector2f &Pos, float Scale, const LWVector4f &AABB);
+	bool WriteClippedText(LWEUIMaterial *Mat, const LWUTF8GraphemeIterator &Text, LWFont *Fnt, const LWVector2f &Pos, float Scale, const LWVector4f &AABB);
 
 	bool WriteRect(LWEUIMaterial *Mat, const LWVector2f &Pos, const LWVector2f &Size);
 
@@ -157,13 +157,13 @@ public:
 		MaxDPIScales = 32
 	};
 
-	static const char *GetVertexShaderSource(void);
+	static const char8_t *GetVertexShaderSource(void);
 
-	static const char *GetTextureShaderSource(void);
+	static const char8_t *GetTextureShaderSource(void);
 
-	static const char *GetColorShaderSource(void);
+	static const char8_t *GetColorShaderSource(void);
 
-	static const char *GetYUVTextureShaderSource(void);
+	static const char8_t *GetYUVTextureShaderSource(void);
 
 	static bool XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X);
 
@@ -187,7 +187,7 @@ public:
 
 	bool RegisterEvent(LWEUI *UI, uint32_t EventCode, LWEUIEventCallback Callback, void *UserData);
 
-	bool RegisterEvent(const LWText &UIName, uint32_t EventCode, LWEUIEventCallback Callback, void *UserData);
+	bool RegisterEvent(const LWUTF8Iterator &UIName, uint32_t EventCode, LWEUIEventCallback Callback, void *UserData);
 
 	template<class T, class Y>
 	bool RegisterMethodEvent(LWEUI *UI, uint32_t EventCode, Y CallBack, T* Object, void *UserData) {
@@ -195,19 +195,17 @@ public:
 	}
 
 	template<class T, class Y>
-	bool RegisterMethodEvent(const LWText &UIName, uint32_t EventCode, Y CallBack, T* Object, void *UserData) {
+	bool RegisterMethodEvent(const LWUTF8Iterator &UIName, uint32_t EventCode, Y CallBack, T* Object, void *UserData) {
 		return RegisterEvent(UIName, EventCode, std::bind(CallBack, Object, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), UserData);
 	}
 
 	bool UnregisterEvent(LWEUI *UI, uint32_t EventCode);
 
-	bool UnregisterEvent(const LWText &UIName, uint32_t EventCode);
+	bool UnregisterEvent(const LWUTF8Iterator &UIName, uint32_t EventCode);
 
 	bool DispatchEvent(LWEUI *Dispatchee, uint32_t EventCode, bool DoDispatch = true);
 
-	bool DispatchEvent(const char *DispatcheeName, uint32_t EventCode, bool DoDispatch = true);
-
-	bool DispatchEventf(const char *DispathceeNameFmt, uint32_t EventCode, bool DoDispatch, ...);
+	bool DispatchEvent(const LWUTF8Iterator &DispatcheeName, uint32_t EventCode, bool DoDispatch = true);
 
 	LWEUIManager &SetFocused(LWEUI *UI);
 
@@ -217,21 +215,17 @@ public:
 
 	float FindScaleForSize(const LWVector2i &Size);
 
-	bool InsertNamedUI(const LWText &Name, LWEUI *UI);
+	bool InsertNamedUI(const LWUTF8Iterator &Name, LWEUI *UI);
 
 	bool isTextInputFocused(void);
 
-	bool HasNamedUI(const LWText &Name);
+	bool HasNamedUI(const LWUTF8Iterator &Name);
 
-	bool HasNamedUIf(const char *Format, ...);
+	LWEUI *GetNamedUI(const LWUTF8Iterator &Name);
 
-	LWEUI *GetNamedUI(const LWText &Name);
+	LWEUIMaterial *InsertMaterial(const LWUTF8Iterator &Name, const LWVector4f &ColorA, const LWVector4f &ColorB, uint32_t FillMode, LWTexture *Texture, const LWVector4f &SubRegion);
 
-	LWEUI *GetNamedUIf(const char *Format, ...);
-
-	LWEUIMaterial *InsertMaterial(const LWText &Name, const LWVector4f &ColorA, const LWVector4f &ColorB, uint32_t FillMode, LWTexture *Texture, const LWVector4f &SubRegion);
-
-	LWEUIMaterial *GetMaterial(const LWText &Name);
+	LWEUIMaterial *GetMaterial(const LWUTF8Iterator &Name);
 
 	LWVector2f GetVisibleSize(void) const;
 
@@ -245,7 +239,7 @@ public:
 
 	LWEUINavigation &GetNavigator(void);
 
-	LWAllocator *GetAllocator(void);
+	LWAllocator &GetAllocator(void);
 
 	LWWindow *GetWindow(void);
 	
@@ -263,7 +257,7 @@ public:
 
 	uint32_t GetOverCount(uint32_t PointerIdx=0) const;
 
-	LWEUIManager(LWWindow *Window, uint32_t ScreenDPI, LWAllocator *Allocator, LWELocalization *Localization, LWEAssetManager *AssetManager);
+	LWEUIManager(LWWindow *Window, uint32_t ScreenDPI, LWAllocator &Allocator, LWELocalization *Localization, LWEAssetManager *AssetManager);
 
 	~LWEUIManager();
 private:
@@ -277,22 +271,22 @@ private:
 	LWEUINavigation m_Navigator;
 	LWVector2f m_VisibleSize;
 	LWVector2f m_VisiblePosition;
-	LWAllocator *m_Allocator;
-	LWEAssetManager *m_AssetManager;
-	LWELocalization *m_Localization;
+	LWAllocator &m_Allocator;
+	LWEAssetManager *m_AssetManager = nullptr;
+	LWELocalization *m_Localization = nullptr;
 	uint32_t m_ScreenDPI;
-	LWWindow *m_Window;
-	LWEUI *m_FirstUI;
-	LWEUI *m_LastUI;
-	LWEUI *m_FocusedUI;
-	float m_Scale;
-	float m_CachedDPIScale;
-	uint32_t m_MaterialCount;
-	uint32_t m_EventCount;
-	uint32_t m_OverCount[LWTouch::MaxTouchPoints];
-	uint32_t m_TempCount[LWTouch::MaxTouchPoints];
-	uint32_t m_ResScaleCount;
-	uint32_t m_DPIScaleCount;
+	LWWindow *m_Window = nullptr;
+	LWEUI *m_FirstUI = nullptr;
+	LWEUI *m_LastUI = nullptr;
+	LWEUI *m_FocusedUI = nullptr;
+	float m_Scale = 1.0f;
+	float m_CachedDPIScale = 0.0f;
+	uint32_t m_MaterialCount = 0;
+	uint32_t m_EventCount = 0;
+	uint32_t m_OverCount[LWTouch::MaxTouchPoints] = {}; //0's array
+	uint32_t m_TempCount[LWTouch::MaxTouchPoints] = {};
+	uint32_t m_ResScaleCount = 0;
+	uint32_t m_DPIScaleCount = 0;
 };
 
 

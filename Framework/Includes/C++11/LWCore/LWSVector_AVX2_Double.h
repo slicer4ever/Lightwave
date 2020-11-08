@@ -11,6 +11,8 @@ struct LWSVector4<double> {
 
 	LWVector4<double> AsVec4(void) const;
 
+	LWSVector4<double> Sign(void) const;
+
 	double *AsArray(void);
 
 	const double *AsArray(void) const;

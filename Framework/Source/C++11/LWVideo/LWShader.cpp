@@ -1,11 +1,9 @@
 #include "LWVideo/LWShader.h"
-#include "LWCore/LWText.h"
+#include "LWCore/LWUnicode.h"
 #include <cstdarg>
 
 
-LWShaderInput::LWShaderInput(const char *Name, uint32_t Type, uint32_t Length) : m_Type(Type), m_Length(Length) {
-	m_NameHash = LWText::MakeHash(Name);
-}
+LWShaderInput::LWShaderInput(const LWUTF8Iterator &Name, uint32_t Type, uint32_t Length) : m_NameHash(Name.Hash()), m_Type(Type), m_Length(Length) {}
 
 LWShaderInput::LWShaderInput(uint32_t NameHash, uint32_t Type, uint32_t Length) : m_NameHash(NameHash), m_Type(Type), m_Length(Length) {}
 
@@ -17,7 +15,7 @@ uint32_t LWShaderResource::GetLength(void) {
 	return (m_Flag&LengthBits) >> LengthBitOffset;
 }
 
-LWShaderResource::LWShaderResource(const char *Name, uint32_t Flag, uint32_t Type, uint32_t Length) : m_NameHash(LWText::MakeHash(Name)) {
+LWShaderResource::LWShaderResource(const LWUTF8Iterator &Name, uint32_t Flag, uint32_t Type, uint32_t Length) : m_NameHash(Name.Hash()) {
 	m_Flag = Flag | (Type << TypeBitOffset) | (Length << LengthBitOffset);
 }
 
@@ -39,33 +37,11 @@ uint32_t LWShader::GenerateInputOffsets(uint32_t Count, LWShaderInput *InputMap)
 	return Offset;
 }
 
-LWShader &LWShader::SetInputMap(uint32_t Count, ...) {
-	LWShaderInput InputList[MaxInputs];
-	va_list lst;
-	va_start(lst, Count);
-	for (uint32_t i = 0; i < Count; i++) {
-		const char *Name = va_arg(lst, const char*);
-		uint32_t Type = va_arg(lst, uint32_t);
-		uint32_t Length = va_arg(lst, uint32_t);
-		InputList[i] = LWShaderInput(Name, Type, Length);
-	}
-	return SetInputMap(Count, InputList);
-}
-
 LWShader &LWShader::SetInputMap(uint32_t Count, LWShaderInput *InputMap) {
 	GenerateInputOffsets(Count, InputMap);
 	std::copy(InputMap, InputMap + Count, m_InputMap);
 	m_InputCount = Count;
 	return *this;
-}
-
-LWShader &LWShader::SetResourceMap(uint32_t Count, ...) {
-	uint32_t NameHashs[MaxResources];
-	va_list lst;
-	va_start(lst, Count);
-	for (uint32_t i = 0; i < Count; i++) NameHashs[i] = LWText::MakeHash(va_arg(lst, const char*));
-	va_end(lst);
-	return SetResourceMap(Count, NameHashs);
 }
 
 LWShader &LWShader::SetResourceMap(uint32_t Count, uint32_t *NameHashs) {
@@ -74,15 +50,6 @@ LWShader &LWShader::SetResourceMap(uint32_t Count, uint32_t *NameHashs) {
 	}
 	m_ResourceCount = Count;
 	return *this;
-}
-
-LWShader &LWShader::SetBlockMap(uint32_t Count, ...) {
-	uint32_t NameHashs[MaxBlocks];
-	va_list lst;
-	va_start(lst, Count);
-	for (uint32_t i = 0; i < Count; i++) NameHashs[i] = LWText::MakeHash(va_arg(lst, const char*));
-	va_end(lst);
-	return SetBlockMap(Count, NameHashs);
 }
 
 LWShader &LWShader::SetBlockMap(uint32_t Count, uint32_t *NameHashs) {

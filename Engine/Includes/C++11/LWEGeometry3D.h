@@ -15,14 +15,13 @@ bool LWERayAABBIntersect(const LWVector3<Type> &RayStart, const LWVector3<Type> 
 	LWVector3<Type> e = LWVector3<Type>((Type)std::numeric_limits<float>::epsilon());
 	//Use float's e instead of double as double is too precise.
 	LWVector3<Type> Dir = RayEnd - RayStart;
-	Dir = Dir.Abs().Blend_Less(e, e);
+	Dir = Dir.Abs().Blend_Less(e, e)*Dir.Sign();
 	LWVector3<Type> iDir = (Type)1 / Dir;
-
 	LWVector3<Type> MinBox = (AABBMin - RayStart) * iDir;
 	LWVector3<Type> MaxBox = (AABBMax - RayStart) * iDir;
 
-	Type tmin = MinBox.Min(MaxBox).Max();
-	Type tmax = MaxBox.Max(MinBox).Min();
+	Type tmin = (MinBox.Min(MaxBox)).Max();
+	Type tmax = (MinBox.Max(MaxBox)).Min();
 	if (Min) *Min = tmin;
 	if (Max) *Max = tmax;
 	if (tmax < 0) return false;

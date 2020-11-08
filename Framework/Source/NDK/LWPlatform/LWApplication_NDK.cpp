@@ -239,15 +239,15 @@ void ANativeActivity_onCreate(ANativeActivity *Activity, void *SavedState, size_
 	return;
 }
 
-bool LWExecute(const char *BinaryPath, const char *Parameters) {
+bool LWExecute(const LWUTF8Iterator &BinaryPath, const LWUTF8Iterator &Parameters) {
 	return false;
 }
 
-bool LWEmail(const char *SrcEmail, const char *TargetEmail, const char *Subject, const char *Body, const char *SMTPServer, const char *SMTPUsername, const char *SMTPPassword){
+bool LWEmail(const LWUTF8Iterator &SrcEmail, const LWUTF8Iterator &TargetEmail, const LWUTF8Iterator &Subject, const LWUTF8Iterator &Body, const LWUTF8Iterator &SMTPServer, const LWUTF8Iterator &SMTPUsername, const LWUTF8Iterator &SMTPPassword){
 	return false;
 }
 
-bool LWBrowser(const char *URL) {
+bool LWBrowser(const LWUTF8Iterator &URL) {
 	return false;
 }
 

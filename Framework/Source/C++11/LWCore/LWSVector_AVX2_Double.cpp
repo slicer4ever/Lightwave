@@ -7,6 +7,11 @@ LWVector4<double> LWSVector4<double>::AsVec4(void) const {
 	return R;
 }
 
+LWSVector4<double> LWSVector4<double>::Sign(void) const {
+	__m256d c = _mm256_cmp_pd(m_Data, _mm256_set_pd(0.0, 0.0, 0.0, 0.0), _CMP_LT_OS);
+	return _mm256_blendv_pd(_mm256_set_pd(1.0, 1.0, 1.0, 1.0), _mm256_set_pd(-1.0, -1.0, -1.0, -1.0), c);
+}
+
 double *LWSVector4<double>::AsArray(void) {
 	return (double*)&m_Data;
 }

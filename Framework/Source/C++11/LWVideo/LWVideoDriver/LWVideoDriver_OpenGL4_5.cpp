@@ -13,15 +13,16 @@ LWVideoDriver &LWVideoDriver_OpenGL4_5::ViewPort(const LWVector4i &Viewport) {
 	return *this;
 }
 
-LWShader *LWVideoDriver_OpenGL4_5::CreateShader(uint32_t ShaderType, const char *Source, LWAllocator &Allocator, char *CompiledBuffer, char *ErrorBuffer, uint32_t *CompiledBufferLen, uint32_t ErrorBufferLen) {
+LWShader *LWVideoDriver_OpenGL4_5::CreateShader(uint32_t ShaderType, const LWUTF8Iterator &Source, LWAllocator &Allocator, char *CompiledBuffer, char8_t *ErrorBuffer, uint32_t &CompiledBufferLen, uint32_t ErrorBufferLen) {
 	GLenum GShaderTypes[] = { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, GL_GEOMETRY_SHADER, GL_COMPUTE_SHADER };
 	int32_t CompileResult = 0;
 	int32_t LinkResult = 0;
-	int32_t Len = (int32_t)strlen(Source);
+	int32_t Len = Source.RawDistance(Source.NextEnd());
+	const char *Src = Source();
 	uint32_t ShaderID = glCreateShader(GShaderTypes[ShaderType]);
 	if (!ShaderID) return nullptr;
 
-	glShaderSource(ShaderID, 1, &Source, &Len);
+	glShaderSource(ShaderID, 1, &Src, &Len);
 	glCompileShader(ShaderID);
 	glGetShaderiv(ShaderID, GL_COMPILE_STATUS, &CompileResult);
 	if (!CompileResult) {
@@ -53,16 +54,14 @@ LWShader *LWVideoDriver_OpenGL4_5::CreateShader(uint32_t ShaderType, const char 
 		return nullptr;
 	}
 	if (CompiledBuffer) {
-		if (*CompiledBufferLen) {
-			int32_t Length = *CompiledBufferLen - sizeof(GLenum);
-			glGetProgramBinary(ProgramID, Length, &Len, (GLenum*)CompiledBuffer, CompiledBuffer + sizeof(GLenum));
-			*CompiledBufferLen = Len + sizeof(GLenum);
-		}
+		int32_t Length = CompiledBufferLen - sizeof(GLenum);
+		glGetProgramBinary(ProgramID, Length, &Len, (GLenum*)CompiledBuffer, CompiledBuffer + sizeof(GLenum));
+		CompiledBufferLen = Len + sizeof(GLenum);
 	}
-	return Allocator.Allocate<LWOpenGL4_5Shader>(ProgramID, LWText::MakeHash(Source), ShaderType);
+	return Allocator.Create<LWOpenGL4_5Shader>(ProgramID, Source.Hash(), ShaderType);
 }
 
-LWShader *LWVideoDriver_OpenGL4_5::CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledCodeLen, LWAllocator &Allocator, char *ErrorBuffer, uint32_t ErrorBufferLen) {
+LWShader *LWVideoDriver_OpenGL4_5::CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledCodeLen, LWAllocator &Allocator, char8_t *ErrorBuffer, uint32_t ErrorBufferLen) {
 	GLenum GShaderTypes[] = { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, GL_GEOMETRY_SHADER, GL_COMPUTE_SHADER };
 	int32_t LinkResult = 0;
 	int32_t Len = 0;
@@ -78,12 +77,12 @@ LWShader *LWVideoDriver_OpenGL4_5::CreateShaderCompiled(uint32_t ShaderType, con
 		PerformErrorAnalysis(CompiledCode, ErrorBuffer, ErrorBufferLen);
 		return nullptr;
 	}
-	return Allocator.Allocate<LWOpenGL4_5Shader>(ProgramID, LWText::MakeHashb(CompiledCode, CompiledCodeLen), ShaderType);
+	return Allocator.Create<LWOpenGL4_5Shader>(ProgramID, LWCrypto::HashFNV1A((const uint8_t*)CompiledCode, CompiledCodeLen), ShaderType);
 }
 
 LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWShader **Stages, uint64_t Flag, LWAllocator &Allocator) {
 	LWOpenGL4_5PipelineContext Context;
-	LWOpenGL4_5Pipeline *P = Allocator.Allocate<LWOpenGL4_5Pipeline>(Context, Stages, nullptr, nullptr, nullptr, 0, 0, 0, Flag&~LWPipeline::InternalPipeline);
+	LWOpenGL4_5Pipeline *P = Allocator.Create<LWOpenGL4_5Pipeline>(Context, Stages, nullptr, nullptr, nullptr, 0, 0, 0, Flag&~LWPipeline::InternalPipeline);
 	if(P) UpdatePipelineStages(P);
 	return P;
 }
@@ -153,12 +152,12 @@ LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWPipeline *Source, LWAlloca
 		else if (Type == GL_DOUBLE_MAT3x4) return { LWShaderInput::dVec3, 4 };
 		else if (Type == GL_DOUBLE_MAT4x2) return { LWShaderInput::dVec4, 2 };
 		else if (Type == GL_DOUBLE_MAT4x3) return { LWShaderInput::dVec4, 3 };
-		std::cout << "Unknown type: " << Type << std::endl;
+		fmt::print("Unknown type: {}\n", Type);
 		return { LWShaderInput::Float, 1 };
 	};
 
-	auto InsertList = [](const char *Name, int32_t Type, int32_t Length, int32_t Location, LWShaderResource *List, int32_t &Cnt) ->int32_t {
-		uint32_t Hash = LWText::MakeHash(Name);
+	auto InsertList = [](const LWUTF8Iterator &Name, int32_t Type, int32_t Length, int32_t Location, LWShaderResource *List, int32_t &Cnt) ->int32_t {
+		uint32_t Hash = Name.Hash();
 		for (int32_t i = 0; i < Cnt; i++) {
 			if (List[i].m_NameHash == Hash) return i;
 		}
@@ -227,7 +226,6 @@ LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWPipeline *Source, LWAlloca
 			int32_t Size = PropValues[1];
 			InsertList(NameBuffer, LWPipeline::ImageBuffer, Size, Loc, Resources, ResourceCount);
 		}
-
 	};
 	glGenProgramPipelines(1, &Context.m_ProgramID);
 	if (!Context.m_ProgramID) return nullptr;
@@ -238,7 +236,7 @@ LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWPipeline *Source, LWAlloca
 		uint32_t ComputeID = ((LWOpenGL4_5Shader*)StageList[LWPipeline::Compute])->GetContext();
 		glUseProgramStages(Context.m_ProgramID, GL_COMPUTE_SHADER_BIT, ComputeID);
 		ReflectShader(ComputeID);
-		return Allocator.Allocate<LWOpenGL4_5Pipeline>(Context, StageList, Blocks, Resources, nullptr, BlockCount, ResourceCount, 0, LWPipeline::InternalPipeline | LWPipeline::ComputePipeline);
+		return Allocator.Create<LWOpenGL4_5Pipeline>(Context, StageList, Blocks, Resources, nullptr, BlockCount, ResourceCount, 0, LWPipeline::InternalPipeline | LWPipeline::ComputePipeline);
 	}
 
 	if (StageList[LWPipeline::Vertex]) {
@@ -256,11 +254,13 @@ LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWPipeline *Source, LWAlloca
 			for (uint32_t n = 0; n < Map.RowMultiplier*AttributeValues[1]; n++) {
 				LWShaderInput &In = Inputs[InputCount];
 				In = LWShaderInput(NameBuffer, Map.AttributeType, 1);
+				fmt::print("{}: {} | {}\n", i, NameBuffer, In.m_NameHash);
 				In.m_VideoContext = (void*)(uintptr_t)AttributeValues[2];
 				glEnableVertexAttribArray(AttributeValues[2]);
 				InputCount++;
 			}
 		}
+		fmt::print("\n");
 		ReflectShader(VertexID);
 	}
 
@@ -277,7 +277,7 @@ LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWPipeline *Source, LWAlloca
 		ReflectShader(PixelID);
 	}
 
-	return Allocator.Allocate<LWOpenGL4_5Pipeline>(Context, StageList, Blocks, Resources, Inputs, BlockCount, ResourceCount, InputCount, LWPipeline::InternalPipeline);
+	return Allocator.Create<LWOpenGL4_5Pipeline>(Context, StageList, Blocks, Resources, Inputs, BlockCount, ResourceCount, InputCount, LWPipeline::InternalPipeline);
 }
 
 LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture1D(uint32_t TextureState, uint32_t PackType, uint32_t Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
@@ -297,7 +297,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture1D(uint32_t TextureState, uint3
 	glBindTexture(GL_TEXTURE_1D, VideoID);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAX_LEVEL, MipmapCnt);
 	glTexStorage1D(GL_TEXTURE_1D, MipmapCnt + 1, GInternalFormats[PackType], Size);
-	if (!Texels) return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0, 0), LWTexture::Texture1D);
+	if (!Texels) return Allocator.Create<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0, 0), LWTexture::Texture1D);
 	uint32_t Mips = MakeMipmaps ? 0 : MipmapCnt;
 	uint32_t t = 0;
 	for (uint32_t i = 0; i <= Mips; i++, t++) {
@@ -305,7 +305,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture1D(uint32_t TextureState, uint3
 		glTexSubImage1D(GL_TEXTURE_1D, i, 0, S, GFormats[PackType], GType[PackType], Texels[t]);
 	}
 	//if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_1D);
-	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0, 0), LWTexture::Texture1D);
+	return Allocator.Create<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0, 0), LWTexture::Texture1D);
 }
 
 LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2D(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
@@ -321,7 +321,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2D(uint32_t TextureState, uint3
 		glGenRenderbuffers(1, &VideoID);
 		glBindRenderbuffer(GL_RENDERBUFFER, VideoID);
 		glRenderbufferStorage(GL_RENDERBUFFER, GInternalFormats[PackType], Size.x, Size.y);
-		return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, (TextureState&~(LWTexture::MakeMipmaps)), PackType, 0, LWVector3i(Size, 0), LWTexture::Texture2D);
+		return Allocator.Create<LWOpenGL4_5Texture>(VideoID, (TextureState&~(LWTexture::MakeMipmaps)), PackType, 0, LWVector3i(Size, 0), LWTexture::Texture2D);
 	}
 	bool MakeMipmaps = (TextureState&LWTexture::MakeMipmaps) != 0;
 	bool Compressed = LWImage::CompressedType(PackType);
@@ -331,7 +331,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2D(uint32_t TextureState, uint3
 	glBindTexture(GL_TEXTURE_2D, VideoID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, MipmapCnt);
 	glTexStorage2D(GL_TEXTURE_2D, MipmapCnt+1, GInternalFormats[PackType], Size.x, Size.y);
-	if (!Texels) return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0), LWTexture::Texture2D);
+	if (!Texels) return Allocator.Create<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0), LWTexture::Texture2D);
 	uint32_t Mips = MakeMipmaps ? 0 : MipmapCnt;
 	uint32_t t = 0;
 	for (uint32_t i = 0; i <= Mips; i++, t++) {
@@ -340,7 +340,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2D(uint32_t TextureState, uint3
 		else glTexSubImage2D(GL_TEXTURE_2D, i, 0, 0, S.x, S.y, GFormats[PackType], GType[PackType], Texels[t]);
 	}
 	//if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_2D);
-	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0), LWTexture::Texture2D);
+	return Allocator.Create<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0), LWTexture::Texture2D);
 }
 
 LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture3D(uint32_t TextureState, uint32_t PackType, const LWVector3i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
@@ -360,7 +360,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture3D(uint32_t TextureState, uint3
 	glBindTexture(GL_TEXTURE_3D, VideoID);
 	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, MipmapCnt);
 	glTexStorage3D(GL_TEXTURE_3D, MipmapCnt + 1, GInternalFormats[PackType], Size.x, Size.y, Size.z);
-	if (!Texels) return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, Size, LWTexture::Texture3D);
+	if (!Texels) return Allocator.Create<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, Size, LWTexture::Texture3D);
 	uint32_t Mips = MakeMipmaps ? 0 : MipmapCnt;
 	uint32_t t = 0;
 	for (uint32_t i = 0; i <= Mips; i++, t++) {
@@ -369,7 +369,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture3D(uint32_t TextureState, uint3
 		else glTexSubImage3D(GL_TEXTURE_3D, i, 0, 0, 0, S.x, S.y, S.z, GFormats[PackType], GType[PackType], Texels[t]);
 	}
 	//if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_3D);
-	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, Size, LWTexture::Texture3D);
+	return Allocator.Create<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, Size, LWTexture::Texture3D);
 }
 
 LWTexture *LWVideoDriver_OpenGL4_5::CreateTextureCubeMap(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
@@ -389,7 +389,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTextureCubeMap(uint32_t TextureState, 
 	glBindTexture(GL_TEXTURE_CUBE_MAP, VideoID);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, MipmapCnt);
 	glTexStorage2D(GL_TEXTURE_CUBE_MAP, MipmapCnt + 1, GInternalFormats[PackType], Size.x, Size.y);
-	if (!Texels) return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0), LWTexture::TextureCubeMap);
+	if (!Texels) return Allocator.Create<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0), LWTexture::TextureCubeMap);
 	uint32_t Mips = MakeMipmaps ? 0 : MipmapCnt;
 	uint32_t t = 0;
 	for (uint32_t l = 0; l < 6; l++) {
@@ -401,7 +401,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTextureCubeMap(uint32_t TextureState, 
 		}
 	}
 	//if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
-	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0), LWTexture::TextureCubeMap);
+	return Allocator.Create<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0), LWTexture::TextureCubeMap);
 }
 
 LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2DMS(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, LWAllocator &Allocator){
@@ -419,7 +419,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2DMS(uint32_t TextureState, uin
 	glGenTextures(1, &VideoID);
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, VideoID);
 	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, Samples, GInternalFormats[PackType], Size.x, Size.y, true);
-	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, Samples, LWVector3i(Size, 0), LWTexture::Texture2DMS);
+	return Allocator.Create<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, Samples, LWVector3i(Size, 0), LWTexture::Texture2DMS);
 }
 
 LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture1DArray(uint32_t TextureState, uint32_t PackType, uint32_t Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
@@ -439,7 +439,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture1DArray(uint32_t TextureState, 
 	glBindTexture(GL_TEXTURE_1D_ARRAY, VideoID);
 	glTexParameteri(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_MAX_LEVEL, MipmapCnt);
 	glTexStorage2D(GL_TEXTURE_1D_ARRAY, MipmapCnt + 1, GInternalFormats[PackType], Size, Layers);
-	if (!Texels) return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, Layers, 0), LWTexture::Texture1DArray);
+	if (!Texels) return Allocator.Create<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, Layers, 0), LWTexture::Texture1DArray);
 	uint32_t Mips = MakeMipmaps ? 0 : MipmapCnt;
 	uint32_t t = 0;
 	for (uint32_t l = 0; l < Layers; l++) {
@@ -449,7 +449,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture1DArray(uint32_t TextureState, 
 		}
 	}
 	//if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_1D_ARRAY);
-	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, Layers, 0), LWTexture::Texture1DArray);
+	return Allocator.Create<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, Layers, 0), LWTexture::Texture1DArray);
 }
 
 LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2DArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
@@ -469,7 +469,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2DArray(uint32_t TextureState, 
 	glBindTexture(GL_TEXTURE_2D_ARRAY, VideoID);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, MipmapCnt);
 	glTexStorage3D(GL_TEXTURE_2D_ARRAY, MipmapCnt + 1, GInternalFormats[PackType], Size.x, Size.y, Layers);
-	if (!Texels) return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, Layers), LWTexture::Texture2DArray);
+	if (!Texels) return Allocator.Create<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, Layers), LWTexture::Texture2DArray);
 	uint32_t Mips = MakeMipmaps ? 0 : MipmapCnt;
 	uint32_t t = 0;
 	for (uint32_t l = 0; l < Layers; l++) {
@@ -480,7 +480,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2DArray(uint32_t TextureState, 
 		}
 	}
 	//if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
-	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, Layers), LWTexture::Texture2DArray);
+	return Allocator.Create<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, Layers), LWTexture::Texture2DArray);
 }
 
 LWTexture *LWVideoDriver_OpenGL4_5::CreateTextureCubeArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
@@ -500,7 +500,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTextureCubeArray(uint32_t TextureState
 	glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, VideoID);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAX_LEVEL, MipmapCnt);
 	glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, MipmapCnt + 1, GInternalFormats[PackType], Size.x, Size.y, Layers*6);
-	if (!Texels) return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, Layers), LWTexture::TextureCubeMapArray);
+	if (!Texels) return Allocator.Create<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, Layers), LWTexture::TextureCubeMapArray);
 	uint32_t Mips = MakeMipmaps ? 0 : MipmapCnt;
 	uint32_t t = 0;
 	for (uint32_t l = 0; l < Layers*6; l++) {
@@ -511,7 +511,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTextureCubeArray(uint32_t TextureState
 		}
 	}
 	//if (MakeMipmaps && !Compressed) glGenerateMipmap(GL_TEXTURE_CUBE_MAP_ARRAY);
-	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, Layers), LWTexture::TextureCubeMapArray);
+	return Allocator.Create<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, Layers), LWTexture::TextureCubeMapArray);
 }
 
 LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2DMSArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, uint32_t Layers, LWAllocator &Allocator) {
@@ -529,7 +529,7 @@ LWTexture *LWVideoDriver_OpenGL4_5::CreateTexture2DMSArray(uint32_t TextureState
 	glGenTextures(1, &VideoID);
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, VideoID);
 	glTexImage3DMultisample(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, Samples, GInternalFormats[PackType], Size.x, Size.y, Layers, true);
-	return Allocator.Allocate<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, Samples, LWVector3i(Size, Layers), LWTexture::Texture2DMSArray);
+	return Allocator.Create<LWOpenGL4_5Texture>(VideoID, TextureState, PackType, Samples, LWVector3i(Size, Layers), LWTexture::Texture2DMSArray);
 }
 
 LWVideoBuffer *LWVideoDriver_OpenGL4_5::CreateVideoBuffer(uint32_t Type, uint32_t UsageFlag, uint32_t TypeSize, uint32_t Length, LWAllocator &Allocator, const uint8_t *Buffer) {
@@ -545,13 +545,13 @@ LWVideoBuffer *LWVideoDriver_OpenGL4_5::CreateVideoBuffer(uint32_t Type, uint32_
 	glBindBuffer(GTypes[Type], VideoID);
 	glBufferData(GTypes[Type], Length*TypeSize, Buffer, GUsage);
 	
-	return Allocator.Allocate<LWOpenGL4_5Buffer>(Buffer, &Allocator, TypeSize, Length, UsageFlag | Type, VideoID);
+	return Allocator.Create<LWOpenGL4_5Buffer>(Buffer, &Allocator, TypeSize, Length, UsageFlag | Type, VideoID);
 }
 
 LWFrameBuffer *LWVideoDriver_OpenGL4_5::CreateFrameBuffer(const LWVector2i &Size, LWAllocator &Allocator) {
 	LWOpenGL4_5FrameBufferContext Con;
 	glGenFramebuffers(1, &Con.m_FBOID);
-	return Allocator.Allocate<LWOpenGL4_5FrameBuffer>(Con, Size);
+	return Allocator.Create<LWOpenGL4_5FrameBuffer>(Con, Size);
 }
 
 bool LWVideoDriver_OpenGL4_5::UpdateTexture(LWTexture *Texture) {

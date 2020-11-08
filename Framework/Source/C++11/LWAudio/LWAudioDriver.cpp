@@ -1,6 +1,7 @@
 #include "LWAudio/LWAudioDriver.h"
 #include "LWAudio/LWAudioStream.h"
 #include "LWPlatform/LWFileStream.h"
+#include "LWCore/LWAllocator.h"
 #include "LWCore/LWByteBuffer.h"
 #include "LWCore/LWTimer.h"
 #include <algorithm>
@@ -91,7 +92,7 @@ bool LWAudioDriver::Update(uint64_t lCurrentTime, LWWindow *Window) {
 			else if (Type == Event_Mute) Result = ProcessSoundMuteEvent(E.m_Source, Type, Data, Elapsed);
 			else if (Type == Event_Unmute) Result = ProcessSoundUnmuteEvent(E.m_Source, Type, Data, Elapsed);
 			else if (Type == Event_Created) Result = ProcessSoundCreatedEvent(E.m_Source, Type, Data, Elapsed);
-			else std::cout << "Received unknown event for sound: " << Type << std::endl;
+			else fmt::print("Received unknown event for sound: {}\n", Type);
 		} else {
 			if (Type == Event_Volume) Result = ProcessVolumeEvent(Type, Data, Elapsed);
 			else if (Type == Event_FocusMute) Result = ProcessFocusMuteEvent(Type, Data, Elapsed);
@@ -102,7 +103,7 @@ bool LWAudioDriver::Update(uint64_t lCurrentTime, LWWindow *Window) {
 			else if (Type == Event_Unmute) Result = ProcessUnmuteEvent(Type, Data, Elapsed);
 			else if (Type == Event_ChannelVolume) Result = ProcessVolumeEvent(Type, Data, Elapsed);
 			else if (Type == Event_ListenerChanged) m_Flag |= ListernerPositionChanged;
-			else std::cout << "Received unknown event for audio driver: " << Type << std::endl;
+			else fmt::print("Received unknown event for audio driver: '{}'\n", Type);
 		}
 		if (!Result) return false;
 		m_EventReadPosition++;
@@ -300,7 +301,7 @@ bool LWAudioDriver::ProcessFocusMuteEvent(uint32_t EventID, uint32_t EventData, 
 }
 
 LWSound *LWAudioDriver::CreateSound2D(LWAudioStream *Stream, void *UserData, uint32_t Channel, bool Playing, uint32_t LoopCount, float Volume, float Speed, float Pan) {
-	LWSound *Target = m_Allocator.Allocate<LWSound>(this, Stream, LWSound::Sound2D, Channel, LoopCount, UserData);
+	LWSound *Target = m_Allocator.Create<LWSound>(this, Stream, LWSound::Sound2D, Channel, LoopCount, UserData);
 	if (!CreateSoundPlatform(Target)) {
 		LWAllocator::Destroy(Target);
 		return nullptr;
@@ -325,7 +326,7 @@ LWSound *LWAudioDriver::CreateSound2D(LWAudioStream *Stream, void *UserData, uin
 }
 
 LWSound *LWAudioDriver::CreateSound3D(LWAudioStream *Stream, void *UserData, uint32_t Channel, bool Playing, const LWVector3f &Position, uint32_t LoopCount, float Volume, float DistanceCurve, float Speed) {
-	LWSound *Target = m_Allocator.Allocate<LWSound>(this, Stream, LWSound::Sound3D, Channel, LoopCount, UserData);
+	LWSound *Target = m_Allocator.Create<LWSound>(this, Stream, LWSound::Sound3D, Channel, LoopCount, UserData);
 	if (!CreateSoundPlatform(Target)) {
 		LWAllocator::Destroy(Target);
 		return nullptr;

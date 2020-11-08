@@ -8,6 +8,11 @@ LWVector4<float> LWSVector4<float>::AsVec4(void) const {
 	return R;
 }
 
+LWSVector4<float> LWSVector4<float>::Sign(void) const {
+	__m128 c = _mm_cmplt_ps(m_Data, _mm_setzero_ps());
+	return _mm_blendv_ps(_mm_set1_ps(1.0f), _mm_set1_ps(-1.0f), c);
+}
+
 float *LWSVector4<float>::AsArray(void) {
 	return (float*)&m_Data;
 }

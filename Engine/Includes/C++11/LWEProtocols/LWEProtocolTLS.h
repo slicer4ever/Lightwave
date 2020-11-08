@@ -10,6 +10,7 @@
 #include <botan/tls_client.h>
 #include <botan/tls_server.h>
 #include <botan/auto_rng.h>
+#include <LWCore/LWUnicode.h>
 #include <vector>
 #include <string>
 
@@ -29,7 +30,7 @@ public:
 
 	Botan::Private_Key *private_key_for(const Botan::X509_Certificate& cert, const std::string& type, const std::string& context);
 
-	bool LoadCertficateAndKey(const LWText &CertFile, const LWText &KeyFile, Botan::RandomNumberGenerator &Rng);
+	bool LoadCertficateAndKey(const LWUTF8Iterator &CertFile, const LWUTF8Iterator &KeyFile, Botan::RandomNumberGenerator &Rng);
 
 	bool LoadDefaultCertificateStores(void);
 
@@ -75,7 +76,7 @@ private:
 	LWSocket *m_Socket;
 };
 
-class LWEProtocolTLS : public LWProtocol {
+class LWEProtocolTLS : virtual public LWProtocol {
 public:
 
 	virtual LWProtocol &Read(LWSocket &Socket, LWProtocolManager *Manager);
@@ -86,9 +87,9 @@ public:
 
 	virtual LWProtocol &ProcessTLSData(LWSocket &Socket, const char *Data, uint32_t DataLen);
 
-	uint32_t Send(LWSocket &Socket, const char *Buffer, uint32_t Len);
+	virtual uint32_t Send(LWSocket &Socket, const char *Buffer, uint32_t Len);
 	
-	LWEProtocolTLS(uint32_t ProtocolID, LWAllocator &Allocator, const char *CertFile = nullptr, const char *KeyFile = nullptr);
+	LWEProtocolTLS(uint32_t ProtocolID, LWAllocator &Allocator, const LWUTF8Iterator &CertFile = LWUTF8Iterator(), const LWUTF8Iterator &KeyFile = LWUTF8Iterator());
 
 	~LWEProtocolTLS();
 protected:

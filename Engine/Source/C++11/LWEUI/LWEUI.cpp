@@ -13,25 +13,26 @@
 #include <iostream>
 #include <algorithm>
 
-LWVector4f LWEUI::EvaluatePerPixelAttr(const char *Value) {
+LWVector4f LWEUI::EvaluatePerPixelAttr(const LWUTF8Iterator &Value) {
 	LWVector4f Val = LWVector4f(0.0f);
 
-	auto CharIsNumber = [](char v) {
-		return (v >= '0' && v <= '9') || v == '-' || v == '+' || v == '.';
+	auto CodepointIsNumber = [](uint32_t cp) {
+		return (cp >= '0' && cp <= '9') || cp == '-' || cp == '+' || cp == '.';
 	};
-	const char *P = Value;
+	LWUTF8Iterator P = Value;
 	bool x = true;
-	for (const char *C = P; *C; C++) {
-		if (*C == 'x') x = true;
-		else if (*C == 'y') x = false;
-		if (CharIsNumber(*C) && !CharIsNumber(*P)) P = C;
-		if (*C == '%' || *C == 'p') {
-			float v = (float)atof(P);
+	for (LWUTF8Iterator C = P; !C.AtEnd(); ++C) {
+		uint32_t cp = *C;
+		if (cp == 'x' || cp == 'X') x = true;
+		else if (cp == 'y' || cp == 'Y') x = false;
+		if (CodepointIsNumber(cp) && !CodepointIsNumber(*P)) P = C;
+		if (cp == '%' || cp == 'p') {
+			float v = (float)atof((const char*)P());
 			if (x) {
-				if (*C == '%') Val.x += v / 100.0f;
+				if (cp == '%') Val.x += v / 100.0f;
 				else Val.z += v;
 			} else {
-				if (*C == '%') Val.y += v / 100.0f;
+				if (cp == '%') Val.y += v / 100.0f;
 				else Val.w += v;
 			}
 			P = C;
@@ -40,83 +41,80 @@ LWVector4f LWEUI::EvaluatePerPixelAttr(const char *Value) {
 	return Val;
 }
 
-LWXMLAttribute *LWEUI::FindAttribute(LWEXMLNode *Node, LWEXMLNode *Style, const LWText &Name){
-	LWXMLAttribute *Res = Node->FindAttribute(Name);
+LWEXMLAttribute *LWEUI::FindAttribute(LWEXMLNode *Node, LWEXMLNode *Style, const LWUTF8Iterator &Name){
+	LWEXMLAttribute *Res = Node->FindAttribute(Name);
 	if (!Res && Style) return Style->FindAttribute(Name);
 	return Res;
 };
 
-const char *LWEUI::ParseComponentAttribute(char *Buffer, uint32_t BufferSize, const char *SrcAttribute, LWEXMLNode *Component, LWEXMLNode *ComponentNode) {
-	char AttributeNameBuffer[256];
+LWUTF8Iterator LWEUI::ParseComponentAttribute(char8_t *Buffer, uint32_t BufferSize, const LWUTF8Iterator &SrcAttribute, LWEXMLNode *Component, LWEXMLNode *ComponentNode) {
 	if (!ComponentNode) return SrcAttribute;
 	char *B = Buffer;
-	char *BufferLast = Buffer + BufferSize;
-	for (const char *S = SrcAttribute; *S && B != BufferLast; S++) {
-		if (*S == '\\' && *(S + 1) == '{') {
+	char *BL = B + std::min<uint32_t>(BufferSize-1,BufferSize);
+	LWUTF8Iterator C = SrcAttribute;
+	for(; C.AtEnd() && B!=BL; ++C){
+		if (*C == '\\' && (*C + 1) == '{') {
 			*B++ = '{';
-			S++;
-		} else if (*S == '{') {
-			char *A = AttributeNameBuffer;
-			char *ALast = A + sizeof(AttributeNameBuffer);
-			for (S++; *S && *S != '}' && A != ALast; S++) {
-				*A++ = *S;
-			}
-			if (A == ALast) A--;
-			*A = '\0';
-			LWXMLAttribute *Attr = ComponentNode->FindAttribute(AttributeNameBuffer);
-			if (!Attr) {
-				Attr = Component->FindAttribute(AttributeNameBuffer);
-				if (!Attr) continue;
-			}
-			const char *P = Attr->m_Value;
-			for (; *P && B != BufferLast; P++) {
-				*B++ = *P;
-			}
-		} else *B++ = *S;
+			++C;
+		} else if (*C == '{') {
+			LWUTF8Iterator P = C;
+			LWUTF8Iterator N = C.NextToken('}');
+			C = N;
+			if (N.AtEnd())  continue;
+			LWEXMLAttribute *Attr = ComponentNode->FindAttribute(LWUTF8Iterator(P + 1, N));
+			if (!Attr) continue;
+			uint32_t r = Attr->GetValue().Copy(B, (uint32_t)(uintptr_t)(BL - B));
+			B = std::min<char8_t*>(B + r, BL);
+		} else {
+			uint32_t r = LWUTF8Iterator::EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL - B), *C);
+			B = std::min<char8_t*>(B + r, BL);
+		}
 	}
-	if (B == BufferLast) B--;
-	*B = '\0';
-	return Buffer;
+	if (BufferSize) *B = '\0';
+	return LWUTF8Iterator(Buffer, BufferSize);
 }
 
-LWEUI *LWEUI::XMLParseSubNodes(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode *> &StyleMap, std::map<uint32_t, LWEXMLNode *> &ComponentMap) {
-	char Buffer[256];
-	LWXMLAttribute *StyleAttr = Node->FindAttribute("Style");
+LWEUI *LWEUI::XMLParseSubNodes(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode *> &StyleMap, std::map<uint32_t, LWEXMLNode *> &ComponentMap) {
+	char8_t Buffer[256];
+	LWEXMLAttribute *StyleAttr = Node->FindAttribute("Style");
 	LWEXMLNode *Style = nullptr;
 	if (StyleAttr) {
-		const char *StyleName = ParseComponentAttribute(Buffer, sizeof(Buffer), StyleAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		auto Iter = StyleMap.find(LWText::MakeHash(StyleName));
-		if (Iter == StyleMap.end()) std::cout << "Error could not find style with name: '" << StyleName << "'" << std::endl;
+		LWUTF8Iterator StyleName = ParseComponentAttribute(Buffer, sizeof(Buffer), StyleAttr->GetValue(), ActiveComponent, ActiveComponentNode);
+		auto Iter = StyleMap.find(StyleName.Hash());
+		if (Iter == StyleMap.end()) fmt::print("Error could not find style with name: '{}'\n", StyleName);
 		else Style = Iter->second;
 	}
-	uint32_t Idx = LWText::CompareMultiple(Node->m_Name, 8, "Label", "Button", "Rect", "TextInput", "ScrollBar", "ListBox", "RichLabel", "TreeList");
+	uint32_t i = Node->GetName().CompareList("Label", "Button", "Rect", "TextInput", "ScrollBar", "ListBox", "RichLabel", "TreeList");
 	LWEUI *U = nullptr;
 
-	if (Idx == 0) U = LWEUILabel::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (Idx == 1) U = LWEUIButton::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (Idx == 2) U = LWEUIRect::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (Idx == 3) U = LWEUITextInput::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (Idx == 4) U = LWEUIScrollBar::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (Idx == 5) U = LWEUIListBox::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (Idx == 6) U = LWEUIRichLabel::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (Idx == 7) U = LWEUITreeList::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	if (i == 0) U = LWEUILabel::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else if (i == 1) U = LWEUIButton::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else if (i == 2) U = LWEUIRect::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else if (i == 3) U = LWEUITextInput::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else if (i == 4) U = LWEUIScrollBar::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else if (i == 5) U = LWEUIListBox::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else if (i == 6) U = LWEUIRichLabel::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	else if (i == 7) U = LWEUITreeList::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 	else U = LWEUIComponent::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 	if (!U) return nullptr;
 	Manager->InsertUIAfter(U, UI, UI?UI->GetLastChild():Manager->GetLastUI());
 	return U;
 }
 
-bool LWEUI::XMLParse(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
-	char Buffer[256];
-	char NameBuffer[256];
-	LWXMLAttribute *NameAttr = Node->FindAttribute("Name");
-	LWXMLAttribute *FlagAttr = FindAttribute(Node, Style, "Flag");
-	LWXMLAttribute *PosAttr = FindAttribute(Node, Style, "Position");
-	LWXMLAttribute *SizeAttr = FindAttribute(Node, Style, "Size");
-	LWXMLAttribute *TooltipAttr = FindAttribute(Node, Style, "Tooltip");
+bool LWEUI::XMLParse(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
+	const uint32_t MaxBufferSize = 256;
+	const uint32_t MaxFlagIters = 32;
+	char8_t Buffer[MaxBufferSize];
+	LWUTF8Iterator::C_View<MaxBufferSize> NameBuffer;
+	LWEXMLAttribute *NameAttr = Node->FindAttribute("Name");
+	LWEXMLAttribute *FlagAttr = FindAttribute(Node, Style, "Flag");
+	LWEXMLAttribute *PosAttr = FindAttribute(Node, Style, "Position");
+	LWEXMLAttribute *SizeAttr = FindAttribute(Node, Style, "Size");
+	LWEXMLAttribute *TooltipAttr = FindAttribute(Node, Style, "Tooltip");
+	LWUTF8Iterator FlagIterList[MaxFlagIters];
 	const uint64_t FlagValues[] = { ParentAnchorTopLeft,   ParentAnchorTopCenter,   ParentAnchorTopRight,   ParentAnchorMidLeft,   ParentAnchorMidCenter,   ParentAnchorMidRight,   ParentAnchorBtmLeft,   ParentAnchorBtmCenter,   ParentAnchorBtmRight,   LocalAnchorTopLeft,   LocalAnchorTopCenter,   LocalAnchorTopRight,   LocalAnchorMidLeft,   LocalAnchorMidCenter,   LocalAnchorMidRight,   LocalAnchorBtmLeft,   LocalAnchorBtmCenter,   LocalAnchorBtmRight,   DrawAfter,   Invisible,  Invisible,  FocusAble,   TabAble,   FocusAble,      TabAble,      InvertAllowed,  LabelLeftAligned, LabelCenterAligned, LabelRightAligned, LabelBottomAligned, LabelVCenterAligned, LabelTopAligned,  PasswordField,   IgnoreOverCounter,   HorizontalBar,   VerticalBar,  ParentAnchorTopLeft, ParentAnchorTopCenter, ParentAnchorTopRight, ParentAnchorMidLeft, ParentAnchorMidCenter, ParentAnchorMidRight, ParentAnchorBtmLeft, ParentAnchorBtmCenter, ParentAnchorBtmRight, LocalAnchorTopLeft, LocalAnchorTopCenter, LocalAnchorTopRight, LocalAnchorMidLeft, LocalAnchorMidCenter, LocalAnchorMidRight, LocalAnchorBtmLeft, LocalAnchorBtmCenter, LocalAnchorBtmRight,  NoScalePos,   NoScaleSize, (NoScalePos | NoScaleSize), SizeToTexture, NoAutoSize, NoAutoHeightSize, NoAutoWidthSize };
 	const char FlagNames[][32] = { "ParentAnchorTopLeft", "ParentAnchorTopCenter", "ParentAnchorTopRight", "ParentAnchorMidLeft", "ParentAnchorMidCenter", "ParentAnchorMidRight", "ParentAnchorBtmLeft", "ParentAnchorBtmCenter", "ParentAnchorBtmRight", "LocalAnchorTopLeft", "LocalAnchorTopCenter", "LocalAnchorTopRight", "LocalAnchorMidLeft", "LocalAnchorMidCenter", "LocalAnchorMidRight", "LocalAnchorBtmLeft", "LocalAnchorBtmCenter", "LocalAnchorBtmRight", "DrawAfter", "Invisible", "Visible", "FocusAble", "TabAble", "NotFocusable", "NotTabable", "InvertAllowed", "AlignLeft",      "AlignCenter",      "AlignRight",     "AlignBottom",       "AlignVCent",       "AlignTop",       "PasswordField", "IgnoreOverCounter", "HorizontalBar", "VerticalBar", "PATL",              "PATC",                "PATR",               "PAML",              "PAMC",                "PAMR",               "PABL",              "PABC",                "PABR",               "LATL",             "LATC",               "LATR",              "LAML",             "LAMC",               "LAMR",              "LABL",             "LABC",               "LABR",              "NoScalePos", "NoScaleSize", "NoScale",                "SizeToTexture", "NoAutoSize", "NoAutoHeightSize", "NoAutoWidthSize" };
-	const uint64_t FlagCount = sizeof(FlagValues) / sizeof(uint64_t);
+	const uint64_t TotalFlagCount = sizeof(FlagValues) / sizeof(uint64_t);
 	LWVector4f Pos = LWVector4f(0.0f);
 	LWVector4f Size = LWVector4f(0.0f);
 
@@ -126,38 +124,28 @@ bool LWEUI::XMLParse(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Man
 		Size = EvaluatePerPixelAttr(ParseComponentAttribute(Buffer, sizeof(Buffer), SizeAttr->m_Value, ActiveComponent, ActiveComponentNode));
 	}
 	if (FlagAttr) {
-		for (const char *C = ParseComponentAttribute(Buffer, sizeof(Buffer), FlagAttr->m_Value, ActiveComponent, ActiveComponentNode); *C; C++) {
-			bool Found = false;
-			for (uint32_t i = 0; i < FlagCount; i++) {
-				if (LWText::Compare(C, FlagNames[i], (uint32_t)strlen(FlagNames[i]))) {
-					Flag ^= FlagValues[i];
-					Found = true;
-					break;
-				}
-			}
-			if (!Found) {
-				std::cout << "Unknown flag found: '" << C << "' for: " << (char*)(NameAttr ? NameAttr->m_Value : Node->m_Name) << std::endl;
-			}
-
-			C = LWText::FirstToken(C, '|');
-			if (!C) break;
+		LWUTF8Iterator C = ParseComponentAttribute(Buffer, sizeof(Buffer), FlagAttr->GetValue(), ActiveComponent, ActiveComponentNode);
+		uint32_t FlagCnt = std::min<uint32_t>(C.SplitToken(FlagIterList, MaxFlagIters, '|'), MaxFlagIters);
+		for (uint32_t i = 0; i < FlagCnt; i++) {
+			uint32_t n = FlagIterList[i].Advance(true).CompareLista(TotalFlagCount, FlagNames);
+			if (n == -1) {
+				fmt::print("Unknown flag found: '{}' for: '{}'\n", FlagIterList[i], (NameAttr ? NameAttr->GetValue() : Node->GetName()));
+			} else Flag ^= FlagValues[n];
 		}
 	}
 	if (NameAttr) {
-		const char *Name = ParseComponentAttribute(Buffer, sizeof(Buffer), NameAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		if(*Name){
-			if (*ActiveComponentName) {
-				snprintf(NameBuffer, sizeof(NameBuffer), "%s.%s", ActiveComponentName, Name);
-				Name = NameBuffer;
-			}
-			if (!Manager->InsertNamedUI(Name, UI)) {
-				std::cout << "Conflict detected: " << Name << std::endl;
-			}
+		LWUTF8Iterator Name = ParseComponentAttribute(Buffer, sizeof(Buffer), NameAttr->GetValue(), ActiveComponent, ActiveComponentNode);
+		if (!Name.AtEnd()) {
+			NameBuffer = LWUTF8Iterator::C_View<MaxBufferSize>("{}.{}", ActiveComponentNode->GetName(), Name);
+			Name = NameBuffer;
+		}
+		if (!Manager->InsertNamedUI(Name, UI)) {
+			fmt::print("Conflict detected: {}\n", Name);
 		}
 	}
 	if (TooltipAttr) {
-		const char *Tooltip = ParseComponentAttribute(Buffer, sizeof(Buffer), TooltipAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		if (*Tooltip) UI->SetTooltip(Tooltip, *Manager->GetAllocator());
+		LWUTF8Iterator ToolTip = ParseComponentAttribute(Buffer, sizeof(Buffer), TooltipAttr->GetValue(), ActiveComponent, ActiveComponentNode);
+		if(!ToolTip.AtEnd()) UI->SetTooltip(ToolTip, Manager->GetAllocator());
 	}
 	UI->SetPosition(Pos).SetSize(Size).SetFlag(Flag);
 	for (LWEXMLNode *C = XML->NextNode(nullptr, Node); C; C = XML->NextNode(C, Node, true)) {
@@ -321,18 +309,8 @@ void LWEUI::Destroy(void) {
 	LWAllocator::Destroy(this);
 }
 
-LWEUI &LWEUI::SetTooltip(const LWText &Value, LWAllocator &Allocator) {
-	m_Tooltip = LWText(Value, Allocator);
-	return *this;
-}
-
-LWEUI &LWEUI::SetTooltipf(LWAllocator &Allocator, const char *Fmt, ...) {
-	char Buffer[1024];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	m_Tooltip = LWText(Buffer, Allocator);
+LWEUI &LWEUI::SetTooltip(const LWUTF8Iterator &Value, LWAllocator &Allocator) {
+	m_Tooltip = LWUTF8(Value, Allocator);
 	return *this;
 }
 
@@ -449,10 +427,10 @@ bool LWEUI::isIgnoringOverCount(void) const {
 }
 
 bool LWEUI::HasTooltip(void) const {
-	return m_Tooltip.GetLength() > 0;
+	return m_Tooltip.Length();
 }
 
-const LWText &LWEUI::GetTooltip(void) const {
+const LWUTF8 &LWEUI::GetTooltip(void) const {
 	return m_Tooltip;
 }
 
@@ -484,5 +462,5 @@ LWEUI *LWEUI::GetParent(void) {
 	return m_Parent;
 }
 
-LWEUI::LWEUI(const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : m_Position(Position), m_Size(Size), m_FirstChild(nullptr), m_LastChild(nullptr), m_Next(nullptr), m_Parent(nullptr), m_Flag(Flag), m_VisibleBounds(LWVector4f()), m_TimeOver(0), m_EventCount(0) {}
+LWEUI::LWEUI(const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : m_Position(Position), m_Size(Size), m_Flag(Flag), m_VisibleBounds(LWVector4f()) {}
 

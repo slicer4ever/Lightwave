@@ -285,7 +285,7 @@ bool LWAudioDriver::UpdateSoundPlatform(LWSound *Sound, uint64_t ElapsedTime) {
 		XAUDIO2_BUFFER XBuf = { 0, SliceSamples*FrameSize, (BYTE*)Samples, Context.m_SeekSamples, SliceSamples - Context.m_SeekSamples, 0, 0, 0, (void*)(uintptr_t)ReserveIdx };
 		HRESULT Res = Context.m_Source->SubmitSourceBuffer(&XBuf, nullptr);
 		if (FAILED(Res)) {
-			std::cout << "Failed to submit: " << Res << std::endl;
+			fmt::print("Error 'SubmitSourceBuffer': {:#x}\n", Res);
 			return false;
 		}
 		LoadedSamples += SliceSamples;

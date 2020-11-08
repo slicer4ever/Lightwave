@@ -7,6 +7,11 @@ LWVector4<int32_t> LWSVector4<int32_t>::AsVec4(void) const {
 	return R;
 }
 
+LWSVector4<int32_t> LWSVector4<int32_t>::Sign(void) const {
+	__m128i c = _mm_cmplt_epi32(m_Data, _mm_set_epi32(0,0,0,0));
+	return _mm_blendv_epi8(_mm_set_epi32(1,1,1,1), _mm_set_epi32(-1,-1,-1,-1), c);
+}
+
 int32_t *LWSVector4<int32_t>::AsArray(void) {
 	return (int32_t*)&m_Data;
 }

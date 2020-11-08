@@ -19,7 +19,6 @@ public:
 		Listen = 0x2, /*!< \brief flag to indicate the socket has listening capabilitys to accept and create new connections. */
 		Closeable = 0x4, /*!< \brief flag to indicate the socket is closable. if this flag is set, assume the socket is no longer open. */
 
-
 		UdpConnReset = 0x8, /*!< \brief flag to indicate the socket is to reset when the remote socket is unresponsive. */
 		Broadcast = 0x10, /*!< \brief flag to indicate the socket should support broadcasting if possible. */
 		TcpNoDelay = 0x20, /*!< \brief flag to indicate the socket should not delay tcp packets when waiting for more data. */
@@ -41,6 +40,7 @@ public:
 	
 		MaxProtocols=8, /*!< \brief max number of protocol data storage pointers. */
 	
+		 /*!< \brief id for dns record types: */
 		DNS_A=1,
 		DNS_NS,
 		DNS_MD,
@@ -60,8 +60,12 @@ public:
 		DNS_SRV=33
 	};
 
+	static const uint32_t ProtocolCount = 7; /*!< \brief total number of protocol's lightwave is aware of. */
+	static const char8_t *ProtocolNames[ProtocolCount]; /*!< \brief names of commonly used protocols. */
+	static const uint32_t ProtocolPorts[ProtocolCount]; /*!< \brief default port for the commonly used protocols;
+
 	/*!< \brief constructs an ipv4 address from a string in ipv4 notation. */
-	static uint32_t MakeIP(const LWText &Address);
+	static uint32_t MakeIP(const LWUTF8Iterator &Address);
 
 	/*!< \brief constructs an ipv4 address from 4 independent components. */
 	static uint32_t MakeIP(uint8_t First, uint8_t Second, uint8_t Third, uint8_t Fourth);
@@ -69,7 +73,7 @@ public:
 	/*!< \brief constructs an ipv4 notation string from an ip address. 
 		 \return true on success, or false on failure.  a max of 16 bytes is the largest an ipv4 address will take up.
 	*/
-	static bool MakeAddress(uint32_t Address, char *Buffer, uint32_t BufferLen);
+	static bool MakeAddress(uint32_t Address, char8_t *Buffer, uint32_t BufferLen);
 
 	/*!< \brief looks up an addresses info from either an ip address or host name.
 		 \param Address IP Address or host name.
@@ -79,7 +83,7 @@ public:
 		 \param AddressLen the length of the address buffer.
 		 \return 0xFFFFFFFF on failure, otherwise number of ip's are returned.
 	*/
-	static uint32_t LookUpAddress(const LWText &Address, uint32_t *IPBuffer, uint32_t IPBufferLen, char *Addresses, uint32_t AddressLen);
+	static uint32_t LookUpAddress(const LWUTF8Iterator &Address, uint32_t *IPBuffer, uint32_t IPBufferLen, char8_t *Addresses, uint32_t AddressLen);
  
 	/*!< \brief looks up an addresses info from an IP address.
 		 \param Address IP Address or host name.
@@ -89,12 +93,25 @@ public:
 		 \param AddressLen the length of the address buffer.
 		 \return 0xFFFFFFFF on failure, otherwise number of ip's are returned.
 	*/
-	static uint32_t LookUpAddress(uint32_t Address, uint32_t *IPBuffer, uint32_t IPBufferLen, char *Addresses, uint32_t AddressLen);
+	static uint32_t LookUpAddress(uint32_t Address, uint32_t *IPBuffer, uint32_t IPBufferLen, char8_t *Addresses, uint32_t AddressLen);
+
+	/*!< \brief decode's uri with percent based encoding. 
+		 \return the number of bytes needed to contain the entire decoded URI(including null terminated character).
+	*/
+	static uint32_t DecodeURI(const LWUTF8Iterator &URI, char8_t *Buffer, uint32_t BufferSize);
+
+	/*!< \brief encode's uri string with percent based encoding.
+	*	 \return the number of bytes needed to contain the entire encoded URI(including null terminated character).
+	*/
+	static uint32_t EncodeURI(const LWUTF8Iterator &URI, char8_t *Buffer, uint32_t BufferSize);
+
+	/*!< \brief split's uri to get an iterator to the domain portion, protocol porition(if specified), and path porition.  Port is defaulted to http, but can be specified explicitly after domain, or uses the default for the specified protocol(if specified). */
+	static void SplitURI(const LWUTF8Iterator &URI, uint16_t &Port, LWUTF8Iterator &Domain, LWUTF8Iterator &Protocol, LWUTF8Iterator &Path);
 
 	/*!< \brief converts a string label into a dns formatted label. 
 		 \return number of bytes written to Buffer.
 	*/
-	static uint32_t WriteDNSLabel(const char *Label, char *Buffer, uint32_t BufferLen);
+	static uint32_t WriteDNSLabel(const LWUTF8Iterator &Label, char8_t *Buffer, uint32_t BufferSize);
 
 	/*!< \brief reads back from response a dns formmated label into a named label, ResponseStart is required due to how dns performs certain compression technique's. 
 		 \return number of bytes read from Response.
@@ -112,7 +129,7 @@ public:
 		 \param DNSIP if 0 then well attempt to use the primary dns server associated with the platform.
 		 \return the number of bytes written to Buffer.
 	*/
-	static uint32_t DNSQuery(const LWText &QueryName, uint16_t QueryType, char *Buffer, uint32_t BufferLen, uint32_t DNSIP=0);
+	static uint32_t DNSQuery(const LWUTF8Iterator &QueryName, uint16_t QueryType, char *Buffer, uint32_t BufferLen, uint32_t DNSIP=0);
 
 	/*!< \brief constructs and makes a dns consisting of multiple query's.
 		 \param QueryNames the list of query names to be made.
@@ -122,7 +139,7 @@ public:
 		 \param BufferLen the length of the buffer.
 		 \param DNSIP if 0 then well attempt to use the primary dns server associated with the platform.
 	*/
-	static uint32_t DNSQuery(const LWText *QueryNames, uint16_t *QueryTypes, uint32_t QueryCnt, char *Buffer, uint32_t BufferLen, uint32_t DNSIP = 0);
+	static uint32_t DNSQuery(const LWUTF8Iterator *QueryNames, uint16_t *QueryTypes, uint32_t QueryCnt, char *Buffer, uint32_t BufferLen, uint32_t DNSIP = 0);
 
 	/*!< \brief parses a dns response for all srv record response from a dns query call.
 		 \param Response the response text to parse.
@@ -160,12 +177,12 @@ public:
 	/*!< \brief constructs a tcp socket on a random port, and attempts to connect to the specified address(either ip notation, or host specified) on the specified port.
 		 \return 0 on success, an error code if creation fails.
 	*/
-	static uint32_t CreateSocket(LWSocket &Socket, const LWText &Address, uint16_t RemotePort, uint32_t Flag, uint32_t ProtocolID);
+	static uint32_t CreateSocket(LWSocket &Socket, const LWUTF8Iterator &Address, uint16_t RemotePort, uint32_t Flag, uint32_t ProtocolID);
 
 	/*!< \brief constructs a tcp socket on a specified port, and attempts to connect to the specified address(either ip notation, or host specified) on the specified port.
 		 \return 0 on success, an error code if creation fails.
 	*/
-	static uint32_t CreateSocket(LWSocket &Socket, const LWText &Address, uint16_t RemotePort, uint16_t LocalPort, uint32_t Flag, uint32_t ProtocolID);
+	static uint32_t CreateSocket(LWSocket &Socket, const LWUTF8Iterator &Address, uint16_t RemotePort, uint16_t LocalPort, uint32_t Flag, uint32_t ProtocolID);
 
 	/*!< \brief sets the user data associated with the socket. */
 	LWSocket &SetUserData(void *UserData);
@@ -208,6 +225,12 @@ public:
 
 	/*!< \brief marks the socket closable, so that the owning protocol manager can freely dispose of the socket when necessary. */
 	LWSocket &MarkClosable(void);
+
+	/*!< \brief returns true if the socket was created with the listen flag. */
+	bool isListener(void) const;
+
+	/*!< \brief returns true if the socket has been raised to be closed. */
+	bool isClosable(void) const;
 
 	/*!< \brief actually closes the socket if able to do so. */
 	LWSocket &Close(void);

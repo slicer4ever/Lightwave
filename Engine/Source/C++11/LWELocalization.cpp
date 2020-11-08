@@ -1,39 +1,29 @@
 #include "LWELocalization.h"
 #include <LWEXML.h>
-#include <LWCore/LWText.h>
+#include <LWCore/LWUnicode.h>
+#include <LWEJson.h>
 #include <LWCore/LWAllocator.h>
 #include <LWPlatform/LWFileStream.h>
 #include <iostream>
 
 bool LWELocalization::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
-	char Buffer[1024*16]; //max of 16kb.
+	char8_t Buffer[1024*16]; //max of 16kb.
 	LWELocalization *Local = (LWELocalization*)UserData;
-	LWXMLAttribute *SrcAttr = Node->FindAttribute("Source");
+	LWEXMLAttribute *SrcAttr = Node->FindAttribute("Source");
 	LWAllocator &Alloc = Local->GetAllocator();
 	LWFileStream Stream;
 	auto ParseStringNode = [&Buffer](LWEXMLNode *Node, LWELocalization *Local) {
-		LWXMLAttribute *NameAttr = Node->FindAttribute("Name");
+		LWEXMLAttribute *NameAttr = Node->FindAttribute("Name");
 		if (!NameAttr) return;
 		for (LWEXMLNode *C = Node->m_FirstChild; C; C = C->m_Next) {
-			uint32_t Idx = LWText::CompareMultiple(C->m_Name, 1, "enus");
-			if (Idx == 0xFFFFFFFF) continue;
-			LWXMLAttribute *ValueAttr = C->FindAttribute("Value");
+			uint32_t Idx = C->GetName().CompareList("enus");
+			if(Idx==-1) continue;
+			LWEXMLAttribute *ValueAttr = C->FindAttribute("Value");
 			if (!ValueAttr) continue;
-			//Parse for \n's to turn into line breaks.
-			char *B = Buffer;
-			char *BL = Buffer + sizeof(Buffer) - 1;
-			for (char *V = ValueAttr->m_Value; *V && B!=BL; V++, B++) {
-				if (*V == '\\') {
-					if (*(V + 1) == 'n') {
-						V++;
-						*B = '\n';
-					} else *B = *V;
-				} else *B = *V;
-			}
-			if (B == BL) B--;
-			*B = '\0';
-			if (!Local->PushString(NameAttr->m_Value, Buffer, Idx)) {
-				std::cout << "Failed to insert string: '" << NameAttr->m_Value << "' into: " << Idx << std::endl;
+			//Parse Unescape string as if it were a json string.
+			LWEJson::UnEscapeString(ValueAttr->GetValue(), Buffer, sizeof(Buffer));
+			if (!Local->PushString(NameAttr->GetValue(), Buffer, Idx)) {
+				fmt::print("Failed to insert string: '{}' into: {}\n", NameAttr->GetValue(), Idx);
 			}
 		}
 		return;
@@ -41,21 +31,21 @@ bool LWELocalization::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
 
 	if (SrcAttr) {
 		if (!LWFileStream::OpenStream(Stream, SrcAttr->m_Value, LWFileStream::ReadMode | LWFileStream::BinaryMode, Alloc)) {
-			std::cout << "Failed to open: '" << SrcAttr->m_Value << "'" << std::endl;
+			fmt::print("Failed to open: '{}'\n", SrcAttr->GetValue());
 		} else {
 			Stream.ReadText(Buffer, sizeof(Buffer));
 			Stream.Finished();
-			LWEXML *X = Alloc.Allocate<LWEXML>();
-			X->PushParser("Localization", LWELocalization::XMLParser, Local);
-			X->ParseBuffer(*X, Alloc, Buffer, true);
-			X->Process();
-			LWAllocator::Destroy(X);
+			LWEXML X;
+			X.PushParser("Localization", LWELocalization::XMLParser, Local);
+			if (!X.ParseBuffer(X, Alloc, Buffer, true)) {
+				fmt::print("Failed to parse: '{}'\n", SrcAttr->GetValue());
+			} else X.Process();
 		}
 	}
 	for (LWEXMLNode *C = Node->m_FirstChild; C; C = C->m_Next) {
-		uint32_t Idx = LWText::CompareMultiple(C->m_Name, 1, "String");
-		if (Idx == 0xFFFFFFFF) continue;
-		if (Idx == 0) ParseStringNode(C, Local);
+		uint32_t i = C->GetName().CompareList("String");
+		if (i == 0) ParseStringNode(C, Local);
+		else fmt::print("Unknown node: {}\n", C->GetName());
 	}
 	return true;
 }
@@ -65,63 +55,83 @@ LWELocalization &LWELocalization::SetActiveLocalization(uint32_t LocalizationID)
 	return *this;
 }
 
-char *LWELocalization::ParseLocalization(char *Buffer, uint32_t BufferSize, const char *Source) {
-	char *B = Buffer;
-	char *BL = B + BufferSize;
-	for (const char *S = Source; *S && B!=BL; ++S) {
-		if (*S == '\\' && *(S + 1) == '<') {
-			S++;
-			*B++ = *S;
-		} else if (*S == '<') {
-			const char *E = S + 1;
-			for (; *E && *E != '>'; ++E) {};
-
-			if (*E == '>') {
-				uint32_t Len = (uint32_t)(uintptr_t)((E) - (S + 1));
-				uint32_t Hash = LWText::MakeHashb(S + 1, Len);
-				auto Iter = m_StringMap[m_ActiveLocalization].find(Hash);
-				if (Iter == m_StringMap[m_ActiveLocalization].end()) {
-					*B++ = *S;
+uint32_t LWELocalization::ParseLocalization(char8_t *Buffer, uint32_t BufferSize, const LWUTF8Iterator &Source) {
+	char8_t *B = Buffer;
+	char8_t *BL = B + std::min<uint32_t>(BufferSize - 1, BufferSize);
+	uint32_t o = 0;
+	for (LWUTF8Iterator C = Source; !C.AtEnd(); ++C) {
+		if (*C == '\\') {
+			//Escape string.
+			if (*(C + 1) == '<') {
+				++C;
+				if (B != BL) *B++ = '<';
+				o++;
+				continue;
+			}
+		} else if (*C == '<') {
+			LWUTF8Iterator T = C.NextToken('>');
+			if (*T == '>') {
+				LWUTF8Iterator S = Find(LWUTF8Iterator(C + 1, T));
+				if (!S.isInitialized()) {
+					if (B != BL) *B++ = '<';
+					o++;
+					continue;
 				} else {
-					char *l = Iter->second;
-					for (; B != BL && *l;) *B++ = *l++;
-					S = E;
+					uint32_t r = S.Copy(B, (uint32_t)(uintptr_t)(BL - B)) - 1;
+					B = std::min<char8_t*>(B + r, BL);
+					o += r;
+					C = T;
+					continue;
 				}
-			} else *B++ = *S;
-		} else *B++ = *S;
+			}
+		}
+		uint32_t r = LWUTF8Iterator::EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL - B), *C);
+		B = std::min<char8_t*>(B + r, BL);
+		o += r;
 	}
-	if (B == BL) B--;
-	*B = '\0';
-	return Buffer;
+	if (BufferSize) *B = '\0';
+	return o + 1;
 }
 
-bool LWELocalization::PushString(const LWText &StringName, const LWText &String, uint32_t LocalizationID) {
-	uint32_t Hash = StringName.GetHash();
+bool LWELocalization::PushString(const LWUTF8Iterator &StringName, const LWUTF8Iterator &String, uint32_t LocalizationID) {
+	uint32_t Hash = StringName.Hash();
 	auto Iter = m_StringMap[LocalizationID].find(Hash);
 	if (Iter != m_StringMap[LocalizationID].end()) {
-		std::cout << "Localization hash collision: '" << StringName.GetCharacters() << "' with: " << Iter->second << std::endl;
+		fmt::print("Localization hash collision: '{}'\n", StringName);
 		return false;
 	}
-	uint32_t Len = (uint32_t)strlen((const char*)String.GetCharacters()) + 1;
-	char *Mem = m_Allocator.AllocateArray<char>(Len);
-	memcpy(Mem, String.GetCharacters(), sizeof(char)*Len);
-	auto Res = m_StringMap[LocalizationID].emplace(std::pair<uint32_t, char*>(Hash, Mem));
+	uint32_t Len = String.RawDistance(String.NextEnd());
+	char8_t *Mem = m_Allocator.AllocateA<char8_t>(Len);
+	if (String.Copy(Mem, Len) != Len) {
+		fmt::print("Error copying string.\n");
+		return false;
+	}
+	auto Res = m_StringMap[LocalizationID].emplace(Hash, Mem);
 	if (!Res.second) {
-		std::cout << "Error inserting: '" << StringName.GetCharacters() << "'" << std::endl;
-		return false;
+		fmt::print("Error inserting: '{}'\n", StringName);
+		LWAllocator::Destroy(Mem);
 	}
-	return true;
+	return Res.second;
 }
 
-const char *LWELocalization::LookupString(const LWText &StringName) {
-	uint32_t Hash = StringName.GetHash();
+LWUTF8Iterator LWELocalization::Find(const LWUTF8Iterator &StringName) {
+	uint32_t Hash = StringName.Hash();
 	auto Iter = m_StringMap[m_ActiveLocalization].find(Hash);
 	if (Iter == m_StringMap[m_ActiveLocalization].end()) {
-		std::cout << "Error String: '" << (const char*)StringName.GetCharacters() << "' not found." << std::endl;
-		return nullptr;
+		fmt::print("Error string '{}' not found.\n", StringName);
+		return LWUTF8Iterator();
 	}
-	return Iter->second;
+	return LWUTF8Iterator(Iter->second);
 }
+
+LWUTF8Iterator LWELocalization::Find(uint32_t StringNameHash) {
+	auto Iter = m_StringMap[m_ActiveLocalization].find(StringNameHash);
+	if (Iter == m_StringMap[m_ActiveLocalization].end()) {
+		fmt::print("Error string hash '{:#x}' not found.\n", StringNameHash);
+		return LWUTF8Iterator();
+	}
+	return LWUTF8Iterator(Iter->second);
+};
 
 LWAllocator &LWELocalization::GetAllocator(void) {
 	return m_Allocator;

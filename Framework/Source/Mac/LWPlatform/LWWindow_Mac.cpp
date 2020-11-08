@@ -2,65 +2,41 @@
 #include "LWPlatform/LWInputDevice.h"
 #include <iostream>
 
-uint32_t LWWindow::MakeDialog(const LWText &Text, const LWText &Header, uint32_t DialogFlags){
-    std::cout << "No dialog is available for this platform:'" << Text.GetCharacters() << "'" << std::endl;
-    /*
-	uint32_t DFlag = MB_ICONINFORMATION;
-	if (DialogFlags&DialogCancel){
-		if (DialogFlags&DialogOK) DFlag |= MB_OKCANCEL;
-		if (DFlag&(DialogYES | DialogNo)) DFlag |= MB_YESNOCANCEL;
-	}
-	else if (DialogFlags&DialogOK) DFlag |= MB_OK;
-	else if (DialogFlags&(DialogYES | DialogNo)) DFlag |= MB_YESNO;
-	int32_t Result = MessageBox(nullptr, (const char*)Text.GetCharacters(), (const char*)Header.GetCharacters(), DFlag);
-	if (Result == IDCANCEL) return DialogCancel;
-	else if (Result == IDOK)     return DialogOK;
-	else if (Result == IDYES)    return DialogYES;
-	else if (Result == IDNO)     return DialogNo;
-	return 0;
-     */
+uint32_t LWWindow::MakeDialog(const LWUTF8Iterator &Text, const LWUTF8Iterator &Header, uint32_t DialogFlags){
+	fmt::print("Dialog: {}: {}\n", Header, Text);
     return 0;
 }
 
-bool LWWindow::MakeSaveFileDialog(const LWText &Filter, char *Buffer, uint32_t BufferLen) {
+bool LWWindow::MakeSaveFileDialog(const LWUTF8Iterator &Filter, char8_t *Buffer, uint32_t BufferLen) {
 	return false;
 }
 
-bool LWWindow::MakeLoadFileDialog(const LWText &Filter, char *Buffer, uint32_t BufferLen) {
+bool LWWindow::MakeLoadFileDialog(const LWUTF8Iterator &Filter, char8_t *Buffer, uint32_t BufferLen) {
 	return false;
 }
 
-uint32_t LWWindow::MakeLoadFileMultipleDialog(const LWText &Filter, char **Bufer, uint32_t BufferLen, uint32_t BufferCount) {
+uint32_t LWWindow::MakeLoadFileMultipleDialog(const LWUTF8Iterator &Filter, char8_t **Bufer, uint32_t BufferLen, uint32_t BufferCount) {
 	return 0;
 }
 
-bool LWWindow::WriteClipboardText(const LWText &Text) {
+bool LWWindow::WriteClipboardText(const LWUTF8Iterator &Text) {
 	NSPasteboard *Paste = [NSPasteboard generalPasteboard];
 	[Paste clearContents];
-	[Paste setString:[NSString stringWithUTF8String : (const char*)Text.GetCharacters()] forType : NSPasteboardTypeString];
+	[Paste setString:[NSString stringWithUTF8String : *Text.c_str<256>()] forType : NSPasteboardTypeString];
 	return true;
 }
 
-uint32_t LWWindow::ReadClipboardText(char *Buffer, uint32_t BufferLen) {
+uint32_t LWWindow::ReadClipboardText(char8_t *Buffer, uint32_t BufferLen) {
 	NSPasteboard *Paste = [NSPasteboard generalPasteboard];
-	NSString *Str = [Paste stringForType : NSPasteboardTypeString];
-	strncpy(Buffer, [Str UTF8String], BufferLen);
-	return strlen(Buffer);
+	const char *Str = [[Paste stringForType : NSPasteboardTypeString] UTF8String];
+	strlcpy(Buffer, Str, BufferLen);
+	return strlen(Str)+1;
 }
 
-LWWindow &LWWindow::SetTitle(const LWText &Title){
-	m_Title.Set(Title.GetCharacters());
-    [m_Context.Window setTitle:[NSString stringWithUTF8String:(const char*)Title.GetCharacters()]];
+LWWindow &LWWindow::SetTitle(const LWUTF8Iterator &Title){
+	m_Title = Title;
+    [m_Context.Window setTitle:[NSString stringWithUTF8String:(const char*)m_Title()]];
 	return *this;
-}
-
-LWWindow &LWWindow::SetTitlef(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetTitle(Buffer);
 }
 
 LWWindow &LWWindow::SetPosition(const LWVector2i &Position){
@@ -138,7 +114,7 @@ uint32_t LWWindow::GetKeyboardText(char *Buffer, uint32_t BufferLen){
 	return 0;
 }
 
-LWWindow &LWWindow::SetKeyboardText(const char *Text){
+LWWindow &LWWindow::SetKeyboardText(const LWUTF8Iterator &Text){
     return *this;
 }
 
@@ -198,11 +174,11 @@ LWGamePad *LWWindow::GetActiveGamepadDevice(void) {
 	return m_ActiveGamepad;
 }
 
-const LWText &LWWindow::GetTitle(void) const{
+const LWUTF8 &LWWindow::GetTitle(void) const{
 	return m_Title;
 }
 
-const LWText &LWWindow::GetName(void) const{
+const LWUTF8 &LWWindow::GetName(void) const{
 	return m_Name;
 }
 
@@ -270,7 +246,7 @@ bool LWWindow::isVirtualKeyboardPresent(void) const {
 	return (m_Flag&KeyboardPresent) != 0;
 }
 
-LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocator, uint32_t Flag, const LWVector2i &Position, const LWVector2i &Size) : m_Allocator(&Allocator), m_FirstDevice(nullptr), m_Title(LWText(Title.GetCharacters(), Allocator)), m_Name(LWText(Name.GetCharacters(), Allocator)), m_Position(Position), m_Size(Size), m_Flag(Flag){
+LWWindow::LWWindow(const LWUTF8Iterator &Title, const LWUTF8Iterator &Name, LWAllocator &Allocator, uint32_t Flag, const LWVector2i &Position, const LWVector2i &Size) : m_Allocator(&Allocator), m_FirstDevice(nullptr), m_Title(Title, Allocator), m_Name(Name, Allocator), m_Position(Position), m_Size(Size), m_Flag(Flag){
 	m_MouseDevice = nullptr;
 	m_KeyboardDevice = nullptr;
 	m_TouchDevice = nullptr;
@@ -289,7 +265,7 @@ LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocat
         NSRect ScreenSize = [[m_Context.Window screen] frame];
         [m_Context.Window setFrameOrigin:NSMakePoint(m_Position.x, (ScreenSize.size.height-ViewSize.size.height-m_Position.y))];
         [m_Context.Window setAcceptsMouseMovedEvents:true];
-        [m_Context.Window setTitle:[NSString stringWithUTF8String:(const char*)m_Title.GetCharacters()]];
+        [m_Context.Window setTitle:[NSString stringWithUTF8String:m_Title.c_str()]];
         [m_Context.Window setBackgroundColor:[NSColor blackColor]];
         [m_Context.Window setOpaque:true];
         if((m_Flag&Fullscreen)!=0) [m_Context.Window setLevel:NSMainMenuWindowLevel+1];
@@ -314,11 +290,11 @@ LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocat
         [NotCenter addObserverForName:NSApplicationDidBecomeActiveNotification object:m_Context.App queue:NotQueue usingBlock:^(NSNotification *Note){ m_Flag|=(Focused|FocusChanged);}];
 		m_Flag |= Focused;
         m_Flag^=Error;
-    }else MakeDialog(LWText("Error: 'NSWindow initWithContentRect'"), LWText("ERROR"), DialogOK);
+    }else MakeDialog(u8"Error: 'NSWindow initWithContentRect'", u8"ERROR", DialogOK);
 	m_Flag ^= Error;
 	if ((m_Flag&Error) == 0) {
-		if (Flag&MouseDevice) m_MouseDevice = AttachInputDevice(Allocator.Allocate<LWMouse>())->AsMouse();
-		if (Flag&KeyboardDevice) m_KeyboardDevice = AttachInputDevice(Allocator.Allocate<LWKeyboard>())->AsKeyboard();
+		if (Flag&MouseDevice) m_MouseDevice = AttachInputDevice(Allocator.Create<LWMouse>())->AsMouse();
+		if (Flag&KeyboardDevice) m_KeyboardDevice = AttachInputDevice(Allocator.Create<LWKeyboard>())->AsKeyboard();
 	}
 }
 

@@ -2,6 +2,7 @@
 #define LWSHADER_H
 #include "LWCore/LWTypes.h"
 #include "LWVideo/LWTypes.h"
+#include "LWCore/LWUnicode.h"
 #include <cstdarg>
 
 
@@ -28,7 +29,7 @@ struct LWShaderInput {
 	};
 
 	/*!< \brief input for vertex shaders, creates namehash from name. offset will be automatically generated when created. */
-	LWShaderInput(const char *Name, uint32_t Type, uint32_t Length);
+	LWShaderInput(const LWUTF8Iterator &Name, uint32_t Type, uint32_t Length);
 
 	/*!< \brief input for vertex shaders.  offset will be automatically generated when created. */
 	LWShaderInput(uint32_t NameHash, uint32_t Type, uint32_t Length);
@@ -71,7 +72,7 @@ struct LWShaderResource {
 	uint32_t GetLength(void);
 
 	/*!< \brief creates resource object. */
-	LWShaderResource(const char *Name, uint32_t Flag, uint32_t Type, uint32_t Length);
+	LWShaderResource(const LWUTF8Iterator &Name, uint32_t Flag, uint32_t Type, uint32_t Length);
 
 	/*!< \brief creates resource object. */
 	LWShaderResource(uint32_t NameHash, uint32_t Flag, uint32_t Type, uint32_t Length);
@@ -96,22 +97,65 @@ public:
 	/*!< \brief generates offset for inputs based on the inputmap provided. returns total size of mapped input. */
 	static uint32_t GenerateInputOffsets(uint32_t Count, LWShaderInput *InputMap);
 
+	/*!< \brief base template variatable packing for creating an LWShaderInput list. */
+	template<uint32_t N=0>
+	LWShader &SetInputMapList(const LWUTF8Iterator &Name, uint32_t Type, uint32_t Length) {
+		if (N >= MaxInputs) return *this;
+		m_InputMap[N] = LWShaderInput(Name, Type, Length);
+		m_InputCount = N + 1;
+		GenerateInputOffsets(m_InputCount, m_InputMap);
+		return *this;
+	}
+
 	/*!< \brief create's an input map list, each entry is expected to be a pair of const char * name, followed by the LWShaderInput type, followed by a integer length parameter. */
-	LWShader &SetInputMap(uint32_t Count, ...);
+	template<uint32_t N=0, typename ...Args>
+	LWShader &SetInputMapList(const LWUTF8Iterator &Name, uint32_t Type, uint32_t Length, Args... Pack) {
+		if (N >= MaxInputs) return *this;
+		m_InputMap[N] = LWShaderInput(Name, Type, Length);
+		return SetInputMapList<N+1>(Pack...);
+	}
 
 	/*!< \brief the input map for vertex shader's, this map is user defined, as Lightwave is built around interleaved vertex formats being the norm, this means when certain graphics api's(such as openGL) optimize out unused attributes, this can create problems with how data is passed to the shader, so a user defined format needs to be correctly setup, but will be ignored with api's that don't strip out any input data(such as DirectX). 
 		 \note this must be specified before any pipeline uses the shader object, otherwise the pipeline will have incorrect offset's.
 	*/
 	LWShader &SetInputMap(uint32_t Count, LWShaderInput *InputMap);
 
-	/*!< \brief creates an user defined resource map list, each entry is expected to be a const char *Name. */
-	LWShader &SetResourceMap(uint32_t Count, ...);
+	/*!< \brief base tempalte varitable for resource map list. */
+	template<uint32_t N=0>
+	LWShader &SetResourceMapList(const LWUTF8Iterator &Name) {
+		if (N >= MaxInputs) return *this;
+		m_ResourceMap[N].m_NameHash = Name.Hash();
+		m_ResourceCount = N + 1;
+		return *this;
+	}
+
+	/*!< \brief creates an user defined resource map list from template variable arguments. */
+	template<uint32_t N=0, typename ...Args>
+	LWShader &SetResourceMapList(const LWUTF8Iterator &Name, Args... Pack) {
+		if (N >= MaxInputs) return *this;
+		m_ResourceMap[N].m_NameHash = Name.Hash();
+		return SetResourceMapList<N + 1>(Pack...);
+	}
 
 	/*!< \brief the resource map for the shader.  This map is user defined, and is used for ordering pipeline resource to bind to specific slots, shader stages that share the same name are bound to the same slot, slot order is based on shader stage order(i.e: vertex shader slots first->geometry stage->pixel stage). */
 	LWShader &SetResourceMap(uint32_t Count, uint32_t *NameHashs);
 
-	/*!< \brief creates an user defined block map list(for cbuffer's/uniform buffer block's).  Each entry is expected to be a const char *Name. */
-	LWShader &SetBlockMap(uint32_t Count, ...);
+	/*!< \brief base block map list for variatic template. */
+	template<uint32_t N=0>
+	LWShader &SetBlockMapList(const LWUTF8Iterator &Name) {
+		if (N >= MaxInputs) return *this;
+		m_BlockMap[N].m_NameHash = Name.Hash();
+		m_BlockCount = N + 1;
+		return *this;
+	}
+	
+	/*!< \brief creates an user defined block map list(for cbuffer's/uniform buffer block's). */
+	template<uint32_t N=0, typename ...Args>
+	LWShader &SetBlockMapList(const LWUTF8Iterator &Name, Args ...Pack) {
+		if (N >= MaxInputs) return *this;
+		m_BlockMap[N].m_NameHash = Name.Hash();
+		return SetBlockMapList(Pack...);
+	}
 
 	/*!< \brief The block map for the shader. This map is user defined, and is used for ordering pipeline blocks to bind to specific slots, shader stages that share the same name are bound to the same slot, slot order is based on shader stage order(i.e: vertex shader slots first->geometry stage->pixel stage). */
 	LWShader &SetBlockMap(uint32_t Count, uint32_t *NameHashs);

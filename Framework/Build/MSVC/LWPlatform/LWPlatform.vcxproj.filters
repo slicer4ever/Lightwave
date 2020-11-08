@@ -188,5 +188,8 @@
     <ClCompile Include="..\..\..\Source\C++11\LWPlatform\LWFileByteStream.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWPlatform\LWApplication.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

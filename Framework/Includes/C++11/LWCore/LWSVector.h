@@ -14,6 +14,11 @@ struct LWSVector4 {
 		return LWVector4<Type>(m_x, m_y, m_z, m_w);
 	}
 
+	/*!< \brief checks the sign of each component, and returns +1 for positive sign, and -1 for negative sign components. */
+	LWSVector4<Type> Sign(void) const {
+		return LWVector4<Type>(m_x < 0 ? -1 : 1, m_y < 0 ? -1 : 1, m_z < 0 ? -1 : 1, m_w < 0 ? -1 : 1);
+	}
+
 	/*! \brief returns the underlying value as an array. */
 	Type *AsArray(void) {
 		return &m_x;

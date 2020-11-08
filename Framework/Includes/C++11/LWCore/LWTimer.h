@@ -54,6 +54,9 @@ public:
 	*/
 	LWTimer &Update(uint64_t Current);
 
+	/*!< \brief returns true if the Completed flag is set. */
+	bool isCompleted(void) const;
+
 	/*! \brief returns the frequency of the timer. */
 	uint64_t GetFrequency(void);
 

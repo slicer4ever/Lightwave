@@ -45,10 +45,15 @@ bool LWProtocolManager::Poll(uint32_t Timeout) {
 	for (uint32_t i = 0; i < m_ActiveSocketCount; i++) {
 		if (m_SocketSet[i].revents&(POLLIN | POLLHUP)) {
 			P = m_Protocols[m_Sockets[i].GetProtocolID()];
-			if (P) P->Read(m_Sockets[i], this);
+			if (m_Sockets[i].isListener()) {
+				LWSocket NewSock;
+				if (!m_Sockets[i].Accept(NewSock, m_Sockets[i].GetProtocolID())) {
+					fmt::print("Error occurred while accepting new socket.\n");
+				} else if (P) P->Accept(NewSock, this);
+			} else if (P) P->Read(m_Sockets[i], this);
 			m_SocketSet[i].revents = 0;
 		}
-		if (m_Sockets[i].GetFlag()&LWSocket::Closeable) {
+		if(m_Sockets[i].isClosable()) {
 			P = m_Protocols[m_Sockets[i].GetProtocolID()];
 			if (P) P->SocketClosed(m_Sockets[i], this);
 			m_Sockets[i].Close();
@@ -64,7 +69,7 @@ bool LWProtocolManager::Poll(uint32_t Timeout) {
 }
 
 LWProtocolManager::LWProtocolManager(){
-	memset(m_Protocols, 0, sizeof(LWProtocol)*LWProtocolManager::MaxProtocols);
+	std::fill(m_Protocols, m_Protocols + MaxProtocols, nullptr);
 }
 
 LWProtocolManager::~LWProtocolManager() {

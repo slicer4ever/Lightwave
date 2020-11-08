@@ -20,7 +20,7 @@ LWVideoDriver_OpenGL4_5 *LWVideoDriver_OpenGL4_5::MakeVideoDriver(LWWindow *Wind
 		for (; SourceID < SourceCnt && SourceEnums[SourceID] != Source; SourceID++) {}
 		for (; TypeID < TypeCnt && TypeEnums[TypeID] != Type; TypeID++) {}
 		for (; SeverityID < SeverityCnt && SeverityEnums[SeverityID] != Severity; SeverityID++) {}
-		std::cout << "(" << SourceNames[SourceID] << "," << TypeNames[TypeID] << "," << SeverityNames[SeverityID] << "," << ID << "): '" << Message << "'" << std::endl;
+		fmt::print("({},{},{},{}): '{}'\n", SourceNames[SourceID], TypeNames[TypeID], SeverityNames[SeverityID], ID, Message);
 		assert(TypeID != 0);
 		return;
 	};
@@ -51,7 +51,7 @@ LWVideoDriver_OpenGL4_5 *LWVideoDriver_OpenGL4_5::MakeVideoDriver(LWWindow *Wind
 				glDebugMessageCallback(DebugOutput, nullptr);
 				glDebugMessageInsert(GL_DEBUG_SOURCE_THIRD_PARTY, GL_DEBUG_TYPE_OTHER, 0, GL_DEBUG_SEVERITY_NOTIFICATION, (GLsizei)strlen("DebugLayer Initiated."), "DebugLayer Initiated.");
 			}
-			Driver = Window->GetAllocator()->Allocate<LWVideoDriver_OpenGL4_5>(Window, Context, (uint32_t)UniformBlockSize);
+			Driver = Window->GetAllocator()->Create<LWVideoDriver_OpenGL4_5>(Window, Context, (uint32_t)UniformBlockSize);
 		}
 	}
 	if (!Driver) {

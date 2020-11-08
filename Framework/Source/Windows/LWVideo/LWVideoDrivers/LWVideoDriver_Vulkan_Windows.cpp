@@ -50,7 +50,7 @@ LWVideoDriver_Vulkan *LWVideoDriver_Vulkan::MakeVideoDriver(LWWindow *Window, ui
 		for (auto &&DName : DebugLayerNames) {
 			bool Has = false;
 			for (auto &Iter = vDebugLayer.begin(); Iter != vDebugLayer.end() && !Has; ++Iter) {
-				Has = LWText::Compare(Iter->layerName, DName);
+				Has = LWUTF8Iterator((const char8_t*)Iter->layerName).Hash();
 			}
 			if (!Has) return false;
 		}
@@ -237,7 +237,7 @@ LWVideoDriver_Vulkan *LWVideoDriver_Vulkan::MakeVideoDriver(LWWindow *Window, ui
 
 	}
 
-	return Window->GetAllocator()->Allocate<LWVideoDriver_Vulkan>(Window, Context, 16);
+	return Window->GetAllocator()->Create<LWVideoDriver_Vulkan>(Window, Context, 16);
 }
 
 bool LWVideoDriver_Vulkan::DestroyVideoContext(LWVideoDriver_Vulkan *Driver) {

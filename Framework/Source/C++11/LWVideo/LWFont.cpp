@@ -1,4 +1,4 @@
-#include "LWCore/LWText.h"
+#include "LWCore/LWUnicode.h"
 #include "LWPlatform/LWFileStream.h"
 #include "LWVideo/LWFont.h"
 #include "LWVideo/LWVideoDriver.h"
@@ -86,17 +86,17 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 
 			Buf.Read<char>(Header.m_Tag, sizeof(ARHeader::m_Tag));
 			if (!std::equal(Header.m_Tag, Header.m_Tag + sizeof(ARHeader::m_Tag), Artery_Font_Header_Tag)) {
-				std::cout << "Font header tag is invalid: '" << Header.m_Tag << "'" << std::endl;
+				fmt::print("Font header tag is invalid: '{}'\n", Header.m_Tag);
 				return false;
 			}
 			Header.m_Magic = Buf.Read<uint32_t>();
 			if (Header.m_Magic != Artery_Header_Magic) {
-				std::cout << "Font header magic is invalid." << std::endl;
+				fmt::print("Font header magic is invalid.\n");
 				return false;
 			}
 			Header.m_Version = Buf.Read<uint32_t>();
 			if (Header.m_Version != Artery_Header_Version) {
-				std::cout << "Font version is not supported: " << Header.m_Version << std::endl;
+				fmt::print("Font version is not supported: {}\n", Header.m_Version);
 				return false;
 			}
 			Header.m_Flag = Buf.Read<uint32_t>();
@@ -127,7 +127,7 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 			Footer.m_Salt = Buf.Read<uint32_t>();
 			Footer.m_Magic = Buf.Read<uint32_t>();
 			if (Footer.m_Magic != Artery_Footer_Magic) {
-				std::cout << "Font Footer magic is incorrect." << std::endl;
+				fmt::print("Font Footer magic is incorrect.\n");
 				return false;
 			}
 			Buf.Read<uint32_t>(Footer.m_ReservedA, 4);
@@ -255,17 +255,17 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 			V.m_GlyphCount = Buf.Read<uint32_t>();
 			V.m_KernCount = Buf.Read<uint32_t>();
 			if (V.m_NameLength) {
-				V.m_Name = Allocator.AllocateArray<char>(V.m_NameLength + 1);
+				V.m_Name = Allocator.AllocateA<char>(V.m_NameLength + 1);
 				Buf.ReadText(V.m_Name, V.m_NameLength + 1);
 				Buf.AlignPosition(4);
 			}
 			if (V.m_MetaDataLength) {
-				V.m_MetaData = Allocator.AllocateArray<char>(V.m_MetaDataLength + 1);
+				V.m_MetaData = Allocator.AllocateA<char>(V.m_MetaDataLength + 1);
 				Buf.ReadText(V.m_MetaData, V.m_MetaDataLength + 1);
 				Buf.AlignPosition(4);
 			}
-			V.m_GlyphList = Allocator.AllocateArray<ARGlyph>(V.m_GlyphCount);
-			V.m_KernList = Allocator.AllocateArray<ARKernPair>(V.m_KernCount);
+			V.m_GlyphList = Allocator.AllocateA<ARGlyph>(V.m_GlyphCount);
+			V.m_KernList = Allocator.AllocateA<ARKernPair>(V.m_KernCount);
 			for (uint32_t i = 0; i < V.m_GlyphCount; i++) {
 				if (!ARGlyph::Deserialize(V.m_GlyphList[i], Buf)) return false;
 			}
@@ -318,7 +318,7 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 			Image.m_MetaDataLength = Buf.Read<uint32_t>();
 			Image.m_DataLength = Buf.Read<uint32_t>();
 			if (Image.m_MetaDataLength) {
-				Image.m_MetaData = Allocator.AllocateArray<char>(Image.m_MetaDataLength + 1);
+				Image.m_MetaData = Allocator.AllocateA<char>(Image.m_MetaDataLength + 1);
 				Buf.ReadText(Image.m_MetaData, Image.m_MetaDataLength + 1);
 				Buf.AlignPosition(4);
 			}
@@ -339,7 +339,7 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 			Appendix.m_MetaDataLength = Buf.Read<uint32_t>();
 			Appendix.m_DataLength = Buf.Read<uint32_t>();
 			if (Appendix.m_MetaDataLength) {
-				Appendix.m_MetaData = Allocator.AllocateArray<char>(Appendix.m_MetaDataLength + 1);
+				Appendix.m_MetaData = Allocator.AllocateA<char>(Appendix.m_MetaDataLength + 1);
 				Buf.ReadText(Appendix.m_MetaData, Appendix.m_MetaDataLength + 1);
 				Buf.AlignPosition(4);
 			}
@@ -363,23 +363,23 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 		return nullptr;
 	};
 
-	char *FileBuffer = Allocator.AllocateArray<char>(Stream->Length());
+	char *FileBuffer = Allocator.AllocateA<char>(Stream->Length());
 	Stream->Read(FileBuffer, Stream->Length());
 	LWByteBuffer Buf = LWByteBuffer((const int8_t*)FileBuffer, Stream->Length(), LWByteBuffer::BufferNotOwned);
 	ARHeader Header;
 	ARFooter Footer;
 	if (!ARHeader::Deserialize(Header, Buf)) return Cleanup(FileBuffer, nullptr, nullptr, nullptr, nullptr);
 	uint32_t pPos = Buf.GetPosition();
-	ARFontVariant *Variants = Allocator.AllocateArray<ARFontVariant>(Header.m_VariantCount);
-	ARImageHeader *Images = Allocator.AllocateArray<ARImageHeader>(Header.m_ImageCount);
-	ARAppendix *Appendixs = Allocator.AllocateArray<ARAppendix>(Header.m_AppendixCount);
+	ARFontVariant *Variants = Allocator.AllocateA<ARFontVariant>(Header.m_VariantCount);
+	ARImageHeader *Images = Allocator.AllocateA<ARImageHeader>(Header.m_ImageCount);
+	ARAppendix *Appendixs = Allocator.AllocateA<ARAppendix>(Header.m_AppendixCount);
 	uint32_t SelectedVariant = -1;
 	for (uint32_t i = 0; i < Header.m_VariantCount; i++) {
 		if (!ARFontVariant::Deserialize(Variants[i], Buf, Allocator)) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
 		if (Variants[i].m_CodePointType == CodepointType_Unicode) SelectedVariant = i;
 	}
 	if ((Buf.GetPosition() - pPos) != Header.m_VariantsLength) {
-		std::cout << "Error font's variants lengths invalid." << std::endl;
+		fmt::print("Error font's variants lengths invalid.\n");
 		return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
 	}
 	pPos = Buf.GetPosition();
@@ -387,7 +387,7 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 		if (!ARImageHeader::Deserialize(Images[i], Buf, Allocator)) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
 	}
 	if ((Buf.GetPosition() - pPos) != Header.m_ImagesLength) {
-		std::cout << "Error font's images lengths invalid." << std::endl;
+		fmt::print("Error font's images lengths invalid.\n");
 		return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
 	}
 	pPos = Buf.GetPosition();
@@ -395,41 +395,41 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 		if (!ARAppendix::Deserialize(Appendixs[i], Buf, Allocator)) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
 	}
 	if ((Buf.GetPosition() - pPos) != Header.m_AppendixsLength) {
-		std::cout << "Error font's appendixes lengths invalid." << std::endl;
+		fmt::print("Error font's appendixes lengths invalid.\n");
 		return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
 	}
 	if (!ARFooter::Deserialize(Footer, Buf)) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
 	uint32_t CRC = LWCrypto::CRC32((uint8_t*)FileBuffer, Buf.GetPosition() - 4, ~0, false); //Have to set CRC32 finished to false as artery file does not do final ^0xFFFFFFFF to checksum.
 	if (CRC != Footer.m_Checksum) {
-		std::cout << "Checksum for font file is incorrect." << std::endl;
+		fmt::print("Checksum for font file is incorrect.\n");
 		return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
 	}
 	if (SelectedVariant == -1) {
-		std::cout << "No supported font variant was found for font." << std::endl;
+		fmt::print("No supported font variant was found for font.\n");
 		return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
 	}
 	ARFontVariant &SelV = Variants[SelectedVariant];
-	LWFont *Fnt = Allocator.Allocate<LWFont>(Driver, SelV.m_Metrics.m_LineHeight*SelV.m_Metrics.m_FontSize);
+	LWFont *Fnt = Allocator.Create<LWFont>(Driver, SelV.m_Metrics.m_LineHeight*SelV.m_Metrics.m_FontSize);
 	for (uint32_t i = 0; i < Header.m_ImageCount; i++) {
 		ARImageHeader &I = Images[i];
 		LWImage TexImg;
 		if (I.m_Encoding == ImageEncoding_PNG) {
 			if (!LWImage::LoadImagePNG(TexImg, (const uint8_t*)I.m_Data, I.m_DataLength, Allocator)) {
-				std::cout << "Error loading font png image." << std::endl;
+				fmt::print("Error loading font png image.\n");
 				continue;
 			}
 		} else if (I.m_Encoding == ImageEncoding_TGA) {
 			if (!LWImage::LoadImageTGA(TexImg, (const uint8_t*)I.m_Data, I.m_DataLength, Allocator)) {
-				std::cout << "Error loading font tga image." << std::endl;
+				fmt::print("Error loading font tga image.\n");
 				continue;
 			}
 		} else {
-			std::cout << "Font contains image that is not supported." << std::endl;
+			fmt::print("Font contains image that is not supported.\n");
 			continue;
 		}
 		LWTexture *Tex = Driver->CreateTexture(LWTexture::MinLinear | LWTexture::MagLinear, TexImg, Allocator);
 		if (!Tex) {
-			std::cout << "Failed to create texture for font." << std::endl;
+			fmt::print("Failed to create texture for font.\n");
 			continue;
 		}
 		Fnt->SetTexture(i, Tex);
@@ -474,24 +474,23 @@ LWFont *LWFont::LoadFontFNT(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloc
 		float LineHeight = 0.0f;
 		sscanf(Line, "common lineHeight = %f", &LineHeight); //we only care about lineheight here.
 		LineHeight -= ((Padding.y + Padding.w));
-		return Allocator.Allocate<LWFont>(Driver, LineHeight);
+		return Allocator.Create<LWFont>(Driver, LineHeight);
 	};
 
 	auto ParsePageNode = [](char *Line, LWFileStream *ExistingStream, LWFont *Fnt, LWVideoDriver *Driver, LWAllocator &Allocator)->bool {
 		char FilePathbuffer[256];
 		uint32_t Index = 0;
 		sscanf(Line, "page id = %d file = \"%[^\"]", &Index, FilePathbuffer);
-		//std::cout << "Loading image: '" << FilePathbuffer << "'" << std::endl;
 		LWImage TexImg;
 		if (!LWImage::LoadImage(TexImg, FilePathbuffer, Allocator, ExistingStream)) {
-			std::cout << "Error loading image: '" << FilePathbuffer << "'" << std::endl;
+			fmt::print("Error loading image: '{}'\n", FilePathbuffer);
 			return false;
 		}
 		LWTexture *FontTex = nullptr;
 
 		FontTex = Driver->CreateTexture(LWTexture::MagLinear | LWTexture::MinLinear, TexImg, Allocator);		
 		if (!FontTex) {
-			std::cout << "Error creating font texture: '" << FilePathbuffer << "'" << std::endl;;
+			fmt::print("Error creating font texture: '{}'\n", FilePathbuffer);
 			return false;
 		}
 		Fnt->SetTexture(Index, FontTex);
@@ -535,11 +534,12 @@ LWFont *LWFont::LoadFontFNT(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloc
 
 	while (!Stream->EndOfStream() && Succedded) {
 		Stream->ReadTextLine(Buffer, sizeof(Buffer));
-		if (LWText::Compare(Buffer, "info", 4)) Succedded = ParseInfoNode(Buffer, Padding);
-		else if (LWText::Compare(Buffer, "common", 6)) Succedded = (Fnt = ParseCommonNode(Buffer, Driver, Padding, Allocator)) != nullptr;
-		else if (LWText::Compare(Buffer, "page", 4)) Succedded = ParsePageNode(Buffer, Stream, Fnt, Driver, Allocator);
-		else if (LWText::Compare(Buffer, "char", 4)) Succedded = ParseCharNode(Buffer, Fnt, Padding);
-		else if (LWText::Compare(Buffer, "kerning", 7)) Succedded = ParseKerningNode(Buffer, Fnt);
+		LWUTF8Iterator Iter = { Buffer };
+		if(Iter.Compare(u8"info", 4)) Succedded = ParseInfoNode(Buffer, Padding);
+		else if (Iter.Compare(u8"common", 6)) Succedded = (Fnt = ParseCommonNode(Buffer, Driver, Padding, Allocator)) != nullptr;
+		else if (Iter.Compare(u8"page", 4)) Succedded = ParsePageNode(Buffer, Stream, Fnt, Driver, Allocator);
+		else if (Iter.Compare(u8"char", 4)) Succedded = ParseCharNode(Buffer, Fnt, Padding);
+		else if (Iter.Compare(u8"kerning", 7)) Succedded = ParseKerningNode(Buffer, Fnt);
 	}
 	if (!Succedded && Fnt) {
 		LWAllocator::Destroy(Fnt);
@@ -599,7 +599,6 @@ LWFont *LWFont::LoadFontTTF(LWFileStream *Stream, LWVideoDriver *Driver, uint32_
 	FT_Open_Args Args = { FT_OPEN_STREAM, nullptr, 0,  nullptr, &SR, 0, 0, nullptr };
 	uint32_t Error = 0;
 	FT_Error ErrorCode = 0;
-	//std::cout << "Loading font: " << Stream->GetFilePath().GetCharacters() << std::endl;
 	if ((ErrorCode = FT_Init_FreeType(&ftLib)) != 0) Error = 1;
 	else if ((ErrorCode = FT_Open_Face(ftLib, &Args, 0, &ftFace))!=0) Error = 2;
 	else if ((ErrorCode = FT_Select_Charmap(ftFace, ft_encoding_unicode))!=0) Error = 3;
@@ -607,7 +606,7 @@ LWFont *LWFont::LoadFontTTF(LWFileStream *Stream, LWVideoDriver *Driver, uint32_
 	if (Error) {
 		if (ftFace) FT_Done_Face(ftFace);
 		FT_Done_FreeType(ftLib);
-		std::cout << "Font loading error: " << Error << " Code: " << ErrorCode << std::endl;
+		fmt::print("Font loading error: {} Code: {}\n", Error, ErrorCode);
 		return nullptr;
 	}
 	const uint32_t MaxTextureWidth = 512; //an font texture can not be larger than 512 units wide, this is an attempt to make the texture square.
@@ -623,11 +622,12 @@ LWFont *LWFont::LoadFontTTF(LWFileStream *Stream, LWVideoDriver *Driver, uint32_
 
 	uint32_t PadWidth = KernelSize;
 	uint32_t PadHeight = KernelSize;
-
+	
 	for (uint32_t n = 0; n < RangeCount; n++) {
 		for (uint32_t i = FirstChar[n]; i < FirstChar[n] + NbrChars[n]; i++) {
 			if (FT_Load_Char(ftFace, i, FT_LOAD_RENDER)) {
-				std::cout << "Error loading glyph: " << i << std::endl;
+				fmt::print("Error loading glyph: {}\n", i);
+				continue;
 			}
 			CurrentLineWidth += ftFace->glyph->bitmap.width+PadWidth*2;
 			if (CurrentLineWidth > MaxTextureWidth) {
@@ -642,15 +642,11 @@ LWFont *LWFont::LoadFontTTF(LWFileStream *Stream, LWVideoDriver *Driver, uint32_
 	//Make 2N:
 	TextureWidth = LWNext2N(LongestLineWidth);
 	TextureHeight = LWNext2N(TallestCharacter*LineCount);
-	//std::cout << "Creating texture: " << TextureWidth << " " << TextureHeight << std::endl;
-	unsigned char *Texels = Allocator.AllocateArray<unsigned char>(TextureWidth*PackSize*TextureHeight);
-	//unsigned char *DTexels = Allocator.AllocateArray<unsigned char>(TextureWidth*PackSize*TextureHeight);
-	//memset(Texels, 0, PackSize*TextureWidth*TextureHeight);
-	//std::cout << "Width: " << TextureWidth << " Height: " << TextureHeight << " Total Lines: " << LineCount << " Tallest: " << TallestCharacter << " Total: " << TotalGlyphCount << std::endl;
+	unsigned char *Texels = Allocator.AllocateA<unsigned char>(TextureWidth*PackSize*TextureHeight);
 	uint32_t x = 0;
 	uint32_t y = 0;
 	bool HasKerning = FT_HAS_KERNING(ftFace);
-	LWFont *F = Allocator.Allocate<LWFont>(Driver, ftFace->size->metrics.y_ppem);
+	LWFont *F = Allocator.Create<LWFont>(Driver, ftFace->size->metrics.y_ppem);
 	for (uint32_t n = 0; n < RangeCount; n++) {
 		for (uint32_t i = FirstChar[n]; i < FirstChar[n] + NbrChars[n]; i++) {
 			FT_Load_Char(ftFace, i, FT_LOAD_RENDER);
@@ -696,7 +692,7 @@ LWFont *LWFont::LoadFontTTF(LWFileStream *Stream, LWVideoDriver *Driver, uint32_
 	FT_Done_Face(ftFace);
 	FT_Done_FreeType(ftLib);
 	if (!Tex) {
-		std::cout << "Error making texture!" << std::endl;
+		fmt::print("Error making texture!\n");
 		LWAllocator::Destroy(F);
 		F = nullptr;
 	}
@@ -894,266 +890,185 @@ LWFont &LWFont::SetTexture(uint32_t TextureIndex, LWTexture *Tex) {
 	return *this;
 }
 
-LWVector4f LWFont::MeasureText(const LWText &Text, float Scale) {
-	return MeasureText(Text, 0xFFFFFFFF, Scale);
-}
-
-LWVector4f LWFont::MeasureTextf(const LWText &Text, float Scale, ...) {
-	char Buffer[1024];
-	va_list lst;
-	va_start(lst, Scale);
-	vsnprintf(Buffer, sizeof(Buffer), (const char*)Text.GetCharacters(), lst);
-	va_end(lst);
-	return MeasureText(Buffer, 0xFFFFFFFF, Scale);
-}
-
-LWVector4f LWFont::MeasureText(const LWText &Text, uint32_t CharCount, float Scale) {
+LWVector4f LWFont::MeasureText(const LWUTF8GraphemeIterator &Text, float Scale) {
 	LWVector2f Pos = LWVector2f(0.0f);
 	LWGlyph *P = nullptr;
 	LWVector4f BoundingVolume = LWVector4f(Pos, Pos);
-	const uint8_t *S = LWText::FirstCharacter(Text.GetCharacters());
-	for (; S && CharCount; S = LWText::Next(S), CharCount--) {
-		uint32_t UTF = LWText::GetCharacter(S);
-		if (UTF == (uint32_t)'\n') {
-			Pos.x = 0.0f;
-			Pos.y -= m_LineSize*Scale;
-			P = nullptr;
-			continue;
-		}
-		LWGlyph *G = GetGlyph(UTF);
-		if (!G) {
-			G = m_ErrorGlyph;
-			if (!G) continue; //skip rendering characters we don't have a glyph for.
-		}
-		float Kern = 0;
-		if (P) Kern = GetKernBetween(P->m_Character, G->m_Character)*Scale;
-		P = G;
-		LWVector2f BtmLeftPnt = LWVector2f(Pos.x + Kern + G->m_Bearing.x*Scale, Pos.y - G->m_Bearing.y*Scale);
-		LWVector2f TopRightPnt = LWVector2f(Pos.x + Kern + G->m_Bearing.x*Scale + G->m_Size.x*Scale, Pos.y - G->m_Bearing.y*Scale + G->m_Size.y*Scale);
-		if (!G->m_Size.x) TopRightPnt = LWVector2f(Pos.x + Kern + G->m_Bearing.x*Scale + G->m_Advance.x*Scale, Pos.y - G->m_Bearing.y*Scale + G->m_Size.y*Scale);
-		BoundingVolume.x = std::min<float>(BtmLeftPnt.x, BoundingVolume.x);
-		BoundingVolume.z = std::max<float>(TopRightPnt.x, BoundingVolume.z);
-		BoundingVolume.y = std::max<float>(TopRightPnt.y, BoundingVolume.y);
-		BoundingVolume.w = std::min<float>(BtmLeftPnt.y, BoundingVolume.w);
-		
-		Pos.x += (G->m_Advance.x*Scale + Kern);
-	}
-	return BoundingVolume;
-}
-
-LWVector4f LWFont::MeasureTextf(const LWText &Text, uint32_t CharCount, float Scale, ...) {
-	char Buffer[1024];
-	va_list lst;
-	va_start(lst, Scale);
-	vsnprintf(Buffer, sizeof(Buffer), (const char*)Text.GetCharacters(), lst);
-	va_end(lst);
-	return MeasureText(Buffer, CharCount, Scale);
-}
-
-uint32_t LWFont::CharacterAt(const LWText &Text, float Width, float Scale) {
-	return CharacterAt(Text, Width, 0xFFFFFFFF, Scale);
-}
-
-uint32_t LWFont::CharacterAtf(const LWText &Text, float Width, float Scale, ...) {
-	char Buffer[1024];
-	va_list lst;
-	va_start(lst, Scale);
-	vsnprintf(Buffer, sizeof(Buffer), (const char*)Text.GetCharacters(), lst);
-	va_end(lst);
-	return CharacterAtf(Buffer, Width, 0xFFFFFFFF, Scale);
-}
-
-uint32_t LWFont::CharacterAt(const LWText &Text, float Width, uint32_t CharCount, float Scale) {
-	LWVector2f Pos = LWVector2f(0.0f);
-	LWGlyph *P = nullptr;
-	LWVector4f BoundingVolume = LWVector4f(Pos, Pos);
-	const uint8_t *S = LWText::FirstCharacter(Text.GetCharacters());
-	uint32_t i = 0;
-	for (; S && CharCount; S = LWText::Next(S), CharCount--, i++) {
-		uint32_t UTF = LWText::GetCharacter(S);
-		if (UTF == (uint32_t)'\n') {
-			Pos.x = 0.0f;
-			Pos.y -= m_LineSize*Scale;
-			P = nullptr;
-			continue;
-		}
-		LWGlyph *G = GetGlyph(UTF);
-		if (!G) {
-			G = m_ErrorGlyph;
-			if (!G) continue; //skip rendering characters we don't have a glyph for.
-		}
-		float Kern = 0;
-		if (P) Kern = GetKernBetween(P->m_Character, G->m_Character)*Scale;
-		P = G;
-		Pos.x += (G->m_Advance.x*Scale + Kern);
-		if (Pos.x > Width + (G->m_Advance.x*Scale*0.5f)) return i;
-	}
-	return i;
-}
-
-uint32_t LWFont::CharacterAtf(const LWText &Text, float Width, uint32_t CharCount, float Scale, ...) {
-	char Buffer[1024];
-	va_list lst;
-	va_start(lst, Scale);
-	vsnprintf(Buffer, sizeof(Buffer), (const char*)Text.GetCharacters(), lst);
-	va_end(lst);
-	return CharacterAt(Buffer, Width, CharCount, Scale);
-}
-
-LWVector4f LWFont::DrawText(const LWText &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, LWFontWriteCallback Writer) {
-	return DrawText(Text, 0xFFFFFFFF, Position, Scale, Color, Writer);
-}
-
-LWVector4f LWFont::DrawTextf(const LWText &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, LWFontWriteCallback Writer, ...) {
-	char Buffer[1024];
-	va_list lst;
-	va_start(lst, Writer);
-	vsnprintf(Buffer, sizeof(Buffer), (const char*)Text.GetCharacters(), lst);
-	va_end(lst);
-	return DrawText(Buffer, 0xFFFFFFFF, Position, Scale, Color, Writer);
-}
-
-LWVector4f LWFont::DrawText(const LWText &Text, uint32_t CharCount, const LWVector2f &Position, float Scale, const LWVector4f &Color, LWFontWriteCallback Writer) {
-	LWVector2f Pos = Position;
-	LWGlyph *P = nullptr;
-	LWVector4f BoundingVolume = LWVector4f(Pos, Pos);
-	float iScale = 1.0f / Scale;
-	const uint8_t *S = LWText::FirstCharacter(Text.GetCharacters());
-	for (; S && CharCount; S = LWText::Next(S), CharCount--) {
-		uint32_t UTF = LWText::GetCharacter(S);
-		if (UTF == (uint32_t)'\n') {
-			Pos.x = Position.x;
-			Pos.y -= m_LineSize*Scale;
-			P = nullptr;
-			continue;
-		}
-		LWGlyph *G = GetGlyph(UTF);
-		if (!G) {
-			G = m_ErrorGlyph;
-			if (!G) continue; //skip rendering characters we don't have a glyph for.
-		}
-		float Kern = 0;
-		if (P) Kern = GetKernBetween(P->m_Character, G->m_Character)*Scale;
-		P = G;
-		if (G->m_Size.x) {
-			LWVector2f Position = LWVector2f(Pos.x + Kern + G->m_Bearing.x*Scale, Pos.y - G->m_Bearing.y*Scale);
-			LWVector2f Size = G->m_Size*Scale;
-			LWVector2f BtmLeftPnt = Position;
-			LWVector2f TopRightPnt = Position + Size;
-			if (!Writer(m_TextureList[G->m_TextureIndex], Position, Size, G->m_TexCoord, G->m_SignedRange*iScale, Color)) break;
+	LWUTF8GraphemeIterator GIter = Text;
+	for(;!GIter.AtEnd();++GIter) {
+		for (LWUTF8Iterator C = GIter.ClusterIterator(); !C.AtEnd(); ++C) {
+			uint32_t CP = *C;
+			if (LWUTF8Iterator::isLineBreak(CP)) {
+				Pos.x = 0.0f;
+				Pos.y -= m_LineSize * Scale;
+				P = nullptr;
+				continue;
+			}
+			LWGlyph *G = GetGlyph(CP);
+			if (!G) {
+				G = m_ErrorGlyph;
+				if (!G) continue; //Skip rendering characters we don't have a glyph for.
+			}
+			float Kern = 0.0f;
+			if (P) Kern = GetKernBetween(P->m_Character, G->m_Character) * Scale;
+			P = G;
+			LWVector2f BtmLeftPnt = LWVector2f(Pos.x + Kern + G->m_Bearing.x * Scale, Pos.y - G->m_Bearing.y * Scale);
+			LWVector2f TopRightPnt = LWVector2f(Pos.x + Kern + G->m_Bearing.x * Scale + G->m_Size.x * Scale, Pos.y - G->m_Bearing.y * Scale + G->m_Size.y * Scale);
+			if (!G->m_Size.x) TopRightPnt = LWVector2f(Pos.x + Kern + G->m_Bearing.x * Scale + G->m_Advance.x * Scale, Pos.y - G->m_Bearing.y * Scale + G->m_Size.y * Scale);
 			BoundingVolume.x = std::min<float>(BtmLeftPnt.x, BoundingVolume.x);
 			BoundingVolume.z = std::max<float>(TopRightPnt.x, BoundingVolume.z);
 			BoundingVolume.y = std::max<float>(TopRightPnt.y, BoundingVolume.y);
 			BoundingVolume.w = std::min<float>(BtmLeftPnt.y, BoundingVolume.w);
+			Pos.x += (G->m_Advance.x * Scale + Kern);
 		}
-		Pos.x += (G->m_Advance.x*Scale + Kern);
 	}
-	return BoundingVolume - LWVector4f(Position, Position);
+	return BoundingVolume;
 }
 
-LWVector4f LWFont::DrawTextf(const LWText &Text, uint32_t CharCount, const LWVector2f &Position, float Scale, const LWVector4f &Color, LWFontWriteCallback Writer, ...) {
-	char Buffer[1024];
-	va_list lst;
-	va_start(lst, Writer);
-	vsnprintf(Buffer, sizeof(Buffer), (const char*)Text.GetCharacters(), lst);
-	va_end(lst);
-	return DrawText(Buffer, CharCount, Position, Scale, Color, Writer);
+uint32_t LWFont::CharacterAt(const LWUTF8GraphemeIterator &Text, float Width, float Scale) {
+	LWVector2f Pos = LWVector2f(0.0f);
+	LWGlyph *P = nullptr;
+	LWVector4f BoundingVolume = LWVector4f(Pos, Pos);
+	LWUTF8GraphemeIterator GIter = Text;
+	for (; !GIter.AtEnd(); ++GIter) {
+		for (LWUTF8Iterator C = GIter.ClusterIterator(); !C.AtEnd(); ++C) {
+			uint32_t CP = *C;
+			if (LWUTF8Iterator::isWhitespace(CP)) {
+				Pos.x = 0.0f;
+				Pos.y -= m_LineSize * Scale;
+				P = nullptr;
+				continue;
+			}
+			LWGlyph *G = GetGlyph(CP);
+			if (!G) {
+				G = m_ErrorGlyph;
+				if (!G) continue; //skip rendering characters we don't have a glyph for.
+			}
+			float Kern = 0.0f;
+			if (P) Kern = GetKernBetween(P->m_Character, G->m_Character) * Scale;
+			P = G;
+			Pos.x += (G->m_Advance.x * Scale + Kern);
+			if (Pos.x > Width + (G->m_Advance.x * Scale * 0.5f)) return GIter.m_Character;
+		}
+	}
+	return GIter.m_Character;
 }
 
-LWVector4f LWFont::DrawClippedText(const LWText &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, LWFontWriteCallback Writer) {
-	return DrawClippedText(Text, 0xFFFFFFFF, Position, Scale, Color, AABB, Writer);
-}
-
-LWVector4f LWFont::DrawClippedTextf(const LWText &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, LWFontWriteCallback Writer, ...) {
-	char Buffer[1024];
-	va_list lst;
-	va_start(lst, Writer);
-	vsnprintf(Buffer, sizeof(Buffer), (const char*)Text.GetCharacters(), lst);
-	va_end(lst);
-	return DrawClippedText(Buffer, 0xFFFFFFFF, Position, Scale, Color, AABB, Writer);
-}
-
-LWVector4f LWFont::DrawClippedText(const LWText &Text, uint32_t CharCount, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, LWFontWriteCallback Writer) {
+LWVector4f LWFont::DrawText(const LWUTF8GraphemeIterator &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, LWFontWriteCallback Writer) {
 	LWVector2f Pos = Position;
 	LWGlyph *P = nullptr;
 	LWVector4f BoundingVolume = LWVector4f(Pos, Pos);
 	float iScale = 1.0f / Scale;
-	const uint8_t *S = LWText::FirstCharacter(Text.GetCharacters());
-	for (; S && CharCount; S = LWText::Next(S), CharCount--) {
-		uint32_t UTF = LWText::GetCharacter(S);
-		if (UTF == (uint32_t)'\n') {
-			Pos.x = Position.x;
-			Pos.y -= m_LineSize*Scale;
-			P = nullptr;
-			continue;
-		}
-		LWGlyph *G = GetGlyph(UTF);
-		if (!G) {
-			G = m_ErrorGlyph;
-			if(!G) continue; //skip rendering characters we don't have a glyph for.
-		}
-		float Kern = 0;
-		if (P) Kern = GetKernBetween(P->m_Character, G->m_Character)*Scale;
-		P = G;
-		if (G->m_Size.x) {
-			
-			LWVector2f Position = LWVector2f(Pos.x + Kern + G->m_Bearing.x*Scale, Pos.y - G->m_Bearing.y*Scale);
-			LWVector2f Size = G->m_Size*Scale;
-
-
-			LWVector2f BtmLeftPnt = Position;
-			LWVector2f TopRightPnt = Position+Size;
-			if (!(BtmLeftPnt.x >= (AABB.x + AABB.z) || TopRightPnt.x < AABB.x || BtmLeftPnt.y >= (AABB.y + AABB.w) || TopRightPnt.y < AABB.y)) {
-				
-				float Width = Size.x;//(TopRightPnt.x - BtmLeftPnt.x);
-				float Height = Size.y;//(TopRightPnt.y - BtmLeftPnt.y);
-				float TexWidth = (G->m_TexCoord.z - G->m_TexCoord.x);
-				float TexHeight = (G->m_TexCoord.y - G->m_TexCoord.w);
-
-				float LeftRatio = (BtmLeftPnt.x < AABB.x) ? (AABB.x - BtmLeftPnt.x) / Width : 0.0f;
-				float RightRatio = (TopRightPnt.x >= (AABB.x + AABB.z)) ? 1.0f - ((TopRightPnt.x - (AABB.x + AABB.z)) / Width) : 1.0f;
-				float TopRatio = (TopRightPnt.y >= (AABB.y + AABB.w)) ? 1.0f - ((TopRightPnt.y - (AABB.y + AABB.w)) / Height) : 1.0f;
-				float BtmRatio = (BtmLeftPnt.y < AABB.y) ? (AABB.y - BtmLeftPnt.y) / Height : 0.0f;
-
-				TopRightPnt = BtmLeftPnt + LWVector2f(Width, Height)*LWVector2f(RightRatio, TopRatio);
-				BtmLeftPnt = BtmLeftPnt + LWVector2f(Width, Height)*LWVector2f(LeftRatio, BtmRatio);
-
-				LWVector2f BtmLeftTC = LWVector2f(G->m_TexCoord.x, G->m_TexCoord.w);
-				LWVector2f TopRightTC = BtmLeftTC + LWVector2f(TexWidth, TexHeight)*LWVector2f(RightRatio, TopRatio);
-				BtmLeftTC = BtmLeftTC + LWVector2f(TexWidth, TexHeight)*LWVector2f(LeftRatio, BtmRatio);
-				if (!Writer(m_TextureList[G->m_TextureIndex], BtmLeftPnt, (TopRightPnt - BtmLeftPnt), LWVector4f(BtmLeftTC.x, TopRightTC.y, TopRightTC.x, BtmLeftTC.y), G->m_SignedRange*iScale, Color)) break;
-
+	LWUTF8GraphemeIterator GIter = Text;
+	for(;!GIter.AtEnd();++GIter) {
+		for (LWUTF8Iterator C = GIter.ClusterIterator(); !C.AtEnd(); ++C) {
+			uint32_t CP = *C;
+			if (LWUTF8Iterator::isLineBreak(CP)) {
+				Pos.x = Position.x;
+				Pos.y -= m_LineSize * Scale;
+				P = nullptr;
+				continue;
+			}
+			LWGlyph *G = GetGlyph(CP);
+			if (!G) {
+				G = m_ErrorGlyph;
+				if (!G) continue; //skip rendering characters we don't have a glyph for.
+			}
+			float Kern = 0;
+			if (P) Kern = GetKernBetween(P->m_Character, G->m_Character) * Scale;
+			P = G;
+			if (G->m_Size.x) {
+				LWVector2f Position = LWVector2f(Pos.x + Kern + G->m_Bearing.x * Scale, Pos.y - G->m_Bearing.y * Scale);
+				LWVector2f Size = G->m_Size * Scale;
+				LWVector2f BtmLeftPnt = Position;
+				LWVector2f TopRightPnt = Position + Size;
+				if (!Writer(m_TextureList[G->m_TextureIndex], Position, Size, G->m_TexCoord, G->m_SignedRange * iScale, Color)) break;
 				BoundingVolume.x = std::min<float>(BtmLeftPnt.x, BoundingVolume.x);
 				BoundingVolume.z = std::max<float>(TopRightPnt.x, BoundingVolume.z);
 				BoundingVolume.y = std::max<float>(TopRightPnt.y, BoundingVolume.y);
 				BoundingVolume.w = std::min<float>(BtmLeftPnt.y, BoundingVolume.w);
-				
 			}
+			Pos.x += (G->m_Advance.x * Scale + Kern);
 		}
-		Pos.x += (G->m_Advance.x*Scale + Kern);
 	}
 	return BoundingVolume - LWVector4f(Position, Position);
 }
 
-LWVector4f LWFont::DrawClippedTextf(const LWText &Text, uint32_t CharCount, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, LWFontWriteCallback Writer, ...) {
-	char Buffer[1024];
-	va_list lst;
-	va_start(lst, Writer);
-	vsnprintf(Buffer, sizeof(Buffer), (const char*)Text.GetCharacters(), lst);
-	va_end(lst);
-	return DrawClippedText(Buffer, CharCount, Position, Scale, Color, AABB, Writer);
+LWVector4f LWFont::DrawClippedText(const LWUTF8GraphemeIterator &Text, const LWVector2f &Position, float Scale, const LWVector4f &Color, const LWVector4f &AABB, LWFontWriteCallback Writer) {
+	LWVector2f Pos = Position;
+	LWGlyph *P = nullptr;
+	LWVector4f BoundingVolume = LWVector4f(Pos, Pos);
+	float iScale = 1.0f / Scale;
+	LWUTF8GraphemeIterator GIter = Text;
+	for(;!GIter.AtEnd(); ++GIter) {
+		for (LWUTF8Iterator C = GIter.ClusterIterator(); !C.AtEnd(); ++C) {
+			uint32_t CP = *C;
+			if (LWUTF8Iterator::isLineBreak(CP)) {
+				Pos.x = Position.x;
+				Pos.y -= m_LineSize * Scale;
+				P = nullptr;
+				continue;
+			}
+			LWGlyph *G = GetGlyph(CP);
+			if (!G) {
+				G = m_ErrorGlyph;
+				if (!G) continue; //skip rendering characters we don't have a glyph for.
+			}
+			float Kern = 0;
+			if (P) Kern = GetKernBetween(P->m_Character, G->m_Character) * Scale;
+			P = G;
+			if (G->m_Size.x) {
+
+				LWVector2f Position = LWVector2f(Pos.x + Kern + G->m_Bearing.x * Scale, Pos.y - G->m_Bearing.y * Scale);
+				LWVector2f Size = G->m_Size * Scale;
+
+
+				LWVector2f BtmLeftPnt = Position;
+				LWVector2f TopRightPnt = Position + Size;
+				if (!(BtmLeftPnt.x >= (AABB.x + AABB.z) || TopRightPnt.x < AABB.x || BtmLeftPnt.y >= (AABB.y + AABB.w) || TopRightPnt.y < AABB.y)) {
+
+					float Width = Size.x;//(TopRightPnt.x - BtmLeftPnt.x);
+					float Height = Size.y;//(TopRightPnt.y - BtmLeftPnt.y);
+					float TexWidth = (G->m_TexCoord.z - G->m_TexCoord.x);
+					float TexHeight = (G->m_TexCoord.y - G->m_TexCoord.w);
+
+					float LeftRatio = (BtmLeftPnt.x < AABB.x) ? (AABB.x - BtmLeftPnt.x) / Width : 0.0f;
+					float RightRatio = (TopRightPnt.x >= (AABB.x + AABB.z)) ? 1.0f - ((TopRightPnt.x - (AABB.x + AABB.z)) / Width) : 1.0f;
+					float TopRatio = (TopRightPnt.y >= (AABB.y + AABB.w)) ? 1.0f - ((TopRightPnt.y - (AABB.y + AABB.w)) / Height) : 1.0f;
+					float BtmRatio = (BtmLeftPnt.y < AABB.y) ? (AABB.y - BtmLeftPnt.y) / Height : 0.0f;
+
+					TopRightPnt = BtmLeftPnt + LWVector2f(Width, Height) * LWVector2f(RightRatio, TopRatio);
+					BtmLeftPnt = BtmLeftPnt + LWVector2f(Width, Height) * LWVector2f(LeftRatio, BtmRatio);
+
+					LWVector2f BtmLeftTC = LWVector2f(G->m_TexCoord.x, G->m_TexCoord.w);
+					LWVector2f TopRightTC = BtmLeftTC + LWVector2f(TexWidth, TexHeight) * LWVector2f(RightRatio, TopRatio);
+					BtmLeftTC = BtmLeftTC + LWVector2f(TexWidth, TexHeight) * LWVector2f(LeftRatio, BtmRatio);
+					if (!Writer(m_TextureList[G->m_TextureIndex], BtmLeftPnt, (TopRightPnt - BtmLeftPnt), LWVector4f(BtmLeftTC.x, TopRightTC.y, TopRightTC.x, BtmLeftTC.y), G->m_SignedRange * iScale, Color)) break;
+
+					BoundingVolume.x = std::min<float>(BtmLeftPnt.x, BoundingVolume.x);
+					BoundingVolume.z = std::max<float>(TopRightPnt.x, BoundingVolume.z);
+					BoundingVolume.y = std::max<float>(TopRightPnt.y, BoundingVolume.y);
+					BoundingVolume.w = std::min<float>(BtmLeftPnt.y, BoundingVolume.w);
+
+				}
+			}
+			Pos.x += (G->m_Advance.x * Scale + Kern);
+		}
+	}
+	return BoundingVolume - LWVector4f(Position, Position);
 }
 
 LWFont &LWFont::InsertKern(uint32_t Left, uint32_t Right, float Kerning) {
 	uint32_t Key = Left | (Right << 16); //yea yea, 32 bits, blah blah blah, hopefully these keys don't overlap.
 	auto Res = m_KernTable.emplace(Key, Kerning);
-	if (!Res.second) std::cout << "Kern collision: " << Left << " | " << Right << std::endl;
+	if (!Res.second) fmt::print("Kern collision: {} | {}\n", Left, Right);
 	return *this;
 }
 
-LWFont &LWFont::InsertGlyphName(const LWText &GlyphName, uint32_t GlyphID) {
-	auto Res = m_GlyphNameMap.emplace(GlyphName.GetHash(), GlyphID);
-	if (!Res.second) std::cout << "Glyphnamemap collision: '" << GlyphName.GetCharacters() << "'" << std::endl;
+LWFont &LWFont::InsertGlyphName(const LWUTF8Iterator &GlyphName, uint32_t GlyphID) {
+	uint32_t Hash = LWCrypto::HashFNV1A(GlyphName);
+	auto Res = m_GlyphNameMap.emplace(Hash, GlyphID);
+	if (!Res.second) fmt::print("Glyph name map collision: '{}'", GlyphName);
 	return *this;
 }
 
@@ -1171,8 +1086,8 @@ LWGlyph *LWFont::GetGlyph(uint32_t Character, bool Insert) {
 	return Itr == m_GlyphTable.end() ? nullptr : &Itr->second;
 }
 
-uint32_t LWFont::GetGlyphName(const LWText &GlyphName) const {
-	auto Iter = m_GlyphNameMap.find(GlyphName.GetHash());
+uint32_t LWFont::GetGlyphName(const LWUTF8Iterator &GlyphName) const {
+	auto Iter = m_GlyphNameMap.find(LWCrypto::HashFNV1A(GlyphName));
 	return Iter == m_GlyphNameMap.end() ? 0 : Iter->second;
 }
 

@@ -59,28 +59,33 @@ public:
 	/*!< \brief image loading which automatically attempts to load an image from a file source, and deduce it's type based on the associated extension. 
 		 \return true on success, or false on failure.
 	*/
-	static bool LoadImage(LWImage &Image, const LWText &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream = nullptr);
+	static bool LoadImage(LWImage &Image, const LWUTF8Iterator &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream = nullptr);
+
+	/*!< \brief image loading from memory, but type is selected by filepath type.
+		 \return true on success, or false on failure.
+	*/
+	static bool LoadImage(LWImage &Image, const LWUTF8Iterator &FilePath, const uint8_t *Buffer, uint32_t BufferLen, LWAllocator &Allocator);
 
 	/*!< \brief loads a TGA file if it is a supported type. */
-	static bool LoadImageTGA(LWImage &Image, const LWText &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream = nullptr);
+	static bool LoadImageTGA(LWImage &Image, const LWUTF8Iterator &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream = nullptr);
 	
 	/*!< \brief loads a tga file from a memory buffer. */
 	static bool LoadImageTGA(LWImage &Image, const uint8_t *Buffer, uint32_t BufferLen, LWAllocator &Allocator);
 
 	/*!< \brief loads a PNG file. */
-	static bool LoadImagePNG(LWImage &Image, const LWText &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream = nullptr);
+	static bool LoadImagePNG(LWImage &Image, const LWUTF8Iterator &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream = nullptr);
 
 	/*!< \brief loads a png file from a memory buffer. */
 	static bool LoadImagePNG(LWImage &Image, const uint8_t *Buffer, uint32_t BufferLen, LWAllocator &Allocator);
 
 	/*!< \brief loads a dds file. */
-	static bool LoadImageDDS(LWImage &Image, const LWText &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream = nullptr);
+	static bool LoadImageDDS(LWImage &Image, const LWUTF8Iterator &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream = nullptr);
 
 	/*!< \brief loads a dds file from a memory buffer. */
 	static bool LoadImageDDS(LWImage &Image, const uint8_t *Buffer, uint32_t BufferLen, LWAllocator &Allocator);
 
 	/*! \brief loads a ktx2 file. */
-	static bool LoadImageKTX2(LWImage &Image, const LWText &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream = nullptr);
+	static bool LoadImageKTX2(LWImage &Image, const LWUTF8Iterator &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream = nullptr);
 
 	/*! \brief loads a ktx2 file from a memory buffer. */
 	static bool LoadImageKTX2(LWImage &Image, const uint8_t *Buffer, uint32_t BufferLen, LWAllocator &Allocator);
@@ -88,7 +93,7 @@ public:
 	/*! \brief write's to filepath a png file. returns true on success, or false on failure.
 		\note currently only RGBA8 image's are supported for png.
 	*/
-	static bool SaveImagePNG(LWImage &Image, const LWText &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream = nullptr);
+	static bool SaveImagePNG(LWImage &Image, const LWUTF8Iterator &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream = nullptr);
 
 	/*! \brief write's a png file into buffer, returns the number of bytes. 
 		\note currently only RGBA8 image's are supported for png.

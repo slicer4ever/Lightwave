@@ -1,7 +1,9 @@
 #include "LWCore/LWCrypto.h"
 #include "LWCore/LWByteBuffer.h"
+#include "LWCore/LWUnicode.h"
 #include <cstring>
 #include <iostream>
+
 uint32_t LWCrypto::HashMD5(const char *InBuffer, uint32_t InBufferLen, char *OutBuffer){
 	char Buffer[64];
 	uint32_t Table[] = { 0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,	0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
@@ -27,7 +29,7 @@ uint32_t LWCrypto::HashMD5(const char *InBuffer, uint32_t InBufferLen, char *Out
 			Buf = (const uint32_t*)Buffer;
 			std::memset(Buffer, 0, sizeof(Buffer));
 			if (i < InBufferLen){
-				std::memcpy(Buffer, InBuffer + i, sizeof(char)*(InBufferLen - i));
+				memcpy(Buffer, InBuffer + i, sizeof(char)*(InBufferLen - i));
 				if (i + 64 != InBufferLen) Buffer[InBufferLen - i] = '\x80';
 			} else if (i == InBufferLen) Buffer[0] = '\x80';
 			if (i + 56 >= InBufferLen)	*(((uint64_t*)Buffer) + 7) = InBufferLen * 8;
@@ -90,7 +92,7 @@ uint32_t LWCrypto::HashSHA1(const char *InBuffer, uint32_t InBufferLen, char *Ou
 		if (i + 64 > InBufferLen){
 			std::memset(Buffer, 0, sizeof(Buffer));
 			if (i < InBufferLen){
-				std::memcpy(Buffer, InBuffer + i, sizeof(char)*(InBufferLen - i));
+				memcpy(Buffer, InBuffer + i, sizeof(char)*(InBufferLen - i));
 				if (i + 64 != InBufferLen) Buffer[InBufferLen - i] = '\x80';
 			} else if (i == InBufferLen) Buffer[0] = '\x80';
 			if (i + 56 >= InBufferLen){
@@ -98,7 +100,7 @@ uint32_t LWCrypto::HashSHA1(const char *InBuffer, uint32_t InBufferLen, char *Ou
 				*(((uint32_t*)Buffer) + 14) = (uint32_t)(Len >> 32);
 				*(((uint32_t*)Buffer) + 15) = (uint32_t)Len;
 			}
-		} else std::memcpy(Buffer, InBuffer + i, sizeof(char) * 64);
+		} else memcpy(Buffer, InBuffer + i, sizeof(char) * 64);
 		uint32_t *Buf = (uint32_t*)Buffer;
 		for (uint32_t d = 0; d < 16; d++) Buf[d] = LWByteBuffer::MakeBig(Buf[d]);
 		uint32_t tA = A;
@@ -148,6 +150,42 @@ uint32_t LWCrypto::HashSHA1(const char *InBuffer, uint32_t InBufferLen, char *Ou
 	}
 	return 20;
 }
+
+uint32_t LWCrypto::HashFNV1A(const uint8_t *Buffer, uint32_t BufferLen, uint32_t Hash) {
+	const uint32_t Prime = 16777619;
+	const uint8_t *Last = Buffer + BufferLen;
+	for (; Buffer != Last; ++Buffer) Hash = (Hash ^ ((uint32_t)*Buffer & 0xFF)) * Prime;
+	return Hash;
+}
+
+template<>
+uint32_t LWCrypto::HashFNV1A<char8_t>(const LWUnicodeIterator<char8_t> &Iter, uint32_t Hash) {
+	const uint32_t Prime = 16777619;
+	const char8_t *P = Iter();
+	const char8_t *L = Iter.GetLast();
+	for (; *P && P != L; ++P) Hash = (Hash ^ ((uint32_t)*P & 0xFF)) * Prime;
+	return Hash;
+}
+
+
+template<>
+uint32_t LWCrypto::HashFNV1A<char16_t>(const LWUnicodeIterator<char16_t> &Iter, uint32_t Hash) {
+	const uint32_t Prime = 16777619;
+	const char16_t *P = Iter();
+	const char16_t *L = Iter.GetLast();
+	for (; *P && P != L; ++P) Hash = (Hash ^ ((uint32_t)*P & 0xFFFF)) * Prime;
+	return Hash;
+}
+
+template<>
+uint32_t LWCrypto::HashFNV1A<char32_t>(const LWUnicodeIterator<char32_t> &Iter, uint32_t Hash) {
+	const uint32_t Prime = 16777619;
+	const char32_t *P = Iter();
+	const char32_t *L = Iter.GetLast();
+	for (; *P && P != L; ++P) Hash = (Hash ^ *P) * Prime;
+	return Hash;
+}
+
 
 uint32_t LWCrypto::Base64Encode(const char *InBuffer, uint32_t InBufferLen, char *OutBuffer, uint32_t OutBufferLen){
 	if (!OutBuffer) return (InBufferLen + 2) / 3 * 4;

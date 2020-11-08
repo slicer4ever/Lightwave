@@ -1,19 +1,13 @@
 #include "LWNetwork/LWSocket.h"
 #include "LWNetwork/LWProtocolManager.h"
-#include "LWCore/LWText.h"
 #include "LWCore/LWByteBuffer.h"
+#include "LWCore/LWUnicode.h"
 #include "LWPlatform/LWPlatform.h"
 #include <iostream>
 
-uint32_t LWSocket::MakeIP(const LWText &Address) {
-	IN_ADDR Addr;
-	if (InetPton(AF_INET, (const char*)Address.GetCharacters(), &Addr) != 1) return 0;
-	return LWByteBuffer::MakeHost((uint32_t)Addr.S_un.S_addr);
-}
-
-uint32_t LWSocket::LookUpAddress(const LWText &Address, uint32_t *IPBuffer, uint32_t IPBufferLen, char *Addresses, uint32_t AddressLen) {
+uint32_t LWSocket::LookUpAddress(const LWUTF8Iterator &Address, uint32_t *IPBuffer, uint32_t IPBufferLen, char *Addresses, uint32_t AddressLen) {
 	addrinfo hint = { AI_CANONNAME | AI_RETURN_PREFERRED_NAMES, AF_INET, 0, 0, 0, nullptr, nullptr, nullptr }, *servinfo = nullptr;
-	if (getaddrinfo((const char*)Address.GetCharacters(), nullptr, &hint, &servinfo)) return 0xFFFFFFFF;
+	if (getaddrinfo(*Address.c_str<256>(), nullptr, &hint, &servinfo)) return 0xFFFFFFFF;
 	unsigned int i = 0;
 	char *AL = Addresses + AddressLen;
 	for (addrinfo *p = servinfo; p; p = p->ai_next, i++) {
@@ -108,10 +102,10 @@ uint32_t LWSocket::CreateSocket(LWSocket &Socket, uint32_t RemoteIP, uint16_t Re
 	return 0;
 }
 
-uint32_t LWSocket::CreateSocket(LWSocket &Socket, const LWText &Address, uint16_t RemotePort, uint16_t LocalPort, uint32_t Flag, uint32_t ProtocolID) {
+uint32_t LWSocket::CreateSocket(LWSocket &Socket, const LWUTF8Iterator &Address, uint16_t RemotePort, uint16_t LocalPort, uint32_t Flag, uint32_t ProtocolID) {
 	uint32_t AddrIP = 0;
 	addrinfo Hint = { 0, AF_INET, 0, 0, 0, nullptr, nullptr, nullptr }, *Result;
-	if (getaddrinfo((const char*)Address.GetCharacters(), nullptr, &Hint, &Result)) return LWSocket::ErrAddress;
+	if (getaddrinfo(*Address.c_str<256>(), nullptr, &Hint, &Result)) return LWSocket::ErrAddress;
 	AddrIP = LWByteBuffer::MakeHost((uint32_t)((sockaddr_in*)Result->ai_addr)->sin_addr.S_un.S_addr);
 	freeaddrinfo(Result);
 	return CreateSocket(Socket, AddrIP, RemotePort, LocalPort, (Flag | LWSocket::Tcp)&~LWSocket::Udp, ProtocolID);

@@ -3,7 +3,7 @@
 #include "LWPlatform/LWPlatform.h"
 #include <LWCore/LWByteBuffer.h>
 #include <algorithm>
-
+#include <iostream>
 bool LWProtocolManager::InitateNetwork(void){
 	WSAData Data;
 	return WSAStartup(MAKEWORD(2, 2), &Data) == 0;

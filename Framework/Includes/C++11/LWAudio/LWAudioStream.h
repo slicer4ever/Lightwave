@@ -17,8 +17,21 @@ public:
 		LinearPCM=0, /*!< \brief each sample is a linear pcm. */
 		IEEEFloatPCM, /*!< \brief each sample is a floating point linear pcm. */
 	};
+
+	/*!< \brief determines format from the path extension, returns -1 if format is not determined. */
+	static uint32_t GetFormatFromExtension(const LWUTF8Iterator &FilePath);
+
 	/*!< \brief constructs an audio stream from the passed in file stream, determines format based on file extension. */
-	static LWAudioStream *Create(const LWText &Filepath, uint32_t Flag, LWAllocator &Allocator);
+	static LWAudioStream *Create(const LWUTF8Iterator &Filepath, uint32_t Flag, LWAllocator &Allocator);
+
+	/*!< \brief constructs an audio stream base on the specified path of the file stream. */
+	static LWAudioStream *Create(LWFileStream &Stream, const LWUTF8Iterator &FilePath, uint32_t Flag, LWAllocator &Allocator);
+
+	/*!< \brief constructs an audio stream based on the passed in buffer, the buffer is copied in it's entirety, the format type is deduced from the path's extenson. */
+	static LWAudioStream *Create(const char *Buffer, uint32_t BufferLen, const LWUTF8Iterator &FilePath, uint32_t Flag, LWAllocator &Allocator);
+
+	/*!< \brief construct's an audio stream based on the passed in buffer, note the audio stream takes possession of the passed in buffer. */
+	static LWAudioStream *Create(char *Buffer, uint32_t BufferLen, const LWUTF8Iterator &FilePath, uint32_t Flag, LWAllocator &Allocator);
 
 	/*!< \brief constructs an audio stream based on the specified format. */
 	static LWAudioStream *Create(LWFileStream &Stream, uint32_t Flag, uint32_t FormatType, LWAllocator &Allocator);

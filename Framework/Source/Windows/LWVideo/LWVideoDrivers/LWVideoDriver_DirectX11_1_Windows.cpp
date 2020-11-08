@@ -17,14 +17,12 @@ LWVideoDriver_DirectX11_1 *LWVideoDriver_DirectX11_1::MakeVideoDriver(LWWindow *
 	D3D_FEATURE_LEVEL Level = D3D_FEATURE_LEVEL_11_1;
 	uint32_t Flag = 0;
 	if((Type&DebugLayer)!=0) Flag |= D3D11_CREATE_DEVICE_DEBUG;
-
 	HRESULT Res = D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, Flag, &Level, 1, D3D11_SDK_VERSION, &scd, &Context.m_DXSwapChain, (ID3D11Device**)&Context.m_DXDevice, nullptr, (ID3D11DeviceContext**)&Context.m_DXDeviceContext);
 	if (Res != S_OK) {
-		std::cout << "Error: 'D3D11CreateDeviceAndSwapChain: " << std::hex << Res << std::dec << "'" << std::endl;
+		fmt::print("Error: 'D3D11CreateDeviceAndSwapChain': {:#x}\n", Res);
 		if (Res == DXGI_ERROR_UNSUPPORTED) return nullptr;
 	} else {
-		D3D11_TEXTURE2D_DESC Desc;// = { Size.x, Size.y, 1, 1, Formats[PackType],{ 1, 0 }, D3D11_USAGE_DEFAULT, D3D11_BIND_SHADER_RESOURCE | ((TextureState&LWTexture::RenderTarget) != 0 ? D3D11_BIND_RENDER_TARGET : 0) , 0, 0 };
-
+		D3D11_TEXTURE2D_DESC Desc;// = { Size.x, Size.y, 1, 1, Formats[PackType],{ 1, 0 }, D3D11_USAGE_DEFAULT, D3D11_BIND_SHADER_RESOURCE | ((TextureState&LWTexture::RenderTarget) != 0 ? D3D11_BIND_RENDER_TARGET : 0) , 0, 0 }
 		Context.m_BackBuffer = nullptr;
 		Context.m_BackBufferDepthStencilView = nullptr;
 		ID3D11Texture2D *TexBackBuffer = nullptr;
@@ -34,7 +32,7 @@ LWVideoDriver_DirectX11_1 *LWVideoDriver_DirectX11_1::MakeVideoDriver(LWWindow *
 		Desc = { Desc.Width, Desc.Height, 1, 1, DXGI_FORMAT_D24_UNORM_S8_UINT , { 4, 0}, D3D11_USAGE_DEFAULT, D3D11_BIND_DEPTH_STENCIL, 0, 0 };
 		HRESULT Res = Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, &DepthStencilBuffer);
 		if (FAILED(Res)) {
-			std::cout << "Error creating depth stencil backbuffer." << std::endl;
+			fmt::print("Error creating depth stencil backbuffer: {:#x}\n", Res);
 			Context.m_DXSwapChain->Release();
 			Context.m_DXDevice->Release();
 			Context.m_DXDeviceContext->Release();
@@ -45,7 +43,7 @@ LWVideoDriver_DirectX11_1 *LWVideoDriver_DirectX11_1::MakeVideoDriver(LWWindow *
 		Context.m_DXDeviceContext->OMSetRenderTargets(1, &Context.m_BackBuffer, Context.m_BackBufferDepthStencilView);
 		TexBackBuffer->Release();
 		DepthStencilBuffer->Release();
-		return Window->GetAllocator()->Allocate<LWVideoDriver_DirectX11_1>(Window, Context, 256);
+		return Window->GetAllocator()->Create<LWVideoDriver_DirectX11_1>(Window, Context, 256);
 	}
 	return nullptr;
 }
@@ -91,13 +89,9 @@ bool LWVideoDriver_DirectX11_1::Update(void) {
 		
 		D3D11_TEXTURE2D_DESC Desc = { (uint32_t)Size.x, (uint32_t)Size.y, 1, 1, DXGI_FORMAT_D24_UNORM_S8_UINT ,{ 4, 0 }, D3D11_USAGE_DEFAULT, D3D11_BIND_DEPTH_STENCIL, 0, 0 };
 		HRESULT Res = m_Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, &DepthStencilBuffer);
-		if(FAILED(Res)){
-			std::cout << "Failed making new depthstencil texture." << std::endl;
-		}
+		if (FAILED(Res)) fmt::print("Failed making new depthstencil texture: {:#x}", Res);
 		Res = m_Context.m_DXDevice->CreateDepthStencilView(DepthStencilBuffer, nullptr, &m_Context.m_BackBufferDepthStencilView);
-		if(FAILED(Res)){
-			std::cout << "Failed making new depthstencil view." << std::endl;
-		}
+		if (FAILED(Res)) fmt::print("Failed making new depthstencil view: {:#x}", Res);
 		if(!m_ActiveFrameBuffer) m_Context.m_DXDeviceContext->OMSetRenderTargets(1, &m_Context.m_BackBuffer, m_Context.m_BackBufferDepthStencilView);
 		if(TexBackBuffer) TexBackBuffer->Release();
 		if(DepthStencilBuffer) DepthStencilBuffer->Release();

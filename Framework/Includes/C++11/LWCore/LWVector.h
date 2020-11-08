@@ -58,6 +58,11 @@ struct LWVector4{
 		return *this;
 	}
 
+	/*!< \brief checks the sign of each component, and returns +1 for positive sign, and -1 for negative sign components. */
+	LWVector4<Type> Sign(void) const {
+		return LWVector4<Type>((Type)(x < (Type)0 ? -1 : 1), (Type)(y < (Type)0 ? -1 : 1), (Type)(z < (Type)0 ? -1 : 1), (Type)(w < (Type)0 ? -1 : 1));
+	}
+
 	/*!< \brief returns the max element of all vec4 components. */
 	Type Max(void) const {
 		return std::max<Type>(std::max<Type>(std::max<Type>(x, y), z), w);
@@ -1743,6 +1748,11 @@ struct LWVector3{
 		return LWVector3<Type>(x*L, y*L, z*L);
 	}
 
+	/*!< \brief checks the sign of each component, and returns +1 for positive sign, and -1 for negative sign components. */
+	LWVector3<Type> Sign(void) const {
+		return LWVector3<Type>((Type)(x < (Type)0 ? -1 : 1), (Type)(y < (Type)0 ? -1 : 1), (Type)(z < (Type)0 ? -1 : 1));
+	}
+
 	/*!< \brief returns the min of all components of the vec3. */
 	Type Min(void) const {
 		return std::min<Type>(std::min<Type>(x, y), z);
@@ -2230,6 +2240,11 @@ struct LWVector2{
 		if (L <= std::numeric_limits<Type>::epsilon()) L = 0;
 		else L = (Type)1 / sqrt(L);
 		return LWVector2<Type>(x*L, y*L);
+	}
+	
+	/*!< \brief checks the sign of each component, and returns +1 for positive sign, and -1 for negative sign components. */
+	LWVector2<Type> Sign(void) const {
+		return LWVector2<Type>((Type)(x < (Type)0 ? -1 : 1), (Type)(y < (Type)0 ? -1 : 1));
 	}
 
 	/*!< \brief returns the min component of the Vec2. */

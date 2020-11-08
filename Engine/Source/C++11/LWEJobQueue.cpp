@@ -155,7 +155,7 @@ LWEJobQueue &LWEJobQueue::OutputJobTimings(void){
 	for (uint32_t i = 0; i < m_JobCount; i++) {
 		if (m_JobState[i].load() == (uint32_t)JobNull) continue;
 		uint64_t Average = m_Jobs[i].m_RunCount ? m_Jobs[i].m_ElapsedTime / m_Jobs[i].m_RunCount : 0;
-		std::cout << "Job " << i << ": Avg: " << LWTimer::ToMilliSecond(Average) << "ms Total: " << LWTimer::ToMilliSecond(m_Jobs[i].m_ElapsedTime) << "ms Times ran: " << m_Jobs[i].m_RunCount << std::endl;
+		fmt::print("Job {}: Avg: {}ms Total: {}ms Times rang: {}\n", i, LWTimer::ToMilliSecond(Average), LWTimer::ToMilliSecond(m_Jobs[i].m_ElapsedTime), m_Jobs[i].m_RunCount);
 	}
 	return *this;
 }
@@ -163,7 +163,7 @@ LWEJobQueue &LWEJobQueue::OutputJobTimings(void){
 LWEJobQueue &LWEJobQueue::OutputThreadTimings(void) {
 	for (uint32_t i = 0; i < m_ThreadCount; i++) {
 		uint64_t Average = m_Threads[i].m_JobsRan ? m_Threads[i].m_TimeInJobs / m_Threads[i].m_JobsRan : 0;
-		std::cout << "JThread " << i << ": Avg: " << LWTimer::ToMilliSecond(Average) << "ms Total: " << LWTimer::ToMilliSecond(m_Threads[i].m_TimeInJobs) << "ms Jobs ran: " << m_Threads[i].m_JobsRan << std::endl;
+		fmt::print("JThread {}: Avg: {}ms Total: {}ms Jobs ran: {}\n", i, LWTimer::ToMilliSecond(Average), LWTimer::ToMilliSecond(m_Threads[i].m_TimeInJobs), m_Threads[i].m_JobsRan);
 	}
 	return *this;
 }

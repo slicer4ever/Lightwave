@@ -31,11 +31,13 @@
 #undef GetUserName
 #undef LoadImage
 #undef FindResource
+#undef UpdateResource
+#undef GetObject
 #undef max
 #undef min
 
 #ifndef snprintf
-#define snprintf sprintf_s
+#define snprintf _snprintf
 #endif
 
 #ifndef stat

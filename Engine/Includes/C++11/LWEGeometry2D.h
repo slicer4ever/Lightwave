@@ -30,9 +30,7 @@ bool LWERayAABBIntersect(const LWVector2<Type> &RayStart, const LWVector2<Type> 
 	const Type e = (Type)std::numeric_limits<float>::epsilon();
 	//Use float epsilon instead of double.
 	LWVector2<Type> Dir = RayEnd - RayStart;
-	
-	if ((Type)abs(Dir.x) < e) Dir.x = e;
-	if ((Type)abs(Dir.y) < e) Dir.y = e;
+	Dir = Dir.Abs().Blend_Less(e, e) * Dir.Sign();
 
 	LWVector2<Type> invDir = (Type)1 / Dir;
 

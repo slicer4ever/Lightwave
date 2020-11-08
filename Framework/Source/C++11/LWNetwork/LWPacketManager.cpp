@@ -97,7 +97,7 @@ bool LWPacketManager::ProcessRawData(void *Client, void *Source, const char *Buf
 		bool Result = false;
 		if (m_ReceivePacketFunction) Result = m_ReceivePacketFunction(Pack, this);
 		if (Pack->GetFlag()&LWPacket::Ack){
-			LWPacket *AckPack = m_PacketAllocator->Allocate<LWPacket>(Pack->GetPacketAckID(), Client, LWPacket::PacketAck, 0);
+			LWPacket *AckPack = m_PacketAllocator->Create<LWPacket>(Pack->GetPacketAckID(), Client, LWPacket::PacketAck, 0);
 			if(!PushOutPacket(AckPack))	LWAllocator::Destroy(AckPack); //if we failed to add our ack pack, then we'll have to try again later when the client resends the packet.
 		}
 		if (!Result){
@@ -174,7 +174,7 @@ LWAllocator &LWPacketManager::GetPacketAllocator(void) const{
 	return *m_PacketAllocator;
 }
 
-LWPacketManager::LWPacketManager(uint32_t PacketBufferSize, LWAllocator &BufferAllocator, LWAllocator &PacketAllocator, std::function<bool(LWPacket *Pack, LWPacketManager *Man)> ReceivePacketFunc, std::function<bool(LWPacket *Pack, LWPacketManager *Man)> SendPacketFunc) : m_PacketBuffer(BufferAllocator.AllocateArray<char>(PacketBufferSize)), m_ReceivePacketFunction(ReceivePacketFunc), m_SendPacketFunction(SendPacketFunc), m_PacketBufferLength(PacketBufferSize), m_PacketAllocator(&PacketAllocator), m_OutPacketCount(0){
+LWPacketManager::LWPacketManager(uint32_t PacketBufferSize, LWAllocator &BufferAllocator, LWAllocator &PacketAllocator, std::function<bool(LWPacket *Pack, LWPacketManager *Man)> ReceivePacketFunc, std::function<bool(LWPacket *Pack, LWPacketManager *Man)> SendPacketFunc) : m_PacketBuffer(BufferAllocator.AllocateA<char>(PacketBufferSize)), m_ReceivePacketFunction(ReceivePacketFunc), m_SendPacketFunction(SendPacketFunc), m_PacketBufferLength(PacketBufferSize), m_PacketAllocator(&PacketAllocator), m_OutPacketCount(0){
 	RegisterDeserialization(LWPacket::PacketAck, LWPacket::Deserialize);
 }
 

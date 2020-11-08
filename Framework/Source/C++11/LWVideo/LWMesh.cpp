@@ -136,11 +136,11 @@ uint32_t LWVertexUI::WriteRectangle(LWBaseMesh *Mesh, const LWVector2f &TopLeftP
 }
 
 LWMesh<LWVertexUI> *LWVertexUI::MakeMesh(LWAllocator &Allocator, LWVideoBuffer *VertexBuffer, LWVideoBuffer *IndiceBuffer, uint32_t CurrentVertexCount, uint32_t CurrentIndiceCount) {
-	return Allocator.Allocate<LWMesh<LWVertexUI>>(VertexBuffer, IndiceBuffer, CurrentVertexCount, CurrentIndiceCount);
+	return Allocator.Create<LWMesh<LWVertexUI>>(VertexBuffer, IndiceBuffer, CurrentVertexCount, CurrentIndiceCount);
 }
 
 LWMesh<LWVertexUI> *LWVertexUI::MakeMesh(LWAllocator &Allocator, LWVideoBuffer *VertexBuffer, uint32_t CurrentVertexCount){
-	return Allocator.Allocate<LWMesh<LWVertexUI>>(VertexBuffer, CurrentVertexCount);
+	return Allocator.Create<LWMesh<LWVertexUI>>(VertexBuffer, CurrentVertexCount);
 }
 
 LWVertexUI::LWVertexUI(const LWVector4f &Position, const LWVector4f &Color, const LWVector4f &TexCoord) : m_Position(Position), m_Color(Color), m_TexCoord(TexCoord) {}
@@ -185,11 +185,11 @@ uint32_t LWVertexPosition::WriteCircle(LWBaseMesh *Mesh, const LWVector2f &Cente
 }
 
 LWMesh<LWVertexPosition> *LWVertexPosition::MakeMesh(LWAllocator &Allocator, LWVideoBuffer *VertexBuffer, LWVideoBuffer *IndiceBuffer, uint32_t CurrentVertexCount, uint32_t CurrentIndiceCount) {
-	return Allocator.Allocate<LWMesh<LWVertexPosition>>(VertexBuffer, IndiceBuffer, CurrentVertexCount, CurrentIndiceCount);
+	return Allocator.Create<LWMesh<LWVertexPosition>>(VertexBuffer, IndiceBuffer, CurrentVertexCount, CurrentIndiceCount);
 }
 
 LWMesh<LWVertexPosition> *LWVertexPosition::MakeMesh(LWAllocator &Allocator, LWVideoBuffer *VertexBuffer, uint32_t CurrentVertexCount){
-	return Allocator.Allocate<LWMesh<LWVertexPosition>>(VertexBuffer, CurrentVertexCount);
+	return Allocator.Create<LWMesh<LWVertexPosition>>(VertexBuffer, CurrentVertexCount);
 }
 
 LWVertexPosition::LWVertexPosition(const LWVector4f &Position) : m_Position(Position) {}
@@ -273,11 +273,11 @@ uint32_t LWVertexColor::WriteLine(LWBaseMesh *Mesh, const LWVector2f &PntA, cons
 
 
 LWMesh<LWVertexColor> *LWVertexColor::MakeMesh(LWAllocator &Allocator, LWVideoBuffer *VertexBuffer, LWVideoBuffer *IndiceBuffer, uint32_t CurrentVertexCount, uint32_t CurrentIndiceCount) {
-	return Allocator.Allocate<LWMesh<LWVertexColor>>(VertexBuffer, IndiceBuffer, CurrentVertexCount, CurrentIndiceCount);
+	return Allocator.Create<LWMesh<LWVertexColor>>(VertexBuffer, IndiceBuffer, CurrentVertexCount, CurrentIndiceCount);
 }
 
 LWMesh<LWVertexColor> *LWVertexColor::MakeMesh(LWAllocator &Allocator, LWVideoBuffer *VertexBuffer, uint32_t CurrentVertexCount){
-	return Allocator.Allocate<LWMesh<LWVertexColor>>(VertexBuffer, CurrentVertexCount);
+	return Allocator.Create<LWMesh<LWVertexColor>>(VertexBuffer, CurrentVertexCount);
 }
 
 LWVertexColor::LWVertexColor(const LWVector4f &Position, const LWVector4f &Color) : m_Position(Position), m_Color(Color) {}
@@ -311,10 +311,10 @@ uint32_t LWVertexTexture::WriteRectangle(LWBaseMesh *Mesh, const LWVector2f &Top
 }
 
 LWMesh<LWVertexTexture> *LWVertexTexture::MakeMesh(LWAllocator &Allocator, LWVideoBuffer *VertexBuffer, LWVideoBuffer *IndiceBuffer, uint32_t CurrentVertexCount, uint32_t CurrentIndiceCount) {
-	return Allocator.Allocate<LWMesh<LWVertexTexture>>(VertexBuffer, IndiceBuffer, CurrentVertexCount, CurrentIndiceCount);
+	return Allocator.Create<LWMesh<LWVertexTexture>>(VertexBuffer, IndiceBuffer, CurrentVertexCount, CurrentIndiceCount);
 }
 LWMesh<LWVertexTexture> *LWVertexTexture::MakeMesh(LWAllocator &Allocator, LWVideoBuffer *VertexBuffer, uint32_t CurrentVertexCount){
-	return Allocator.Allocate<LWMesh<LWVertexTexture>>(VertexBuffer, CurrentVertexCount);
+	return Allocator.Create<LWMesh<LWVertexTexture>>(VertexBuffer, CurrentVertexCount);
 }
 
 LWVertexTexture::LWVertexTexture(const LWVector4f &Position, const LWVector4f &TexCoord) : m_Position(Position), m_TexCoord(TexCoord) {}

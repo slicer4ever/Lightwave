@@ -13,7 +13,6 @@ public:
 		AutoSize = 0x2 /*!< \brief Flag to indicate the data buffer should auto resize if it's not large enough to hold the requested data-> */
 	};
 
-
 	/*!< \brief Returns true if no data remains in the buffer and no new data is read in. */
 	bool EndOfStream(void);
 
@@ -288,15 +287,33 @@ public:
 		return Length;
 	}
 
-	/*! \brief reads an utf8 string from the buffer.
+	/*! \brief reads an utfX string from the buffer.
 		\param Out the buffer to receive the text.
 		\param OutLen the length of the buffer to receive the text.
-		\sa int32_t ReadUTF8(int8_t *, uint32_t, const int8_t *)
+		\return the number of bytes read from the stream.
 	*/
-	int32_t ReadUTF8(uint8_t *Out, uint32_t OutLen);
-
-	/*! \overload int32_t ReadUTF8(char *, uint32_t) */
-	int32_t ReadUTF8(char *Out, uint32_t OutLen);
+	template<class Type>
+	int32_t ReadUTF(Type *Out, uint32_t OutLen) {
+		typedef int32_t(*Func_T)(Type*, const int8_t*);
+		Func_T Func[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		uint32_t o = 0;
+		Type *P = Out;
+		Type *PL = Out + std::min<uint32_t>(OutLen - 1, OutLen);
+		for (; P != PL; P++) {
+			if (!CanReadBytes(sizeof(Type))) return o;
+			uint32_t l = Func[m_SelectedFunc](P, m_DataBuffer + m_Position);
+			m_Position += l;
+			o += l;
+			if (!*P) break;
+		}
+		if (OutLen) *P = 0;
+		if (o & 1) {
+			if (!CanReadBytes(1)) return o;
+			m_Position += 1;
+			o++; //Skip any padding.
+		}
+		return o;
+	}
 
 	/*!< \brief reads a null terminated string from the buffer.
 		 \param Out the buffer to receive the text.
@@ -306,6 +323,16 @@ public:
 
 	/*!< \overload int32_t ReadText(char*, uint32_t) */
 	int32_t ReadText(char *Out, uint32_t OutLen);
+
+	/*!< \brief reads till encountering specified token of text.
+	*	 \param Out the buffer to receive the text.
+	*    \param OutLen the length of the buffer to receive the text.
+	*    \param Token the char token to stop at(or null terminated end).
+	*/
+	int32_t ReadToToken(uint8_t *Out, uint32_t Outlen, uint8_t Token);
+
+	/*!< \overload int32_t ReadToken(char*, uint32_t, char); */
+	int32_t ReadToToken(char *Out, uint32_t OutLen, char Token);
 
 	/*!< \brief offset's the stream by n bytes.  returns true if success, false on failure(not enough data remains) */
 	bool OffsetStream(uint32_t Offset);

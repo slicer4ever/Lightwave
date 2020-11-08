@@ -110,7 +110,7 @@ template<uint32_t MaxBufferSize>
 class LWPacketGeneric : public LWPacket {
 public:
 	static LWPacketGeneric<MaxBufferSize> *Deserialize(LWByteBuffer *Buffer, uint32_t DeserializeType, LWPacket *Packet, LWAllocator &Allocator, LWPacketManager *Manager) {
-		LWPacketGeneric<MaxBufferSize> *Pack = Packet ? (LWPacketGeneric<MaxBufferSize>*)Packet : Allocator.Allocate<LWPacketGeneric<MaxBufferSize>>(0, nullptr, DeserializeType, 0);
+		LWPacketGeneric<MaxBufferSize> *Pack = Packet ? (LWPacketGeneric<MaxBufferSize>*)Packet : Allocator.Create<LWPacketGeneric<MaxBufferSize>>(0, nullptr, DeserializeType, 0);
 		LWPacket::Deserialize(Buffer, DeserializeType, Pack, Allocator, Manager);
 		uint32_t BufferSize = Buffer->Read<uint32_t>();
 		if (BufferSize > MaxBufferSize) return Pack;

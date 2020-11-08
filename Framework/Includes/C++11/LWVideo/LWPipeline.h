@@ -112,7 +112,7 @@ public:
 	LWPipeline &SetUniformBlock(uint32_t i, LWVideoBuffer *Buffer, uint32_t Offset = 0);
 
 	/*!< \brief searches for the specified Named uniform and set's the uniform block buffer if the named block is found. */
-	LWPipeline &SetUniformBlock(const LWText &Name, LWVideoBuffer *Buffer, uint32_t Offset = 0);
+	LWPipeline &SetUniformBlock(const LWUTF8Iterator &Name, LWVideoBuffer *Buffer, uint32_t Offset = 0);
 
 	/*!< \brief set's the index of the uniform block to the specified video buffer, and calculates the padded offset for the specified type. */
 	template<class Type>
@@ -122,7 +122,7 @@ public:
 
 	/*!< \brief set's the named block of the uniform block to the specified video buffer, and calculates the padded offset for the specified type. */
 	template<class Type>
-	LWPipeline &SetPaddedUniformBlock(const LWText &Name, LWVideoBuffer *Buffer, uint32_t Offset, LWVideoDriver *Driver) {
+	LWPipeline &SetPaddedUniformBlock(const LWUTF8Iterator &Name, LWVideoBuffer *Buffer, uint32_t Offset, LWVideoDriver *Driver) {
 		return SetUniformBlock(Name, Buffer, Driver->GetUniformBlockOffset<Type>(Offset));
 	}
 
@@ -145,10 +145,10 @@ public:
 	LWPipeline &SetResource(uint32_t i, LWTexture *Texture);
 	
 	/*!< \brief searches for the specified Named resource and set's the resource to the texture if the named resource is found. */
-	LWPipeline &SetResource(const LWText &Name, LWTexture *Texture);
+	LWPipeline &SetResource(const LWUTF8Iterator &Name, LWTexture *Texture);
 
 	/*!< \brief searches for the specified Named resource and set's the resource to the video buffer(uniform buffers/texturebuffer/shader storage object buffers) if the named resource is found. */
-	LWPipeline &SetResource(const LWText &Name, LWVideoBuffer *Buffer, uint32_t Offset = 0);
+	LWPipeline &SetResource(const LWUTF8Iterator &Name, LWVideoBuffer *Buffer, uint32_t Offset = 0);
 
 	/*!< \brief change's raster mode to enable/disable depth testing, and what comparison to use. */
 	LWPipeline &SetDepthMode(bool doDepthTest, uint64_t CompareMode);
@@ -205,13 +205,13 @@ public:
 	LWPipeline &ClearDirty(void);
 
 	/*!< \brief looks up all resources to find resource with specified name, returns -1 if not found. */
-	uint32_t FindResource(const LWText &Name);
+	uint32_t FindResource(const LWUTF8Iterator &Name);
 
 	/*!< \brief looks up all blocks to find a block with the specified name, returns -1 if not found. */
-	uint32_t FindBlock(const LWText &Name);
+	uint32_t FindBlock(const LWUTF8Iterator &Name);
 
 	/*!< \brief looks up all inputs to find a input with the specified name, returns -1 if not found. */
-	uint32_t FindInput(const LWText &Name);
+	uint32_t FindInput(const LWUTF8Iterator &Name);
 
 	/*!< \brief returns the pipeline resource object at the specified index(non mapped resource position). */
 	LWShaderResource &GetResource(uint32_t i);
@@ -294,7 +294,7 @@ public:
 	/*!< \brief returns the bias to be added to the depth buffer if DEPTH_BIAS is flagged. */
 	float GetBias(void) const;
 
-	/*!< \brief returns the bias scaling based on slopw to be added to the buffer if DEPTH_BIAS is flagged. */
+	/*!< \brief returns the bias scaling based on slope to be added to the buffer if DEPTH_BIAS is flagged. */
 	float GetSlopedBias(void) const;
 
 	/*!< \brief returns a unique hash for the pipeline based solely on the shader stages attached. */

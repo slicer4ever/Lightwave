@@ -316,7 +316,7 @@ LWAudioDriver::LWAudioDriver(void *UserData, LWAudioCallback FinishedCallback, L
 		State = pa_context_get_state(m_Context.m_Context);
 		if (State == PA_CONTEXT_READY) break;
 		else if (State == PA_CONTEXT_FAILED) {
-			std::cout << "AudioDriver State failed." << std::endl;
+			fmt::print("AudioDriver State failed.\n");
 			m_Flag |= Error;
 			break;
 		}

@@ -6,7 +6,13 @@
 #include <LWEJson.h>
 #include <LWCore/LWConcurrent/LWFIFO.h>
 
+struct LWEHttpRequest;
+
+typedef std::function<void(LWEHttpRequest&, const LWUTF8Iterator &Response)> LWEHttpResponseCallback;
+
 struct LWEHttpRequest {
+	static const uint32_t BodyMaxLength = 1024 * 256; //256kb default.
+	static const uint32_t HeadersMaxLength = 128;
 	enum {
 
 		GET = 0x0,
@@ -56,92 +62,70 @@ struct LWEHttpRequest {
 		BadGateway = 502
 	};
 
-	char m_Body[1024 * 256];
-	char m_Host[128];
-	char m_Path[128];
-	char m_Origin[128];
-	char m_Authorization[128];
-	char m_ContentType[128];
-	char m_TransferEncoding[128];
-	char m_SecWebSockKey[128];
-	char m_SecWebSockProto[128];
-	LWSocket *m_Socket;
-	void *m_UserData;
-	std::function<void(LWEHttpRequest &, const char *)> m_Callback;
-	uint32_t m_ContentLength;
-	uint32_t m_ChunkLength;
-	uint32_t m_WebSockVersion;
-	uint32_t m_Status;
-	uint32_t m_Flag;
-	uint16_t m_Port;
+	char8_t m_Body[BodyMaxLength]="";
+	char8_t m_Host[HeadersMaxLength]="";
+	char8_t m_Path[HeadersMaxLength]="";
+	char8_t m_Origin[HeadersMaxLength]="";
+	char8_t m_Authorization[HeadersMaxLength]="";
+	char8_t m_ContentType[HeadersMaxLength]="";
+	char8_t m_TransferEncoding[HeadersMaxLength]="";
+	char8_t m_SecWebSockKey[HeadersMaxLength]="";
+	char8_t m_SecWebSockProto[HeadersMaxLength]="";
+	LWSocket *m_Socket = nullptr;
+	void *m_UserData = nullptr;
+	std::function<void(LWEHttpRequest &, const LWUTF8Iterator &)> m_Callback = nullptr;
+	uint32_t m_ContentLength = 0;
+	uint32_t m_ChunkLength = 0;
+	uint32_t m_WebSockVersion = 0;
+	uint32_t m_Status = 0;
+	uint32_t m_Flag = 0;
+	uint16_t m_Port = 0;
 
-	static uint32_t Escape(const char *In, char *Buffer, uint32_t BufferLen);
+	static uint32_t MakeJSONQueryString(LWEJson &Json, char8_t *Buffer, uint32_t BufferLen);
 
-	static uint32_t EscapeURI(const char *In, char *Buffer, uint32_t BufferLen);
+	static uint32_t GZipDecompress(const char8_t *In, uint32_t InLen, char8_t *Buffer, uint32_t BufferLen);
 
-	static uint32_t UnEscape(const char *In, char *buffer, uint32_t BufferLen);
+	uint32_t Serialize(char8_t *Buffer, uint32_t BufferLen, const LWUTF8Iterator &UserAgent);
 
-	static uint32_t MakeJSONQueryString(LWEJson &Json, char *Buffer, uint32_t BufferLen);
+	bool Deserialize(const char8_t *Buffer, uint32_t Len);
 
-	static uint32_t GZipDecompress(const char *In, uint32_t InLen, char *Buffer, uint32_t BufferLen);
+	LWEHttpRequest &SetURI(const LWUTF8Iterator &URI);
 
-	/*!< \brief parses a uri and seperates it into 3 components: Hostname address of the domain, Path asked for on that domain, and leading protocol specefied, such that https://example.com/abc.html would get seperated into host: example.com protocol: https path: /abc.html, also supports specifying the port (i.e: https://example.com:100/abc.com well return the port of 100.
-		 \param URI the uri to be parsed.
-		 \param HostBuffer the buffer to store the host component.
-		 \param HostBufferSize the length of the buffer for storing the host component.
-		 \param HostBufferLen the actual length of the host buffer component(may be null).
-		 \param PathBuffer the buffer to store the path component.
-		 \param PathBufferSize the length of the buffer for storing the path component.
-		 \param PathBufferLen the actual length of the path buffer component(may be null).
-		 \param ProtocolBuffer the buffer to store the protocol component.
-		 \param ProtocolBufferSize the length of the buffer for storing the protocol component.
-		 \param ProtocolBufferLen the actual length of the protocol buffer component(may be null).
-		 \return the port, either deduced from the protocol(http=80, https=443, ws=80, wss=443) or as specified in the uri, otherwise 0 if unknown protocol.
-	*/
+	LWEHttpRequest &SetHost(const LWUTF8Iterator &Host);
 
-	static uint16_t ParseURI(const char *URI, char *HostBuffer, uint32_t HostBufferSize, uint32_t *HostBufferLen, char *PathBuffer, uint32_t PathBufferSize, uint32_t *PathBufferLen, char *ProtocolBuffer, uint32_t ProtocolBufferSize, uint32_t *ProtocolBufferLen);
+	LWEHttpRequest &SetPath(const LWUTF8Iterator &Path);
 
-	uint32_t Serialize(char *Buffer, uint32_t BufferLen, const char *UserAgent);
+	LWEHttpRequest &SetOrigin(const LWUTF8Iterator &Origin);
 
-	bool Deserialize(const char *Buffer, uint32_t Len);
+	LWEHttpRequest &SetWebSockKey(const LWUTF8Iterator &Key);
 
-	LWEHttpRequest &SetURI(const char *URI);
+	LWEHttpRequest &SetWebSockProto(const LWUTF8Iterator &Protocols);
 
-	LWEHttpRequest &SetURIf(const char *Fmt, ...);
+	LWEHttpRequest &SetAuthorization(const LWUTF8Iterator &Auth);
 
-	LWEHttpRequest &SetHost(const char *Host);
+	LWEHttpRequest &SetContentType(const LWUTF8Iterator &ContentType);
 
-	LWEHttpRequest &SetHostf(const char *Fmt, ...);
+	LWEHttpRequest &SetBody(const LWUTF8Iterator &Body);
 
-	LWEHttpRequest &SetPath(const char *Path);
+	LWUTF8Iterator GetBody(void) const;
 
-	LWEHttpRequest &SetPathf(const char *Fmt, ...);
+	LWUTF8Iterator GetHost(void) const;
 
-	LWEHttpRequest &SetOrigin(const char *Origin);
+	LWUTF8Iterator GetPath(void) const;
 
-	LWEHttpRequest &SetOriginf(const char *Fmt, ...);
+	LWUTF8Iterator GetOrigin(void) const;
 
-	LWEHttpRequest &SetWebSockKey(const char *Key);
+	LWUTF8Iterator GetAuthorization(void) const;
 
-	LWEHttpRequest &SetWebSockKeyf(const char *Fmt, ...);
+	LWUTF8Iterator GetContentType(void) const;
 
-	LWEHttpRequest &SetWebSockProto(const char *Protocols);
+	LWUTF8Iterator GetTransferEncoding(void) const;
 
-	LWEHttpRequest &SetWebSockProtof(const char *Fmt, ...);
+	LWUTF8Iterator GetSecWebSockKey(void) const;
 
-	LWEHttpRequest &SetAuthorization(const char *Auth);
+	LWUTF8Iterator GetSecWebSockProto(void) const;
 
-	LWEHttpRequest &SetAuthorizationf(const char *Fmt, ...);
-
-	LWEHttpRequest &SetContentType(const char *ContentType);
-
-	LWEHttpRequest &SetContentTypef(const char *Fmt, ...);
-
-	LWEHttpRequest &SetBody(const char *Body);
-
-	LWEHttpRequest &SetBodyf(const char *Fmt, ...);
-
-	LWEHttpRequest &SetCallback(std::function<void(LWEHttpRequest &, const char*)> Callback);
+	LWEHttpRequest &SetCallback(LWEHttpResponseCallback Callback);
 
 	LWEHttpRequest &SetMethod(uint32_t Method);
 
@@ -149,33 +133,37 @@ struct LWEHttpRequest {
 
 	LWEHttpRequest &SetCacheState(uint32_t CacheState);
 
-	uint32_t GetCacheState(void);
+	uint32_t GetCacheState(void) const;
 
-	uint32_t GetConnectionState(void);
+	uint32_t GetConnectionState(void) const;
 
-	bool CloseConnection(void);
+	bool CloseConnection(void) const;
 
-	bool KeepAliveConnection(void);
+	bool KeepAliveConnection(void) const;
 
-	bool UpgradeConnection(void);
+	bool UpgradeConnection(void) const;
 
-	uint32_t GetMethod(void);
+	uint32_t GetMethod(void) const;
 
-	uint32_t GetEncodeType(void);
+	uint32_t GetEncodeType(void) const;
 
-	uint32_t GetUpgradeType(void);
+	uint32_t GetUpgradeType(void) const;
+
+	bool isHeadersRead(void) const;
+
+	bool isResponseReady(void) const;
 
 	template<class T, class Y>
 	LWEHttpRequest &SetMethodCallback(T Inst, Y Method) {
 		return SetCallback(std::bind(&Method, Inst, std::placeholders::_1, std::placeholders::_2));
 	}
 
-	LWEHttpRequest(const char *URI, uint32_t Flag);
+	LWEHttpRequest(const LWUTF8Iterator &URI, uint32_t Flag);
 
-	LWEHttpRequest();
+	LWEHttpRequest() = default;
 };
 
-class LWEProtocolHttp : public LWProtocol {
+class LWEProtocolHttp : public virtual LWProtocol {
 public:
 	enum {
 		RequestBufferSize = 64
@@ -185,7 +173,7 @@ public:
 
 	virtual LWProtocol &SocketChanged(LWSocket &Prev, LWSocket &New, LWProtocolManager *Manager);
 
-	uint32_t Send(LWSocket &Socket, const char *Buffer, uint32_t Len);
+	virtual uint32_t Send(LWSocket &Socket, const char *Buffer, uint32_t Len);
 
 	bool ProcessRead(LWSocket &Socket, const char *Buffer, uint32_t Len);
 
@@ -197,27 +185,27 @@ public:
 
 	bool PushRequest(LWEHttpRequest &Request);
 
-	bool PushResponse(LWEHttpRequest &InRequest, const char *Response, uint32_t lStatus);
+	bool PushResponse(LWEHttpRequest &InRequest, const LWUTF8Iterator &Response, uint32_t lStatus);
 
 	bool GetNextRequest(LWEHttpRequest &Request);
 
 	bool GetNextFromPool(LWEHttpRequest **Request);
 
-	LWEProtocolHttp &SetAgentString(const char *Agent);
+	LWEProtocolHttp &SetAgentString(const LWUTF8Iterator &Agent);
 
-	LWEProtocolHttp &SetServerString(const char *Server);
+	LWEProtocolHttp &SetServerString(const LWUTF8Iterator &Server);
 
 	LWEProtocolHttp(uint32_t ProtocolID, LWProtocolManager *Manager);
 
-	LWEProtocolHttp();
+	LWEProtocolHttp() = default;
 protected:
-	char m_Agent[256];
-	char m_Server[256];
-	LWProtocolManager *m_Manager;
+	char8_t m_Agent[LWEHttpRequest::HeadersMaxLength]="";
+	char8_t m_Server[LWEHttpRequest::HeadersMaxLength]="";
+	LWProtocolManager *m_Manager = nullptr;
 	LWConcurrentFIFO<LWEHttpRequest, RequestBufferSize> m_Pool;
 	LWConcurrentFIFO<LWEHttpRequest, RequestBufferSize> m_OutRequests;
 	LWConcurrentFIFO<LWEHttpRequest, RequestBufferSize> m_InRequests;
-	uint32_t m_ProtocolID;
+	uint32_t m_ProtocolID = 0;
 };
 
 #endif

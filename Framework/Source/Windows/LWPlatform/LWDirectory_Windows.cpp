@@ -4,14 +4,14 @@
 #include <algorithm>
 #include <cstring>
 
-bool LWDirectory::DirExists(const LWText &DirectoryPath, const LWFileStream *ExistingStream){
-	char Buffer[256];
-	if (!LWFileStream::ParsePath(DirectoryPath, Buffer, sizeof(Buffer), ExistingStream)) return false;
-	uint32_t Len = (uint32_t)std::strlen(Buffer);
-	if (Len + 3 >= sizeof(Buffer)) return false;
-	if (Len != 0 && (*(Buffer + Len - 1) != '\\' || *(Buffer + Len - 1) != '/'))  *(Buffer + (Len++)) = '\\';
-	*(Buffer + (Len++)) = '*';
-	*(Buffer + (Len++)) = '\0'; 
+bool LWDirectory::DirExists(const LWUTF8Iterator &DirectoryPath, const LWFileStream *ExistingStream){
+	char Buffer[512];
+	uint32_t Len = ParsePath(DirectoryPath, Buffer, sizeof(Buffer), ExistingStream);
+	if (!Len || Len > sizeof(Buffer)-1) return false;
+	//Have to add a * to path for windows.
+	Buffer[Len-1] = '*';
+	Buffer[Len++] = '\0';
+
 	WIN32_FIND_DATA FileData;
 	HANDLE H = FindFirstFileA(Buffer, &FileData);
 	if (H == INVALID_HANDLE_VALUE) return false;
@@ -19,59 +19,30 @@ bool LWDirectory::DirExists(const LWText &DirectoryPath, const LWFileStream *Exi
 	return true;
 }
 
-bool LWDirectory::OpenDir(LWDirectory &DirObject, const LWText &DirectoryPath, LWAllocator &Allocator, const LWFileStream *ExistingStream){
-	char Buffer[256];
-	LWFile Files[LWMAXFILES];
-	if (!LWFileStream::ParsePath(DirectoryPath, Buffer, sizeof(Buffer), ExistingStream)) return false;
-	uint32_t Len = (uint32_t)std::strlen(Buffer);
-	if (Len + 3 >= sizeof(Buffer)) return false;
-	if (Len!=0 && (*(Buffer + Len - 1) != '\\' || *(Buffer + Len - 1) != '/'))  *(Buffer + (Len++)) = '\\';
-	*(Buffer + (Len++)) = '*';
-	*(Buffer + (Len++)) = '\0';
+bool LWDirectory::OpenDir(LWDirectory &DirObject, const LWUTF8Iterator &DirectoryPath, LWAllocator &Allocator, const LWFileStream *ExistingStream){
+	char8_t Buffer[512];
+	uint32_t Len = ParsePath(DirectoryPath, Buffer, sizeof(Buffer), ExistingStream);
+	if (!Len || Len > sizeof(Buffer)-1) return false;
+	Buffer[Len - 1] = '*';
+	Buffer[Len++] = '\0';
 	WIN32_FIND_DATA FileData;
 	HANDLE H = FindFirstFileA(Buffer, &FileData);
 	if (H == INVALID_HANDLE_VALUE) return false;
+	DirObject = LWDirectory(Buffer, Allocator);
 	uint32_t Count = 0;
-	for (; FindNextFile(H, &FileData) && Count<LWMAXFILES; Count++){
-		uint32_t Length = (uint32_t)std::strlen(FileData.cFileName)+1;
-		uint32_t BLen = sizeof(Files[Count].m_Name);
-		std::memcpy(Files[Count].m_Name, FileData.cFileName, std::min<uint32_t>(Length, BLen));
-		if (Length >= BLen) Files[Count].m_Name[BLen - 1] = '\0';
-		Files[Count].m_Flag = 0;
-		Files[Count].m_Size = (uint64_t)FileData.nFileSizeHigh << 32 | (uint64_t)FileData.nFileSizeLow;
-		Files[Count].m_Flag |= (FileData.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY) ? Directory : 0;
-		Files[Count].m_Flag |= (FileData.dwFileAttributes&FILE_ATTRIBUTE_HIDDEN) ? Hidden : 0;
-		Files[Count].m_Flag |= (FileData.dwFileAttributes&FILE_ATTRIBUTE_READONLY) ? ReadOnly : 0;
+	for (; FindNextFile(H, &FileData); ){
+		bool isDirectory = (FileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+		bool isHidden = (FileData.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) != 0;
+		bool isWriteable = (FileData.dwFileAttributes & FILE_ATTRIBUTE_READONLY) == 0;
+		DirObject.PushFile(LWFile((char8_t*)FileData.cFileName, (uint64_t)FileData.nFileSizeHigh << 32 | (uint64_t)FileData.nFileSizeLow, (isDirectory ? Directory : 0) | (isHidden ? Hidden : 0) | (isWriteable ? CanWrite : 0) | CanRead));
 	}
-	*(Buffer + (Len - 2)) = '\0';
-	DirObject = LWDirectory(LWText(Buffer), Files, Count, Allocator);
 	return true;
 	
 }
 
-bool LWDirectory::CreateDir(const LWText &DirectoryPath, const LWFileStream *ExistingStream, bool MakeParents){
-	char Buffer[256];
-	if (!LWFileStream::ParsePath(DirectoryPath.GetCharacters(), Buffer, sizeof(Buffer), ExistingStream)) return false;
-	if(MakeParents){
-		char *Last = nullptr;
-		for(char *P = Buffer; *P; P++){
-			if(*P=='/' || *P=='\\'){
-				if(Last){
-					char Prev = *(Last + 1);
-					*(Last + 1) = '\0';
-					if(!CreateDirectory(Buffer, nullptr)){
-						int Error = GetLastError();
-						if (Error != ERROR_ALREADY_EXISTS && Error != ERROR_ACCESS_DENIED) return false;
-					}
-					*(Last + 1) = Prev;
-				}
-				Last = P;
-			}
-		}
-	}
-	if(!CreateDirectory(Buffer, nullptr)){
-		if (GetLastError() != ERROR_ALREADY_EXISTS) return false;
-	}
-	return true;
+bool LWDirectory::CreateDir(const LWUTF8Iterator &DirectoryPath, bool isParentDir){
+	int Error = ERROR_ALREADY_EXISTS;
+	if (!CreateDirectory(*DirectoryPath.c_str<256>(), nullptr)) Error = GetLastError();
+	return Error == ERROR_ALREADY_EXISTS || (isParentDir && Error == ERROR_ACCESS_DENIED);
 }
 

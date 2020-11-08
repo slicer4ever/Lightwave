@@ -2,7 +2,7 @@
 #define LWALLOCATOR_H
 #include <memory>
 #include <new>
-#include <cstdint>
+#include "LWCore/LWTypes.h"
 
 /*! \defgroup LWAllocator LWAllocator
 	\ingroup LWCore
@@ -47,7 +47,7 @@ public:
 		\return a pointer to the memory allocated, or null if allocation was unsuccessful.
 	*/
 	template<class Type, typename... Args>
-	Type *Allocate(Args&&... Arg){
+	Type *Create(Args&&... Arg){
 		Type *Mem = (Type*)AllocateMemory(sizeof(Type));
 		if (!Mem) return Mem;
 		return new(Mem) Type(std::forward<Args>(Arg)...);
@@ -58,14 +58,13 @@ public:
 		\return a pointer to the memory allocated, or null if allocation was unsuccessful.
 	*/
 	template<class Type>
-	Type *AllocateArray(uint32_t Length){
+	Type *AllocateA(uint32_t Length){
 		Type *Mem = (Type*)AllocateMemory(sizeof(Type)*Length);
 		if (!Mem) return Mem;
 		if (!std::is_trivial<Type>::value) {
 			for (uint32_t i = 0; i < Length; i++) new(Mem + i) Type();
 		}
-		return Mem;
-		
+		return Mem;		
 	}
 
 	/*! \brief Deallocates the memory from the internal allocation buffer.
@@ -79,6 +78,12 @@ public:
 	uint32_t GetAllocatedBytes(void);
 protected:
 	uint32_t m_AllocatedBytes = 0; /*!< \brief the total number of bytes still allocated, this value does include the meta data that is also allocated with LWAllocators. */
+
+	/*!< \brief convenience function to get the environment for a piece of memory. */
+	template<class Type>
+	static Type *GetEnvironment(void *Memory) {
+		return (Type*)(((int8_t*)Memory) - sizeof(Type));
+	}
 
 	/*! \brief the allocate memory function which allocates not only the memory requested, but additional meta data for tracking allocations. 
 		\param Length the number of bytes to allocate.

@@ -3,7 +3,6 @@
 #include <LWCore/LWTypes.h>
 #include <LWCore/LWVector.h>
 #include <LWCore/LWMatrix.h>
-#include <LWCore/LWText.h>
 
 class Model;
 

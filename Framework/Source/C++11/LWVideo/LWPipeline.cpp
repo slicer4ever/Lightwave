@@ -1,5 +1,6 @@
 #include "LWVideo/LWPipeline.h"
-#include "LWCore/LWText.h"
+#include "LWCore/LWUnicode.h"
+#include "LWCore/LWCrypto.h"
 #include <cstdarg>
 
 
@@ -11,7 +12,7 @@ LWPipeline &LWPipeline::SetUniformBlock(uint32_t i, LWVideoBuffer *Buffer, uint3
 	return *this;
 }
 
-LWPipeline &LWPipeline::SetUniformBlock(const LWText &Name, LWVideoBuffer *Buffer, uint32_t Offset) {
+LWPipeline &LWPipeline::SetUniformBlock(const LWUTF8Iterator &Name, LWVideoBuffer *Buffer, uint32_t Offset) {
 	uint32_t i = FindBlock(Name);
 	if (i == -1) return *this;
 	return SetUniformBlock(Name, Buffer, Offset);
@@ -32,13 +33,13 @@ LWPipeline &LWPipeline::SetResource(uint32_t i, LWTexture *Texture) {
 	return *this;
 }
 
-LWPipeline &LWPipeline::SetResource(const LWText &Name, LWVideoBuffer *Buffer, uint32_t Offset) {
+LWPipeline &LWPipeline::SetResource(const LWUTF8Iterator &Name, LWVideoBuffer *Buffer, uint32_t Offset) {
 	uint32_t i = FindResource(Name);
 	if (i == -1) return *this;
 	return SetResource(i, Buffer, Offset);
 }
 
-LWPipeline &LWPipeline::SetResource(const LWText &Name, LWTexture *Texture) {
+LWPipeline &LWPipeline::SetResource(const LWUTF8Iterator &Name, LWTexture *Texture) {
 	uint32_t i = FindResource(Name);
 	if (i == -1) return *this;
 	return SetResource(i, Texture);
@@ -154,16 +155,16 @@ LWPipeline &LWPipeline::ClearDirty(void){
 	return *this;
 }
 
-uint32_t LWPipeline::FindResource(const LWText &Name) {
-	uint32_t Hash = Name.GetHash();
+uint32_t LWPipeline::FindResource(const LWUTF8Iterator &Name) {
+	uint32_t Hash = LWCrypto::HashFNV1A(Name);
 	for (uint32_t i = 0; i < m_ResourceCount; i++) {
 		if (Hash == m_ResourceList[m_ResourceMap[i]].m_NameHash) return i;
 	}
 	return -1;
 }
 
-uint32_t LWPipeline::FindBlock(const LWText &Name) {
-	uint32_t Hash = Name.GetHash();
+uint32_t LWPipeline::FindBlock(const LWUTF8Iterator &Name) {
+	uint32_t Hash = LWCrypto::HashFNV1A(Name);
 	for (uint32_t i = 0; i < m_BlockCount; i++) {
 		if (Hash == m_BlockList[m_BlockMap[i]].m_NameHash) return i;
 	}
@@ -171,8 +172,8 @@ uint32_t LWPipeline::FindBlock(const LWText &Name) {
 }
 
 
-uint32_t LWPipeline::FindInput(const LWText &Name) {
-	uint32_t Hash = Name.GetHash();
+uint32_t LWPipeline::FindInput(const LWUTF8Iterator &Name) {
+	uint32_t Hash = LWCrypto::HashFNV1A(Name);
 	for (uint32_t i = 0; i < m_InputCount; i++) {
 		if (Hash == m_InputList[i].m_NameHash) return i;
 	}
@@ -392,7 +393,7 @@ uint32_t LWPipeline::GetPipelineHash(void) {
 		if (m_ShaderStages[i]) Buffer[i] = m_ShaderStages[i]->GetShaderHash();
 		else Buffer[i] = 0;
 	}
-	m_PipelineHash = LWText::MakeHashb((char*)Buffer, sizeof(Buffer));
+	m_PipelineHash = LWCrypto::HashFNV1A((uint8_t*)Buffer, sizeof(Buffer));
 	return m_PipelineHash;
 }
 

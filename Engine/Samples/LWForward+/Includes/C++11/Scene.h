@@ -26,7 +26,7 @@ public:
 		MaxLights = 1024
 	};
 
-	static Scene *LoadGLTF(const LWText &Path, LWVideoDriver *Driver, LWAllocator &Allocator);
+	static Scene *LoadGLTF(const LWUTF8Iterator &Path, LWVideoDriver *Driver, LWAllocator &Allocator);
 
 	Scene &Update(float deltaTime);
 

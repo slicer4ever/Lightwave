@@ -177,7 +177,7 @@ bool LWKeyboard::ProcessSystemMessage(uint32_t MessageID, void *MessageData, uin
 
 	if (MessageID == WM_KEYUP || MessageID == WM_KEYDOWN || MessageID == WM_SYSKEYUP || MessageID == WM_SYSKEYDOWN) {
 		Key = Translate((uint32_t)M->wParam);
-		if (Key == LWKey::Unknown) std::cout << "Keycode: " << (uint32_t)M->wParam << std::endl;
+		if (Key == LWKey::Unknown) fmt::print("Keycode: {}\n", (uint32_t)M->wParam);
 	}
 	if (Key == LWKey::Unknown) return false;
 	SetKeyState((uint32_t)Key, Up);

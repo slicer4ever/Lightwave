@@ -1,13 +1,24 @@
 #include "LWNetwork/LWSocket.h"
-#include "LWCore/LWText.h"
+#include "LWCore/LWUnicode.h"
 #include "LWCore/LWByteBuffer.h"
 #include "LWCore/LWTimer.h"
 #include "LWPlatform/LWPlatform.h"
 #include "LWNetwork/LWProtocolManager.h"
 #include <iostream>
+#include <cassert>
+
+const char8_t *LWSocket::ProtocolNames[LWSocket::ProtocolCount] = { u8"https", u8"http", u8"wss", u8"ws", u8"ftp", u8"telnet", u8"ssh" };
+const uint32_t LWSocket::ProtocolPorts[LWSocket::ProtocolCount] = { 443, 80, 443, 80, 20, 23, 22 };
 
 uint32_t LWSocket::MakeIP(uint8_t First, uint8_t Second, uint8_t Third, uint8_t Fourth){
 	return First << 24 | (Second << 16) | (Third << 8) | Fourth;
+}
+
+uint32_t LWSocket::MakeIP(const LWUTF8Iterator &Address) {
+	uint32_t A, B, C, D;
+	if (sscanf(Address(), "%d.%d.%d.%d", &A, &B, &C, &D) != 4) return 0;
+	assert(A >= 0 && A <= 255 && B >= 0 && B <= 255 && C >= 0 && C <= 255 && D >= 0 && D <= 255);
+	return (A << 24) | (B << 16) | (C << 8) | D;
 }
 
 bool LWSocket::MakeAddress(uint32_t Address, char *Buffer, uint32_t BufferLen){
@@ -20,34 +31,122 @@ uint32_t LWSocket::LookUpAddress(uint32_t Address, uint32_t *IPBuffer, uint32_t 
 	return LookUpAddress(AddressBuffer, IPBuffer, IPBufferLen, Addresses, AddressLen);
 }
 
-uint32_t LWSocket::WriteDNSLabel(const char *Label, char *Buffer, uint32_t BufferLen) {
+uint32_t LWSocket::DecodeURI(const LWUTF8Iterator &URI, char8_t *Buffer, uint32_t BufferSize) {
+	char8_t *Last = Buffer + BufferSize;
 	uint32_t o = 0;
-	const char *P = Label;
-	const char *C = P;
-	for (; *C; C++) {
-		if (*C == '.') {
-			uint32_t Cnt = (uint32_t)(uintptr_t)(C - P);
-			if(o<BufferLen) Buffer[o] = (uint8_t)Cnt;
-			o++;
-			for (; P != C; P++) {
-				if (o < BufferLen) Buffer[o] = *P;
-				o++;
+	uint32_t HexID = 0;
+	LWUTF8Iterator C = URI;
+	for (; !C.AtEnd(); ++C) {
+		uint32_t CodePoint = *C;
+		uint32_t r = 0;
+		if (CodePoint == '%') {
+			if (sscanf(C.GetPosition(), "%%%2x", &HexID)) {
+				r = LWUTF8Iterator::EncodeCodePoint(Buffer, (uint32_t)(uintptr_t)(Last - Buffer), HexID);
+				C.Advance(2);
 			}
-			P++;
+		}
+		if (!r) r = LWUTF8Iterator::EncodeCodePoint(Buffer, (uint32_t)(uintptr_t)(Last - Buffer), CodePoint);
+		if (Buffer + r < Last) Buffer += r;
+		else Last = Buffer;
+		o += r;
+	}
+	if (BufferSize) {
+		if (Buffer == Last) while (LWUTF8Iterator::isTrailingCodeUnit(--Buffer)) {}
+		*Buffer = '\0';
+	}
+	return o + 1;
+}
+
+uint32_t LWSocket::EncodeURI(const LWUTF8Iterator &URI, char8_t *Buffer, uint32_t BufferSize) {
+	const uint32_t EncodeChars[] = { ' ', '!' };
+	const uint32_t EncodeCharCnt = sizeof(EncodeChars) / sizeof(uint32_t);
+	char8_t *Last = Buffer + BufferSize;
+	uint32_t o = 0;
+	LWUTF8Iterator C = URI;
+	for (; !C.AtEnd(); ++C) {
+		uint32_t CodePoint = *C;
+		bool needsEncoding = false;
+		for (uint32_t i = 0; i < EncodeCharCnt && !needsEncoding; i++) needsEncoding = CodePoint == EncodeChars[i];
+		uint32_t r = 0;
+		if (needsEncoding) r = snprintf(Buffer, (uint32_t)(uintptr_t)(Last - Buffer), "%%%x", CodePoint);
+		else r = LWUTF8Iterator::EncodeCodePoint(Buffer, (uint32_t)(uintptr_t)(Last - Buffer), CodePoint);
+		if (Buffer + r < Last) Buffer += r;
+		else Last = Buffer;
+		o += r;
+	}
+	if (BufferSize) {
+		if (Buffer == Last) while (LWUTF8Iterator::isTrailingCodeUnit(--Buffer)) {}
+		*Buffer = '\0';
+	}
+	return o + 1;
+}
+
+void LWSocket::SplitURI(const LWUTF8Iterator &URI, uint16_t &Port, LWUTF8Iterator &Domain, LWUTF8Iterator &Protocol, LWUTF8Iterator &Path) {
+	const char8_t TokenList[] = u8":/\\";
+	const char8_t ProtocolHeader[] = u8"://";
+	const uint16_t DefaultPort = 80;
+	LWUTF8Iterator TokenListIter = LWUTF8Iterator(TokenList, sizeof(TokenList));
+	Domain = Protocol = Path = LWUTF8Iterator();
+	Port = 0;
+	LWUTF8Iterator P = URI;
+	LWUTF8Iterator T = URI.NextTokens(TokenListIter, false);
+	if (*T == ':') { //Possible protocol or port specifier.
+		if (T.Compare(ProtocolHeader, 3)) { //At protocol portion:
+			Protocol = LWUTF8Iterator(URI, T);
+			T.Advance(3);
+			P = T;
+			T.AdvanceTokens(TokenListIter, false);
+		}
+		if (*T == ':') { //At port portion:
+			Domain = LWUTF8Iterator(P, T);
+			T.Advance(1);
+			sscanf((const char*)T.GetPosition(), "%hu", &Port);
+			P = T;
+			T.AdvanceTokens(TokenListIter, false);
 		}
 	}
-	if (P!=C) {
-		uint32_t Cnt = (uint32_t)(uintptr_t)(C - P);
-		if (o < BufferLen)	Buffer[o] = (uint8_t)Cnt;
-		o++;
-		for (; P != C; P++) {
-			if (o < BufferLen) Buffer[o] = *P;
+	if (!Domain.isInitialized()) Domain = LWUTF8Iterator(P, T);
+	if (*T == '/' || *T == '\\') {
+		T.Advance();
+		Path = LWUTF8Iterator(T.GetPosition(), URI.GetLast());
+	}
+
+	if (!Port) { //Decode protocol to port.
+		Port = DefaultPort;
+		uint32_t i = Protocol.CompareLista(ProtocolCount, ProtocolNames);
+		if (i != -1) Port = ProtocolPorts[i];
+	}
+	return;
+}
+
+uint32_t LWSocket::WriteDNSLabel(const LWUTF8Iterator &Label, char8_t *Buffer, uint32_t BufferSize) {
+	uint32_t o = 0;
+	char8_t *Last = Buffer + std::min<uint32_t>(BufferSize, BufferSize-1);
+	LWUTF8Iterator C = Label;
+	LWUTF8Iterator P = C;
+	for (; !C.AtEnd(); ++C) {
+		if (*C == '.') {
+			if (Buffer < Last) *Buffer++ = (char8_t)P.RawDistance(C);
 			o++;
+			for (; P != C; ++P) {
+				uint32_t r = LWUTF8Iterator::EncodeCodePoint(Buffer, (uint32_t)(uintptr_t)(Last - Buffer), *P);
+				if (Buffer + r < Last) Buffer += r;
+				else Last = Buffer;
+				o += r;
+			}
+			++P;
 		}
 	}
-	if (o < BufferLen) Buffer[o] = 0;
-	o++;
-	return o;
+	for (; P != C; ++P) {
+		if (Buffer < Last) *Buffer++ = (char8_t)P.RawDistance(C);
+		o++;
+		uint32_t r = LWUTF8Iterator::EncodeCodePoint(Buffer, (uint32_t)(uintptr_t)(Last - Buffer), *P);
+		if (Buffer + r < Last) Buffer += r;
+		else Last = Buffer;
+		o += r;
+	}
+	if (BufferSize) *Buffer = '\0';
+	return o + 1;
 }
 
 uint32_t LWSocket::ReadDNSLabel(const char *Response, const char *ResponseStart, char *Buffer, uint32_t BufferLen) {
@@ -98,8 +197,7 @@ uint32_t LWSocket::ReadDNSLabel(const char *Response, const char *ResponseStart,
 	return i+1;
 }
 
-
-uint32_t LWSocket::DNSQuery(const LWText &QueryName, uint16_t QueryType, char *Buffer, uint32_t BufferLen, uint32_t DNSIP) {
+uint32_t LWSocket::DNSQuery(const LWUTF8Iterator &QueryName, uint16_t QueryType, char *Buffer, uint32_t BufferLen, uint32_t DNSIP) {
 	const uint64_t TimeOutFreq = LWTimer::GetResolution() * 2;
 	char IPBuf[16];
 	char Query[1024];
@@ -111,10 +209,10 @@ uint32_t LWSocket::DNSQuery(const LWText &QueryName, uint16_t QueryType, char *B
 		if (!LookUpDNSServers(&DNSIP, 1)) return 0;
 	}
 	LWSocket::MakeAddress(DNSIP, IPBuf, sizeof(IPBuf));
-	//std::cout << "Querying server: " << IPBuf << std::endl;
 	LWSocket DNSSock;
-	if (LWSocket::CreateSocket(DNSSock, LWSocket::Udp, 0)) {
-		std::cout << "Failed to make socket!" << std::endl;
+	int32_t Err = LWSocket::CreateSocket(DNSSock, LWSocket::Udp, 0);
+	if(Err){
+		fmt::print("Failed to make socket: {}\n", Err);
 		return 0;
 	}
 	Set[0].fd = DNSSock.GetSocketDescriptor();
@@ -128,7 +226,7 @@ uint32_t LWSocket::DNSQuery(const LWText &QueryName, uint16_t QueryType, char *B
 	o += Buf.Write<uint16_t>(0);
 	o += Buf.Write<uint16_t>(0);
 	
-	uint32_t Len = WriteDNSLabel((const char*)QueryName.GetCharacters(), Query + Buf.GetPosition(), Buf.GetBufferSize() - Buf.GetPosition());
+	uint32_t Len = WriteDNSLabel(QueryName, Query + Buf.GetPosition(), Buf.GetBufferSize() - Buf.GetPosition());
 	Buf.OffsetPosition(Len);
 	o += Len;
 	o += Buf.Write<uint16_t>(QueryType);
@@ -144,11 +242,11 @@ uint32_t LWSocket::DNSQuery(const LWText &QueryName, uint16_t QueryType, char *B
 			return res;
 		}
 	}
-	std::cout << "DNS Query timed out." << std::endl;
+	fmt::print("DNS Query timed out.\n");
 	return 0;
 }
 
-uint32_t LWSocket::DNSQuery(const LWText *QueryNames, uint16_t *QueryTypes, uint32_t QueryCnt, char *Buffer, uint32_t BufferLen, uint32_t DNSIP) {
+uint32_t LWSocket::DNSQuery(const LWUTF8Iterator *QueryNames, uint16_t *QueryTypes, uint32_t QueryCnt, char *Buffer, uint32_t BufferLen, uint32_t DNSIP) {
 	const uint64_t TimeOutFreq = LWTimer::GetResolution() * 2;
 	char IPBuf[16];
 	char Query[1024];
@@ -160,10 +258,11 @@ uint32_t LWSocket::DNSQuery(const LWText *QueryNames, uint16_t *QueryTypes, uint
 		if (!LookUpDNSServers(&DNSIP, 1)) return 0;
 	}
 	LWSocket::MakeAddress(DNSIP, IPBuf, sizeof(IPBuf));
-	std::cout << "Querying server: " << IPBuf << std::endl;
+	fmt::print("Querying server: {}\n", IPBuf);
 	LWSocket DNSSock;
-	if (LWSocket::CreateSocket(DNSSock, LWSocket::Udp, 0)) {
-		std::cout << "Failed to make socket!" << std::endl;
+	int32_t Err = LWSocket::CreateSocket(DNSSock, LWSocket::Udp, 0);
+	if(Err) {
+		fmt::print("Failed to make socket: {}\n", Err);
 		return 0;
 	}
 	Set[0].fd = DNSSock.GetSocketDescriptor();
@@ -177,7 +276,7 @@ uint32_t LWSocket::DNSQuery(const LWText *QueryNames, uint16_t *QueryTypes, uint
 	o += Buf.Write<uint16_t>(0);
 	o += Buf.Write<uint16_t>(0);
 	for (uint32_t i = 0; i < QueryCnt; i++) {
-		uint32_t Len = WriteDNSLabel((const char*)QueryNames[i].GetCharacters(), Query + Buf.GetPosition(), Buf.GetBufferSize() - Buf.GetPosition());
+		uint32_t Len = WriteDNSLabel(QueryNames[i], Query + Buf.GetPosition(), Buf.GetBufferSize() - Buf.GetPosition());
 		Buf.OffsetPosition(Len);
 		o += Len;
 		o += Buf.Write<uint16_t>(QueryTypes[i]);
@@ -193,10 +292,9 @@ uint32_t LWSocket::DNSQuery(const LWText *QueryNames, uint16_t *QueryTypes, uint
 			return res;
 		}
 	}
-	std::cout << "DNS Query timed out." << std::endl;
+	fmt::print("DNS Query timed out.\n");
 	return 0;
 }
-
 
 uint32_t LWSocket::DNSParseSRVRecord(const char *Response, uint32_t ResponseLen, LWSRVRecord *RecordBuffer, uint32_t RecordBufferLen) {
 	LWByteBuffer Buffer((const int8_t*)Response, ResponseLen, LWByteBuffer::Network | LWByteBuffer::BufferNotOwned);
@@ -236,7 +334,7 @@ uint32_t LWSocket::DNSParseSRVRecord(const char *Response, uint32_t ResponseLen,
 			RecordBuffer[Cnt].m_Port = Port;
 			RecordBuffer[Cnt].m_Weight = (uint32_t)Weight;
 			RecordBuffer[Cnt].m_Priority = (uint32_t)Priority;
-			strncpy(RecordBuffer[Cnt].m_Address, SubBuffer, sizeof(RecordBuffer[Cnt].m_Address));
+			strlcpy(RecordBuffer[Cnt].m_Address, SubBuffer, sizeof(RecordBuffer[Cnt].m_Address));
 		}
 		Buffer.OffsetPosition(RLen);
 		Cnt++;
@@ -286,7 +384,7 @@ uint32_t LWSocket::CreateSocket(LWSocket &Socket, uint32_t RemoteIP, uint16_t Re
 	return CreateSocket(Socket, RemoteIP, RemotePort, 0, (Flag|LWSocket::Tcp)&~LWSocket::Udp, ProtocolID);
 }
 
-uint32_t LWSocket::CreateSocket(LWSocket &Socket, const LWText &Address, uint16_t RemotePort, uint32_t Flag, uint32_t ProtocolID){
+uint32_t LWSocket::CreateSocket(LWSocket &Socket, const LWUTF8Iterator &Address, uint16_t RemotePort, uint32_t Flag, uint32_t ProtocolID){
 	return CreateSocket(Socket, Address, RemotePort, 0, Flag, ProtocolID);
 }
 
@@ -323,6 +421,14 @@ LWSocket &LWSocket::operator = (LWSocket &&Other){
 LWSocket &LWSocket::MarkClosable(void){
 	m_Flag |= LWSocket::Closeable;
 	return *this;
+}
+
+bool LWSocket::isListener(void) const {
+	return (m_Flag & Listen) != 0;
+}
+
+bool LWSocket::isClosable(void) const {
+	return (m_Flag & Closeable) != 0;
 }
 
 uint32_t LWSocket::GetSocketDescriptor(void) const{

@@ -56,16 +56,16 @@ public:
 		 \param Environment the environment that we are looking for each module for(i.e: DirectX11, OpenGL3_2, etc).
 		 \param ModuleName the targeted module to find.
 		 \param DefinedCount the define list for the module to do either string replacement or #ifdef checks with.
-		 \param DefinedList the list of defined variables, will do string literal transform when encountering #Name in shader code, this is defined like so: "Name:Value".
+		 \param DefinedList the list of defined variables, List is expected to be a pair of Name, then followed by Value iterator(this can be a blank iterator if no value exists), count should be the total combined Name+Value pairs.
 		 \param ModuleBuffer the buffer to store resulting module.
 		 \param ModuleBufferLen the length of the buffer where the module will be stored.
 		 \note This function performs basic preparsing logic with #ifdef, #ifndef, and string replacement with #Name where name is a defined name, #module is used to find a target environment/module, the parameters for #module [Module] [Environments, ...]: (Module can be any of: Vertex, Pixel, Geometry, Compute, you can also combine them by adding a | between the two, such as Vertex|Pixel, note that their must be no spaces between the |).  (Environment, the supported environments, OpenGL4_5, DirectX11, OpenGL3_3, OpenGL2_1, etc.  multiple environments can be specified in order of appearance(i.e: OpenGL3_3 OpenGL4_5).
 		 \return the number number of bytes to store the module.
 	*/
-	static uint32_t FindModule(const char *ShaderCode, const char *Environment, const char *ModuleName, uint32_t DefinedCount, const char **DefinedList, char *ModuleBuffer, uint32_t ModuleBufferLen);
+	static uint32_t FindModule(const LWUTF8Iterator &ShaderCode, const LWUTF8Iterator &Environment, const LWUTF8Iterator &ModuleName, uint32_t DefinedCount, const LWUTF8Iterator *DefinedList, char8_t *ModuleBuffer, uint32_t ModuleBufferLen);
 
-	/*!< \brief performs analysis on Dx/openGL error's and inserts the offending line into the error buffer for outputting, since Lightwave supports files with multiple shader's this can make debugging error's in shader's problmatic, as such this function helps pinpoint the error's more quickly. */
-	static uint32_t PerformErrorAnalysis(const char *Source, char *ErrorBuffer, uint32_t ErrorBufferLength);
+	/*!< \brief performs analysis on Dx/openGL error's and inserts the offending line into the error buffer for outputting, since Lightwave supports files with multiple shader's this can make debugging error's in shader's problematic, as such this function helps pinpoint the error's more quickly. */
+	static uint32_t PerformErrorAnalysis(const LWUTF8Iterator &Source, char8_t *ErrorBuffer, uint32_t ErrorBufferLength);
 
 	/*! \brief process any window events the driver needs to know about. 
 		\return rather or not it is safe to continue rendering, if it is false, then the application should absolutely not issue any rendering commands.
@@ -168,7 +168,7 @@ public:
 	virtual bool SetRasterState(uint64_t Flags, float Bias, float SlopedScaleBias);
 
 	/*!< \brief loads a file from the specified path and passes the resulting buffer to ParseShader, allows for quick shader loading.  Internally uses a stack buffer of 32KB, if the file is larger then this, then the application must load it.  */
-	virtual LWShader *LoadShader(uint32_t ShaderType, const char *Path, LWAllocator &Allocator, uint32_t DefinedCount, const char **DefinedList, char *CompiledBuffer, char *ErrorBuffer, uint32_t *CompiledBufferLen, uint32_t ErrorBufferLen, LWFileStream *ExistingStream = nullptr);
+	virtual LWShader *LoadShader(uint32_t ShaderType, const LWUTF8Iterator &Path, LWAllocator &Allocator, uint32_t DefinedCount, const LWUTF8Iterator *DefinedList, char *CompiledBuffer, char8_t *ErrorBuffer, uint32_t &CompiledBufferLen, uint32_t ErrorBufferLen, LWFileStream *ExistingStream = nullptr);
 
 	/*!< \brief compiles a shader from a shared shader source buffer(using FindModule for the relevant driver).
 		 \param Source the source buffer to be parsed.
@@ -179,7 +179,7 @@ public:
 		 \note if the resulting shader is greater than 32KB then the result will be undefined, as such the application will have to implement it's own loading scheme.
 		 \note the modules come as either Vertex, Geometry, Pixel, or Compute.  for compiled variants CVertex, CGeometry, CPixel, or CCompute.  pre-compiled variants are searched for first, followed by the non-compiled variant.
 	*/
-	virtual LWShader *ParseShader(uint32_t ShaderType, const char *Source, LWAllocator &Allocator, uint32_t DefinedCount, const char **DefinedList, char *CompiledBuffer, char *ErrorBuffer, uint32_t *CompiledBufferLen, uint32_t ErrorBufferLen);
+	virtual LWShader *ParseShader(uint32_t ShaderType, const LWUTF8Iterator &Source, LWAllocator &Allocator, uint32_t DefinedCount, const LWUTF8Iterator *DefinedList, char *CompiledBuffer, char8_t *ErrorBuffer, uint32_t &CompiledBufferLen, uint32_t ErrorBufferLen);
 
 	/*!< \brief compiles shader code and create's a shader for a pipeline object. if CompiledBuffer is not null the compiled byte code is written out for storing to speed up future shader creations.  
 		 \param ShaderType the type of shader(vertex, pixel, geometry, compute) compute shaders are only supported on the latest api's
@@ -191,10 +191,10 @@ public:
 		 \param ErrorBufferLen the length of the errorbuffer to be written to.
 		 \note OpenGL2.1 + ES2.0 do not support true uniform buffers, as such their data layout for different Blocks should be placed into a struct, then the uniform declared as the struct type.  this allows LightWave to detect simulated structs by examing the naming scheme of each uniform, see sample shaders or LWFont embedded shader on how to arrange uniform buffers.  Lightwave does not support single uniform types but only buffers of data or textures/samplers.
 	*/
-	virtual LWShader *CreateShader(uint32_t ShaderType, const char *Source, LWAllocator &Allocator, char *CompiledBuffer, char *ErrorBuffer, uint32_t *CompiledBufferLen, uint32_t ErrorBufferLen);
+	virtual LWShader *CreateShader(uint32_t ShaderType, const LWUTF8Iterator &Source, LWAllocator &Allocator, char *CompiledBuffer, char8_t *ErrorBuffer, uint32_t &CompiledBufferLen, uint32_t ErrorBufferLen);
 
 	/*!< \brief creates a shader from the pre-compiled shader code.  */
-	virtual LWShader *CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledLen, LWAllocator &Allocator, char *ErrorBuffer, uint32_t ErrorBufferLen);
+	virtual LWShader *CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledLen, LWAllocator &Allocator, char8_t *ErrorBuffer, uint32_t ErrorBufferLen);
 
 
 	/*!< \brief constructs a pipeline object for use in drawing from the supplied shader stages. */
@@ -614,7 +614,7 @@ public:
 	/*!< \brief allocates an array of bytes for the padded type of length to occupy. */
 	template<class Type>
 	char *AllocatePaddedArray(uint32_t Length, LWAllocator &Allocator) {
-		return Allocator.AllocateArray<char>(GetUniformBlockPaddedSize(sizeof(Type))*Length);
+		return Allocator.AllocateA<char>(GetUniformBlockPaddedSize(sizeof(Type))*Length);
 	}
 
 	/*!< \brief calculates the uniform block's offset from the rawsize(taking into account how many uniform blocks are taken up by the struct.) */

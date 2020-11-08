@@ -1715,4 +1715,13 @@ struct LWMatrix2{
 	}
 };
 /*! @} */
+
+/*!< \brief implements libfmt Matrix4 output: */
+/*
+template<>
+template<class Type>
+struct fmt::formatter<LWMatrix4<Type>> {
+	*/
+
+
 #endif

@@ -13,7 +13,7 @@ LWVideoDriver_OpenGL2_1 *LWVideoDriver_OpenGL2_1::MakeVideoDriver(LWWindow *Wind
 	glXMakeCurrent(WinCon.m_Display, WinCon.m_Window, GLContext.m_GLContext);
 	XFree(Visual);
 	if (glewInit() != GLEW_OK) return nullptr;
-	if (GLEW_VERSION_2_1) return Window->GetAllocator()->Allocate<LWVideoDriver_OpenGL2_1>(Window, GLContext, 1);
+	if (GLEW_VERSION_2_1) return Window->GetAllocator()->Create<LWVideoDriver_OpenGL2_1>(Window, GLContext, 1);
 
 	glXMakeCurrent(WinCon.m_Display, 0, nullptr);
 	glXDestroyContext(WinCon.m_Display, GLContext.m_GLContext);

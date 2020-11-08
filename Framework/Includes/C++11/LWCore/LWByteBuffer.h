@@ -414,11 +414,24 @@ public:
 		return sizeof(Type) * 4;
 	}
 
-	/*! \brief writes a utf-8 text to the buffer stream. */
-	static int32_t WriteUTF8(const uint8_t *Text, int8_t *Buffer);
-
-	/*! \overload int32_t WriteUTF8(const char *Text, int8_t *Buffer) */
-	static int32_t WriteUTF8(const char *Text, int8_t *Buffer);
+	/*! \brief writes a utf-X encoded text to the buffer stream. */
+	template<class Type>
+	static int32_t WriteUTF(const LWUnicodeIterator<Type> &Iter, int8_t *Buffer) {
+		const Type *P = Iter();
+		const Type *L = Iter.GetLast();
+		int32_t o = 0;
+		uint32_t l = 0;
+		for (; *P && P != L; ++P) {
+			l = Write<Type>(*P, Buffer);
+			if (Buffer) Buffer += l;
+			o += l;
+		}
+		l = Write<Type>(0, Buffer);
+		if (Buffer) Buffer += l;
+		o += l;
+		if(o&1) o += Write<char>(0, Buffer);
+		return o;
+	}
 
 	/*!< \brief writes a null terminated string to buffer(including the null termination). */
 	static int32_t WriteText(const uint8_t *Text, int8_t *Buffer);
@@ -786,12 +799,26 @@ public:
 		return sizeof(Type)* 4;
 	}
 
-	/*! \brief writes a network encoded utf-8 string. */
-	static int32_t WriteNetworkUTF8(const uint8_t *Text, int8_t *Buffer);
-
-	/*! \overload int32_t WriteNetworkUTF8(const char *, int8_t *) */
-	static int32_t WriteNetworkUTF8(const char *Text, int8_t *Buffer);
-
+	/*! \brief writes a network encoded utfX string. */
+	template<class Type>
+	static int32_t WriteNetworkUTF(const LWUnicodeIterator<Type> &Iter, int8_t *Buffer) {
+		const Type *P = Iter();
+		const Type *L = Iter.GetLast();
+		uint32_t l = 0;
+		int32_t o = 0;
+		for (; *P && P != L; ++P) {
+			l = WriteNetwork<Type>(*P, Buffer);
+			if (Buffer) Buffer += l;
+			o += l;
+		}
+		l = WriteNetwork<Type>(0, Buffer);
+		o += l;
+		if (o & 1) {
+			if (Buffer) Buffer += l;
+			o += WriteNetwork<char>(0, Buffer);
+		}
+		return o;
+	}
 
 	/** \brief writes an host encoded number of values into buffer in network order.
 		\param Len the number of values expected to be written.
@@ -1091,19 +1118,30 @@ public:
 		return sizeof(Type) * 16;
 	}
 
-	/*! \brief reads back an utf8 string from the buffer, and stores it into Out.
-		\param Out the buffer to receive the utf-8 text.
-		\param OutLen the length of the out buffer for storage.
+	/*! \brief reads back an utf-X string from the buffer, and stores it into Out.
+		\param Out the buffer to receive the utf-X text.
+		\param OutLen the length of the out buffer(in Type) for storage.
 		\param Buffer the buffer to read back from.
 		\param BufferLen the length of the buffer, so that a buffer overflow on reading can't occur.
-		\return the raw length of the utf8 string(minus the null character)+2 bytes for the leading length identifier placed in front of the string.
-		\note to calculate the length Out needs to be to store the entire string, simply allocate an array of length return-1.
+		\return the raw byte length of the utfX string(plus the null character)+possible padding byte.
+		\note to calculate the length Out needs to be to store the entire string, simply allocate an array of length return/sizeof(Type).
 	*/
-	static int32_t ReadUTF8(uint8_t *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen);
-
-	/*! \overload int32_t ReadUTF8(const char *, uint32_t, const int8_t *, const uint32_t) */
-	static int32_t ReadUTF8(char *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen);
-	
+	template<class Type>
+	static int32_t ReadUTF(Type *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen) {
+		int8_t o = 0;
+		Type *oP = Out;
+		Type *oL = oP + std::min<uint32_t>(OutLen - 1, OutLen);
+		const Type *bP = (const Type*)Buffer;
+		const Type *bL = bP + BufferLen;
+		for (; bP != bL && *bP; ++bP) {
+			if (oP < oL) *oP++ = *bP;
+			o += sizeof(Type);
+		}
+		if (OutLen) *oP = 0;
+		o += sizeof(Type);
+		if (o & 1) o += 1; //skip padding if it was added.
+		return o;
+	}
 
 	/*!< \brief reads back an null terminated string from the buffer, and stores it into Out.
 		 \param Out the buffer to receive the null terminated text.
@@ -1365,20 +1403,30 @@ public:
 		return sizeof(Type)* 4;
 	}
 
-	/*! \brief reads back an network utf8 string from the buffer, and stores it into Out.
-		\param Out the buffer to receive the utf-8 text.
+	/*! \brief reads back an network utfX string from the buffer, and stores it into Out.
+		\param Out the buffer to receive the utfX text.
 		\param OutLen the length of the out buffer for storage.
 		\param Buffer the buffer to read back from.
 		\param BufferLen the length of the buffer, to prevent reading past the buffer.
-		\return the raw length of the utf8 string(minus the null character)+2 bytes for the leading length identifier placed in front of the string.
-		\note to calculate the length Out needs to be to store the entire string, simply allocate an array of length return-1.
+		\return the raw length of the utfX string(plus the null character)+possible padding byte.
+		\note to calculate the length Out needs to be to store the entire string, simply allocate an array of length return.
 	*/
-	static int32_t ReadNetworkUTF8(uint8_t *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen);
-
-	/*! \overload int32_t ReadNetwork(char *, uint32_t, const int8_t *, const uint32_t) */
-	static int32_t ReadNetworkUTF8(char *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen);
-
-
+	template<class Type>
+	static int32_t ReadNetworkUTF(Type *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen) {
+		int8_t o = 0;
+		Type *oP = Out;
+		Type *oL = oP + std::min<uint32_t>(OutLen - 1, OutLen);
+		const Type *bP = (const Type*)Buffer;
+		const Type *bL = bP + BufferLen;
+		for (; bP != bL && *bP; ++bP) {
+			if (oP < oL) *oP++ = *bP;
+			o += sizeof(Type);
+		}
+		if (OutLen) *oP = 0;
+		o += sizeof(Type);
+		if (o & 1) o += 1; //skip padding if it was added.
+		return o;
+	}
 
 	/*! \brief reads back an array of network encoded value from buffer and transforms it to host form.
 		\param Out the values to write to.
@@ -1726,11 +1774,18 @@ public:
 		m_BytesWritten += Len;
 		return Len;
 	}
-	/*! \brief writes a utf8 text string into the buffer. */
-	int32_t WriteUTF8(const uint8_t *Text);
 
-	/*! \overload int32_t WriteUTF8(const char *) */
-	int32_t WriteUTF8(const char *Text);
+	/*!< \brief write's a UTFx string to the buffer. */
+	template<class Type>
+	int32_t WriteUTF(const LWUnicodeIterator<Type> &Iter) {
+		typedef int32_t(*Func_T)(const LWUnicodeIterator<Type> &, int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::WriteUTF<Type>, LWByteBuffer::WriteNetworkUTF<Type> };
+		int32_t Length = Funcs[m_SelectedFunc](Iter, nullptr);
+		if (m_Position + Length > m_BufferSize) return Length;
+		m_Position += Funcs[m_SelectedFunc](Iter, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		m_BytesWritten += Length;
+		return Length;
+	}
 
 	/*!< \brief writes an null terminated text string into the buffer. */
 	int32_t WriteText(const uint8_t *Text);
@@ -2285,26 +2340,33 @@ public:
 		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
 	}
 
-	/*! \brief reads an utf8 string from the buffer.
+	/*! \brief reads an utfX string from the buffer.
 		\param Out the buffer to receive the text.
 		\param OutLen the length of the buffer to receive the text.
-		\sa int32_t ReadUTF8(int8_t *, uint32_t, const int8_t *)
+		\sa int32_t ReadUTF(int8_t *, uint32_t, const int8_t *)
 	*/
-	int32_t ReadUTF8(uint8_t *Out, uint32_t OutLen);
+	template<class Type>
+	int32_t ReadUTF(Type *Out, uint32_t OutLen) {
+		typedef int32_t(*Func_T)(Type *, uint32_t, const int8_t*, const uint32_t);
+		Func_T Funcs[] = { LWByteBuffer::ReadUTF<Type>, LWByteBuffer::ReadNetworkUTF<Type> };
+		int32_t Length = Funcs[m_SelectedFunc](Out, OutLen, m_ReadBuffer + m_Position, (uint32_t)(m_BufferSize - m_Position));
+		m_Position += Length;
+		return Length;
+	}
 
-	/*! \overload int32_t ReadUTF8(char *, uint32_t) */
-	int32_t ReadUTF8(char *Out, uint32_t OutLen);
-
-	/*! \brief reads an utf8 string from the buffer at position.
+	/*! \brief reads an utfX string from the buffer at position.
 		\param Out the buffer to receive the text.
 		\param OutLen the length of the buffer to receive the text.
 		\param Position the position of the buffer to read from.
-		\sa int32_t ReadUTF8(int8_t *, uint32_t, const int8_t *)
+		\sa int32_t ReadUTF(int8_t *, uint32_t, const int8_t *)
 	*/
-	int32_t ReadUTF8(uint8_t *Out, uint32_t OutLen, int32_t Position);
-
-	/*! \overload int32_t ReadUTF8(char *, uint32_t, uint32_t) */
-	int32_t ReadUTF8(char *Out, uint32_t OutLen, int32_t Position);
+	template<class Type>
+	int32_t ReadUTF(Type *Out, uint32_t OutLen, int32_t Position) {
+		typedef int32_t(*Func_T)(Type *, uint32_t, const int8_t*, const uint32_t);
+		Func_T Funcs[] = { LWByteBuffer::ReadUTF<Type>, LWByteBuffer::ReadNetworkUTF<Type> };
+		if (Position >= m_BufferSize) return 0;
+		return Funcs[m_SelectedFunc](Out, OutLen, m_ReadBuffer + Position, (uint32_t)(m_BufferSize - Position));
+	}
 
 	/*!< \brief reads a null terminated string from the buffer.
 	\param Out the buffer to receive the text.

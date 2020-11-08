@@ -4,31 +4,31 @@
 
 /*! \cond */
 struct alignas(16) LWAllocatorEnvironmentDebug {
-	alignas(8) void *m_NextAlloc;
+	void *m_NextAlloc;
 	alignas(8) void *m_PrevAlloc;
+	alignas(8) uint32_t m_Size;
 	uint32_t m_AllocID;
-	uint32_t m_Size;
 	alignas(8) LWAllocator *m_Allocator;
 };
 /*! \endcond */
 
 void LWAllocator_DefaultDebug::OutputUnfreedIDs(void) {
 	if (!m_AllocatedBytes) {
-		std::cout << "No leaks detected." << std::endl;
+		fmt::print("No leaks detected.\n");
 		return;
 	}
 	if (!m_FirstAllocation) {
-		std::cout << "Leak detected: " << m_AllocatedBytes << " However allocator detector failed." << std::endl;
+		fmt::print("Leak detected: {} However allocator detector failed.\n", m_AllocatedBytes);
 		return;
 	}
-	std::cout << "Remaining: " << m_AllocatedBytes << std::endl;
+	fmt::print("Remaining: {}\n", m_AllocatedBytes);
 	uint32_t c = 0;
 	LWAllocatorEnvironmentDebug *A = (LWAllocatorEnvironmentDebug*)m_FirstAllocation;
 	for (; A; A = (LWAllocatorEnvironmentDebug*)A->m_NextAlloc) {
-		std::cout << "MemoryID: " << A->m_AllocID << " Allocated: " << A->m_Size << std::endl;
+		fmt::print("MemoryID: {} Allocated: {}\n", A->m_AllocID, A->m_Size);
 		c += (A->m_Size+sizeof(LWAllocatorEnvironmentDebug));
 	}
-	if (c != m_AllocatedBytes) std::cout << "Error, untracked memory lost." << std::endl;
+	if (c != m_AllocatedBytes) fmt::print("Error, untracked memory lost.\n");
 	return;
 }
 

@@ -1,7 +1,7 @@
 #ifndef LWEASSET_H
 #define LWEASSET_H
 #include <LWCore/LWTypes.h>
-#include <LWCore/LWText.h>
+#include <LWCore/LWUnicode.h>
 #include <LWVideo/LWTypes.h>
 #include <LWAudio/LWTypes.h>
 #include <LWVideo/LWFont.h>
@@ -27,39 +27,33 @@ public:
 		VideoBuffer
 	};
 
-	LWTexture *AsTexture(void);
-
-	LWFont *AsFont(void);
-
-	LWShader *AsShader(void);
-
-	LWEVideoPlayer *AsVideoPlayer(void);
-
-	LWAudioStream *AsAudioStream(void);
-
-	LWVideoBuffer *AsVideoBuffer(void);
-
-	LWPipeline *AsPipeline(void);
+	template<class Type>
+	Type *As(void) {
+		return (Type*)m_Asset;
+	}
 
 	void *GetAsset(void);
 
-	const char *GetAssetPath(void);
+	LWUTF8Iterator GetAssetPath(void) const;
 
-	uint32_t GetType(void);
+	uint32_t GetType(void) const;
 
-	LWEAsset(uint32_t Type, void *Asset, const char *AssetPath);
+	void Release(LWVideoDriver *Driver);
+
+	LWEAsset(uint32_t Type, void *Asset, const LWUTF8Iterator &AssetPath);
 
 	LWEAsset();
+
 private:
-	char m_AssetPath[256];
-	uint32_t m_Type;
-	void *m_Asset;
+	char8_t m_AssetPath[256]="";
+	uint32_t m_Type = 0;
+	void *m_Asset = nullptr;
 };
 
 class LWEAssetManager {
 public:
 	enum {
-		MaxAssets = 256
+		AssetPoolSize = 256
 	};
 	static bool XMLParser(LWEXMLNode *N, void *UserData, LWEXML *XML);
 
@@ -79,31 +73,26 @@ public:
 	
 	static bool XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM);
 
-	LWEAsset *GetAsset(const LWText &Name);
+	LWEAsset *GetAsset(const LWUTF8Iterator &Name);
 
 	template<class Type>
-	Type *GetAsset(const LWText &Name) {
+	Type *GetAsset(const LWUTF8Iterator &Name) {
 		LWEAsset *A = GetAsset(Name);
 		if (!A) return nullptr;
-		if (typeid(Type) == typeid(LWTexture)) return (A->GetType() == LWEAsset::Texture) ? (Type*)A->GetAsset() : nullptr;
-		else if (typeid(Type) == typeid(LWFont)) return (A->GetType() == LWEAsset::Font) ? (Type*)A->GetAsset() : nullptr;
-		else if (typeid(Type) == typeid(LWShader)) return (A->GetType() == LWEAsset::Shader) ? (Type*)A->GetAsset() : nullptr;
-		else if (typeid(Type) == typeid(LWPipeline)) return (A->GetType() == LWEAsset::Pipeline) ? (Type*)A->GetAsset() : nullptr;
-		else if (typeid(Type) == typeid(LWAudioStream)) return (A->GetType() == LWEAsset::AudioStream) ? (Type*)A->GetAsset() : nullptr;
-		else if (typeid(Type) == typeid(LWEVideoPlayer)) return (A->GetType() == LWEAsset::Video) ? (Type*)A->GetAsset() : nullptr;
-		else if (typeid(Type) == typeid(LWVideoBuffer)) return (A->GetType() == LWEAsset::VideoBuffer) ? (Type*)A->GetAsset() : nullptr;
-		return nullptr;
+		return A->As<Type>();
 	}
 
-	bool InsertAsset(const LWText &Name, void *Asset, uint32_t AssetType, const char *AssetPath);
+	bool InsertAsset(const LWUTF8Iterator &Name, const LWEAsset &A);
 
-	bool InsertAssetReference(const LWText &Name, const LWText &RefName);
+	bool InsertAsset(const LWUTF8Iterator &Name, void *Asset, uint32_t AssetType, const LWUTF8Iterator &AssetPath);
+
+	bool InsertAssetReference(const LWUTF8Iterator &Name, const LWUTF8Iterator &RefName);
 
 	LWVideoDriver *GetDriver(void);
 
 	LWELocalization *GetLocalization(void);
 
-	LWAllocator *GetAllocator(void);
+	LWAllocator &GetAllocator(void);
 
 	LWEAsset *GetAsset(uint32_t i);
 
@@ -113,12 +102,14 @@ public:
 
 	~LWEAssetManager();
 private:
-	LWEAsset m_AssetTable[MaxAssets];
+
+	LWEAsset **m_AssetPools = nullptr;
 	std::map<uint32_t, LWEAsset*> m_AssetMap;
-	LWELocalization *m_Localization;
-	LWVideoDriver *m_Driver;
-	LWAllocator *m_Allocator;
-	uint32_t m_AssetCount;
+	LWAllocator &m_Allocator;
+	LWELocalization *m_Localization = nullptr;
+	LWVideoDriver *m_Driver = nullptr;
+	uint32_t m_AssetCount = 0;
+	uint32_t m_PoolCount = 0;
 };
 
 #endif

@@ -3,12 +3,17 @@
 #include <LWNetwork/LWProtocol.h>
 #include <LWNetwork/LWProtocolManager.h>
 #include <LWCore/LWConcurrent/LWFIFO.h>
+#include <LWCore/LWUnicode.h>
 #include <functional>
 
 #define LWEWEBSOCKET_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 #define LWEWEBSOCKET_SUPPVER 13
 
 struct LWEWebSocket;
+
+typedef std::function<bool(LWSocket &, LWEWebSocket*, LWProtocolManager*)> LWEWebSocketClosedCallback;
+typedef std::function<void(LWSocket &, LWSocket &, LWEWebSocket*, LWProtocolManager*)> LWEWebSocketChangedCallback;
+
 
 struct LWEWebPacket {
 	enum {
@@ -20,13 +25,13 @@ struct LWEWebPacket {
 		CONTROL_CONNECT=0x4000,
 		CONTROL_FINISHED=0x8000,
 	};
-	char *m_Data;
-	uint32_t m_DataLen;
-	uint32_t m_DataPos;
-	uint32_t m_FramePos;
-	uint32_t m_ControlFlag;
-	uint32_t m_Mask;
-	LWEWebSocket *m_WebSocket;
+	char *m_Data = nullptr;
+	uint32_t m_DataLen = 0;
+	uint32_t m_DataPos = 0;
+	uint32_t m_FramePos = 0;
+	uint32_t m_ControlFlag = 0;
+	uint32_t m_Mask = 0;
+	LWEWebSocket *m_WebSocket = nullptr;
 
 	uint32_t Deserialize(const char *Buffer, uint32_t BufferLen, LWAllocator &Allocator);
 
@@ -42,7 +47,7 @@ struct LWEWebPacket {
 
 	LWEWebPacket &operator = (const LWEWebPacket &Other);
 	
-	LWEWebPacket();
+	LWEWebPacket() = default;
 
 	LWEWebPacket(LWEWebPacket &&Other);
 
@@ -52,58 +57,55 @@ struct LWEWebPacket {
 };
 
 struct LWEWebSocket {
+	static const uint32_t HeaderMaxLength = 128;
 	enum {
 		CONNECTED_CLIENT = 0,
 		CONNECTED_SERVER,
 		CONNECTING_CLIENT,
 		CONNECTING_SERVER,
 	};
-	char m_Host[128];
-	char m_Path[128];
-	char m_Origin[128];
-	char m_SecKey[128];
-	char m_SecProtocols[128];
+	char8_t m_Host[HeaderMaxLength]="";
+	char8_t m_Path[HeaderMaxLength]="";
+	char8_t m_Origin[HeaderMaxLength]="";
+	char8_t m_SecKey[HeaderMaxLength]="";
+	char8_t m_SecProtocols[HeaderMaxLength]="";
 	LWEWebPacket m_ActivePacket;
-	LWSocket *m_Socket;
-	uint32_t m_Flag;
-	uint16_t m_Port;
+	LWSocket *m_Socket = nullptr;
+	uint32_t m_Flag = 0;
+	uint16_t m_Port = 80;
 
-	LWEWebSocket &SetURI(const char *URI);
+	LWEWebSocket &SetURI(const LWUTF8Iterator &URI);
 
-	LWEWebSocket &SetURIf(const char *Fmt, ...);
+	LWEWebSocket &SetHost(const LWUTF8Iterator &Host);
 
-	LWEWebSocket &SetHost(const char *Host);
+	LWEWebSocket &SetPath(const LWUTF8Iterator &Path);
 
-	LWEWebSocket &SetHostf(const char *Fmt, ...);
+	LWEWebSocket &SetOrigin(const LWUTF8Iterator &Origin);
 
-	LWEWebSocket &SetPath(const char *Path);
+	LWEWebSocket &SetSecKey(const LWUTF8Iterator &Key);
 
-	LWEWebSocket &SetPathf(const char *Fmt, ...);
-
-	LWEWebSocket &SetOrigin(const char *Origin);
-
-	LWEWebSocket &SetOriginf(const char *Fmt, ...);
-
-	LWEWebSocket &SetSecKey(const char *Key);
-
-	LWEWebSocket &SetSecKeyf(const char *Fmt, ...);
-
-	LWEWebSocket &SetSecProtocols(const char *Protocols);
-
-	LWEWebSocket &SetSecProtocolsf(const char *Fmt, ...);
+	LWEWebSocket &SetSecProtocols(const LWUTF8Iterator &Protocols);
 
 	LWEWebSocket &GenerateKey(uint32_t seed);
+
+	LWUTF8Iterator GetHost(void) const;
+
+	LWUTF8Iterator GetPath(void) const;
+
+	LWUTF8Iterator GetOrigin(void) const;
+
+	LWUTF8Iterator GetSecKey(void) const;
+
+	LWUTF8Iterator GetSecProtocols(void) const;
 
 	uint32_t GetConnectStatus(void);
 
 	bool IsConnected(void);
 
-	LWEWebSocket(const char *URI, const char *Origin = nullptr);
-
-	~LWEWebSocket();
+	LWEWebSocket(const LWUTF8Iterator &URI, const LWUTF8Iterator &Origin = LWUTF8Iterator());
 };
 
-class LWEProtocolWebSocket : public LWProtocol {
+class LWEProtocolWebSocket : virtual public LWProtocol {
 public:
 	enum {
 		PacketBufferSize = 64
@@ -114,27 +116,27 @@ public:
 
 	virtual LWProtocol &SocketChanged(LWSocket &Prev, LWSocket &New, LWProtocolManager *Manager);
 
-	bool Send(LWSocket &Socket, const char *Buffer, uint32_t Len);
+	virtual uint32_t Send(LWSocket &Socket, const char *Buffer, uint32_t Len);
 
 	bool ProcessRead(LWSocket &Socket, const char *Buffer, uint32_t BufferLen);
 
 	LWEProtocolWebSocket &ProcessOutPackets(void);
 
-	LWEWebSocket *OpenSocket(const char *URI, uint32_t ProtocolID, const char *Origin = nullptr);
+	LWEWebSocket *OpenSocket(const LWUTF8Iterator &URI, uint32_t ProtocolID, const LWUTF8Iterator &Origin = LWUTF8Iterator());
 
 	bool PushOutPacket(const char *Buffer, uint32_t BufferLen, LWEWebSocket *Socket, uint32_t ControlFlag = LWEWebPacket::CONTROL_BINARY);
 
 	bool GetNextPacket(LWEWebPacket &Packet);
 
-	LWEProtocolWebSocket &SetServer(const char *Server);
+	LWEProtocolWebSocket &SetServer(const LWUTF8Iterator &Server);
 
-	LWEProtocolWebSocket &SetUserAgent(const char *Agent);
+	LWEProtocolWebSocket &SetUserAgent(const LWUTF8Iterator &Agent);
 
-	LWEProtocolWebSocket &SetSubProtocol(const char *SubProtocol);
+	LWEProtocolWebSocket &SetSubProtocol(const LWUTF8Iterator &SubProtocol);
 
-	LWEProtocolWebSocket &SetWebSocketClosedCallback(std::function<bool(LWSocket &, LWEWebSocket*, LWProtocolManager*)> WebSocketClosedCallback);
+	LWEProtocolWebSocket &SetWebSocketClosedCallback(LWEWebSocketClosedCallback WebSocketClosedCallback);
 
-	LWEProtocolWebSocket &SetWebSocketChangedCallback(std::function<void(LWSocket &, LWSocket&, LWEWebSocket*, LWProtocolManager*)> WebSocketChangedCallback);
+	LWEProtocolWebSocket &SetWebSocketChangedCallback(LWEWebSocketChangedCallback WebSocketChangedCallback);
 
 	template<class T, class C>
 	LWEProtocolWebSocket &SetWebSocketClosedCallbackMethod(C Method, T *Obj) {
@@ -149,18 +151,18 @@ public:
 	LWEProtocolWebSocket(uint32_t ProtocolID, LWAllocator &Allocator, LWProtocolManager *Manager);
 
 protected:
-	char m_Server[256];
-	char m_UserAgent[256];
-	char m_SubProtocol[256];
+	char m_Server[LWEWebSocket::HeaderMaxLength]="";
+	char m_UserAgent[LWEWebSocket::HeaderMaxLength]="";
+	char m_SubProtocol[LWEWebSocket::HeaderMaxLength]="";
 	LWConcurrentFIFO<LWEWebPacket, PacketBufferSize> m_OutPackets;
 	LWConcurrentFIFO<LWEWebPacket, PacketBufferSize> m_InPackets;
 
-	std::function<bool(LWSocket &, LWEWebSocket*, LWProtocolManager*)> m_WebSocketClosedCallback;
-	std::function<void(LWSocket &, LWSocket &, LWEWebSocket*, LWProtocolManager*)> m_WebSocketChangedCallback;
-	LWProtocolManager *m_Manager;
+	LWEWebSocketClosedCallback m_WebSocketClosedCallback = nullptr;
+	LWEWebSocketChangedCallback m_WebSocketChangedCallback = nullptr;
+	LWProtocolManager *m_Manager = nullptr;
 	LWAllocator &m_Allocator;
-	uint32_t m_ProtocolID;
-	uint32_t m_KeySeed;
+	uint32_t m_ProtocolID = 0;
+	uint32_t m_KeySeed = 0;
 };
 
 #endif

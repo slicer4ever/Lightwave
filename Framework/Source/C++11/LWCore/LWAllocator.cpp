@@ -2,20 +2,20 @@
 
 /*! \cond */
 struct alignas(16) LWAllocatorEnvironment{
-	uint32_t m_Pad;
 	uint32_t m_Size;
+	uint32_t m_Pad;
 	alignas(8) LWAllocator *m_Allocator;
 };
 /*! \endcond */
 
 LWAllocator *LWAllocator::GetAllocator(void *Memory){
-	LWAllocatorEnvironment *Enviroment = (LWAllocatorEnvironment *)(((int8_t*)Memory) - sizeof(LWAllocatorEnvironment));
-	return Enviroment->m_Allocator;
+	auto Env = GetEnvironment<LWAllocatorEnvironment>(Memory);
+	return Env->m_Allocator;
 }
 
 uint32_t LWAllocator::GetAllocationSize(void *Memory){
-	LWAllocatorEnvironment *Enviroment = (LWAllocatorEnvironment *)(((int8_t*)Memory) - sizeof(LWAllocatorEnvironment));
-	return Enviroment->m_Size;
+	auto Env = GetEnvironment<LWAllocatorEnvironment>(Memory);
+	return Env->m_Size;
 }
 
 uint32_t LWAllocator::GetAllocatedBytes(void){

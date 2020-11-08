@@ -1,6 +1,5 @@
 #ifndef LWPLATFORM_IOS_H
 #define LWPLATFORM_IOS_H
-
 #import <UIKit/UIKit.h>
 #import <CoreMotion/CoreMotion.h>
 #include "LWCore/LWTypes.h"

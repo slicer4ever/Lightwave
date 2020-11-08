@@ -141,17 +141,19 @@ struct LWEGLTFAccessorView {
 struct LWEGLTFBuffer {
 	static bool ParseJSON(LWEGLTFBuffer &Buf, LWEJson &J, LWEJObject *Obj, LWAllocator &Allocator, LWFileStream &FileStream, const char *BinChunk);
 
+	LWUTF8Iterator GetName(void) const;
+
 	LWEGLTFBuffer &operator = (LWEGLTFBuffer &&O);
 
 	LWEGLTFBuffer() = default;
 
 	LWEGLTFBuffer(LWEGLTFBuffer &&O);
 
-	LWEGLTFBuffer(const char *Name, uint8_t *Buffer, uint32_t Length);
+	LWEGLTFBuffer(const LWUTF8Iterator &Name, uint8_t *Buffer, uint32_t Length);
 
 	~LWEGLTFBuffer();
 
-	char m_Name[256];
+	char8_t m_Name[256];
 	uint32_t m_NameHash;
 	uint8_t *m_Buffer = nullptr;
 	uint32_t m_Length = 0;
@@ -210,15 +212,17 @@ struct LWEGLTFCamera {
 	
 	static bool ParseJSON(LWEGLTFCamera &Camera, LWEJson &J, LWEJObject *Obj);
 
+	LWUTF8Iterator GetName(void) const;
+
 	LWMatrix4f GetMatrix(void);
 
 	LWMatrix4f GetMatrix(float Aspect);
 
-	LWEGLTFCamera(const char *Name, uint32_t CameraType);
+	LWEGLTFCamera(const LWUTF8Iterator &Name, uint32_t CameraType);
 
 	LWEGLTFCamera() = default;
 
-	char m_Name[256];
+	char8_t m_Name[256];
 	LWEGLTFCameraOrtho m_Ortho;
 	LWEGLTFCameraPerspective m_Perspective;
 	uint32_t m_NameHash;
@@ -267,11 +271,13 @@ struct LWEGLTFPrimitive {
 struct LWEGLTFMesh {
 	static bool ParseJSON(LWEGLTFMesh &Mesh, LWEJson &J, LWEJObject *Obj);
 
-	LWEGLTFMesh(const char *Name, uint32_t PrimitiveCount);
+	LWUTF8Iterator GetName(void) const;
+
+	LWEGLTFMesh(const LWUTF8Iterator &Name, uint32_t PrimitiveCount);
 
 	LWEGLTFMesh() = default;
 
-	char m_Name[256];
+	char8_t m_Name[256];
 	uint32_t m_NameHash;
 	std::vector<LWEGLTFPrimitive> m_Primitives;
 };
@@ -284,12 +290,16 @@ struct LWEGLTFImage {
 
 	static bool ParseJSON(LWEGLTFImage &Img, LWEJson &J, LWEJObject *Obj, LWFileStream &Stream);
 
+	LWUTF8Iterator GetName(void) const;
+
+	LWUTF8Iterator GetURI(void) const;
+
 	LWEGLTFImage() = default;
 
-	LWEGLTFImage(const char *Name, const char *URI, uint32_t MimeType, uint32_t BufferView);
+	LWEGLTFImage(const LWUTF8Iterator &Name, const LWUTF8Iterator &URI, uint32_t MimeType, uint32_t BufferView);
 
-	char m_Name[256];
-	char m_URI[256];
+	char8_t m_Name[256];
+	char8_t m_URI[256];
 	uint32_t m_NameHash;
 	uint32_t m_BufferView = -1;
 	uint32_t m_MimeType = 0;
@@ -298,11 +308,13 @@ struct LWEGLTFImage {
 struct LWEGLTFTexture {
 	static bool ParseJSON(LWEGLTFTexture &Tex, LWEJson &J, LWEJObject *Obj);
 
+	LWUTF8Iterator GetName(void) const;
+
 	LWEGLTFTexture() = default;
 
-	LWEGLTFTexture(const char *Name, uint32_t ImageID, uint32_t SamplerFlag);
+	LWEGLTFTexture(const LWUTF8Iterator &Name, uint32_t ImageID, uint32_t SamplerFlag);
 
-	char m_Name[256];
+	char8_t m_Name[256];
 	uint32_t m_NameHash;
 	uint32_t m_ImageID;
 	uint32_t m_SamplerFlag;
@@ -371,11 +383,13 @@ struct LWEGLTFMaterial {
 
 	uint32_t GetType(void) const;
 
-	LWEGLTFMaterial(const char *Name);
+	LWUTF8Iterator GetName(void) const;
+
+	LWEGLTFMaterial(const LWUTF8Iterator &Name);
 
 	LWEGLTFMaterial() = default;
 
-	char m_Name[256];
+	char8_t m_Name[256];
 	uint32_t m_NameHash;
 	LWEGLTFMatMetallicRoughness m_MetallicRoughness;
 	LWEGLTFMatSpecularGlossyness m_SpecularGlossy;
@@ -395,11 +409,13 @@ struct LWEGLTFLight {
 
 	static bool ParseJSON(LWEGLTFLight &L, LWEJson &J, LWEJObject *Obj);
 	
-	LWEGLTFLight(const char *Name, uint32_t Type);
+	LWUTF8Iterator GetName(void) const;
+
+	LWEGLTFLight(const LWUTF8Iterator &Name, uint32_t Type);
 
 	LWEGLTFLight() = default;
 
-	char m_Name[256];
+	char8_t m_Name[256];
 	uint32_t m_NameHash;
 	LWVector3f m_Color = LWVector3f(1.0f);
 	float m_Intensity = 1.0f;
@@ -412,11 +428,13 @@ struct LWEGLTFLight {
 struct LWEGLTFNode {
 	static bool ParseJSON(LWEGLTFNode &Node, LWEJson &J, LWEJObject *Obj);
 
-	LWEGLTFNode(const char *Name, uint32_t MeshID, uint32_t SkinID, uint32_t CameraID, uint32_t ChildrenCnt, const LWMatrix4f &TransformMatrix);
+	LWUTF8Iterator GetName(void) const;
+
+	LWEGLTFNode(const LWUTF8Iterator &Name, uint32_t MeshID, uint32_t SkinID, uint32_t CameraID, uint32_t ChildrenCnt, const LWMatrix4f &TransformMatrix);
 
 	LWEGLTFNode() = default;
 	
-	char m_Name[256];
+	char8_t m_Name[256];
 	uint32_t m_NameHash;
 	std::vector<uint32_t> m_Children;
 	LWMatrix4f m_TransformMatrix;
@@ -432,11 +450,13 @@ struct LWEGLTFNode {
 struct LWEGLTFScene {
 	static bool ParseJSON(LWEGLTFScene &Scene, LWEJson &J, LWEJObject *Obj);
 
-	LWEGLTFScene(const char *Name, uint32_t NodeCnt);
+	LWUTF8Iterator GetName(void) const;
+
+	LWEGLTFScene(const LWUTF8Iterator &Name, uint32_t NodeCnt);
 
 	LWEGLTFScene() = default;
 
-	char m_Name[256];
+	char8_t m_Name[256];
 	uint32_t m_NameHash;
 	std::vector<uint32_t> m_NodeList;
 };
@@ -444,11 +464,13 @@ struct LWEGLTFScene {
 struct LWEGLTFSkin {
 	static bool ParseJSON(LWEGLTFSkin &Skin, LWEJson &J, LWEJObject *Obj);
 
-	LWEGLTFSkin(const char *Name, uint32_t JointCnt, uint32_t InverseBindMatrices, uint32_t SkeletonNode);
+	LWUTF8Iterator &GetName(void) const;
+
+	LWEGLTFSkin(const LWUTF8Iterator &Name, uint32_t JointCnt, uint32_t InverseBindMatrices, uint32_t SkeletonNode);
 
 	LWEGLTFSkin() = default;
 
-	char m_Name[256];
+	char8_t m_Name[256];
 	uint32_t m_NameHash;
 	uint32_t m_InverseBindMatrices = -1;
 	uint32_t m_SkeletonNode = -1;
@@ -482,11 +504,13 @@ struct LWEGLTFAnimation {
 
 	static bool ParseJSON(LWEGLTFAnimation &Anim, LWEJson &J, LWEJObject *Obj);
 
-	LWEGLTFAnimation(const char *Name, uint32_t ChannelCnt);
+	LWUTF8Iterator GetName(void) const;
+
+	LWEGLTFAnimation(const LWUTF8Iterator &Name, uint32_t ChannelCnt);
 
 	LWEGLTFAnimation() = default;
 
-	char m_Name[256];
+	char8_t m_Name[256];
 	uint32_t m_NameHash;
 	std::vector<LWEGLTFAnimChannel> m_Channels;
 };
@@ -494,11 +518,11 @@ struct LWEGLTFAnimation {
 
 class LWEGLTFParser {
 public:
-	static bool LoadFile(LWEGLTFParser &Parser, const LWText &Path, LWAllocator &Allocator);
+	static bool LoadFile(LWEGLTFParser &Parser, const LWUTF8Iterator &Path, LWAllocator &Allocator);
 
-	static bool LoadFileGLB(LWEGLTFParser &Parser, const LWText &Path, LWAllocator &Allocator);
+	static bool LoadFileGLB(LWEGLTFParser &Parser, const LWUTF8Iterator &Path, LWAllocator &Allocator);
 
-	static bool LoadFileGLTF(LWEGLTFParser &Parser, const LWText &Path, LWAllocator &Allocator);
+	static bool LoadFileGLTF(LWEGLTFParser &Parser, const LWUTF8Iterator &Path, LWAllocator &Allocator);
 
 	static bool ParseJSON(LWEGLTFParser &Parser, LWEJson &J, LWFileStream &Stream, const char *BinChunk, LWAllocator &Allocator);
 
@@ -571,37 +595,37 @@ public:
 	bool PushScene(LWEGLTFScene &Scene);
 
 	//Returns index of buffer, or -1 if not found.
-	uint32_t FindBuffer(const LWText &Name);
+	uint32_t FindBuffer(const LWUTF8Iterator &Name);
 
 	//Returns index of Mesh, or -1 if not found.
-	uint32_t FindMesh(const LWText &Name);
+	uint32_t FindMesh(const LWUTF8Iterator &Name);
 
 	//Returns index of Image, or -1 if not found.
-	uint32_t FindImage(const LWText &Name);
+	uint32_t FindImage(const LWUTF8Iterator &Name);
 
 	//Returns index of Texture, or -1 if not found.
-	uint32_t FindTexture(const LWText &Name);
+	uint32_t FindTexture(const LWUTF8Iterator &Name);
 
 	//Returns index of Material, or -1 if not found.
-	uint32_t FindMaterial(const LWText &Name);
+	uint32_t FindMaterial(const LWUTF8Iterator &Name);
 
 	//Returns index of Light, or -1 if not found.
-	uint32_t FindLight(const LWText &Name);
+	uint32_t FindLight(const LWUTF8Iterator &Name);
 
 	//Returns index of Node, or -1 if not found.
-	uint32_t FindNode(const LWText &Name);
+	uint32_t FindNode(const LWUTF8Iterator &Name);
 
 	//Returns index of Scene, or -1 if not found.
-	uint32_t FindScene(const LWText &Name);
+	uint32_t FindScene(const LWUTF8Iterator &Name);
 
 	//Returns index of Skin, or -1 if not found.
-	uint32_t FindSkin(const LWText &Name);
+	uint32_t FindSkin(const LWUTF8Iterator &Name);
 
 	//Returns index of Animation, or -1 if not found.
-	uint32_t FindAnimation(const LWText &Name);
+	uint32_t FindAnimation(const LWUTF8Iterator &Name);
 
 	//Returns index of camera, or -1 if not found.
-	uint32_t FindCamera(const LWText &Name);
+	uint32_t FindCamera(const LWUTF8Iterator &Name);
 
 	LWEGLTFBuffer *GetBuffer(uint32_t i);
 

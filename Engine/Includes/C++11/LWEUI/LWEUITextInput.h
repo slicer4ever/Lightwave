@@ -6,9 +6,32 @@
 #define LWETEXTINPUT_MAXLINES 32
 
 struct LWETextLine {
-	char m_Value[LWETEXTINPUT_MAXLINELENGTH];
-	uint32_t m_RawLength;
-	uint32_t m_CharLength;
+
+	LWUTF8Iterator GetValue(void) const;
+
+	LWUTF8Iterator GetValueLast(void) const;
+
+	//Returns either this value, or the Passworded character field, since Grapheme cluster version is expected to be visible to the user, and not used internally.
+	LWUTF8GraphemeIterator GetValueGrapheme(bool isPassword) const;
+
+	//Returns either this value, or the Passworded character field, at the last codepoint, since Grapheme cluster version is expected to be visible to the user, and not used internally.
+	LWUTF8GraphemeIterator GetValueGraphemeLast(bool isPassword) const;
+
+	//Returns number of characters added
+	uint32_t Insert(const LWUTF8Iterator &Pos, const LWUTF8Iterator &Source);
+
+	uint32_t Insert(const LWUTF8Iterator &Pos, uint32_t Char);
+
+	uint32_t Erase(const LWUTF8Iterator &Begin, const LWUTF8Iterator &End);
+	
+	uint32_t Clear(void);
+
+	LWETextLine();
+
+	static char8_t PasswordField[LWETEXTINPUT_MAXLINELENGTH]; //Static password field filled with '*' tokens(this fill happens the first time a LWETextLine is created).
+	char8_t m_Value[LWETEXTINPUT_MAXLINELENGTH]="";
+	uint32_t m_RawLength=1;
+	uint32_t m_Length=0;
 };
 
 struct LWETextInputTouchBtn {
@@ -23,13 +46,11 @@ struct LWETextInputTouchBtn {
 
 struct LWETextInputCursor {
 	uint32_t m_Line = 0;
-	uint32_t m_Position = 0;
-	uint32_t m_RawPosition = 0;
+	LWUTF8Iterator m_Position;
 
-	LWETextInputCursor(uint32_t Line, uint32_t Position, uint32_t RawPosition);
+	LWUTF8GraphemeIterator AsGrapheme(const LWUTF8GraphemeIterator &SrcData); //SrcData in case the grapheme iterator is a password field.
 
-	//Calculates the Position/RawPosition of the line from the beginning value to the specified position.
-	LWETextInputCursor(uint32_t Line, const char *LineBegin, const char *LinePosition);
+	LWETextInputCursor(uint32_t Line, const LWUTF8Iterator &Pos);
 
 	LWETextInputCursor() = default;
 };
@@ -60,7 +81,7 @@ public:
 		 ButtonFontScale: The scale for the font of the touch buttons to use.
 		 ButtonFontMaterial: The colored material to use for the touch buttons text.
 	*/
-	static LWEUITextInput *XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
+	static LWEUITextInput *XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
 
 	LWEUITextInput &UpdateTouchButtons(LWEUIManager &Manager, float Scale, uint64_t lCurrentTime);
 
@@ -88,11 +109,9 @@ public:
 
 	bool ProcessKey(LWKey Key, bool ShiftDown, bool CtrlDown, float Scale);
 
-	uint32_t InsertText(const LWText &Text, bool ShiftDown, bool CtrlDown, float Scale);
+	uint32_t InsertText(const LWUTF8Iterator &Text, bool ShiftDown = false, bool CtrlDown = false, float Scale = 1.0f);
 
-	uint32_t InsertTextf(const char *Fmt, bool ShiftDown, bool CtrlDown, float Scale, ...);
-
-	bool InsertChar(uint32_t Char, bool ShiftDown, bool CtrlDown, float Scale);
+	bool InsertChar(uint32_t Char, bool ShiftDown = false, bool CtrlDown = false, float Scale = 1.0f);
 
 	bool ScrollToCursor(float Scale);
 
@@ -100,9 +119,9 @@ public:
 
 	LWEUITextInput &Clear(void);
 
-	LWEUITextInput &SetAllowedCharacters(const char *Characters);
+	LWEUITextInput &SetAllowedCharacters(const LWUTF8Iterator &Characters);
 
-	LWEUITextInput &SetDefaultText(const char *Text);
+	LWEUITextInput &SetDefaultText(const LWUTF8Iterator &Text);
 
 	LWEUITextInput &SetBorderSize(float BorderSize);
 
@@ -144,7 +163,7 @@ public:
 
 	LWEUITextInput &SetSelectRange(uint32_t Position, uint32_t Line, int32_t Length);
 
-	uint32_t GetSelectedText(char *Buffer, uint32_t BufferLen);
+	uint32_t GetSelectedText(char8_t *Buffer, uint32_t BufferLen);
 
 	const LWETextLine *GetLine(uint32_t Line) const;
 
@@ -194,17 +213,17 @@ public:
 
 	bool isPasswordField(void) const;
 
-	const char *GetAllowedCharacters(void) const;
+	LWUTF8Iterator GetAllowedCharacters(void) const;
 
-	const char *GetDefaultText(void) const;
+	LWUTF8Iterator GetDefaultText(void) const;
 
 	LWEUITextInput(const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag);
 
 	~LWEUITextInput();
 private:
 	LWETextLine m_Lines[LWETEXTINPUT_MAXLINES];
-	char m_AllowedCharacters[LWETEXTINPUT_MAXLINELENGTH];
-	char m_DefaultText[LWETEXTINPUT_MAXLINELENGTH];
+	char8_t m_AllowedCharacters[LWETEXTINPUT_MAXLINELENGTH];
+	char8_t m_DefaultText[LWETEXTINPUT_MAXLINELENGTH];
 	LWEUIMaterial *m_BorderMaterial = nullptr;
 	LWEUIMaterial *m_FontMaterial = nullptr;
 	LWEUIMaterial *m_SelectMaterial = nullptr;

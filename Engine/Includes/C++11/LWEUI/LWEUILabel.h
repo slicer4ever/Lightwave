@@ -12,7 +12,7 @@ public:
 		  Scale: How much to scale the font text by.
 	*/
 
-	static LWEUILabel *XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
+	static LWEUILabel *XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
 
 	virtual LWEUI &UpdateSelf(LWEUIManager &Manager, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime);
 
@@ -20,9 +20,7 @@ public:
 
 	virtual void Destroy(void);
 
-	LWEUILabel &SetText(const LWText &Text);
-
-	LWEUILabel &SetTextf(const char *Format, ...);
+	LWEUILabel &SetText(const LWUTF8Iterator &Text);
 
 	LWEUILabel &SetFont(LWFont *Font);
 
@@ -36,20 +34,20 @@ public:
 
 	float GetFontScale(void) const;
 
-	const LWText &GetText(void) const;
+	const LWUTF8 &GetText(void) const;
 
-	LWEUILabel(const LWText &Text, LWFont *Font, LWAllocator &Allocator, LWEUIMaterial *Material, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag);
+	LWEUILabel(const LWUTF8Iterator &Text, LWFont *Font, LWAllocator &Allocator, LWEUIMaterial *Material, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag);
 
 	LWEUILabel();
 
 	~LWEUILabel();
 private:
-	LWText m_Text;
-	LWFont *m_Font;
-	LWEUIMaterial *m_Material;
+	LWUTF8 m_Text;
+	LWFont *m_Font = nullptr;
+	LWEUIMaterial *m_Material = nullptr;
 	LWVector2f m_TextSize;
-	float m_FontScale;
-	float m_UnderHang;
+	float m_FontScale = 1.0f;
+	float m_UnderHang = 0.0f;
 
 };
 

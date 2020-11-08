@@ -15,12 +15,12 @@ LWVideoDriver &LWVideoDriver_OpenGL2_1::ViewPort(const LWVector4i &Viewport) {
 	return *this;
 }
 
-LWShader *LWVideoDriver_OpenGL2_1::CreateShader(uint32_t ShaderType, const char *Source, LWAllocator &Allocator, char *CompiledBuffer, char *ErrorBuffer, uint32_t *CompiledBufferLen, uint32_t ErrorBufferLen) {
-	if (CompiledBuffer) *CompiledBufferLen = 0;
-	return CreateShaderCompiled(ShaderType, Source, (uint32_t)strlen(Source), Allocator, ErrorBuffer, ErrorBufferLen);
+LWShader *LWVideoDriver_OpenGL2_1::CreateShader(uint32_t ShaderType, const LWUTF8Iterator &Source, LWAllocator &Allocator, char *CompiledBuffer, char8_t *ErrorBuffer, uint32_t &CompiledBufferLen, uint32_t ErrorBufferLen) {
+	CompiledBufferLen = 0;
+	return CreateShaderCompiled(ShaderType, (const char*)Source(), Source.RawDistance(Source.NextEnd()), Allocator, ErrorBuffer, ErrorBufferLen);
 }
 
-LWShader *LWVideoDriver_OpenGL2_1::CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledCodeLen, LWAllocator &Allocator, char *ErrorBuffer, uint32_t ErrorBufferLen) {
+LWShader *LWVideoDriver_OpenGL2_1::CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledCodeLen, LWAllocator &Allocator, char8_t *ErrorBuffer, uint32_t ErrorBufferLen) {
 	GLenum GShaderTypes[] = { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, GL_GEOMETRY_SHADER, GL_COMPUTE_SHADER };
 	uint32_t ShaderID = glCreateShader(GShaderTypes[ShaderType]);
 	int32_t CompileResult = 0;
@@ -37,11 +37,11 @@ LWShader *LWVideoDriver_OpenGL2_1::CreateShaderCompiled(uint32_t ShaderType, con
 		glDeleteShader(ShaderID);
 		return nullptr;
 	}
-	return Allocator.Allocate<LWOpenGL2_1Shader>(ShaderID, LWText::MakeHashb(CompiledCode, CompiledCodeLen), ShaderType);
+	return Allocator.Create<LWOpenGL2_1Shader>(ShaderID, LWCrypto::HashFNV1A((const uint8_t*)CompiledCode, CompiledCodeLen), ShaderType);
 }
 
 LWTexture *LWVideoDriver_OpenGL2_1::CreateTexture1D(uint32_t TextureState, uint32_t PackType, uint32_t Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
-	//PackTypes:                   RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16, Depth24, Depth32, Depth24Stencil8, DXT1, DXT2, DXT3, DXT4, DXT5, DXT6, DXT7
+	//PackTypes:                         RGBA8,            RGBA8U,           RGBA16,            RGBA16,            RGBA32,          RGBA32U,         RGBA32F,    RG8,              RG8U,             RG16,              RG16U,             RG32,            RG32U,           RG32F,    R8,               R8U,              R16,               R16U,              R32,             R32U,            R32F,     Depth16, Depth24, Depth32, Depth24Stencil8, DXT1, DXT2, DXT3, DXT4, DXT5, DXT6, DXT7
 	const int32_t GInternalFormats[] = { GL_RGBA,          GL_RGBA,          GL_RGBA,                   GL_RGBA,           0,      0,       0,       0,   0,    0,    0,     0,    0,     0,     GL_LUMINANCE,       GL_LUMINANCE,        GL_LUMINANCE,              GL_LUMINANCE,              0,   0,    0,    0,       0,       0,       0,               GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0,    GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT, GL_COMPRESSED_RGBA_BPTC_UNORM_EXT };
 	const int32_t GFormats[]         = { GL_RGBA,          GL_RGBA,          GL_RGBA,           GL_RGBA,           GL_RGBA,         GL_RGBA,         GL_RGBA,    GL_RG,            GL_RG,            GL_RG,             GL_RG,             GL_RG,           GL_RG,           GL_RG,    GL_RED,           GL_RED,           GL_RED,            GL_RED,            GL_RED,          GL_RED,          GL_RED,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_COMPONENT,   GL_DEPTH_STENCIL };
 	const int32_t GType[]            = { GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT,   GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_UNSIGNED_BYTE, GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT, GL_UNSIGNED_INT, GL_FLOAT, GL_FLOAT,             GL_FLOAT,             GL_FLOAT,             GL_UNSIGNED_INT_24_8 };
@@ -62,7 +62,7 @@ LWTexture *LWVideoDriver_OpenGL2_1::CreateTexture1D(uint32_t TextureState, uint3
 		uint32_t MipSize = LWImage::MipmapSize1D(Size, i);
 		glTexImage1D(GL_TEXTURE_1D, i, GInternalFormats[PackType], MipSize, 0, GFormats[PackType], GType[PackType], Texels[i]);
 	}
-	return Allocator.Allocate<LWOpenGL2_1Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0, 0), LWTexture::Texture1D);
+	return Allocator.Create<LWOpenGL2_1Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0, 0), LWTexture::Texture1D);
 }
 
 LWTexture *LWVideoDriver_OpenGL2_1::CreateTexture2D(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
@@ -78,7 +78,7 @@ LWTexture *LWVideoDriver_OpenGL2_1::CreateTexture2D(uint32_t TextureState, uint3
 		glGenRenderbuffers(1, &VideoID);
 		glBindRenderbuffer(GL_RENDERBUFFER, VideoID);
 		glRenderbufferStorage(GL_RENDERBUFFER, GInternalFormats[PackType], Size.x, Size.y);
-		return Allocator.Allocate<LWOpenGL2_1Texture>(VideoID, TextureState&~LWTexture::MakeMipmaps, PackType, 0, LWVector3i(Size, 0), LWTexture::Texture2D);
+		return Allocator.Create<LWOpenGL2_1Texture>(VideoID, TextureState&~LWTexture::MakeMipmaps, PackType, 0, LWVector3i(Size, 0), LWTexture::Texture2D);
 	}
 	bool MakeMipmaps = (TextureState&LWTexture::MakeMipmaps) != 0;
 	bool Compressed = LWImage::CompressedType(PackType);
@@ -94,7 +94,7 @@ LWTexture *LWVideoDriver_OpenGL2_1::CreateTexture2D(uint32_t TextureState, uint3
 		if (Compressed) glCompressedTexImage2D(GL_TEXTURE_2D, i, GInternalFormats[PackType], S.x, S.y, 0, LWImage::GetLength2D(S, PackType), Texels ? Texels[t] : nullptr);
 		else glTexImage2D(GL_TEXTURE_2D, i, GInternalFormats[PackType], S.x, S.y, 0, GFormats[PackType], GType[PackType], Texels ? Texels[t] : nullptr);
 	}
-	return Allocator.Allocate<LWOpenGL2_1Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0), LWTexture::Texture2D);
+	return Allocator.Create<LWOpenGL2_1Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0), LWTexture::Texture2D);
 }
 
 LWTexture *LWVideoDriver_OpenGL2_1::CreateTexture3D(uint32_t TextureState, uint32_t PackType, const LWVector3i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
@@ -121,7 +121,7 @@ LWTexture *LWVideoDriver_OpenGL2_1::CreateTexture3D(uint32_t TextureState, uint3
 		if (Compressed) glCompressedTexImage3D(GL_TEXTURE_3D, i, GInternalFormats[PackType], Size.x, Size.y, Size.z, 0, LWImage::GetLength3D(Size, PackType), Texels ? Texels[t] : nullptr);
 		else glTexImage3D(GL_TEXTURE_3D, i, GInternalFormats[PackType], Size.x, Size.y, Size.z, 0, GFormats[PackType], GType[PackType], Texels ? Texels[t] : nullptr);
 	}
-	return Allocator.Allocate<LWOpenGL2_1Texture>(VideoID, TextureState, PackType, MipmapCnt, Size, LWTexture::Texture3D);
+	return Allocator.Create<LWOpenGL2_1Texture>(VideoID, TextureState, PackType, MipmapCnt, Size, LWTexture::Texture3D);
 }
 
 LWTexture *LWVideoDriver_OpenGL2_1::CreateTextureCubeMap(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
@@ -151,7 +151,7 @@ LWTexture *LWVideoDriver_OpenGL2_1::CreateTextureCubeMap(uint32_t TextureState, 
 			else glTexImage2D(GTarget, i, GInternalFormats[PackType], S.x, S.y, 0, GFormats[PackType], GType[PackType], Texels ? Texels[t] : nullptr);
 		}
 	}
-	return Allocator.Allocate<LWOpenGL2_1Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0), LWTexture::TextureCubeMap);
+	return Allocator.Create<LWOpenGL2_1Texture>(VideoID, TextureState, PackType, MipmapCnt, LWVector3i(Size, 0), LWTexture::TextureCubeMap);
 }
 
 LWTexture *LWVideoDriver_OpenGL2_1::CreateTexture2DMS(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, LWAllocator &Allocator) {
@@ -186,11 +186,11 @@ LWVideoBuffer *LWVideoDriver_OpenGL2_1::CreateVideoBuffer(uint32_t Type, uint32_
 		glGenBuffers(1, &Context.m_VideoID);
 		glBindBuffer(GTypes[Type], Context.m_VideoID);
 		glBufferData(GTypes[Type],TypeSize*Length, Buffer, GUsage);
-		return Allocator.Allocate<LWOpenGL2_1Buffer>(Buffer, &Allocator, TypeSize, Length, UsageFlag | Type, Context);
+		return Allocator.Create<LWOpenGL2_1Buffer>(Buffer, &Allocator, TypeSize, Length, UsageFlag | Type, Context);
 	} else {
-		Context.m_Buffer = Allocator.AllocateArray<uint8_t>(Length*TypeSize);
+		Context.m_Buffer = Allocator.AllocateA<uint8_t>(Length*TypeSize);
 		if (Buffer) std::copy(Buffer, Buffer + (TypeSize*Length), Context.m_Buffer);
-		return Allocator.Allocate<LWOpenGL2_1Buffer>(Buffer, &Allocator, TypeSize, Length, UsageFlag | LWVideoBuffer::LocalCopy | LWVideoBuffer::Dirty | Type, Context);
+		return Allocator.Create<LWOpenGL2_1Buffer>(Buffer, &Allocator, TypeSize, Length, UsageFlag | LWVideoBuffer::LocalCopy | LWVideoBuffer::Dirty | Type, Context);
 	}
 }
 
@@ -257,13 +257,10 @@ LWPipeline *LWVideoDriver_OpenGL2_1::CreatePipeline(LWPipeline *Source, LWAlloca
 		return 4;
 	};
 
-
-	auto ParseBlockAttribute = [&Blocks, &BlockCount, &Context, &GetUniformSize](const char *UniformName, int32_t Type, int32_t Size, uint32_t Index)->bool {
-		char BlockName[1024];
-		*BlockName = '\0';
-		LWText::CopyToTokens(UniformName, BlockName, sizeof(BlockName), ".");
-		if (*BlockName == '\0') return false;
-		uint32_t NameHash = LWText::MakeHash(BlockName);
+	auto ParseBlockAttribute = [&Blocks, &BlockCount, &Context, &GetUniformSize](const LWUTF8Iterator &NameIter, int32_t Type, int32_t Size, uint32_t Index)->bool {
+		LWUTF8Iterator BName = LWUTF8Iterator(NameIter, NameIter.NextToken('.', false));
+		if (BName.AtEnd()) return false;
+		uint32_t NameHash = BName.Hash();
 		int32_t i = 0;
 		for (; i < BlockCount; i++) {
 			if (Blocks[i].m_NameHash == NameHash) break;
@@ -305,7 +302,7 @@ LWPipeline *LWVideoDriver_OpenGL2_1::CreatePipeline(LWPipeline *Source, LWAlloca
 		*ErrorBuffer = '\0';
 		glGetProgramInfoLog(Context.m_ProgramID, sizeof(ErrorBuffer), &Len, ErrorBuffer);
 		glDeleteProgram(Context.m_ProgramID);
-		std::cout << "Error in pipeline: " << std::endl << ErrorBuffer << std::endl;
+		fmt::print("Error in pipeline: {}\n", ErrorBuffer);
 		return nullptr;
 	}
 	glUseProgram(Context.m_ProgramID);
@@ -330,7 +327,8 @@ LWPipeline *LWVideoDriver_OpenGL2_1::CreatePipeline(LWPipeline *Source, LWAlloca
 		uint32_t Type = 0;
 		int32_t Length = 0;
 		glGetActiveUniform(Context.m_ProgramID, i, sizeof(NameBuffer), &NameLen, &Length, &Type, NameBuffer);
-		uint32_t NameHash = LWText::MakeHash(NameBuffer);
+		LWUTF8Iterator Name = LWUTF8Iterator(NameBuffer);
+		uint32_t NameHash = Name.Hash();
 		if (Type == GL_SAMPLER_1D || Type == GL_SAMPLER_2D || Type == GL_SAMPLER_3D ||
 			Type == GL_SAMPLER_CUBE || Type == GL_SAMPLER_1D_SHADOW || Type == GL_SAMPLER_2D_SHADOW || Type == GL_SAMPLER_CUBE_SHADOW) {
 			R = LWShaderResource(NameHash, 0, LWPipeline::Texture, Length);
@@ -339,11 +337,11 @@ LWPipeline *LWVideoDriver_OpenGL2_1::CreatePipeline(LWPipeline *Source, LWAlloca
 			ResourceCount++;
 			NextTex++;
 		} else if(!ParseBlockAttribute(NameBuffer, Type, Length, glGetUniformLocation(Context.m_ProgramID, NameBuffer))){
-			std::cout << "Error uniform not accounted for(likely declared outside struct): '" << NameBuffer << "'" << std::endl;
+			fmt::print("Error uniform not accounted for(likely declared outside struct): '{}'\n", NameBuffer);
 		}
 	}
 	glUseProgram(ActiveProgramID);
-	return Allocator.Allocate<LWOpenGL2_1Pipeline>(Context, Stages, Blocks, Resources, Inputs, BlockCount, ResourceCount, InputCount, LWPipeline::InternalPipeline);
+	return Allocator.Create<LWOpenGL2_1Pipeline>(Context, Stages, Blocks, Resources, Inputs, BlockCount, ResourceCount, InputCount, LWPipeline::InternalPipeline);
 }
 
 LWVideoDriver &LWVideoDriver_OpenGL2_1::ClonePipeline(LWPipeline *Target, LWPipeline *Source) {
@@ -365,7 +363,7 @@ LWVideoDriver &LWVideoDriver_OpenGL2_1::ClonePipeline(LWPipeline *Target, LWPipe
 
 LWPipeline *LWVideoDriver_OpenGL2_1::CreatePipeline(LWShader **Stages, uint64_t Flags, LWAllocator &Allocator){
 	LWOpenGL2_1PipelineContext Context;
-	LWOpenGL2_1Pipeline *P = Allocator.Allocate<LWOpenGL2_1Pipeline>(Context, Stages, nullptr, nullptr, nullptr, 0, 0, 0, Flags&~LWPipeline::InternalPipeline);
+	LWOpenGL2_1Pipeline *P = Allocator.Create<LWOpenGL2_1Pipeline>(Context, Stages, nullptr, nullptr, nullptr, 0, 0, 0, Flags&~LWPipeline::InternalPipeline);
 	if (P) UpdatePipelineStages(P);
 	return P;
 }
@@ -373,7 +371,7 @@ LWPipeline *LWVideoDriver_OpenGL2_1::CreatePipeline(LWShader **Stages, uint64_t 
 LWFrameBuffer *LWVideoDriver_OpenGL2_1::CreateFrameBuffer(const LWVector2i &Size, LWAllocator &Allocator) {
 	LWOpenGL2_1FrameBufferContext Con;
 	glGenFramebuffersEXT(1, &Con.m_FBOID);
-	return Allocator.Allocate<LWOpenGL2_1FrameBuffer>(Con, Size);
+	return Allocator.Create<LWOpenGL2_1FrameBuffer>(Con, Size);
 }
 
 bool LWVideoDriver_OpenGL2_1::UpdateTexture(LWTexture *Texture) {

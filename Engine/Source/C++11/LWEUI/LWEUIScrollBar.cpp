@@ -3,20 +3,21 @@
 #include <algorithm>
 #include <LWPlatform/LWWindow.h>
 
-LWEUIScrollBar *LWEUIScrollBar::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
+LWEUIScrollBar *LWEUIScrollBar::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
 	char Buffer[256];
-	LWAllocator *Allocator = Manager->GetAllocator();
+	LWAllocator &Allocator = Manager->GetAllocator();
 	LWELocalization *Localize = Manager->GetLocalization();
-	LWEUIScrollBar *ScrollBar = Allocator->Allocate<LWEUIScrollBar>(nullptr, nullptr, nullptr, nullptr, 0.0f, 0.0f, LWVector4f(0.0f), LWVector4f(0.0f), FocusAble);
+	LWEAssetManager *AM = Manager->GetAssetManager();
+	LWEUIScrollBar *ScrollBar = Allocator.Create<LWEUIScrollBar>(nullptr, nullptr, nullptr, nullptr, 0.0f, 0.0f, LWVector4f(0.0f), LWVector4f(0.0f), FocusAble);
 	LWEUI::XMLParse(ScrollBar, Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 
-	LWXMLAttribute *OverAttr = FindAttribute(Node, Style, "OverMaterial");
-	LWXMLAttribute *DownAttr = FindAttribute(Node, Style, "DownMaterial");
-	LWXMLAttribute *OffAttr = FindAttribute(Node, Style, "OffMaterial");
-	LWXMLAttribute *BackAttr = FindAttribute(Node, Style, "BackgroundMaterial");
-	LWXMLAttribute *ScrollAttr = FindAttribute(Node, Style, "Scroll");
-	LWXMLAttribute *MaxScrollAttr = FindAttribute(Node, Style, "MaxScroll");
-	LWXMLAttribute *ScrollSizeAttr = FindAttribute(Node, Style, "ScrollSize");
+	LWEXMLAttribute *OverAttr = FindAttribute(Node, Style, "OverMaterial");
+	LWEXMLAttribute *DownAttr = FindAttribute(Node, Style, "DownMaterial");
+	LWEXMLAttribute *OffAttr = FindAttribute(Node, Style, "OffMaterial");
+	LWEXMLAttribute *BackAttr = FindAttribute(Node, Style, "BackgroundMaterial");
+	LWEXMLAttribute *ScrollAttr = FindAttribute(Node, Style, "Scroll");
+	LWEXMLAttribute *MaxScrollAttr = FindAttribute(Node, Style, "MaxScroll");
+	LWEXMLAttribute *ScrollSizeAttr = FindAttribute(Node, Style, "ScrollSize");
 	LWEUIMaterial *OverMat = nullptr;
 	LWEUIMaterial *DownMat = nullptr;
 	LWEUIMaterial *OffMat = nullptr;
@@ -25,13 +26,13 @@ LWEUIScrollBar *LWEUIScrollBar::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIMan
 	float MaxScroll = 0.0f;
 	float ScrollSize = 0.0f;
 
-	if (OverAttr) OverMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), OverAttr->m_Value, ActiveComponent, ActiveComponentNode));
-	if (DownAttr) DownMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), DownAttr->m_Value, ActiveComponent, ActiveComponentNode));
-	if (OffAttr) OffMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), OffAttr->m_Value, ActiveComponent, ActiveComponentNode));
-	if (BackAttr) BackMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), BackAttr->m_Value, ActiveComponent, ActiveComponentNode));
-	if (ScrollAttr) Scroll = (float)atof(ParseComponentAttribute(Buffer, sizeof(Buffer), ScrollAttr->m_Value, ActiveComponent, ActiveComponentNode));
-	if (MaxScrollAttr) MaxScroll = (float)atof(ParseComponentAttribute(Buffer, sizeof(Buffer), MaxScrollAttr->m_Value, ActiveComponent, ActiveComponentNode));
-	if (ScrollSizeAttr) ScrollSize = (float)atof(ParseComponentAttribute(Buffer, sizeof(Buffer), ScrollSizeAttr->m_Value, ActiveComponent, ActiveComponentNode));
+	if (OverAttr) OverMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), OverAttr->GetValue(), ActiveComponent, ActiveComponentNode));
+	if (DownAttr) DownMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), DownAttr->GetValue(), ActiveComponent, ActiveComponentNode));
+	if (OffAttr) OffMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), OffAttr->GetValue(), ActiveComponent, ActiveComponentNode));
+	if (BackAttr) BackMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), BackAttr->GetValue(), ActiveComponent, ActiveComponentNode));
+	if (ScrollAttr) Scroll = (float)atof((const char*)ParseComponentAttribute(Buffer, sizeof(Buffer), ScrollAttr->GetValue(), ActiveComponent, ActiveComponentNode)());
+	if (MaxScrollAttr) MaxScroll = (float)atof((const char*)ParseComponentAttribute(Buffer, sizeof(Buffer), MaxScrollAttr->GetValue(), ActiveComponent, ActiveComponentNode)());
+	if (ScrollSizeAttr) ScrollSize = (float)atof((const char*)ParseComponentAttribute(Buffer, sizeof(Buffer), ScrollSizeAttr->GetValue(), ActiveComponent, ActiveComponentNode)());
 
 	ScrollBar->SetBarOffMaterial(OffMat).SetBarOverMaterial(OverMat).SetBarDownMaterial(DownMat).SetBackgroundMaterial(BackMat);
 	ScrollBar->SetMaxScroll(MaxScroll).SetScrollSize(ScrollSize).SetScroll(Scroll);
@@ -57,7 +58,6 @@ LWEUI &LWEUIScrollBar::UpdateSelf(LWEUIManager &Manager, float Scale, const LWVe
 	if (Mouse) DownPnt = Mouse->GetPositionf();
 	if (Touch) {
 		const LWGesture &Gest = Touch->GetGesture();
-		//std::cout << "Gesture: " << Gest.m_Type << std::endl;
 		if (Gest.m_Type == LWGesture::Drag || Gest.m_Type==LWGesture::PressAndDrag) {
 			DownPnt = LWVector2f((float)Gest.m_Source.x, (float)Gest.m_Source.y)+LWVector2f((float)Gest.m_Direction.x, (float)Gest.m_Direction.y);
             DownSize = std::max<float>(Gest.m_Scale*Scale*TouchScale, MinimumTouchSize); //set's minimum size for finger.
@@ -238,6 +238,6 @@ bool LWEUIScrollBar::isVertical(void) const {
 	return (m_Flag&HorizontalBar) == 0;
 }
 
-LWEUIScrollBar::LWEUIScrollBar(LWEUIMaterial *BarOffMaterial, LWEUIMaterial *BarOverMaterial, LWEUIMaterial *BarDownMaterial, LWEUIMaterial *BackgroundMaterial, float MaxScroll, float ScrollSize, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : LWEUI(Position, Size, Flag), m_BackgroundMaterial(BackgroundMaterial), m_BarOffMaterial(BarOffMaterial), m_BarOverMaterial(BarOverMaterial), m_BarDownMaterial(BarDownMaterial), m_Scroll(0.0f), m_MaxScroll(MaxScroll), m_ScrollSize(ScrollSize) {}
+LWEUIScrollBar::LWEUIScrollBar(LWEUIMaterial *BarOffMaterial, LWEUIMaterial *BarOverMaterial, LWEUIMaterial *BarDownMaterial, LWEUIMaterial *BackgroundMaterial, float MaxScroll, float ScrollSize, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : LWEUI(Position, Size, Flag), m_BackgroundMaterial(BackgroundMaterial), m_BarOffMaterial(BarOffMaterial), m_BarOverMaterial(BarOverMaterial), m_BarDownMaterial(BarDownMaterial), m_MaxScroll(MaxScroll), m_ScrollSize(ScrollSize) {}
 
 LWEUIScrollBar::~LWEUIScrollBar() {}

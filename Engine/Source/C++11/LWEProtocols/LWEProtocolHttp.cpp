@@ -1,7 +1,6 @@
 #include "LWEProtocols/LWEProtocolHTTP.h"
 #include <LWNetwork/LWProtocolManager.h>
 #include <LWNetwork/LWSocket.h>
-#include <LWCore/LWText.h>
 #include <LWEJson.h>
 #include <cstring>
 #include <cstdarg>
@@ -9,78 +8,6 @@
 #include <iostream>
 #include <zlib.h>
 #include <functional>
-
-uint32_t LWEHttpRequest::Escape(const char *In, char *Buffer, uint32_t BufferLen) {
-	char ValidChars[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_~";
-	uint32_t o = 0;
-	char *B = Buffer;
-	char *L = B + BufferLen;
-	for (const char *C = In; *C; C++) {
-		uint32_t i = 0;
-		for (; ValidChars[i] && *C != ValidChars[i]; i++) {}
-		if (ValidChars[i]) {
-			if (B != L) *B++ = *C;
-			o++;
-		}
-		else {
-			uint32_t Val = ((uint32_t)*C) & 0xFF;
-			uint32_t k = snprintf(B, (uint32_t)(uintptr_t)(L - B), "%%%X", Val);
-			B += k;
-			if (B > L) B = L;
-			o += k;
-		}
-	}
-	if (B != L) *B = '\0';
-	o++;
-	return o;
-}
-
-uint32_t LWEHttpRequest::EscapeURI(const char *In, char *Buffer, uint32_t BufferLen) {
-	char ValidChars[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_.!~*'();,/?&=+$#";
-	uint32_t o = 0;
-	char *B = Buffer;
-	char *L = B + BufferLen;
-	for (const char *C = In; *C; C++) {
-		uint32_t i = 0;
-		for (; ValidChars[i] && *C != ValidChars[i]; i++) {}
-		if (ValidChars[i]) {
-			if (B != L) *B++ = *C;
-			o++;
-		}
-		else {
-			uint32_t Val = ((uint32_t)*C) & 0xFF;
-			uint32_t k = snprintf(B, (uint32_t)(uintptr_t)(L - B), "%%%X", Val);
-			B += k;
-			if (B > L) B = L;
-			o += k;
-		}
-	}
-	if (B != L) *B = '\0';
-	o++;
-	return o;
-}
-
-uint32_t LWEHttpRequest::UnEscape(const char *In, char *Buffer, uint32_t BufferLen) {
-	uint32_t o = 0;
-	char *B = Buffer;
-	char *L = B + BufferLen;
-	for (const char *C = In; *C; C++) {
-		if (*C == '%') {
-			uint32_t Val = 0;
-			if (sscanf(C + 1, "%2X", &Val) != 1) return 0;
-			if (B != L) *B++ = (char)Val;
-			o++;
-			C += 2;
-		}
-		else {
-			if (B != L) *B++ = *C;
-			o++;
-		}
-	}
-	if (B != L) *B = '\0';
-	o++;
-	return o;
-}
 
 uint32_t LWEHttpRequest::MakeJSONQueryString(LWEJson &Json, char *Buffer, uint32_t BufferLen) {
 	const uint32_t TBufferLen = 64 * 1024;
@@ -98,17 +25,17 @@ uint32_t LWEHttpRequest::MakeJSONQueryString(LWEJson &Json, char *Buffer, uint32
 		First = false;
 
 	}
-	return EscapeURI(TempBuffer, Buffer, BufferLen);
+	return LWEJson::EscapeString(TempBuffer, Buffer, BufferLen);
 }
 
-uint32_t LWEHttpRequest::Serialize(char *Buffer, uint32_t BufferLen, const char *UserAgent) {
+uint32_t LWEHttpRequest::Serialize(char8_t *Buffer, uint32_t BufferLen, const LWUTF8Iterator &UserAgent) {
 	//std::cout << "Serializing!" << std::endl;
-	char Methods[][32] = { "GET", "POST" };
-	char Caches[][32] = { "no-cache" };
-	char Connections[][32] = { "close", "keep-alive",  "upgrade", "Keep-alive, upgrade" };
-	char Encodings[][32] = { "", "chunk" };
-	char ContentEncodings[][32] = { "identity", "gzip", "compress", "deflate", "br" };
-	char Upgrades[][32] = { "", "websocket" };
+	char8_t Methods[][32] = { "GET", "POST" };
+	char8_t Caches[][32] = { "no-cache" };
+	char8_t Connections[][32] = { "close", "keep-alive",  "upgrade", "Keep-alive, upgrade" };
+	char8_t Encodings[][32] = { "", "chunk" };
+	char8_t ContentEncodings[][32] = { "identity", "gzip", "compress", "deflate", "br" };
+	char8_t Upgrades[][32] = { "", "websocket" };
 	uint32_t o = 0;
 	uint32_t ConnectionBits = (m_Flag&CONNECTIONBITS) >> CONNECTIONOFFSET;
 	uint32_t CacheBits = (m_Flag&CACHEBITS) >> CACHEOFFSET;
@@ -117,7 +44,7 @@ uint32_t LWEHttpRequest::Serialize(char *Buffer, uint32_t BufferLen, const char 
 	uint32_t UpgradeBits = (m_Flag&UPGRADEBITS) >> UPGRADEOFFSET;
 	bool IsResponse = m_Status != 0;
 	if (IsResponse) {
-		char *lStatus = "";
+		char8_t *lStatus = "";
 		if (m_Status == Ok) lStatus = "OK";
 		else if (m_Status == Continue) lStatus = "Continue";
 		else if (m_Status == SwitchingProtocols) lStatus = "Switching Protocols";
@@ -128,50 +55,50 @@ uint32_t LWEHttpRequest::Serialize(char *Buffer, uint32_t BufferLen, const char 
 		else if (m_Status == InternalServerError) lStatus = "Internal Server Error";
 		else if (m_Status == NotImplemented) lStatus = "Not Implemented";
 		else if (m_Status == BadGateway) lStatus = "Bad Gateway";
-		o += snprintf(Buffer + o, BufferLen - o, "HTTP/1.1 %d %s\r\n", m_Status, lStatus);
+		o += snprintf((char*)Buffer + o, BufferLen - o, "HTTP/1.1 %d %s\r\n", m_Status, lStatus);
 	}
-	else o += snprintf(Buffer + o, BufferLen - o, "%s %s HTTP/1.1\r\n", Methods[m_Flag&METHODBITS], m_Path);
-	if (*m_Host && !IsResponse) o += snprintf(Buffer + o, BufferLen - o, "Host: %s\r\n", m_Host);
-	if (*m_Origin && !IsResponse) o += snprintf(Buffer + o, BufferLen - o, "Origin: %s\r\n", m_Origin);
+	else o += snprintf((char*)Buffer + o, BufferLen - o, "%s %s HTTP/1.1\r\n", Methods[m_Flag&METHODBITS], m_Path);
+	if (*m_Host && !IsResponse) o += snprintf((char*)Buffer + o, BufferLen - o, "Host: %s\r\n", m_Host);
+	if (*m_Origin && !IsResponse) o += snprintf((char*)Buffer + o, BufferLen - o, "Origin: %s\r\n", m_Origin);
 	if (*m_ContentType) {
-		if (IsResponse) o += snprintf(Buffer + o, BufferLen - o, "Content-Type: %s\r\n", m_ContentType);
-		else o += snprintf(Buffer + o, BufferLen - o, "Accept: %s\r\n", m_ContentType);
+		if (IsResponse) o += snprintf((char*)Buffer + o, BufferLen - o, "Content-Type: %s\r\n", m_ContentType);
+		else o += snprintf((char*)Buffer + o, BufferLen - o, "Accept: %s\r\n", m_ContentType);
 	}
-	if (*m_Authorization) o += snprintf(Buffer + o, BufferLen - o, "Authorization: %s\r\n", m_Authorization);
-	if (m_ContentLength) o += snprintf(Buffer + o, BufferLen - o, "Content-Length: %d\r\n", m_ContentLength);
-	if (UserAgent && *UserAgent) {
-		if (IsResponse) o += snprintf(Buffer + o, BufferLen - o, "Server: %s\r\n", UserAgent);
-		else o += snprintf(Buffer + o, BufferLen - o, "User-Agent: %s\r\n", UserAgent);
+	if (*m_Authorization) o += snprintf((char*)Buffer + o, BufferLen - o, "Authorization: %s\r\n", m_Authorization);
+	if (m_ContentLength) o += snprintf((char*)Buffer + o, BufferLen - o, "Content-Length: %d\r\n", m_ContentLength);
+	if (!UserAgent.AtEnd()) {
+		if (IsResponse) o += snprintf((char*)Buffer + o, BufferLen - o, "Server: %s\r\n", (const char*)UserAgent());
+		else o += snprintf((char*)Buffer + o, BufferLen - o, "User-Agent: %s\r\n", (const char*)UserAgent());
 	}
 	if (*m_SecWebSockKey) {
-		if (IsResponse) o += snprintf(Buffer + o, BufferLen - o, "Sec-WebSocket-Accept: %s\r\n", m_SecWebSockKey);
-		else o += snprintf(Buffer + o, BufferLen - o, "Sec-WebSocket-Key: %s\r\n", m_SecWebSockKey);
-		o += snprintf(Buffer + o, BufferLen - o, "Sec-WebSocket-Extensions: \r\n");
+		if (IsResponse) o += snprintf((char*)Buffer + o, BufferLen - o, "Sec-WebSocket-Accept: %s\r\n", m_SecWebSockKey);
+		else o += snprintf((char*)Buffer + o, BufferLen - o, "Sec-WebSocket-Key: %s\r\n", m_SecWebSockKey);
+		o += snprintf((char*)Buffer + o, BufferLen - o, "Sec-WebSocket-Extensions: \r\n");
 	}
-	if (*m_SecWebSockProto) o += snprintf(Buffer + o, BufferLen - o, "Sec-WebSocket-Protocol: %s\r\n", m_SecWebSockProto);
-	if (m_WebSockVersion && !IsResponse) o += snprintf(Buffer + o, BufferLen - o, "Sec-WebSocket-Version: %d\r\n", m_WebSockVersion);
-	if (*Encodings[EncodeBits]) o += snprintf(Buffer + o, BufferLen - o, "Transfer-Encoding: %s\r\n", Encodings[EncodeBits]);
-	if (*Upgrades[UpgradeBits]) o += snprintf(Buffer + o, BufferLen - o, "Upgrade: %s\r\n", Upgrades[UpgradeBits]);
-	o += snprintf(Buffer + o, BufferLen - o, "Connection: %s\r\n", Connections[ConnectionBits]);
-	o += snprintf(Buffer + o, BufferLen - o, "Cache-Control: %s\r\n", Caches[CacheBits]);
+	if (*m_SecWebSockProto) o += snprintf((char*)Buffer + o, BufferLen - o, "Sec-WebSocket-Protocol: %s\r\n", m_SecWebSockProto);
+	if (m_WebSockVersion && !IsResponse) o += snprintf((char*)Buffer + o, BufferLen - o, "Sec-WebSocket-Version: %d\r\n", m_WebSockVersion);
+	if (*Encodings[EncodeBits]) o += snprintf((char*)Buffer + o, BufferLen - o, "Transfer-Encoding: %s\r\n", Encodings[EncodeBits]);
+	if (*Upgrades[UpgradeBits]) o += snprintf((char*)Buffer + o, BufferLen - o, "Upgrade: %s\r\n", Upgrades[UpgradeBits]);
+	o += snprintf((char*)Buffer + o, BufferLen - o, "Connection: %s\r\n", Connections[ConnectionBits]);
+	o += snprintf((char*)Buffer + o, BufferLen - o, "Cache-Control: %s\r\n", Caches[CacheBits]);
 	if (ContentEncodeBits != ContentEncodeIdentity) {
-		o += snprintf(Buffer + o, BufferLen - o, "Content-Encoding: %s\r\n", ContentEncodings[ContentEncodeBits]);
+		o += snprintf((char*)Buffer + o, BufferLen - o, "Content-Encoding: %s\r\n", ContentEncodings[ContentEncodeBits]);
 	}
 
-	o += snprintf(Buffer + o, BufferLen - o, "\r\n");
+	o += snprintf((char*)Buffer + o, BufferLen - o, "\r\n");
 	if (*m_Body) {
 		if (m_Flag&EncodeChunked) {
 			if (!m_ContentLength) m_ContentLength = (uint32_t)strlen(m_Body);
-			o += snprintf(Buffer + o, BufferLen - o, "%x\r\n%s\r\n", m_ContentLength, m_Body);
+			o += snprintf((char*)Buffer + o, BufferLen - o, "%x\r\n%s\r\n", m_ContentLength, m_Body);
 		}
 		else {
-			o += snprintf(Buffer + o, BufferLen - o, "%s", m_Body);
+			o += snprintf((char*)Buffer + o, BufferLen - o, "%s", m_Body);
 		}
 	}
 	return o;
 }
 
-uint32_t LWEHttpRequest::GZipDecompress(const char *In, uint32_t InLen, char *Buffer, uint32_t BufferLen) {
+uint32_t LWEHttpRequest::GZipDecompress(const char8_t *In, uint32_t InLen, char8_t *Buffer, uint32_t BufferLen) {
 	z_stream Stream;
 	Stream.next_in = (Bytef*)In;
 	Stream.avail_in = InLen;
@@ -180,7 +107,7 @@ uint32_t LWEHttpRequest::GZipDecompress(const char *In, uint32_t InLen, char *Bu
 	Stream.zalloc = Z_NULL;
 	Stream.zfree = Z_NULL;
 	if (inflateInit2(&Stream, 31) != Z_OK) {
-		std::cout << "Failed to start inflate." << std::endl;
+		fmt::print("Failed to start inflate.\n");
 		return 0;
 	}
 	uint32_t o = 0;
@@ -194,125 +121,27 @@ uint32_t LWEHttpRequest::GZipDecompress(const char *In, uint32_t InLen, char *Bu
 		int32_t r = inflate(&Stream, Z_SYNC_FLUSH);
 		if (r == Z_OK || r == Z_STREAM_END) o = (uint32_t)Stream.total_out;
 		if (r != Z_OK) {
-			if (Stream.msg) std::cout << "error: " << Stream.msg << std::endl;
+			if (Stream.msg) fmt::print("GZip Error: {}\n", Stream.msg);
 			Finished = true;
 		}
 	}
 	if (inflateEnd(&Stream) != Z_OK) {
-		std::cout << "Failed finish inflating." << std::endl;
+		fmt::print("GZip error: 'inflateEnd'\n");
 	}
 	return o;
 }
 
-uint16_t LWEHttpRequest::ParseURI(const char *URI, char *HostBuffer, uint32_t HostBufferSize, uint32_t *HostBufferLen, char *PathBuffer, uint32_t PathBufferSize, uint32_t *PathBufferLen, char *ProtocolBuffer, uint32_t ProtocolBufferSize, uint32_t *ProtocolBufferLen) {
-	const char *F = URI;
-	char Port[32];
-	char *Pt = Port;
-	char *PtL = Port + sizeof(Port);
-	char *H = HostBuffer;
-	char *HL = HostBuffer + HostBufferSize;
-	char *Pa = PathBuffer;
-	char *PaL = PathBuffer + PathBufferSize;
-	char *Pr = ProtocolBuffer;
-	char *PrL = ProtocolBuffer + ProtocolBufferSize;
-	bool WriteProtocol = true;
-	bool WritePath = false;
-	bool WritePort = false;
-	uint32_t Hs = 0;
-	uint32_t Pas = 0;
-	uint32_t Prs = 0;
-	Port[0] = '\0';
-	//skip leading //'s
-	for (; *F; F++) if (*F != '/') break;
-	for (; *F; F++) {
-		if (WritePath) {
-			Pas++;
-			if (Pa != PaL) *Pa++ = *F;
-			continue;
-		}
-		if (*F == ':') {
-			if (WriteProtocol) {
-				if (*(F + 1) == '/') {
-					WriteProtocol = false;
-					Hs = 0;
-					H = HostBuffer;
-					if (H != HL) *H = '\0';
-					//skip any //'s
-					for (F++; *F; F++) if (*F != '/') break;
-					F -= 1;
-				} else {
-					Pr = ProtocolBuffer;
-					if (Pr != PrL) *Pr = '\0';
-					Prs = 0;
-					WritePort = true;
-				}
-			} else WritePort = true;
-			continue;
-		}
-		if (*F == '/') {
-			if (WriteProtocol) {
-				Pr = ProtocolBuffer;
-				if (Pr != PrL) *Pr = '\0';
-				Prs = 0;
-			}
-			if (H != HL) *H = '\0';
-			if (Pt == PtL) Pt--;
-			*Pt = '\0';
-			WritePath = true;
-			F--;
-			continue;
-		}
-		if (WritePort) {
-			if (Pt != PtL) *Pt++ = *F;
-		}
-		if (WriteProtocol) {
-			Prs++;
-			if (Pr != PrL) *Pr++ = *F;
-		}
-		if (!WritePort) {
-			Hs++;
-			if (H != HL) *H++ = *F;
-		}
-	}
-	if (H) {
-		if (H == HL) *(H - 1) = '\0';
-		else *H = '\0';
-	}
-	if (Pa) {
-		if (Pa == PaL) *(Pa - 1) = '\0';
-		else *Pa = '\0';
-	}
-	if (Pr) {
-		if (Pr == PrL) *(PrL - 1) = '\0';
-		else *Pr = '\0';
-	}
-	if (HostBufferLen) *HostBufferLen = Hs;
-	if (PathBufferLen) *PathBufferLen = Pas;
-	if (ProtocolBufferLen) *ProtocolBufferLen = Prs;
-	uint16_t PortNbr = 0;
-	if (*Port) PortNbr = (uint16_t)atoi(Port);
-	else {
-		if (ProtocolBuffer) {
-			if (!_stricmp(ProtocolBuffer, "https")) PortNbr = 443;
-			else if (!_stricmp(ProtocolBuffer, "http")) PortNbr = 80;
-			else if (!_stricmp(ProtocolBuffer, "wss")) PortNbr = 443;
-			else if (!_stricmp(ProtocolBuffer, "ws")) PortNbr = 80;
-		}
-	}
-	return PortNbr;
-}
-
-bool LWEHttpRequest::Deserialize(const char *Buffer, uint32_t Len) {
-	char Methods[][32] = { "GET", "POST" };
-	char NameBuffer[1024];
-	char ResultBuffer[1024];
+bool LWEHttpRequest::Deserialize(const char8_t *Buffer, uint32_t Len) {
+	char8_t Methods[][32] = { "GET", "POST" };
+	char8_t NameBuffer[1024];
+	char8_t ResultBuffer[1024];
 	const uint32_t MethodCnt = 2;
 
 	uint32_t o = 0;
 	uint32_t k = 0;
 	uint32_t i = 0;
 	bool IsResponse = true;
-	if (m_Flag&HeadersRead) {
+	if (isHeadersRead()) {
 		if ((m_Flag&ENCODEBITS) == EncodeChunked) {
 			if (!m_ChunkLength) {
 				sscanf(Buffer + o, "%1023s\r\n%n", NameBuffer, &k);
@@ -324,8 +153,7 @@ bool LWEHttpRequest::Deserialize(const char *Buffer, uint32_t Len) {
 					return true;
 				}
 				return Deserialize(Buffer + o, Len - o);
-			}
-			else {
+			} else {
 				uint32_t Remain = std::min<uint32_t>(sizeof(m_Body) - m_ContentLength, std::min<uint32_t>(Len, m_ChunkLength));
 				memcpy(m_Body + m_ContentLength, Buffer, Remain);
 				m_ContentLength += Remain;
@@ -336,11 +164,10 @@ bool LWEHttpRequest::Deserialize(const char *Buffer, uint32_t Len) {
 				m_Body[m_ContentLength] = '\0';
 				return o != Len ? Deserialize(Buffer + o, Len - o) : true;
 			}
-		}
-		else {
+		} else {
 			uint32_t Remain = std::min<uint32_t>((sizeof(m_Body)) - m_ChunkLength, Len);
 			uint32_t ContentEncodeBits = (m_Flag&CONTENTENCODEBITS);
-			memcpy(m_Body + m_ChunkLength, Buffer, Remain);
+			std::copy(Buffer, Buffer + Remain, m_Body + m_ChunkLength);
 			m_ChunkLength += Remain;
 			if (!ContentEncodeBits) {
 				if (m_ChunkLength == sizeof(m_Body)) m_ChunkLength--;
@@ -372,7 +199,7 @@ bool LWEHttpRequest::Deserialize(const char *Buffer, uint32_t Len) {
 			}
 		}
 		if (i == MethodCnt) {
-			std::cout << "Unknown method: '" << NameBuffer << "'" << std::endl;
+			fmt::print("Unknown method: '{}'\n", NameBuffer);
 			return false;
 		}
 	}
@@ -389,25 +216,24 @@ bool LWEHttpRequest::Deserialize(const char *Buffer, uint32_t Len) {
 		sscanf(Buffer + o, "%1023[^:]: %1023[^\r]%n", NameBuffer, ResultBuffer, &k);
 		if (k == 0) return false;
 		o += k + 2;
-		if (!_stricmp(NameBuffer, "Host")) strncat(m_Host, ResultBuffer, sizeof(m_Host));
-		else if (!_stricmp(NameBuffer, "Content-Type")) strncat(m_ContentType, ResultBuffer, sizeof(m_ContentType));
-		else if (!_stricmp(NameBuffer, "Accept")) strncat(m_ContentType, ResultBuffer, sizeof(m_ContentType));
-		else if (!_stricmp(NameBuffer, "Authorization")) strncat(m_Authorization, ResultBuffer, sizeof(m_Authorization));
+		if (!_stricmp(NameBuffer, "Host")) strlcpy(m_Host, ResultBuffer, sizeof(m_Host));
+		else if (!_stricmp(NameBuffer, "Content-Type")) strlcpy(m_ContentType, ResultBuffer, sizeof(m_ContentType));
+		else if (!_stricmp(NameBuffer, "Accept")) strlcpy(m_ContentType, ResultBuffer, sizeof(m_ContentType));
+		else if (!_stricmp(NameBuffer, "Authorization")) strlcpy(m_Authorization, ResultBuffer, sizeof(m_Authorization));
 		else if (!_stricmp(NameBuffer, "Content-Length")) m_ContentLength = atoi(ResultBuffer);
 		else if (!_stricmp(NameBuffer, "Accept-Encoding")) {}
-		else if (!_stricmp(NameBuffer, "Origin")) strncat(m_Origin, ResultBuffer, sizeof(m_Origin));
-		else if (!_stricmp(NameBuffer, "Sec-WebSocket-Key")) strncat(m_SecWebSockKey, ResultBuffer, sizeof(m_SecWebSockKey));
-		else if (!_stricmp(NameBuffer, "Sec-WebSocket-Accept")) strncat(m_SecWebSockKey, ResultBuffer, sizeof(m_SecWebSockKey));
-		else if (!_stricmp(NameBuffer, "Sec-WebSocket-Protocol")) strncat(m_SecWebSockProto, ResultBuffer, sizeof(m_SecWebSockProto));
+		else if (!_stricmp(NameBuffer, "Origin")) strlcpy(m_Origin, ResultBuffer, sizeof(m_Origin));
+		else if (!_stricmp(NameBuffer, "Sec-WebSocket-Key")) strlcpy(m_SecWebSockKey, ResultBuffer, sizeof(m_SecWebSockKey));
+		else if (!_stricmp(NameBuffer, "Sec-WebSocket-Accept")) strlcpy(m_SecWebSockKey, ResultBuffer, sizeof(m_SecWebSockKey));
+		else if (!_stricmp(NameBuffer, "Sec-WebSocket-Protocol")) strlcpy(m_SecWebSockProto, ResultBuffer, sizeof(m_SecWebSockProto));
 		else if (!_stricmp(NameBuffer, "Sec-WebSocket-Version")) m_WebSockVersion = atoi(ResultBuffer);
 		else if (!_stricmp(NameBuffer, "Cache-Control")) {
 			if (!_stricmp(ResultBuffer, "no-cache")) m_Flag |= NoCacheControl;
 		}else if (!_stricmp(NameBuffer, "Connection")) {
-			for (const char *C = ResultBuffer; C; C = LWText::FirstToken(C, ',')) {
-				C = LWText::NextWord(C == ResultBuffer ? C : (C + 1), true);
-				if (!_strnicmp(C, "close", 5)) m_Flag &= ~CONNECTIONBITS;
-				else if (!_strnicmp(C, "keep-alive", 10)) m_Flag |= ConnectionKeepAlive;
-				else if (!_strnicmp(C, "upgrade", 7)) m_Flag |= ConnectionUpgrade;
+			for (LWUTF8Iterator C = ResultBuffer; !C.AtEnd(); C.AdvanceToken(',').Advance().AdvanceWord(true)) {
+				if (C.Compare("close", 5)) m_Flag &= ~CONNECTIONBITS;
+				else if (C.Compare("keep-alive", 10)) m_Flag |= ConnectionKeepAlive;
+				else if (C.Compare("upgrade", 7)) m_Flag |= ConnectionUpgrade;
 			}
 		}else if (!_stricmp(NameBuffer, "Transfer-Encoding")) {
 			if (!_stricmp(ResultBuffer, "chunked")) m_Flag |= EncodeChunked;
@@ -420,151 +246,62 @@ bool LWEHttpRequest::Deserialize(const char *Buffer, uint32_t Len) {
 		}else if(!_stricmp(NameBuffer, "Upgrade")){
 			if (!_stricmp(ResultBuffer, "websocket")) m_Flag |= UpgradeWebSock;
 		}else {
-			std::cout << "header: '" << NameBuffer << "' - '" << ResultBuffer << "'" << std::endl;
+			fmt::print("Header: '{}' - '{}'\n", NameBuffer, ResultBuffer);
 		}
 
 	}
 	return true;
 }
 
-LWEHttpRequest &LWEHttpRequest::SetURI(const char *URI) {
-	char ProtocolBuffer[256];
-	m_Port = ParseURI(URI, m_Host, sizeof(m_Host), nullptr, m_Path, sizeof(m_Path), nullptr, ProtocolBuffer, sizeof(ProtocolBuffer), nullptr);
+LWEHttpRequest &LWEHttpRequest::SetURI(const LWUTF8Iterator &URI) {
+	LWUTF8Iterator Proto, Domain, Path;
+	LWSocket::SplitURI(URI, m_Port, Domain, Proto, Path);
+	Domain.Copy(m_Host, sizeof(m_Host));
+	Path.Copy(m_Path, sizeof(m_Path));
 	return *this;
 }
 
-LWEHttpRequest &LWEHttpRequest::SetURIf(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetURI(Buffer);
-}
-
-LWEHttpRequest &LWEHttpRequest::SetHost(const char *Host) {
-	*m_Host = '\0';
-	strncat(m_Host, Host, sizeof(m_Host));
+LWEHttpRequest &LWEHttpRequest::SetHost(const LWUTF8Iterator &Host) {
+	Host.Copy(m_Host, sizeof(m_Host));
 	return *this;
 }
 
-LWEHttpRequest &LWEHttpRequest::SetHostf(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetHost(Buffer);
-}
-
-LWEHttpRequest &LWEHttpRequest::SetPath(const char *Path) {
-	*m_Path = '\0';
-	strncat(m_Path, Path, sizeof(m_Path));
+LWEHttpRequest &LWEHttpRequest::SetPath(const LWUTF8Iterator &Path) {
+	Path.Copy(m_Path, sizeof(m_Path));
 	return *this;
 }
 
-LWEHttpRequest &LWEHttpRequest::SetPathf(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetPath(Buffer);
-}
-
-LWEHttpRequest &LWEHttpRequest::SetOrigin(const char *Origin) {
-	*m_Origin = '\0';
-	strncat(m_Origin, Origin, sizeof(m_Origin));
+LWEHttpRequest &LWEHttpRequest::SetOrigin(const LWUTF8Iterator &Origin) {
+	Origin.Copy(m_Origin, sizeof(m_Origin));
 	return *this;
 }
 
-LWEHttpRequest &LWEHttpRequest::SetOriginf(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetOrigin(Buffer);
-}
-
-LWEHttpRequest &LWEHttpRequest::SetWebSockKey(const char *Key) {
-	*m_SecWebSockKey = '\0';
-	strncat(m_SecWebSockKey, Key, sizeof(m_SecWebSockKey));
+LWEHttpRequest &LWEHttpRequest::SetWebSockKey(const LWUTF8Iterator &Key) {
+	Key.Copy(m_SecWebSockKey, sizeof(m_SecWebSockKey));
 	return *this;
 }
 
-LWEHttpRequest &LWEHttpRequest::SetWebSockKeyf(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetWebSockKey(Buffer);
-}
-
-LWEHttpRequest &LWEHttpRequest::SetWebSockProto(const char *Protocols) {
-	*m_SecWebSockProto = '\0';
-	strncat(m_SecWebSockProto, Protocols, sizeof(m_SecWebSockProto));
+LWEHttpRequest &LWEHttpRequest::SetWebSockProto(const LWUTF8Iterator &Protocols) {
+	Protocols.Copy(m_SecWebSockProto, sizeof(m_SecWebSockProto));
 	return *this;
 }
 
-LWEHttpRequest &LWEHttpRequest::SetWebSockProtof(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetWebSockProto(Buffer);
-}
-
-LWEHttpRequest &LWEHttpRequest::SetAuthorization(const char *Auth) {
-	*m_Authorization = '\0';
-	strncat(m_Authorization, Auth, sizeof(m_Authorization));
+LWEHttpRequest &LWEHttpRequest::SetAuthorization(const LWUTF8Iterator &Auth) {
+	Auth.Copy(m_Authorization, sizeof(m_Authorization));
 	return *this;
 }
 
-LWEHttpRequest &LWEHttpRequest::SetAuthorizationf(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetAuthorization(Buffer);
-}
-
-LWEHttpRequest &LWEHttpRequest::SetContentType(const char *ContentType) {
-	*m_ContentType = '\0';
-	strncat(m_ContentType, ContentType, sizeof(m_ContentType));
+LWEHttpRequest &LWEHttpRequest::SetContentType(const LWUTF8Iterator &ContentType) {
+	ContentType.Copy(m_ContentType, sizeof(m_ContentType));
 	return *this;
 }
 
-LWEHttpRequest &LWEHttpRequest::SetContentTypef(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetContentType(Buffer);
-}
-
-LWEHttpRequest &LWEHttpRequest::SetBody(const char *Body) {
-	*m_Body = '\0';
-	strncat(m_Body, Body, sizeof(m_Body));
-	m_ContentLength = (uint32_t)strlen(m_Body);
+LWEHttpRequest &LWEHttpRequest::SetBody(const LWUTF8Iterator &Body) {
+	m_ContentLength = Body.Copy(m_Body, sizeof(m_Body)) - 1;//-1 to Remove null char.
 	return *this;
 }
 
-LWEHttpRequest &LWEHttpRequest::SetBodyf(const char *Fmt, ...) {
-	char Buffer[1024];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-
-	return SetBody(Buffer);
-}
-
-LWEHttpRequest &LWEHttpRequest::SetCallback(std::function<void(LWEHttpRequest &, const char *)> Callback) {
+LWEHttpRequest &LWEHttpRequest::SetCallback(LWEHttpResponseCallback Callback) {
 	m_Callback = Callback;
 	return *this;
 }
@@ -584,74 +321,97 @@ LWEHttpRequest &LWEHttpRequest::SetCacheState(uint32_t CacheState) {
 	return *this;
 }
 
-uint32_t LWEHttpRequest::GetCacheState(void) {
+LWUTF8Iterator LWEHttpRequest::GetBody(void) const {
+	return m_Body;
+}
+
+LWUTF8Iterator LWEHttpRequest::GetHost(void) const {
+	return m_Host;
+}
+
+LWUTF8Iterator LWEHttpRequest::GetPath(void) const {
+	return m_Path;
+}
+
+LWUTF8Iterator LWEHttpRequest::GetOrigin(void) const {
+	return m_Origin;
+}
+
+LWUTF8Iterator LWEHttpRequest::GetAuthorization(void) const {
+	return m_Authorization;
+}
+
+LWUTF8Iterator LWEHttpRequest::GetContentType(void) const {
+	return m_ContentType;
+}
+
+LWUTF8Iterator LWEHttpRequest::GetTransferEncoding(void) const {
+	return m_TransferEncoding;
+}
+
+LWUTF8Iterator LWEHttpRequest::GetSecWebSockKey(void) const {
+	return m_SecWebSockKey;
+}
+
+LWUTF8Iterator LWEHttpRequest::GetSecWebSockProto(void) const {
+	return m_SecWebSockProto;
+}
+
+uint32_t LWEHttpRequest::GetCacheState(void) const {
 	return m_Flag&CACHEBITS;
 }
 
-uint32_t LWEHttpRequest::GetConnectionState(void) {
+uint32_t LWEHttpRequest::GetConnectionState(void) const {
 	return m_Flag&CONNECTIONBITS;
 }
 
-bool LWEHttpRequest::CloseConnection(void){
+bool LWEHttpRequest::CloseConnection(void) const {
 	return (m_Flag&CONNECTIONBITS) == 0;
 }
 
-bool LWEHttpRequest::KeepAliveConnection(void){
+bool LWEHttpRequest::KeepAliveConnection(void) const{
 	return (m_Flag&ConnectionKeepAlive) != 0;
 }
 
-bool LWEHttpRequest::UpgradeConnection(void) {
+bool LWEHttpRequest::UpgradeConnection(void) const {
 	return (m_Flag&ConnectionUpgrade) != 0;
 }
 
-uint32_t LWEHttpRequest::GetMethod(void) {
+uint32_t LWEHttpRequest::GetMethod(void) const {
 	return m_Flag&METHODBITS;
 }
 
-uint32_t LWEHttpRequest::GetEncodeType(void) {
+uint32_t LWEHttpRequest::GetEncodeType(void) const {
 	return m_Flag&ENCODEBITS;
 }
 
-uint32_t LWEHttpRequest::GetUpgradeType(void) {
+uint32_t LWEHttpRequest::GetUpgradeType(void) const {
 	return m_Flag&UPGRADEBITS;
 }
 
-LWEHttpRequest::LWEHttpRequest(const char *URI, uint32_t Flag) : m_Socket(nullptr), m_Flag(Flag), m_Status(0), m_Callback(nullptr), m_UserData(nullptr), m_ContentLength(0), m_ChunkLength(0), m_Port(80), m_WebSockVersion(0) {
-	m_Host[0] = '\0';
-	m_Path[0] = '\0';
-	m_Authorization[0] = '\0';
-	m_ContentType[0] = '\0';
-	m_Body[0] = '\0';
-	m_Origin[0] = '\0';
-	m_SecWebSockKey[0] = '\0';
-	m_SecWebSockProto[0] = '\0';
-	SetURI(URI);
+bool LWEHttpRequest::isHeadersRead(void) const {
+	return (m_Flag & HeadersRead) != 0;
 }
 
-LWEHttpRequest::LWEHttpRequest() : m_Socket(nullptr), m_Flag(0), m_Status(0), m_Callback(nullptr), m_UserData(nullptr), m_ContentLength(0), m_ChunkLength(0), m_Port(80), m_WebSockVersion(0) {
-	m_Host[0] = m_Path[0] = m_Authorization[0] = m_ContentType[0] = m_Body[0] = m_Origin[0] = m_SecWebSockKey[0] = m_SecWebSockProto[0] = '\0';
+bool LWEHttpRequest::isResponseReady(void) const {
+	return (m_Flag & ResponseReady) != 0;
+}
+
+LWEHttpRequest::LWEHttpRequest(const LWUTF8Iterator &URI, uint32_t Flag) : m_Flag(Flag) {
+	SetURI(URI);
 }
 
 
 LWProtocol &LWEProtocolHttp::Read(LWSocket &Socket, LWProtocolManager *Manager) {
 	char Buffer[1024 * 64];
-	if(Socket.GetFlag()&LWSocket::Listen){
-		LWSocket Acc;
-		if (!Socket.Accept(Acc, Socket.GetProtocolID())) {
-			std::cout << "Error accepting socket!" << std::endl;
-			return *this;
-		}
-		Manager->PushSocket(Acc);
-		return *this;
-	}
-	int32_t r = Socket.Receive(Buffer, sizeof(Buffer));
+	int32_t r = Socket.Receive(Buffer, sizeof(Buffer)-1);
 	if (r <= 0) {
 		Socket.MarkClosable();
 		return *this;
 	}
 	Buffer[r] = '\0';
 	if (!ProcessRead(Socket, Buffer, r)) {
-		std::cout << "Error parsing HTTP buffer." << std::endl;
+		fmt::print("Error parsing HTTP buffer.\n");
 	}
 	return *this;
 }
@@ -666,7 +426,7 @@ uint32_t LWEProtocolHttp::Send(LWSocket &Socket, const char *Buffer, uint32_t Le
 	for (uint32_t o = 0; o < Len;) {
 		int32_t r = Socket.Send(Buffer + o, Len - o);
 		if (r == -1) {
-			std::cout << "Error sending: " << Socket.GetSocketDescriptor() << " " << std::endl;
+			fmt::print("Socket {} Error: {}\n", Socket.GetSocketDescriptor(), LWProtocolManager::GetError());
 			return 1;
 		}
 		o += (uint32_t)r;
@@ -684,21 +444,21 @@ bool LWEProtocolHttp::ProcessRead(LWSocket &Socket, const char *Buffer, uint32_t
 		Insert = true;
 	}
 	if (!Req->Deserialize(Buffer, Len)) {
-		std::cout << "Error deserializing response." << std::endl;
+		fmt::print("Error deserializing response.\n");
 		return false;
 	}
 	if (Insert) {
 		if (!GetNextFromPool(&Req)) {
-			std::cout << "Could not get a request to write to from pool." << std::endl;
+			fmt::print("Could not get a request to write to from pool.\n");
 			return false;
 		}
 		*Req = IReq;
 		Socket.SetProtocolData(m_ProtocolID, Req);
 	}
-	if (Req->m_Flag&LWEHttpRequest::ResponseReady) {
+	if(Req->isResponseReady()) {
 		if (Req->m_Status == 0) {
 			if (!m_InRequests.Push(*Req, &Req)) {
-				std::cout << "Failed to insert into request." << std::endl;
+				fmt::print("Failed to insert response into request queue.\n");
 				return false;
 			}
 			Socket.SetProtocolData(m_ProtocolID, Req);
@@ -721,23 +481,23 @@ LWEProtocolHttp &LWEProtocolHttp::ProcessRequests(uint32_t ProtocolID, LWProtoco
 		uint32_t Len = Request->Serialize(Buffer, sizeof(Buffer), IsResponse ? m_Agent : m_Server);
 		if (!Len) continue;
 		if (!Request->m_Socket) {
-			uint32_t Error = LWSocket::CreateSocket(Sock, LWText(Request->m_Host), Request->m_Port, (uint32_t)LWSocket::Tcp, ProtocolID);
+			uint32_t Error = LWSocket::CreateSocket(Sock, Request->m_Host, Request->m_Port, LWSocket::Tcp, ProtocolID);
 			if (Error) {
-				std::cout << "Error connecting to: '" << Request->m_Host << ":" << Request->m_Port << "' " << Error << std::endl;
+				fmt::print("'{}:{}' Error: {}\n", Request->GetHost(), Request->m_Port, Error);
 				continue;
 			}
 			Request->m_Socket = Manager.PushSocket(Sock);
 			//std::cout << "Making socket: " << Request->m_Socket->GetSocketDescriptor() << std::endl;
 			Request->m_Socket->SetProtocolData(m_ProtocolID, Request);
 			if (!Request->m_Socket) {
-				std::cout << "Error inserting socket." << std::endl;
+				fmt::print("Error inserting socket.\n");
 				continue;
 			}
 		}
 
 		uint32_t Res = Send(*Request->m_Socket, Buffer, Len);
 		if (Res == -1) {
-			std::cout << "Error sending request." << std::endl;
+			fmt::print("Error sending request.\n");
 			continue;
 		}
 		if (Request->CloseConnection()) Request->m_Socket->MarkClosable();
@@ -770,31 +530,21 @@ bool LWEProtocolHttp::PushRequest(LWEHttpRequest &Request) {
 	return m_OutRequests.Push(Req);
 }
 
-bool LWEProtocolHttp::PushResponse(LWEHttpRequest &InRequest, const char *Response, uint32_t lStatus) {
+bool LWEProtocolHttp::PushResponse(LWEHttpRequest &InRequest, const LWUTF8Iterator &Response, uint32_t lStatus) {
 	LWEHttpRequest Request = InRequest;
 	Request.m_Status = lStatus;
 	Request.SetBody(Response);
 	return m_OutRequests.Push(Request);
 }
 
-LWEProtocolHttp &LWEProtocolHttp::SetAgentString(const char *Agent) {
-	m_Agent[0] = '\0';
-	strncat(m_Agent, Agent, sizeof(m_Agent));
+LWEProtocolHttp &LWEProtocolHttp::SetAgentString(const LWUTF8Iterator &Agent) {
+	Agent.Copy(m_Agent, sizeof(m_Agent));
 	return *this;
 }
 
-LWEProtocolHttp &LWEProtocolHttp::SetServerString(const char *Server) {
-	m_Server[0] = '\0';
-	strncat(m_Server, Server, sizeof(m_Server));
+LWEProtocolHttp &LWEProtocolHttp::SetServerString(const LWUTF8Iterator &Server) {
+	Server.Copy(m_Server, sizeof(m_Server));
 	return *this;
 }
 
-LWEProtocolHttp::LWEProtocolHttp(uint32_t ProtocolID, LWProtocolManager *Manager) : LWProtocol(), m_ProtocolID(ProtocolID), m_Manager(m_Manager) {
-	m_Agent[0] = '\0';
-	m_Server[0] = '\0';
-}
-
-LWEProtocolHttp::LWEProtocolHttp() : LWProtocol(), m_ProtocolID(0), m_Manager(nullptr) {
-	m_Agent[0] = '\0';
-	m_Server[0] = '\0';
-}
+LWEProtocolHttp::LWEProtocolHttp(uint32_t ProtocolID, LWProtocolManager *Manager) : LWProtocol(), m_ProtocolID(ProtocolID), m_Manager(m_Manager) {}

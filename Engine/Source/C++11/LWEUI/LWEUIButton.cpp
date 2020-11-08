@@ -3,30 +3,27 @@
 #include "LWELocalization.h"
 #include <iostream>
 
-LWEUIButton *LWEUIButton::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
+LWEUIButton *LWEUIButton::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
 	char Buffer[256];
-	LWAllocator *Allocator = Manager->GetAllocator();
+	LWAllocator &Allocator = Manager->GetAllocator();
 	LWELocalization *Localize = Manager->GetLocalization();
-	LWEUIButton *Button = Allocator->Allocate<LWEUIButton>(nullptr, nullptr, nullptr, LWVector4f(0.0f), LWVector4f(0.0f), FocusAble | TabAble);
+	LWEUIButton *Button = Allocator.Create<LWEUIButton>(nullptr, nullptr, nullptr, LWVector4f(0.0f), LWVector4f(0.0f), FocusAble | TabAble);
 	LWEUI::XMLParse(Button, Node, XML, Manager, Style, ActiveComponentName, ActiveComponent,  ActiveComponentNode, StyleMap, ComponentMap);
-	LWXMLAttribute *OverAttr = LWEUI::FindAttribute(Node, Style, "OverMaterial");
-	LWXMLAttribute *DownAttr = LWEUI::FindAttribute(Node, Style, "DownMaterial");
-	LWXMLAttribute *OffAttr = LWEUI::FindAttribute(Node, Style, "OffMaterial");
+	LWEXMLAttribute *OverAttr = LWEUI::FindAttribute(Node, Style, "OverMaterial");
+	LWEXMLAttribute *DownAttr = LWEUI::FindAttribute(Node, Style, "DownMaterial");
+	LWEXMLAttribute *OffAttr = LWEUI::FindAttribute(Node, Style, "OffMaterial");
 	LWEUIMaterial *OverMat = nullptr;
 	LWEUIMaterial *DownMat = nullptr;
 	LWEUIMaterial *OffMat = nullptr;
 
 	if (OverAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), OverAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		OverMat = Manager->GetMaterial(Res);
+		OverMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), OverAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	}
 	if (DownAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), DownAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		DownMat = Manager->GetMaterial(Res);
+		DownMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), DownAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	}
 	if (OffAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), OffAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		OffMat = Manager->GetMaterial(Res);
+		OffMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), OffAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	}
 	Button->SetOverMaterial(OverMat).SetDownMaterial(DownMat).SetOffMaterial(OffMat);
 

@@ -11,39 +11,25 @@
 #include <iostream>
 
 
-uint32_t LWWindow::MakeDialog(const LWText &Text, const LWText &Header, uint32_t DialogFlags){
-	std::cout << "No dialog is available for this platform: '" << Text.GetCharacters() << "'" << std::endl;
+uint32_t LWWindow::MakeDialog(const LWUTF8Iterator &Text, const LWUTF8Iterator &Header, uint32_t DialogFlags){
+	fmt::print("Dialog: {}: {}\n", Header, Text);
 	NDKFlushOutput();
-	/*
-	uint32_t DFlag = MB_ICONINFORMATION;
-	if (DialogFlags&DialogCancel){
-		if (DialogFlags&DialogOK) DFlag |= MB_OKCANCEL;
-		if (DFlag&(DialogYES | DialogNo)) DFlag |= MB_YESNOCANCEL;
-	}
-	else if (DialogFlags&DialogOK) DFlag |= MB_OK;
-	else if (DialogFlags&(DialogYES | DialogNo)) DFlag |= MB_YESNO;
-	int32_t Result = MessageBox(nullptr, (const char*)Text.GetCharacters(), (const char*)Header.GetCharacters(), DFlag);
-	if (Result == IDCANCEL) return DialogCancel;
-	else if (Result == IDOK)     return DialogOK;
-	else if (Result == IDYES)    return DialogYES;
-	else if (Result == IDNO)     return DialogNo;
-	*/
 	return 0;
 }
 
-bool LWWindow::MakeSaveFileDialog(const LWText &Filter, char *Buffer, uint32_t BufferLen) {
+bool LWWindow::MakeSaveFileDialog(const LWUTF8Iterator &Filter, char8_t *Buffer, uint32_t BufferLen) {
 	return false;
 }
 
-bool LWWindow::MakeLoadFileDialog(const LWText &Filter, char *Buffer, uint32_t BufferLen) {
+bool LWWindow::MakeLoadFileDialog(const LWUTF8Iterator &Filter, char8_t *Buffer, uint32_t BufferLen) {
 	return false;
 }
 
-uint32_t LWWindow::MakeLoadFileMultipleDialog(const LWText &Filter, char **Bufer, uint32_t BufferLen, uint32_t BufferCount) {
+uint32_t LWWindow::MakeLoadFileMultipleDialog(const LWUTF8Iterator &Filter, char8_t **Bufer, uint32_t BufferLen, uint32_t BufferCount) {
 	return 0;
 }
 
-bool LWWindow::WriteClipboardText(const LWText &Text) {
+bool LWWindow::WriteClipboardText(const LWUTF8Iterator &Text) {
 	static JNIEnv *Env = nullptr;
 	static uint32_t EnvCtr = 0;
 	static jclass WindowManagerClass = 0;
@@ -66,7 +52,7 @@ bool LWWindow::WriteClipboardText(const LWText &Text) {
 		ClipboardManager_setPrimaryClip = Env->GetMethodID(ClipboardManager, "setPrimaryClip", "(Landroid/content/ClipData;)V");
 	}
 	jstring Lbl = Env->NewStringUTF("Copied Text");
-	jstring Val = Env->NewStringUTF((const char*)Text.GetCharacters());
+	jstring Val = Env->NewStringUTF(*Text.c_str<256>());
 	jstring clips = Env->NewStringUTF("clipboard");
 	jobject ClipManager = Env->CallObjectMethod(LWAppContext.m_App->clazz, Context_GetSystemService, clips);
 	jobject Clip = Env->CallStaticObjectMethod(ClipData, ClipData_newPlainText, Lbl, Val);
@@ -79,7 +65,7 @@ bool LWWindow::WriteClipboardText(const LWText &Text) {
 	return true;
 }
 
-uint32_t LWWindow::ReadClipboardText(char *Buffer, uint32_t BufferLen) {
+uint32_t LWWindow::ReadClipboardText(char8_t *Buffer, uint32_t BufferLen) {
 	static JNIEnv *Env = nullptr;
 	static uint32_t EnvCtr = 0;
 	static jclass WindowManagerClass = 0;
@@ -123,8 +109,8 @@ uint32_t LWWindow::ReadClipboardText(char *Buffer, uint32_t BufferLen) {
 			jstring Text = (jstring)Env->CallObjectMethod(TextObj, CharSequence_toString);
 			const char *ts = Env->GetStringUTFChars(Text, nullptr);
 			if (ts) {
-				strncpy(Buffer, ts, BufferLen);
-				Res = strlen(Buffer);
+				strlcpy(Buffer, ts, BufferLen);
+				Res = strlen(ts)+1;
 			}
 			Env->DeleteLocalRef(Text);
 			Env->DeleteLocalRef(TextObj);
@@ -137,17 +123,9 @@ uint32_t LWWindow::ReadClipboardText(char *Buffer, uint32_t BufferLen) {
 	return Res;
 }
 
-LWWindow &LWWindow::SetTitle(const LWText &Title){
+LWWindow &LWWindow::SetTitle(const LWUTF8Iterator &Title){
+	m_Title = Title;
 	return *this;
-}
-
-LWWindow &LWWindow::SetTitlef(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetTitle(Buffer);
 }
 
 LWWindow &LWWindow::SetPosition(const LWVector2i &Position){
@@ -279,7 +257,7 @@ LWWindow &LWWindow::CloseKeyboard(void){
 	return *this;
 }
 
-LWWindow &LWWindow::SetKeyboardText(const char *Text) {
+LWWindow &LWWindow::SetKeyboardText(const LWUTF8Iterator &Text) {
 	return *this;
 }
 
@@ -387,7 +365,7 @@ bool LWWindow::ProcessWindowMessage(uint32_t Message, void *MessageData, uint64_
 
 	LWNDKEvent *Event = (LWNDKEvent*)MessageData;
 	if(Message==(uint32_t)LWNDKEventCode::Destroy){
-		std::cout << "Termination requested!" << std::endl;
+		fmt::print("Termination requested!\n");
 		m_Flag |= Terminate; //Since the app terminating also causes the event state to get incremented, we don't have to specify our syncing here.
 		return true;
 	}else if(Message==(uint32_t)LWNDKEventCode::InputQueueCreated){
@@ -486,12 +464,12 @@ LWWindow &LWWindow::Update(uint64_t lCurrentTime) {
 		AInputEvent *IEvent = nullptr;
 		while (AInputQueue_getEvent(m_Context.m_InputQueue, &IEvent) >= 0) {
 			if (AInputQueue_preDispatchEvent(m_Context.m_InputQueue, IEvent) != 0) {
-				std::cout << "preDispatched!" << std::endl;
+				fmt::print("preDispatched!\n");
 				continue;
 			}
 			bool Handled = false;
 			for (LWInputDevice *Device = m_FirstDevice; Device && !Handled; Device = Device->GetNext()) Handled = Device->ProcessSystemMessage(0, IEvent, lCurrentTime, this);
-			if (!Handled) std::cout << "Input event not handled!" << std::endl;
+			if (!Handled) fmt::print("Input event not handled.\n");
 			AInputQueue_finishEvent(m_Context.m_InputQueue, IEvent, Handled);
 		}
 	}
@@ -539,11 +517,11 @@ LWGamePad *LWWindow::GetActiveGamepadDevice(void) {
 	return m_ActiveGamepad;
 }
 
-const LWText &LWWindow::GetTitle(void) const{
+const LWUTF8 &LWWindow::GetTitle(void) const{
 	return m_Title;
 }
 
-const LWText &LWWindow::GetName(void) const{
+const LWUTF8 &LWWindow::GetName(void) const{
 	return m_Name;
 }
 
@@ -611,7 +589,7 @@ bool LWWindow::isVirtualKeyboardPresent(void) const {
 	return (m_Flag&KeyboardPresent) != 0;
 }
 
-LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocator, uint32_t Flag, const LWVector2i &Position, const LWVector2i &Size) : m_Allocator(&Allocator), m_FirstDevice(nullptr), m_Title(LWText(Title.GetCharacters(), Allocator)), m_Name(LWText(Name.GetCharacters(), Allocator)), m_Position(Position), m_Size(Size), m_Flag(Flag){
+LWWindow::LWWindow(const LWUTF8Iterator &Title, const LWUTF8Iterator &Name, LWAllocator &Allocator, uint32_t Flag, const LWVector2i &Position, const LWVector2i &Size) : m_Allocator(&Allocator), m_FirstDevice(nullptr), m_Title(Title, Allocator), m_Name(Name, Allocator), m_Position(Position), m_Size(Size), m_Flag(Flag){
 	static JNIEnv *Env = nullptr;
 	static uint32_t EnvCtr = 0;
 	static jclass ContextClass = 0;
@@ -654,14 +632,14 @@ LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocat
 	m_Context.m_SensorQueue = ASensorManager_createEventQueue(m_Context.m_SensorManager, ALooper_forThread(), 0, nullptr, nullptr);
 	m_Context.m_LastConfigCheck = 0;
 
-	if (m_Flag&KeyboardDevice) m_KeyboardDevice = AttachInputDevice(m_Allocator->Allocate<LWKeyboard>())->AsKeyboard();
-	if (m_Flag&TouchDevice) m_TouchDevice = AttachInputDevice(m_Allocator->Allocate<LWTouch>())->AsTouch();
+	if (m_Flag&KeyboardDevice) m_KeyboardDevice = AttachInputDevice(m_Allocator->Create<LWKeyboard>())->AsKeyboard();
+	if (m_Flag&TouchDevice) m_TouchDevice = AttachInputDevice(m_Allocator->Create<LWTouch>())->AsTouch();
 	if (m_Flag&AccelerometerDevice) {
 		const ASensor *DefSensor = ASensorManager_getDefaultSensor(m_Context.m_SensorManager, ASENSOR_TYPE_ACCELEROMETER);
 		if (DefSensor) {
 			ASensorEventQueue_enableSensor(m_Context.m_SensorQueue, DefSensor);
-			m_AccelerometerDevice = AttachInputDevice(m_Allocator->Allocate<LWAccelerometer>())->AsAccelerometer();
-		} else std::cout << "No accelerometer sensor detected." << std::endl;
+			m_AccelerometerDevice = AttachInputDevice(m_Allocator->Create<LWAccelerometer>())->AsAccelerometer();
+		} else fmt::print("No accelerometer sensor detected.\n");
 	}
 	if (m_Flag&GyroscopeDevice) {
 		const ASensor *DefSensor = ASensorManager_getDefaultSensor(m_Context.m_SensorManager, ASENSOR_TYPE_GYROSCOPE);
@@ -670,9 +648,9 @@ LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocat
 			float Resolution = ASensor_getResolution(DefSensor);
 			jfloat Range = Env->CallFloatMethod(jDefSensor, Sensor_getMaximumRange);
 			ASensorEventQueue_enableSensor(m_Context.m_SensorQueue, DefSensor);
-			m_GyroscopeDevice = AttachInputDevice(m_Allocator->Allocate<LWGyroscope>(Resolution, (float)Range))->AsGyroscope();
+			m_GyroscopeDevice = AttachInputDevice(m_Allocator->Create<LWGyroscope>(Resolution, (float)Range))->AsGyroscope();
 			Env->DeleteLocalRef(jDefSensor);
-		} else std::cout << "No Gyroscope sensor detected." << std::endl;
+		} else fmt::print("No Gyroscope sensor detected.\n");
 	}
 	Env->DeleteLocalRef(SensorManager);
 	Env->DeleteLocalRef(SensorString);

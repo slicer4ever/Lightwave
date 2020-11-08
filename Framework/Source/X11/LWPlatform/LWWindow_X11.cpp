@@ -10,53 +10,43 @@ LWWindowContext *ClipboardContext = nullptr;
 LWWindow *ClipboardWindow = nullptr;
 bool ClipSet = false;
 
-uint32_t LWWindow::MakeDialog(const LWText &Text, const LWText &Header, uint32_t DialogFlags){
-	std::cout << "No appropriate dialog is configured for this platform, Text: '" << Text.GetCharacters() << "'" << std::endl;
+uint32_t LWWindow::MakeDialog(const LWUTF8Iterator &Text, const LWUTF8Iterator &Header, uint32_t DialogFlags){
+	fmt::print("Dialog: {}: {}\n", Header, Text);
 	return 0;
 }
 
-bool LWWindow::MakeSaveFileDialog(const LWText &Filter, char *Buffer, uint32_t BufferLen) {
+bool LWWindow::MakeSaveFileDialog(const LWUTF8Iterator &Filter, char8_t *Buffer, uint32_t BufferLen) {
 	return false;
 }
 
-bool LWWindow::MakeLoadFileDialog(const LWText &Filter, char *Buffer, uint32_t BufferLen) {
+bool LWWindow::MakeLoadFileDialog(const LWUTF8Iterator &Filter, char8_t *Buffer, uint32_t BufferLen) {
 	return false;
 }
 
-uint32_t LWWindow::MakeLoadFileMultipleDialog(const LWText &Filter, char **Bufer, uint32_t BufferLen, uint32_t BufferCount) {
+uint32_t LWWindow::MakeLoadFileMultipleDialog(const LWUTF8Iterator &Filter, char8_t **Bufer, uint32_t BufferLen, uint32_t BufferCount) {
 	return 0;
 }
 
-bool LWWindow::WriteClipboardText(const LWText &Text) {
-	strncpy(WriteClipboardTextB, (const char*)Text.GetCharacters(), sizeof(WriteClipboardTextB));
+bool LWWindow::WriteClipboardText(const LWUTF8Iterator &Text) {
+	strlcpy(WriteClipboardTextB, *Text.c_str<256>(), sizeof(WriteClipboardTextB));
 	XSetSelectionOwner(ClipboardContext->m_Display, ClipboardContext->m_AtomList[X11_CLIPBOARD], ClipboardContext->m_Window, CurrentTime);
 	XFlush(ClipboardContext->m_Display);
 	return true;
 }
 
-uint32_t LWWindow::ReadClipboardText(char *Buffer, uint32_t BufferLen) {
+uint32_t LWWindow::ReadClipboardText(char8_t *Buffer, uint32_t BufferLen) {
 	Window Owner = XGetSelectionOwner(ClipboardContext->m_Display, ClipboardContext->m_AtomList[X11_CLIPBOARD]);
 	if (!Owner) return 0;
 	XConvertSelection(ClipboardContext->m_Display, ClipboardContext->m_AtomList[X11_CLIPBOARD], XA_STRING, ClipboardContext->m_AtomList[X11_CLIPBOARD], ClipboardContext->m_Window, CurrentTime);
 	ClipSet = false;
 	while (!ClipSet) ClipboardWindow->Update(LWTimer::GetCurrent());
-	strncpy(Buffer, RecvClipboardTextB, BufferLen);
-	return strlen(Buffer);
+	return strlcpy((char*)Buffer, RecvClipboardTextB, BufferLen);
 }
 
-LWWindow &LWWindow::SetTitle(const LWText &Title){
-	m_Title.Set(Title.GetCharacters());
-	XStoreName(m_Context.m_Display, m_Context.m_Window, (const char*)m_Title.GetCharacters());
+LWWindow &LWWindow::SetTitle(const LWUTF8Iterator &Title){
+	m_Title = Title;
+	XStoreName(m_Context.m_Display, m_Context.m_Window, m_Title.c_str());
 	return *this;
-}
-
-LWWindow &LWWindow::SetTitlef(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetTitle(Buffer);
 }
 
 LWWindow &LWWindow::SetPosition(const LWVector2i &Position){
@@ -173,7 +163,7 @@ LWWindow &LWWindow::SetKeyboardEditRange(uint32_t, uint32_t){
 	return *this;
 }
 
-LWWindow &LWWindow::SetKeyboardText(const char *) {
+LWWindow &LWWindow::SetKeyboardText(const LWUTF8Iterator &) {
 	return *this;
 }
 
@@ -252,7 +242,7 @@ bool LWWindow::ProcessWindowMessage(uint32_t Message, void *MessageData, uint64_
 			ClipSet = true;
 			return false;
 		}
-		strncpy(RecvClipboardTextB, (const char*)Result, sizeof(RecvClipboardTextB));
+		strlcpy(RecvClipboardTextB, (const char*)Result, sizeof(RecvClipboardTextB));
 		ClipSet = true;
 		return true;
 	}else{
@@ -310,11 +300,11 @@ LWGamePad *LWWindow::GetActiveGamepadDevice(void) {
 	return m_ActiveGamepad;
 }
 
-const LWText &LWWindow::GetTitle(void) const{
+const LWUTF8 &LWWindow::GetTitle(void) const{
 	return m_Title;
 }
 
-const LWText &LWWindow::GetName(void) const{
+const LWUTF8 &LWWindow::GetName(void) const{
 	return m_Name;
 }
 
@@ -382,7 +372,7 @@ bool LWWindow::isVirtualKeyboardPresent(void) const {
 	return (m_Flag&KeyboardPresent) != 0;
 }
 
-LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocator, uint32_t Flag, const LWVector2i &Position, const LWVector2i &Size) : m_Title(LWText(Title.GetCharacters(), Allocator)), m_Name(LWText(Name.GetCharacters(), Allocator)), m_Allocator(&Allocator), m_FirstDevice(nullptr), m_Position(Position), m_Size(Size), m_Flag(Flag){
+LWWindow::LWWindow(const LWUTF8 &Title, const LWUTF8 &Name, LWAllocator &Allocator, uint32_t Flag, const LWVector2i &Position, const LWVector2i &Size) : m_Title(LWText(Title.GetCharacters(), Allocator)), m_Name(LWText(Name.GetCharacters(), Allocator)), m_Allocator(&Allocator), m_FirstDevice(nullptr), m_Position(Position), m_Size(Size), m_Flag(Flag){
 	m_MouseDevice = nullptr;
 	m_KeyboardDevice = nullptr;
 	m_TouchDevice = nullptr;
@@ -397,15 +387,15 @@ LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocat
 	m_Context.m_Display = nullptr;
 	m_Context.m_Window = 0;
 	LWVector2i Pos = m_Position;
-	if (!(m_Context.m_Display = XOpenDisplay(nullptr))) MakeDialog(LWText("Error: 'XOpenDisplay'"), LWText("ERROR"), DialogOK);
+	if (!(m_Context.m_Display = XOpenDisplay(nullptr))) MakeDialog(u8"Error: 'XOpenDisplay'", u8"ERROR", DialogOK);
 	else{
 		m_Context.m_Root = DefaultRootWindow(m_Context.m_Display);
 		WindowAttrib.colormap = CopyFromParent;
 		WindowAttrib.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | FocusChangeMask | StructureNotifyMask;
-		if ((m_Context.m_Window = XCreateWindow(m_Context.m_Display, m_Context.m_Root, m_Position.x, m_Position.y, m_Size.x, m_Size.y, 0, CopyFromParent, InputOutput, CopyFromParent, CWColormap | CWEventMask, &WindowAttrib)) == 0) MakeDialog(LWText("Error: 'XCreateWindow'"), LWText("ERROR"), DialogOK);
+		if ((m_Context.m_Window = XCreateWindow(m_Context.m_Display, m_Context.m_Root, m_Position.x, m_Position.y, m_Size.x, m_Size.y, 0, CopyFromParent, InputOutput, CopyFromParent, CWColormap | CWEventMask, &WindowAttrib)) == 0) MakeDialog(u8"Error: 'XCreateWindow'", u8"ERROR", DialogOK);
 		else{
 			const char *AtomNames[] = X11_ATOM_NAMES;
-			if (XInternAtoms(m_Context.m_Display, (char**)AtomNames, X11_ATOM_COUNT, true, m_Context.m_AtomList) == 0) MakeDialog(LWText("Error: 'XInternAtoms'"), LWText("ERROR"), DialogOK);
+			if (XInternAtoms(m_Context.m_Display, (char**)AtomNames, X11_ATOM_COUNT, true, m_Context.m_AtomList) == 0) MakeDialog(u8"Error: 'XInternAtoms'", u8"ERROR", DialogOK);
 			else{
 				XSetWMProtocols(m_Context.m_Display, m_Context.m_Window, &m_Context.m_AtomList[X11_WM_DELETE_WINDOW], 1);
 				if ((m_Flag&Borderless) != 0){
@@ -414,11 +404,11 @@ LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocat
 				}
 				if ((m_Flag&Fullscreen) != 0) XChangeProperty(m_Context.m_Display, m_Context.m_Window, m_Context.m_AtomList[X11_NET_WM_STATE], XA_ATOM, 32, PropModeReplace, (uint8_t*)&m_Context.m_AtomList[X11_NET_WM_STATE_FULLSCREEN], 1);
 				XMapWindow(m_Context.m_Display, m_Context.m_Window);
-				XStoreName(m_Context.m_Display, m_Context.m_Window, (const char*)m_Title.GetCharacters());
+				XStoreName(m_Context.m_Display, m_Context.m_Window, m_Title.c_str());
 				XQueryTree(m_Context.m_Display, m_Context.m_Window, &m_Context.m_Root, &m_Context.m_Parent, &ChildWindows, &ChildWindowCnt);
 				XFree(ChildWindows);
 				if (m_Context.m_Parent != m_Context.m_Root) {
-					if (!XTranslateCoordinates(m_Context.m_Display, m_Context.m_Parent, m_Context.m_Root, Position.x, Position.y, &Pos.x, &Pos.y, &Child))  std::cout << "Error translating window." << std::endl;
+					if (!XTranslateCoordinates(m_Context.m_Display, m_Context.m_Parent, m_Context.m_Root, Position.x, Position.y, &Pos.x, &Pos.y, &Child)) fmt::print("Error translating window.\n");
 				}
 				XMoveWindow(m_Context.m_Display, m_Context.m_Window, Pos.x, Pos.y);
 				m_Flag |= Focused;
@@ -430,8 +420,8 @@ LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocat
 		m_Flag ^= Error;
 	}
 	if ((m_Flag&Error) == 0) {
-		if (Flag&MouseDevice) m_MouseDevice = AttachInputDevice(Allocator.Allocate<LWMouse>())->AsMouse();
-		if (Flag&KeyboardDevice) m_KeyboardDevice = AttachInputDevice(Allocator.Allocate<LWKeyboard>())->AsKeyboard();
+		if (Flag&MouseDevice) m_MouseDevice = AttachInputDevice(Allocator.Create<LWMouse>())->AsMouse();
+		if (Flag&KeyboardDevice) m_KeyboardDevice = AttachInputDevice(Allocator.Create<LWKeyboard>())->AsKeyboard();
 	}
 }
 

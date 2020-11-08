@@ -4,7 +4,6 @@
 #include <LWNetwork/LWProtocolManager.h>
 #include <LWCore/LWAllocator.h>
 #include <LWCore/LWCrypto.h>
-#include <LWCore/LWText.h>
 #include <LWCore/LWByteBuffer.h>
 #include <iostream>
 
@@ -71,7 +70,7 @@ uint32_t LWEWebPacket::Deserialize(const char *Buffer, uint32_t BufferLen, LWAll
 		l += (uint32_t)Len;
 		uint32_t DLen = l % 4;
 		DLen = l + (DLen == 0 ? 0 : 4 - DLen);
-		char *NewData = Allocator.AllocateArray<char>(DLen);
+		char *NewData = Allocator.AllocateA<char>(DLen);
 		char *OldData = m_Data;
 		std::copy(OldData, OldData + m_DataLen, NewData);
 		m_Data = NewData;
@@ -84,7 +83,7 @@ uint32_t LWEWebPacket::Deserialize(const char *Buffer, uint32_t BufferLen, LWAll
 		if (opCodes == CONTROL_TEXT) m_DataLen++;
 		uint32_t DLen = m_DataLen % 4;
 		DLen = m_DataLen + (DLen == 0 ? 0 : 4 - DLen);
-		m_Data = Allocator.AllocateArray<char>(DLen);
+		m_Data = Allocator.AllocateA<char>(DLen);
 	}
 	ReadData(Buf);
 	return Buf.GetPosition();
@@ -113,7 +112,7 @@ uint32_t LWEWebPacket::Serialize(char *Buffer, uint32_t BufferLen, bool isClient
 
 		Buf.Write<uint32_t>(Mask);
 		
-		//Uncomment when doing proper maksing.
+		//Uncomment when doing proper masking.
 		//uint32_t uMask = (Mask & 0xFF) << 24 | (Mask & 0xFF00) << 8 | (Mask & 0xFF0000) >> 8 | (Mask & 0xFF000000) >> 24;
 		//uint32_t *uData = (uint32_t*)m_Data;
 		//uint32_t uBytes = m_DataLen / 4 + (m_DataLen%4==0?0:1);
@@ -172,8 +171,6 @@ LWEWebPacket &LWEWebPacket::operator = (const LWEWebPacket &Other) {
 	return *this;
 }
 
-LWEWebPacket::LWEWebPacket() : m_Data(nullptr), m_DataPos(0), m_DataLen(0), m_FramePos(0), m_ControlFlag(0), m_WebSocket(nullptr) {}
-
 LWEWebPacket::LWEWebPacket(LWEWebPacket &&Other) : m_Data(Other.m_Data), m_DataPos(Other.m_DataPos), m_FramePos(Other.m_FramePos), m_DataLen(Other.m_DataLen), m_Mask(Other.m_Mask), m_ControlFlag(Other.m_ControlFlag), m_WebSocket(Other.m_WebSocket) {
 	Other.m_Data = nullptr;
 	Other.m_DataPos = 0;
@@ -184,11 +181,11 @@ LWEWebPacket::LWEWebPacket(LWEWebPacket &&Other) : m_Data(Other.m_Data), m_DataP
 	Other.m_WebSocket = nullptr;
 }
 
-LWEWebPacket::LWEWebPacket(const char *Data, uint32_t DataLen, LWAllocator &Allocator, uint32_t ControlFlag, LWEWebSocket *WebSocket) : m_Data(nullptr), m_DataLen(DataLen), m_DataPos(0), m_FramePos(0), m_Mask(0), m_ControlFlag(ControlFlag), m_WebSocket(WebSocket) {
+LWEWebPacket::LWEWebPacket(const char *Data, uint32_t DataLen, LWAllocator &Allocator, uint32_t ControlFlag, LWEWebSocket *WebSocket) : m_DataLen(DataLen), m_ControlFlag(ControlFlag), m_WebSocket(WebSocket) {
 	if (Data) {
 		uint32_t DLen = DataLen % 4;
 		DLen = DataLen + (DLen == 0 ? 0 : (4 - DLen));
-		m_Data = Allocator.AllocateArray<char>(DLen);
+		m_Data = Allocator.AllocateA<char>(DLen);
 		std::copy(Data, Data + m_DataLen, m_Data);
 	}
 }
@@ -197,94 +194,37 @@ LWEWebPacket::~LWEWebPacket() {
 	LWAllocator::Destroy(m_Data);
 }
 
-LWEWebSocket &LWEWebSocket::SetURI(const char *URI) {
-	char ProtocolBuffer[256];
-	m_Port = LWEHttpRequest::ParseURI(URI, m_Host, sizeof(m_Host), nullptr, m_Path, sizeof(m_Path), nullptr, ProtocolBuffer, sizeof(ProtocolBuffer), nullptr);
+LWEWebSocket &LWEWebSocket::SetURI(const LWUTF8Iterator &URI) {
+	LWUTF8Iterator Proto, Domain, Path;
+	LWSocket::SplitURI(URI, m_Port, Domain, Proto, Path);
+	Domain.Copy(m_Host, sizeof(m_Host));
+	Path.Copy(m_Path, sizeof(m_Path));
 	return *this;
 }
 
-LWEWebSocket &LWEWebSocket::SetURIf(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetURI(Buffer);
-}
-
-LWEWebSocket &LWEWebSocket::SetHost(const char *Host) {
-	*m_Host = '\0';
-	strncat(m_Host, Host, sizeof(m_Host));
+LWEWebSocket &LWEWebSocket::SetHost(const LWUTF8Iterator &Host) {
+	Host.Copy(m_Host, sizeof(m_Host));
 	return *this;
 }
 
-LWEWebSocket &LWEWebSocket::SetHostf(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetHost(Buffer);
-}
-
-LWEWebSocket &LWEWebSocket::SetPath(const char *Path) {
-	*m_Path = '\0';
-	strncat(m_Path, Path, sizeof(m_Path));
+LWEWebSocket &LWEWebSocket::SetPath(const LWUTF8Iterator &Path) {
+	Path.Copy(m_Path, sizeof(m_Path));
 	return *this;
 }
 
-LWEWebSocket &LWEWebSocket::SetPathf(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetPath(Buffer);
-}
-
-LWEWebSocket &LWEWebSocket::SetOrigin(const char *Origin) {
-	*m_Origin = '\0';
-	strncat(m_Origin, Origin, sizeof(m_Origin));
+LWEWebSocket &LWEWebSocket::SetOrigin(const LWUTF8Iterator &Origin) {
+	Origin.Copy(m_Origin, sizeof(m_Origin));
 	return *this;
 }
 
-LWEWebSocket &LWEWebSocket::SetOriginf(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetOrigin(Buffer);
-}
-
-LWEWebSocket &LWEWebSocket::SetSecKey(const char *Key) {
-	*m_SecKey = '\0';
-	strncat(m_SecKey, Key, sizeof(m_SecKey));
+LWEWebSocket &LWEWebSocket::SetSecKey(const LWUTF8Iterator &Key) {
+	Key.Copy(m_SecKey, sizeof(m_SecKey));
 	return *this;
 }
 
-LWEWebSocket &LWEWebSocket::SetSecKeyf(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetSecKey(Buffer);
-}
-
-LWEWebSocket &LWEWebSocket::SetSecProtocols(const char *Protocols) {
-	*m_SecProtocols = '\0';
-	strncat(m_SecProtocols, Protocols, sizeof(m_SecProtocols));
+LWEWebSocket &LWEWebSocket::SetSecProtocols(const LWUTF8Iterator &Protocols) {
+	Protocols.Copy(m_SecProtocols, sizeof(m_SecProtocols));
 	return *this;
-}
-
-LWEWebSocket &LWEWebSocket::SetSecProtocolsf(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetSecProtocols(Buffer);
 }
 
 LWEWebSocket &LWEWebSocket::GenerateKey(uint32_t seed) {
@@ -292,6 +232,26 @@ LWEWebSocket &LWEWebSocket::GenerateKey(uint32_t seed) {
 	uint32_t Len = LWCrypto::Base64Encode((const char*)Key, sizeof(Key), m_SecKey, sizeof(m_SecKey));
 	m_SecKey[Len] = '\0';
 	return *this;
+}
+
+LWUTF8Iterator LWEWebSocket::GetHost(void) const {
+	return m_Host;
+}
+
+LWUTF8Iterator LWEWebSocket::GetPath(void) const {
+	return m_Path;
+}
+
+LWUTF8Iterator LWEWebSocket::GetOrigin(void) const {
+	return m_Origin;
+}
+
+LWUTF8Iterator LWEWebSocket::GetSecKey(void) const {
+	return m_SecKey;
+}
+
+LWUTF8Iterator LWEWebSocket::GetSecProtocols(void) const {
+	return m_SecProtocols;
 }
 
 uint32_t LWEWebSocket::GetConnectStatus(void) {
@@ -303,28 +263,13 @@ bool LWEWebSocket::IsConnected(void) {
 	return lStatus == CONNECTED_CLIENT || lStatus == CONNECTED_SERVER;
 }
 
-LWEWebSocket::LWEWebSocket(const char *URI, const char *Origin) : m_Socket(nullptr), m_Flag(0), m_Port(80) {
-	*m_Host = *m_Path = *m_Origin = *m_SecKey = *m_SecProtocols = '\0';
-	if (URI) SetURI(URI);
-	if (Origin) SetOrigin(Origin);
+LWEWebSocket::LWEWebSocket(const LWUTF8Iterator &URI, const LWUTF8Iterator &Origin) {
+	SetURI(URI);
+	SetOrigin(Origin);
 }
 
-LWEWebSocket::~LWEWebSocket() {}
-
 LWProtocol &LWEProtocolWebSocket::Read(LWSocket &Socket, LWProtocolManager *Manager) {
-	char IPBuf[32];
 	char Buffer[64 * 1024]; //64 kb buffer!
-	if (Socket.GetFlag()&LWSocket::Listen){
-		LWSocket Accepted;
-		if (!Socket.Accept(Accepted)) {
-			std::cout << "Error accepting socket!" << std::endl;
-			return *this;
-		}
-		LWSocket::MakeAddress(Accepted.GetRemoteIP(), IPBuf, sizeof(IPBuf));
-		LWSocket *Res = Manager->PushSocket(Accepted);
-		if (!Res) std::cout << "Error inserting socket into protocol manager." << std::endl;
-		return *this;
-	}
 	uint32_t r = Socket.Receive(Buffer, sizeof(Buffer));
 	if (r == 0xFFFFFFFF) {
 		Socket.MarkClosable();
@@ -335,6 +280,8 @@ LWProtocol &LWEProtocolWebSocket::Read(LWSocket &Socket, LWProtocolManager *Mana
 }
 
 bool LWEProtocolWebSocket::ProcessRead(LWSocket &Socket, const char *Buffer, uint32_t BufferLen) {
+	const uint32_t MaxProtocolList = 32;
+	LWUTF8Iterator ProtocolList[MaxProtocolList];
 	char Buf[256];
 	char BufB[256];
 	LWEWebSocket *WebSocket = (LWEWebSocket*)Socket.GetProtocolData(m_ProtocolID);
@@ -346,26 +293,22 @@ bool LWEProtocolWebSocket::ProcessRead(LWSocket &Socket, const char *Buffer, uin
 		if (!Error && *Request.m_SecWebSockProto) {
 			bool ValidProtocol = false;
 			if (*m_SubProtocol) {
-				uint32_t ProtocolLen = (uint32_t)strlen(m_SubProtocol);
-				for (const char *C = Request.m_SecWebSockProto; C && !ValidProtocol; C = LWText::FirstToken(C, ',')) {
-					C = LWText::NextWord(*C == ',' ? C + 1 : C, true);
-					ValidProtocol = LWText::Compare(C, m_SubProtocol, ProtocolLen);
-				}
+				uint32_t ProtocolCnt = std::min<uint32_t>(Request.GetSecWebSockProto().SplitToken(ProtocolList, MaxProtocolList, ','), MaxProtocolList);
+				for (uint32_t i = 0; i < ProtocolCnt && !ValidProtocol; i++) ValidProtocol = ProtocolList[i].AdvanceWord(true).Compare(m_SubProtocol);
 			}
 			if (!ValidProtocol) Error = 3;
 		}
 		if (Error) {
-			if (Error == 1) std::cout << "Error deserializing websocket request." << std::endl;
-			else if (Error == 2) std::cout << "Error Headers did not include correct websocket data." << std::endl;
-			else if (Error == 3) std::cout << "Error protocol asked for is not supported. '" << Request.m_SecWebSockProto << "'" << std::endl;
+			if (Error == 1) fmt::print("Error deserializing websocket request.\n");
+			else if (Error == 2) fmt::print("Error Headers did not include correct websocket data.\n");
+			else if (Error == 3) fmt::print("Error protocol asked for is not supported: '{}'\n", Request.m_SecWebSockProto);
 			Socket.MarkClosable();
 			return false;
 		}
-		WebSocket = m_Allocator.Allocate<LWEWebSocket>(nullptr, nullptr);
+		WebSocket = m_Allocator.Create<LWEWebSocket>(LWUTF8Iterator(), LWUTF8Iterator());
 		WebSocket->m_Socket = &Socket;
-		*Buf = '\0';
-		strncat(Buf, Request.m_SecWebSockKey, sizeof(Buf));
-		strncat(Buf, LWEWEBSOCKET_GUID, sizeof(Buf));
+		strlcpy(Buf, Request.m_SecWebSockKey, sizeof(Buf));
+		strlcat(Buf, LWEWEBSOCKET_GUID, sizeof(Buf));
 		LWCrypto::HashSHA1(Buf, (uint32_t)strlen(Buf), BufB);
 		uint32_t *uBuf = (uint32_t*)BufB; //Order swap bytes before encoding.
 		for (uint32_t i = 0; i < 5; i++) uBuf[i] = (uBuf[i] & 0xFF) << 24 | (uBuf[i] & 0xFF00) << 8 | (uBuf[i] & 0xFF0000) >> 8 | (uBuf[i] & 0xFF000000) >> 24;
@@ -390,8 +333,8 @@ bool LWEProtocolWebSocket::ProcessRead(LWSocket &Socket, const char *Buffer, uin
 			//we should probably also validate the key....
 			
 			if (Error) {
-				if (Error == 1) std::cout << "Error deserializing websocket request." << std::endl;
-				else if (Error == 2) std::cout << "Error headers did not include correct websocket data." << std::endl;
+				if (Error == 1) fmt::print("Error deserializing websocket request.\n");
+				else if (Error == 2) fmt::print("Error headers did not include correct websocket data.\n");
 				Socket.MarkClosable();
 				return false;
 			}
@@ -409,7 +352,7 @@ bool LWEProtocolWebSocket::ProcessRead(LWSocket &Socket, const char *Buffer, uin
 	while (o != BufferLen) {
 		uint32_t Res = WebSocket->m_ActivePacket.Deserialize(Buffer + o, BufferLen - o, m_Allocator);
 		if (Res == -1) {
-			std::cout << "Error deserializing data." << std::endl;
+			fmt::print("Error deserializing data.\n");
 			return false;
 		}
 		o += Res;
@@ -452,16 +395,17 @@ LWProtocol &LWEProtocolWebSocket::SocketChanged(LWSocket &Prev, LWSocket &New, L
 	return *this;
 }
 
-bool LWEProtocolWebSocket::Send(LWSocket &Socket, const char *Buffer, uint32_t Len) {
-	for (uint32_t o = 0; o < Len;) {
+uint32_t LWEProtocolWebSocket::Send(LWSocket &Socket, const char *Buffer, uint32_t Len) {
+	uint32_t o = 0;
+	for (; o < Len;) {
 		int32_t r = Socket.Send(Buffer + o, Len - o);
 		if (r == -1) {
-			std::cout << "Error sending: " << Socket.GetSocketDescriptor() << " " << std::endl;
+			fmt::print("Error sending: {}\n", LWProtocolManager::GetError());
 			return false;
 		}
 		o += (uint32_t)r;
 	}
-	return true;
+	return o;
 }
 
 LWEProtocolWebSocket &LWEProtocolWebSocket::ProcessOutPackets(void) {
@@ -485,15 +429,15 @@ LWEProtocolWebSocket &LWEProtocolWebSocket::ProcessOutPackets(void) {
 				Request.m_WebSockVersion = LWEWEBSOCKET_SUPPVER;
 			} else Sock->m_Flag = (Sock->m_Flag&~LWEWebSocket::CONNECTING_SERVER) | LWEWebSocket::CONNECTED_SERVER;
 			uint32_t Len = Request.Serialize(Buffer, sizeof(Buffer), Sock->GetConnectStatus()==LWEWebSocket::CONNECTED_CLIENT?m_UserAgent:m_Server);
-			if (!Send(*Sock->m_Socket, Buffer, Len)) {
-				std::cout << "Error sending data." << std::endl;
+			if (Send(*Sock->m_Socket, Buffer, Len)!=Len) {
+				fmt::print("Error sending data.\n");
 				return *this;
 			}
 		}
 		if (RPack.m_ControlFlag&LWEWebPacket::CONTROL_CONNECT) continue; //discard as this was just to complete the upgrade transaction.
 		if(!Sock->IsConnected()){
 			if (!m_OutPackets.PushStart(&Pack, Target, ReservePos)) {
-				std::cout << "Error re-inserting packet." << std::endl;
+				fmt::print("Error re-inserting packet.\n");
 				return *this;
 			}
 			*Pack = std::move(RPack);
@@ -509,25 +453,31 @@ LWEProtocolWebSocket &LWEProtocolWebSocket::ProcessOutPackets(void) {
 }
 
 
-LWEWebSocket *LWEProtocolWebSocket::OpenSocket(const char *URI, uint32_t ProtocolID, const char *Origin){
-	char Host[256];
-	char Path[256];
-	char Protocol[256];
-	uint16_t Port = LWEHttpRequest::ParseURI(URI, Host, sizeof(Host), nullptr, Path, sizeof(Path), nullptr, Protocol, sizeof(Protocol), nullptr);
+LWEWebSocket *LWEProtocolWebSocket::OpenSocket(const LWUTF8Iterator &URI, uint32_t ProtocolID, const LWUTF8Iterator &Origin){
+	LWUTF8Iterator Proto, Domain, Path;
+	uint16_t Port;
+	LWSocket::SplitURI(URI, Port, Domain, Proto, Path);
 	LWSocket Sock;
-	uint32_t Err = LWSocket::CreateSocket(Sock, Host, Port, LWSocket::Tcp, ProtocolID);
+	uint32_t Err = LWSocket::CreateSocket(Sock, Domain, Port, LWSocket::Tcp, ProtocolID);
 	if(Err) {
-		std::cout << "Error creating socket: " << Err << std::endl;
+		fmt::print("Error establishing connection to '{}:{}': {}\n", Domain, Port, Err);
 		return nullptr;
 	}
 	LWSocket *S = m_Manager->PushSocket(Sock);
-	LWEWebSocket *WebSock = m_Allocator.Allocate<LWEWebSocket>(URI, Origin);
+	if (!S) {
+		fmt::print("Error inserting socket into manager.\n");
+		return nullptr;
+	}
+	LWEWebSocket *WebSock = m_Allocator.Create<LWEWebSocket>(URI, Origin);
 	WebSock->m_Flag |= LWEWebSocket::CONNECTING_CLIENT;
 	WebSock->GenerateKey(m_KeySeed++);
 	S->SetProtocolData(m_ProtocolID, WebSock);
-	WebSock->m_Socket = S;
-	
-	PushOutPacket(nullptr, 0, WebSock, LWEWebPacket::CONTROL_CONNECT);
+	WebSock->m_Socket = S;	
+	if (!PushOutPacket(nullptr, 0, WebSock, LWEWebPacket::CONTROL_CONNECT)) {
+		fmt::print("Error could not create initial connecting packet for websocket.\n");
+		S->MarkClosable();
+		return nullptr;
+	}
 	return WebSock;
 }
 
@@ -551,36 +501,29 @@ bool LWEProtocolWebSocket::GetNextPacket(LWEWebPacket &Packet) {
 	return true;
 }
 
-LWEProtocolWebSocket &LWEProtocolWebSocket::SetServer(const char *Server) {
-	*m_Server = '\0';
-	strncat(m_Server, Server, sizeof(m_Server));
+LWEProtocolWebSocket &LWEProtocolWebSocket::SetServer(const LWUTF8Iterator &Server) {
+	Server.Copy(m_Server, sizeof(m_Server));
 	return *this;
 }
 
-LWEProtocolWebSocket &LWEProtocolWebSocket::SetUserAgent(const char *Agent) {
-	*m_UserAgent = '\0';
-	strncat(m_UserAgent, Agent, sizeof(m_UserAgent));
+LWEProtocolWebSocket &LWEProtocolWebSocket::SetUserAgent(const LWUTF8Iterator &Agent) {
+	Agent.Copy(m_UserAgent, sizeof(m_UserAgent));
 	return *this;
 }
 
-LWEProtocolWebSocket &LWEProtocolWebSocket::SetSubProtocol(const char *SubProtocol) {
-	*m_SubProtocol = '\0';
-	strncat(m_SubProtocol, SubProtocol, sizeof(m_SubProtocol));
+LWEProtocolWebSocket &LWEProtocolWebSocket::SetSubProtocol(const LWUTF8Iterator &SubProtocol) {
+	SubProtocol.Copy(m_SubProtocol, sizeof(m_SubProtocol));
 	return *this;
 }
 
-LWEProtocolWebSocket &LWEProtocolWebSocket::SetWebSocketClosedCallback(std::function<bool(LWSocket &, LWEWebSocket*, LWProtocolManager*)> WebSocketClosedCallback) {
+LWEProtocolWebSocket &LWEProtocolWebSocket::SetWebSocketClosedCallback(LWEWebSocketClosedCallback WebSocketClosedCallback) {
 	m_WebSocketClosedCallback = WebSocketClosedCallback;
 	return *this;
 }
 
-LWEProtocolWebSocket &LWEProtocolWebSocket::SetWebSocketChangedCallback(std::function<void(LWSocket &, LWSocket &, LWEWebSocket *, LWProtocolManager *)> WebSocketChangedCallback) {
+LWEProtocolWebSocket &LWEProtocolWebSocket::SetWebSocketChangedCallback(LWEWebSocketChangedCallback WebSocketChangedCallback) {
 	m_WebSocketChangedCallback = WebSocketChangedCallback;
 	return *this;
 }
 
-LWEProtocolWebSocket::LWEProtocolWebSocket(uint32_t ProtocolID, LWAllocator &Allocator, LWProtocolManager *Manager) : m_ProtocolID(ProtocolID), m_Allocator(Allocator), m_Manager(Manager), m_KeySeed(0){
-	*m_Server = *m_UserAgent = *m_SubProtocol = '\0';
-	m_WebSocketClosedCallback = nullptr;
-	m_WebSocketChangedCallback = nullptr;
-}
+LWEProtocolWebSocket::LWEProtocolWebSocket(uint32_t ProtocolID, LWAllocator &Allocator, LWProtocolManager *Manager) : m_ProtocolID(ProtocolID), m_Allocator(Allocator), m_Manager(Manager) {}

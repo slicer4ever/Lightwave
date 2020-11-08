@@ -91,8 +91,8 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>../../../../../Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Dependency/Binarys/$(Configuration)/$(PlatformTarget)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;OpenGL32.lib;D3D11.lib;D3dcompiler.lib;dxguid.lib;libGLEW.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;libfreetype.lib;XAudio2.lib;XInput.lib;SHcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;OpenGL32.lib;D3D11.lib;D3dcompiler.lib;dxguid.lib;libGLEW.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;libfreetype.lib;XAudio2.lib;XInput.lib;SHcore.lib;libfmt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Windows</SubSystem>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -105,7 +105,7 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>../../../../../Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Dependency/Binarys/$(Configuration)/$(PlatformTarget)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;OpenGL32.lib;D3D11.lib;D3dcompiler.lib;dxguid.lib;libGLEW.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;libfreetype.lib;XAudio2.lib;XInput.lib;SHcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;OpenGL32.lib;D3D11.lib;D3dcompiler.lib;dxguid.lib;libGLEW.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;libfreetype.lib;XAudio2.lib;XInput.lib;SHcore.lib;libfmt.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
@@ -123,7 +123,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>../../../../../Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Dependency/Binarys/$(Configuration)/$(PlatformTarget)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;OpenGL32.lib;D3D11.lib;D3dcompiler.lib;dxguid.lib;libGLEW.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;libfreetype.lib;XAudio2.lib;XInput.lib;SHcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;OpenGL32.lib;D3D11.lib;D3dcompiler.lib;dxguid.lib;libGLEW.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;libfreetype.lib;XAudio2.lib;XInput.lib;SHcore.lib;libfmt.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
     </Link>
   </ItemDefinitionGroup>
@@ -135,13 +135,13 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>../../../../../Includes/C++11/</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_MBCS;WIN32_WINNT=0x0602;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_MBCS;WIN32_WINNT=0x0602;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>../../../../../Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Dependency/Binarys/$(Configuration)/$(PlatformTarget)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;OpenGL32.lib;D3D11.lib;D3dcompiler.lib;dxguid.lib;libGLEW.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;libfreetype.lib;XAudio2.lib;XInput.lib;SHcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;OpenGL32.lib;D3D11.lib;D3dcompiler.lib;dxguid.lib;libGLEW.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;libfreetype.lib;XAudio2.lib;XInput.lib;SHcore.lib;libfmt.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
     </Link>
   </ItemDefinitionGroup>

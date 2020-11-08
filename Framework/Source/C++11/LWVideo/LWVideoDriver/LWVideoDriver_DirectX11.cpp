@@ -4,7 +4,7 @@
 #include "LWVideo/LWFrameBuffer.h"
 #include "LWVideo/LWPipeline.h"
 #include "LWCore/LWVector.h"
-#include "LWCore/LWText.h"
+#include "LWCore/LWUnicode.h"
 #include "LWCore/LWMath.h"
 #include "LWPlatform/LWWindow.h"
 
@@ -48,7 +48,7 @@ LWVideoDriver &LWVideoDriver_DirectX11_1::ViewPort(const LWVector4i &Viewport) {
 	return *this;
 }
 
-LWShader *LWVideoDriver_DirectX11_1::CreateShader(uint32_t ShaderType, const char *Source, LWAllocator &Allocator, char *CompiledBuffer, char *ErrorBuffer, uint32_t *CompiledBufferLen, uint32_t ErrorBufferLen) {
+LWShader *LWVideoDriver_DirectX11_1::CreateShader(uint32_t ShaderType, const LWUTF8Iterator &Source, LWAllocator &Allocator, char *CompiledBuffer, char8_t *ErrorBuffer, uint32_t &CompiledBufferLen, uint32_t ErrorBufferLen) {
 	const uint32_t ShaderCnt = 4;
 	const char *CompileModes[ShaderCnt] = { "vs_5_0", "ps_5_0", "gs_5_0", "cs_5_0" };
 	uint32_t CompileFlag = D3D10_SHADER_ENABLE_STRICTNESS;
@@ -57,11 +57,11 @@ LWShader *LWVideoDriver_DirectX11_1::CreateShader(uint32_t ShaderType, const cha
 #endif
 	ID3D10Blob *Res = nullptr;
 	ID3D10Blob *Err = nullptr;
-
-	if (FAILED(D3DCompile(Source, strlen(Source), nullptr, nullptr, nullptr, "main", CompileModes[ShaderType], CompileFlag, 0, &Res, &Err))) {
+	uint32_t SrcLen = Source.RawDistance(Source.NextEnd());
+	if (FAILED(D3DCompile((const char*)Source(), SrcLen, nullptr, nullptr, nullptr, "main", CompileModes[ShaderType], CompileFlag, 0, &Res, &Err))) {
 		if (ErrorBuffer) {
 			*ErrorBuffer = '\0';
-			strncat(ErrorBuffer, (const char*)Err->GetBufferPointer(), ErrorBufferLen);
+			strlcat(ErrorBuffer, (const char*)Err->GetBufferPointer(), ErrorBufferLen);
 			Err->Release();
 			PerformErrorAnalysis(Source, ErrorBuffer, ErrorBufferLen);
 			return nullptr;
@@ -71,16 +71,16 @@ LWShader *LWVideoDriver_DirectX11_1::CreateShader(uint32_t ShaderType, const cha
 	uint32_t CompiledLen = (uint32_t)Res->GetBufferSize();
 	if (CompiledBuffer) {
 		*CompiledBuffer = '\0';
-		uint32_t Len = std::min<uint32_t>(CompiledLen, *CompiledBufferLen);
+		uint32_t Len = std::min<uint32_t>(CompiledLen, CompiledBufferLen);
 		std::copy(Compiled, Compiled + Len, CompiledBuffer);
-		*CompiledBufferLen = Len;
+		CompiledBufferLen = Len;
 	}
 	LWShader *Shdr = CreateShaderCompiled(ShaderType, Compiled, CompiledLen, Allocator, ErrorBuffer, ErrorBufferLen);
 	Res->Release();
 	return Shdr;
 }
 
-LWShader *LWVideoDriver_DirectX11_1::CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledLen, LWAllocator &Allocator, char *ErrorBuffer, uint32_t ErroBufferLen) {
+LWShader *LWVideoDriver_DirectX11_1::CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledLen, LWAllocator &Allocator, char8_t *ErrorBuffer, uint32_t ErroBufferLen) {
 	LWDirectX11_1ShaderContext Context;
 	D3D11_INPUT_ELEMENT_DESC LayoutElements[32];
 	DXGI_FORMAT DXFormats[] = { DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT,  DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R32G32B32_UINT, DXGI_FORMAT_R32G32B32_SINT, DXGI_FORMAT_R32G32B32_FLOAT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT };
@@ -95,9 +95,7 @@ LWShader *LWVideoDriver_DirectX11_1::CreateShaderCompiled(uint32_t ShaderType, c
 	if (Failed) return nullptr;
 	ID3D11ShaderReflection *Shdr = nullptr;
 	Failed = FAILED(D3DReflect(CompiledCode, CompiledLen, IID_ID3D11ShaderReflection, (void**)&Shdr));
-	if (Failed) {
-		return nullptr;
-	}
+	if (Failed) return nullptr;
 	D3D11_SHADER_DESC Desc;
 	Shdr->GetDesc(&Desc);
 	if (ShaderType == LWShader::Vertex) {
@@ -113,7 +111,7 @@ LWShader *LWVideoDriver_DirectX11_1::CreateShaderCompiled(uint32_t ShaderType, c
 			LayoutElements[i].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 			LayoutElements[i].InstanceDataStepRate = 0;
 			LayoutElements[i].Format = DXFormats[ParamOffset * 3 + ParamIdx];
-			Context.m_InputList[i] = { LWText::MakeHash(ParmDesc.SemanticName), ShdrFormats[ParamOffset * 3 + ParamIdx], 1 };
+			Context.m_InputList[i] = { LWUTF8Iterator((const char8_t*)ParmDesc.SemanticName).Hash(), ShdrFormats[ParamOffset * 3 + ParamIdx], 1 };
 		}
 		m_Context.m_DXDevice->CreateInputLayout(LayoutElements, Desc.InputParameters, CompiledCode, CompiledLen, &Context.m_InputLayout);
 		Context.m_InputCount = Desc.InputParameters;
@@ -124,7 +122,7 @@ LWShader *LWVideoDriver_DirectX11_1::CreateShaderCompiled(uint32_t ShaderType, c
 		Shdr->GetConstantBufferByIndex(i)->GetDesc(&BufferDesc);
 		if(BufferDesc.Type!=D3D_CT_CBUFFER) continue;
 		LWDirectX11_1ShaderResource &Block = Context.m_BlockList[Context.m_BlockCount];
-		Block.m_Name = LWText::MakeHash(BufferDesc.Name);
+		Block.m_Name = LWUTF8Iterator((const char8_t*)BufferDesc.Name).Hash();
 		Block.m_Type = LWPipeline::UniformBlock;
 		Block.m_Length = BufferDesc.Size;
 		Context.m_BlockCount++;
@@ -137,17 +135,17 @@ LWShader *LWVideoDriver_DirectX11_1::CreateShaderCompiled(uint32_t ShaderType, c
 		else if (Resource.Type == D3D_SIT_CBUFFER) continue;
 
 		LWDirectX11_1ShaderResource &Resrc = Context.m_ResourceList[Context.m_ResourceCount];
-		uint32_t NameHash = LWText::MakeHash(Resource.Name);
+		uint32_t NameHash = LWUTF8Iterator((const char8_t*)Resource.Name).Hash();
 		Resrc.m_Name = NameHash;
 		if (Resource.Type == D3D_SIT_TBUFFER || Resource.Type == D3D_SIT_TEXTURE) Resrc.m_Type = LWPipeline::Texture;
 		else if (Resource.Type == D3D_SIT_UAV_RWTYPED) Resrc.m_Type = LWPipeline::Image;
 		else if (Resource.Type == D3D_SIT_STRUCTURED || Resource.Type == D3D_SIT_BYTEADDRESS) Resrc.m_Type = LWPipeline::TextureBuffer;
 		else if (Resource.Type == D3D_SIT_UAV_RWSTRUCTURED || Resource.Type == D3D_SIT_UAV_RWBYTEADDRESS) Resrc.m_Type = LWPipeline::ImageBuffer;
-		else std::cout << "Error unknown resource: '" << Resource.Name << "' " << Resource.Type << std::endl;
+		else fmt::print("Error unknown resource: '{}' - {}", Resource.Name, Resource.Type);
 		Context.m_ResourceCount++;
 	}
 	Shdr->Release();
-	return Allocator.Allocate<LWDirectX11_1Shader>(Context, LWText::MakeHashb(CompiledCode, CompiledLen), ShaderType);
+	return Allocator.Create<LWDirectX11_1Shader>(Context, LWCrypto::HashFNV1A((const uint8_t*)CompiledCode, CompiledLen), ShaderType);
 }
 
 
@@ -189,7 +187,7 @@ LWPipeline *LWVideoDriver_DirectX11_1::CreatePipeline(LWPipeline *Source, LWAllo
 		for (uint32_t i = 0; i < CContext.m_ResourceCount; i++) ForceInsertResource(LWShaderResource::ComputeStage, CContext.m_ResourceList[i], ResourceList, ResourceCount);
 		Context.m_ComputeShader = CContext.m_ComputeShader;
 		Context.m_ComputeShader->AddRef();
-		return Allocator.Allocate<LWDirectX11_1Pipeline>(Context, StageList, BlockList, ResourceList, nullptr, BlockCount, ResourceCount, 0, LWPipeline::InternalPipeline|LWPipeline::ComputePipeline);
+		return Allocator.Create<LWDirectX11_1Pipeline>(Context, StageList, BlockList, ResourceList, nullptr, BlockCount, ResourceCount, 0, LWPipeline::InternalPipeline|LWPipeline::ComputePipeline);
 	}
 	if (StageList[LWPipeline::Vertex]) {
 		LWDirectX11_1ShaderContext &VContext = ((LWDirectX11_1Shader*)StageList[LWPipeline::Vertex])->GetContext();
@@ -216,7 +214,7 @@ LWPipeline *LWVideoDriver_DirectX11_1::CreatePipeline(LWPipeline *Source, LWAllo
 		Context.m_PixelShader = PContext.m_PixelShader;
 		Context.m_PixelShader->AddRef();
 	}
-	return Allocator.Allocate<LWDirectX11_1Pipeline>(Context, StageList, BlockList, ResourceList, InputList, BlockCount, ResourceCount, InputCount, LWPipeline::InternalPipeline);
+	return Allocator.Create<LWDirectX11_1Pipeline>(Context, StageList, BlockList, ResourceList, InputList, BlockCount, ResourceCount, InputCount, LWPipeline::InternalPipeline);
 }
 
 
@@ -230,7 +228,7 @@ LWVideoDriver &LWVideoDriver_DirectX11_1::ClonePipeline(LWPipeline *Target, LWPi
 
 LWPipeline *LWVideoDriver_DirectX11_1::CreatePipeline(LWShader **ShaderStages, uint64_t Flags, LWAllocator &Allocator) {
 	LWDirectX11_1PipelineContext Con;
-	LWDirectX11_1Pipeline *P = Allocator.Allocate<LWDirectX11_1Pipeline>(Con, ShaderStages, nullptr, nullptr, nullptr, 0, 0, 0, Flags&~LWPipeline::InternalPipeline);
+	LWDirectX11_1Pipeline *P = Allocator.Create<LWDirectX11_1Pipeline>(Con, ShaderStages, nullptr, nullptr, nullptr, 0, 0, 0, Flags&~LWPipeline::InternalPipeline);
 	if(P) UpdatePipelineStages(P);
 	return P;
 }
@@ -241,7 +239,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1D(uint32_t TextureState, uin
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
-		std::cout << "CreateTexture1D Error '" << FuncName << "': " << std::hex << Res << std::dec << std::endl;
+		fmt::print("CreateTexture1D Error: '{}': {:#x}\n", FuncName, Res);
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -272,7 +270,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1D(uint32_t TextureState, uin
 		}
 	}
 	//if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
-	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, 0, 0), LWTexture::Texture1D);
+	return Allocator.Create<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, 0, 0), LWTexture::Texture1D);
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2D(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
@@ -282,7 +280,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2D(uint32_t TextureState, uin
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
-		std::cout << "CreateTexture2D Error '" << FuncName << "': " << std::hex << Res << std::dec << std::endl;
+		fmt::print("CreateTexture2D Error: '{}': {:#x}\n", FuncName, Res);
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -310,7 +308,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2D(uint32_t TextureState, uin
 		}
 	}
 	//if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
-	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, 0), LWTexture::Texture2D);
+	return Allocator.Create<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, 0), LWTexture::Texture2D);
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTexture3D(uint32_t TextureState, uint32_t PackType, const LWVector3i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
@@ -319,7 +317,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture3D(uint32_t TextureState, uin
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
-		std::cout << "CreateTexture3D Error '" << FuncName << "': " << std::hex << Res << std::dec << std::endl;
+		fmt::print("CreateTexture3D Error: '{}': {:#x}\n", FuncName, Res);
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -347,7 +345,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture3D(uint32_t TextureState, uin
 		}
 	}
 	//if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
-	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, Size, LWTexture::Texture3D);
+	return Allocator.Create<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, Size, LWTexture::Texture3D);
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeMap(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
@@ -357,7 +355,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeMap(uint32_t TextureState
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
-		std::cout << "CreateTextureCubeMap Error '" << FuncName << "': " << std::hex << Res << std::dec << std::endl;
+		fmt::print("CreateTextureCubeMap Error: '{}': {:#x}\n", FuncName, Res);
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -391,7 +389,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeMap(uint32_t TextureState
 		}
 	}
 	//if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
-	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, 0), LWTexture::TextureCubeMap);
+	return Allocator.Create<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, 0), LWTexture::TextureCubeMap);
 }
 
 
@@ -402,7 +400,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DMS(uint32_t TextureState, u
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
-		std::cout << "CreateTexture2DMS Error '" << FuncName << "': " << std::hex << Res << std::dec << std::endl;
+		fmt::print("CreateTexture2DMS Error: '{}': {:#x}\n", FuncName, Res);
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -416,7 +414,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DMS(uint32_t TextureState, u
 	D3D11_SHADER_RESOURCE_VIEW_DESC ViewDesc = { VFormats[PackType], D3D11_SRV_DIMENSION_TEXTURE2DMS, {0u} };
 	if (!CheckResult(m_Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, (ID3D11Texture2D**)&Context.m_Texture), "CreateTexture2D")) return nullptr;
 	if (!CheckResult(m_Context.m_DXDevice->CreateShaderResourceView(Context.m_Texture, &ViewDesc, &Context.m_View), "CreateShaderResourceView")) return nullptr;
-	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, Samples, LWVector3i(Size, 0), LWTexture::Texture2DMS);
+	return Allocator.Create<LWDirectX11_1Texture>(Context, TextureState, PackType, Samples, LWVector3i(Size, 0), LWTexture::Texture2DMS);
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1DArray(uint32_t TextureState, uint32_t PackType, uint32_t Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
@@ -425,7 +423,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1DArray(uint32_t TextureState
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
-		std::cout << "CreateTexture1DArray Error '" << FuncName << "': " << std::hex << Res << std::dec << std::endl;
+		fmt::print("CreateTexture1DArray Error: '{}': {:#x}\n", FuncName, Res);
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -459,7 +457,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1DArray(uint32_t TextureState
 		}
 	}
 	//if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
-	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, Layers, 0), LWTexture::Texture1DArray);
+	return Allocator.Create<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, Layers, 0), LWTexture::Texture1DArray);
 
 }
 
@@ -470,7 +468,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DArray(uint32_t TextureState
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
-		std::cout << "CreateTexture2DArray Error '" << FuncName << "': " << std::hex << Res << std::dec << std::endl;
+		fmt::print("CreateTexture2DArray Error: '{}': {:#x}\n", FuncName, Res);
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -509,7 +507,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DArray(uint32_t TextureState
 		}
 	}
 	//if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
-	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, Layers), LWTexture::Texture2DArray);
+	return Allocator.Create<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, Layers), LWTexture::Texture2DArray);
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
@@ -519,7 +517,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeArray(uint32_t TextureSta
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
-		std::cout << "CreateTextureCubeArray Error '" << FuncName << "': " << std::hex << Res << std::dec << std::endl;
+		fmt::print("CreateTextureCubeArray Error: '{}': {:#x}\n", FuncName, Res);
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -554,7 +552,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeArray(uint32_t TextureSta
 		}
 	}
 	//if (MakeMipmaps) m_Context.m_DXDeviceContext->GenerateMips(Context.m_View);
-	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, Layers), LWTexture::TextureCubeMapArray);
+	return Allocator.Create<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, Layers), LWTexture::TextureCubeMapArray);
 
 }
 
@@ -566,7 +564,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DMSArray(uint32_t TextureSta
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
-		std::cout << "CreateTexture2DMSArray Error '" << FuncName << "': " << std::hex << Res << std::dec << std::endl;
+		fmt::print("CreateTexture2DMSArray Error: '{}': {:#x}\n", FuncName, Res);
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -580,7 +578,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DMSArray(uint32_t TextureSta
 	D3D11_SHADER_RESOURCE_VIEW_DESC ViewDesc = { VFormats[PackType], D3D11_SRV_DIMENSION_TEXTURE2DMSARRAY, {0u, Layers} };
 	if (!CheckResult(m_Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, (ID3D11Texture2D**)&Context.m_Texture), "CreateTexture2D")) return nullptr;
 	if (!CheckResult(m_Context.m_DXDevice->CreateShaderResourceView(Context.m_Texture, &ViewDesc, &Context.m_View), "CreateShaderResourceView")) return nullptr;
-	return Allocator.Allocate<LWDirectX11_1Texture>(Context, TextureState, PackType, Samples, LWVector3i(Size, Layers), LWTexture::Texture2DMSArray);
+	return Allocator.Create<LWDirectX11_1Texture>(Context, TextureState, PackType, Samples, LWVector3i(Size, Layers), LWTexture::Texture2DMSArray);
 }
 
 LWVideoBuffer *LWVideoDriver_DirectX11_1::CreateVideoBuffer(uint32_t Type, uint32_t UsageFlag, uint32_t TypeSize, uint32_t Length, LWAllocator &Allocator, const uint8_t *Buffer) {
@@ -589,6 +587,15 @@ LWVideoBuffer *LWVideoDriver_DirectX11_1::CreateVideoBuffer(uint32_t Type, uint3
 	uint32_t VideoID = 0;
 	uint32_t UsageID = (UsageFlag&LWVideoBuffer::UsageFlag);
 	uint32_t RawLength = TypeSize * Length;
+	ID3D11Buffer *B = nullptr;
+
+	auto CheckResult = [&B](HRESULT Res, const char *FuncName)->bool {
+		if (SUCCEEDED(Res)) return true;
+		fmt::print("CreateVideoBuffer Error: '{}': {:#x}\n", FuncName, Res);
+		if (B) B->Release();
+		return false;
+	};
+
 	D3D11_BUFFER_DESC Desc;
 	if (UsageID == LWVideoBuffer::PersistentMapped) return nullptr; //Not implemented.
 	else if (UsageID == LWVideoBuffer::Static) {
@@ -607,36 +614,20 @@ LWVideoBuffer *LWVideoDriver_DirectX11_1::CreateVideoBuffer(uint32_t Type, uint3
 	D3D11_UNORDERED_ACCESS_VIEW_DESC UDesc = { DXGI_FORMAT_UNKNOWN, D3D11_UAV_DIMENSION_BUFFER, {0u, Length} };
 	D3D11_SUBRESOURCE_DATA Data = { Buffer, 0, 0 };
 
-	ID3D11Buffer *B = nullptr;
-	HRESULT Res = m_Context.m_DXDevice->CreateBuffer(&Desc, Buffer ? &Data : nullptr, &B);
-
+	if(!CheckResult(m_Context.m_DXDevice->CreateBuffer(&Desc, Buffer ? &Data : nullptr, &B), "CreateBuffer")) return nullptr;
 	LWDirectX11_1BufferContext Con = { B, nullptr, nullptr };
-	if (FAILED(Res)) {
-		std::cout << "Failed to create video buffer: " << Res << std::endl;
-		return nullptr;
-	}
+
 	if ((Desc.BindFlags&D3D11_BIND_SHADER_RESOURCE) != 0) {
-		Res = m_Context.m_DXDevice->CreateShaderResourceView(B, &SDesc, &Con.m_SView);
-		if (FAILED(Res)) {
-			std::cout << "Failed to create SView: " << Res << std::endl;
-			B->Release();
-			return nullptr;
-		}
+		if (!CheckResult(m_Context.m_DXDevice->CreateShaderResourceView(B, &SDesc, &Con.m_SView), "CreateShaderResourceView")) return nullptr;
 	}
 	if ((Desc.BindFlags&D3D11_BIND_UNORDERED_ACCESS) != 0) {
-		Res = m_Context.m_DXDevice->CreateUnorderedAccessView(B, &UDesc, &Con.m_UView);
-		if (FAILED(Res)) {
-			std::cout << "Failed to create UView: " << Res << std::endl;
-			if (Con.m_SView) Con.m_SView->Release();
-			B->Release();
-			return nullptr;
-		}
+		if (!CheckResult(m_Context.m_DXDevice->CreateUnorderedAccessView(B, &UDesc, &Con.m_UView), "CreateUnorderedAccessView")) return nullptr;
 	}
-	return Allocator.Allocate<LWDirectX11_1Buffer>(Buffer, &Allocator, TypeSize, Length, UsageFlag | Type, Con);
+	return Allocator.Create<LWDirectX11_1Buffer>(Buffer, &Allocator, TypeSize, Length, UsageFlag | Type, Con);
 }
 
 LWFrameBuffer *LWVideoDriver_DirectX11_1::CreateFrameBuffer(const LWVector2i &Size, LWAllocator &Allocator) {
-	return Allocator.Allocate<LWDirectX11_1FrameBuffer>(Size);
+	return Allocator.Create<LWDirectX11_1FrameBuffer>(Size);
 }
 
 bool LWVideoDriver_DirectX11_1::UpdateTexture(LWTexture *Texture) {
@@ -790,7 +781,7 @@ bool LWVideoDriver_DirectX11_1::DownloadTexture2DArray(LWTexture *Texture, uint3
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
-		std::cout << "CreateTexture2D Error '" << FuncName << "': " << std::hex << Res << std::dec << std::endl;
+		fmt::print("CreateTexture2D Error '{}': {:#x}\n", FuncName, Res);
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -842,7 +833,7 @@ bool LWVideoDriver_DirectX11_1::UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, co
 	D3D11_MAPPED_SUBRESOURCE M;
 	HRESULT Res = m_Context.m_DXDeviceContext->Map(Buf, 0, UpdateType, 0, &M);
 	if (FAILED(Res)) {
-		std::cout << "Error Map: " << Res << std::endl;
+		fmt::print("Error 'Map': {}\n", Res);
 		return false;
 	}
 	std::copy(Buffer, Buffer + Length, (uint8_t*)M.pData);
@@ -1277,12 +1268,12 @@ ID3D11RenderTargetView *LWDirectX11_1TextureContext::GetRenderTargetView(uint32_
 	}
 	HRESULT Res = DriverContext.m_DXDevice->CreateRenderTargetView(m_Texture, &Desc, &View);
 	if (FAILED(Res)) {
-		std::cout << "Error CreateRenderTargetView: " << std::hex << Res << std::dec << std::endl;
+		fmt::print("Error 'CreateRenderTargetView': {:#x}\n", Res);
 		return nullptr;
 	}
 	auto ResE = m_RenderTargetViewList.emplace(Hash, View);
 	if (!ResE.second) {
-		std::cout << "Error RenderTargetViewList.emplace" << std::endl;
+		fmt::print("Error 'RenderTargetViewList': Hash collision\n");
 		View->Release();
 		return nullptr;
 	}
@@ -1331,12 +1322,12 @@ ID3D11DepthStencilView *LWDirectX11_1TextureContext::GetDepthStencilView(uint32_
 	} else return nullptr;
 	HRESULT Res = DriverContext.m_DXDevice->CreateDepthStencilView(m_Texture, &Desc, &View);
 	if (FAILED(Res)) {
-		std::cout << "Error CreateDepthStencilView: " << std::hex << Res << std::dec << std::endl;
+		fmt::print("Error 'CreateDepthStencilView': {:#x}", Res);
 		return nullptr;
 	}
 	auto ResE = m_DepthStencilViewList.emplace(Hash, View);
 	if (!ResE.second) {
-		std::cout << "Error DepthStencilViewList.emplace" << std::endl;
+		fmt::print("Error DepthStencilViewList: Hash collision.\n");
 		View->Release();
 		return nullptr;
 	}
@@ -1384,12 +1375,12 @@ ID3D11UnorderedAccessView *LWDirectX11_1TextureContext::GetUnorderedAccessView(u
 	} else return nullptr;
 	HRESULT Res = DriverContext.m_DXDevice->CreateUnorderedAccessView(m_Texture, &Desc, &View);
 	if (FAILED(Res)) {
-		std::cout << "Error CreateUnorderedAccessView: " << std::hex << Res << std::dec << std::endl;
+		fmt::print("Error 'CreateUnorderedAccessView': {:#x}\n", Res);
 		return nullptr;
 	}
 	auto ResE = m_UnorderedViewList.emplace(Hash, View);
 	if (!ResE.second) {
-		std::cout << "Error UnorderedViewList.emplace" << std::endl;
+		fmt::print("Error UnorderedViewList: Hash Collision.\n");
 		View->Release();
 		return nullptr;
 	}

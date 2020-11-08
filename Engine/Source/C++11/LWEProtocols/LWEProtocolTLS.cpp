@@ -37,7 +37,7 @@ Botan::Private_Key *LWETLS_CredentialsManager::private_key_for(const Botan::X509
 	return nullptr;
 }
 
-bool LWETLS_CredentialsManager::LoadCertficateAndKey(const LWText &CertFile, const LWText &KeyFile, Botan::RandomNumberGenerator &Rng) {
+bool LWETLS_CredentialsManager::LoadCertficateAndKey(const LWUTF8Iterator &CertFile, const LWUTF8Iterator &KeyFile, Botan::RandomNumberGenerator &Rng) {
 	char CertPath[256];
 	char KeyPath[256];
 	if (!LWFileStream::ParsePath(CertFile, CertPath, sizeof(CertPath))) return false;
@@ -61,7 +61,7 @@ bool LWETLS_CredentialsManager::LoadDefaultCertificateStores(void) {
 			m_CertStores.push_back(cs);
 		}
 	}catch (std::exception &e) {
-		std::cout << e.what() << std::endl;
+		fmt::print("{}\n", e.what());
 		return false;
 	}
 	return true;
@@ -76,7 +76,7 @@ void LWETLSCallbacks::tls_emit_data(const uint8_t data[], size_t size) {
 	for (; o < Len;) {
 		int32_t r = (int32_t)m_Socket->Send((const char*)data + o, Len - o);
 		if (r <= 0) {
-			std::cout << "Error sending to: " << LWProtocolManager::GetError() << std::endl;
+			fmt::print("Error sending to: {}\n", LWProtocolManager::GetError());
 			m_Socket->MarkClosable();
 			return;
 		}
@@ -92,12 +92,11 @@ void LWETLSCallbacks::tls_record_received(uint64_t seq_no, const uint8_t data[],
 }
 
 void LWETLSCallbacks::tls_alert(Botan::TLS::Alert alert) {
-	std::cout << "TLS alert: " << alert.type_string() << std::endl;
+	fmt::print("TLS alert: {}\n", alert.type_string());
 	return;
 }
 
 bool LWETLSCallbacks::tls_session_established(const Botan::TLS::Session& session) {
-	//std::cout << "Session is established!" << std::endl;
 	return true;
 }
 
@@ -146,21 +145,9 @@ LWETLSCallbacks::~LWETLSCallbacks() {
 
 LWProtocol &LWEProtocolTLS::Read(LWSocket &Socket, LWProtocolManager *Manager) {
 	char Buffer[1024 * 64];
-	if (Socket.GetFlag()&LWSocket::Listen) {
-		LWSocket Acc;
-		if (!Socket.Accept(Acc, Socket.GetProtocolID())) {
-			std::cout << "Error accepting socket!" << std::endl;
-			return *this;
-		}
-		LWSocket *Sock = Manager->PushSocket(Acc);
-		//Add server tls setup!
-
-		return *this;
-	}
-
 	int32_t r = Socket.Receive(Buffer, sizeof(Buffer));
 	if (r <= 0) {
-		if (r == -1) std::cout << "Socket Error: " << LWProtocolManager::GetError() << std::endl;
+		if (r == -1) fmt::print("Socket Error: {}\n", LWProtocolManager::GetError());
 		Socket.MarkClosable();
 		return *this;
 	}
@@ -168,8 +155,8 @@ LWProtocol &LWEProtocolTLS::Read(LWSocket &Socket, LWProtocolManager *Manager) {
 	Botan::TLS::Client *TLSCli = nullptr;
 	Botan::TLS::Server *TLSSrv = nullptr;
 	if (!CB) {
-		CB = m_Allocator.Allocate<LWETLSCallbacks>(&Socket, *this);
-		TLSSrv = m_Allocator.Allocate<Botan::TLS::Server>(*CB, *m_SessionManager, m_CredentialsManager, m_Policy, m_RNG);
+		CB = m_Allocator.Create<LWETLSCallbacks>(&Socket, *this);
+		TLSSrv = m_Allocator.Create<Botan::TLS::Server>(*CB, *m_SessionManager, m_CredentialsManager, m_Policy, m_RNG);
 		CB->SetServer(TLSSrv);
 		Socket.SetProtocolData(m_ProtocolID, CB);
 	}
@@ -197,7 +184,6 @@ LWProtocol &LWEProtocolTLS::SocketChanged(LWSocket &Prev, LWSocket &New, LWProto
 LWProtocol &LWEProtocolTLS::SocketClosed(LWSocket &Socket, LWProtocolManager *Manager) {
 	LWETLSCallbacks *CB = (LWETLSCallbacks*)Socket.GetProtocolData(m_ProtocolID);
 	LWAllocator::Destroy(CB);
-	std::cout << "Socket closed." << std::endl;
 	return *this;
 }
 
@@ -210,8 +196,8 @@ uint32_t LWEProtocolTLS::Send(LWSocket &Socket, const char *Buffer, uint32_t Len
 	Botan::TLS::Client *TLSCli = nullptr;
 	Botan::TLS::Server *TLSSrv = nullptr;
 	if (!CB) {
-		CB = m_Allocator.Allocate<LWETLSCallbacks>(&Socket, *this);
-		TLSCli = m_Allocator.Allocate<Botan::TLS::Client>(*CB, *m_SessionManager, m_CredentialsManager, m_Policy, m_RNG, Botan::TLS::Server_Information(), Botan::TLS::Protocol_Version::latest_tls_version());
+		CB = m_Allocator.Create<LWETLSCallbacks>(&Socket, *this);
+		TLSCli = m_Allocator.Create<Botan::TLS::Client>(*CB, *m_SessionManager, m_CredentialsManager, m_Policy, m_RNG, Botan::TLS::Server_Information(), Botan::TLS::Protocol_Version::latest_tls_version());
 		CB->SetClient(TLSCli);
 		Socket.SetProtocolData(m_ProtocolID, CB);
 	}
@@ -229,11 +215,10 @@ uint32_t LWEProtocolTLS::Send(LWSocket &Socket, const char *Buffer, uint32_t Len
 	return Len;
 }
 
-LWEProtocolTLS::LWEProtocolTLS(uint32_t ProtocolID, LWAllocator &Allocator, const char *CertFile, const char *KeyFile) : LWProtocol(), m_ProtocolID(ProtocolID), m_Allocator(Allocator) {
-	m_SessionManager = Allocator.Allocate<Botan::TLS::Session_Manager_In_Memory>(m_RNG);
-	if (CertFile && KeyFile) m_CredentialsManager.LoadCertficateAndKey(CertFile, KeyFile, m_RNG);
+LWEProtocolTLS::LWEProtocolTLS(uint32_t ProtocolID, LWAllocator &Allocator, const LWUTF8Iterator &CertFile, const LWUTF8Iterator &KeyFile) : LWProtocol(), m_ProtocolID(ProtocolID), m_Allocator(Allocator) {
+	m_SessionManager = Allocator.Create<Botan::TLS::Session_Manager_In_Memory>(m_RNG);
+	if (CertFile.isInitialized() && KeyFile.isInitialized()) m_CredentialsManager.LoadCertficateAndKey(CertFile, KeyFile, m_RNG);
 	else m_CredentialsManager.LoadDefaultCertificateStores();
-	
 }
 
 

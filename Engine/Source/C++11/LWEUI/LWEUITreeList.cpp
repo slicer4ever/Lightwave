@@ -5,9 +5,8 @@
 #include <LWEGeometry2D.h>
 
 //LWEUITreeItem
-LWEUITreeItem &LWEUITreeItem::SetValue(const LWText &Value, LWFont *Font, float FontScale) {
-	*m_Value = '\0';
-	strncat(m_Value, (const char*)Value.GetCharacters(), sizeof(m_Value));
+LWEUITreeItem &LWEUITreeItem::SetValue(const LWUTF8Iterator &Value, LWFont *Font, float FontScale) {
+	Value.Copy(m_Value, sizeof(m_Value));
 	return UpdateTextBounds(Font, FontScale);
 }
 
@@ -32,32 +31,32 @@ LWEUITreeItem &LWEUITreeItem::UpdateTextBounds(LWFont *Font, float FontScale) {
 	return *this;
 }
 
-LWEUITreeItem::LWEUITreeItem(const LWText &Value, void *UserData, LWFont *Font, float FontScale, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) : m_UserData(UserData), m_OffMaterial(OffMaterial), m_OverMaterial(OverMaterial), m_DownMaterial(DownMaterial) {
-	m_Value[MaxNameSize - 1] = '\0';
+LWEUITreeItem::LWEUITreeItem(const LWUTF8Iterator &Value, void *UserData, LWFont *Font, float FontScale, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) : m_UserData(UserData), m_OffMaterial(OffMaterial), m_OverMaterial(OverMaterial), m_DownMaterial(DownMaterial) {
 	SetValue(Value, Font, FontScale);
 }
 
 //LWEUITreeList
 
-LWEUITreeList *LWEUITreeList::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
+LWEUITreeList *LWEUITreeList::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
 	char Buffer[256];
-	LWAllocator *Allocator = Manager->GetAllocator();
+	LWAllocator &Allocator = Manager->GetAllocator();
 	LWELocalization *Localize = Manager->GetLocalization();
-	LWEUITreeList *Tree = Allocator->Allocate<LWEUITreeList>(LWVector4f(0.0f), LWVector4f(0.0f), 0);
-	LWXMLAttribute *StyleAttr = Node->FindAttribute("Style");
+	LWEAssetManager *AM = Manager->GetAssetManager();
+	LWEUITreeList *Tree = Allocator.Create<LWEUITreeList>(LWVector4f(0.0f), LWVector4f(0.0f), 0);
+	LWEXMLAttribute *StyleAttr = Node->FindAttribute("Style");
 	LWEUI::XMLParse(Tree, Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 
-	LWXMLAttribute *OverAttr = FindAttribute(Node, Style, "OverMaterial");
-	LWXMLAttribute *DownAttr = FindAttribute(Node, Style, "DownMaterial");
-	LWXMLAttribute *OffAttr = FindAttribute(Node, Style, "OffMaterial");
-	LWXMLAttribute *BackAttr = FindAttribute(Node, Style, "BackgroundMaterial");
-	LWXMLAttribute *FontAttr = FindAttribute(Node, Style, "Font");
-	LWXMLAttribute *MinimumHeightAttr = FindAttribute(Node, Style, "MinimumHeight");
-	LWXMLAttribute *LineThicknessAttr = FindAttribute(Node, Style, "LineThickness");
-	LWXMLAttribute *HighlightMaterialAttr = FindAttribute(Node, Style, "HighlightMaterial");
-	LWXMLAttribute *FontMatAttr = FindAttribute(Node, Style, "FontMaterial");
-	LWXMLAttribute *LineMaterialAttr = FindAttribute(Node, Style, "LineMaterial");
-	LWXMLAttribute *FontScaleAttr = FindAttribute(Node, Style, "FontScale");
+	LWEXMLAttribute *OverAttr = FindAttribute(Node, Style, "OverMaterial");
+	LWEXMLAttribute *DownAttr = FindAttribute(Node, Style, "DownMaterial");
+	LWEXMLAttribute *OffAttr = FindAttribute(Node, Style, "OffMaterial");
+	LWEXMLAttribute *BackAttr = FindAttribute(Node, Style, "BackgroundMaterial");
+	LWEXMLAttribute *FontAttr = FindAttribute(Node, Style, "Font");
+	LWEXMLAttribute *MinimumHeightAttr = FindAttribute(Node, Style, "MinimumHeight");
+	LWEXMLAttribute *LineThicknessAttr = FindAttribute(Node, Style, "LineThickness");
+	LWEXMLAttribute *HighlightMaterialAttr = FindAttribute(Node, Style, "HighlightMaterial");
+	LWEXMLAttribute *FontMatAttr = FindAttribute(Node, Style, "FontMaterial");
+	LWEXMLAttribute *LineMaterialAttr = FindAttribute(Node, Style, "LineMaterial");
+	LWEXMLAttribute *FontScaleAttr = FindAttribute(Node, Style, "FontScale");
 	LWEUIMaterial *OverMat = nullptr;
 	LWEUIMaterial *DownMat = nullptr;
 	LWEUIMaterial *OffMat = nullptr;
@@ -67,49 +66,25 @@ LWEUITreeList *LWEUITreeList::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManag
 	LWEUIMaterial *LineMat = nullptr;
 	LWFont *Font = nullptr;
 
-	if (OverAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), OverAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		OverMat = Manager->GetMaterial(Res);
-	}
-	if (DownAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), DownAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		DownMat = Manager->GetMaterial(Res);
-	}
-	if (OffAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), OffAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		OffMat = Manager->GetMaterial(Res);
-	}
-	if (BackAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), BackAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		BackMat = Manager->GetMaterial(Res);
-	}
-	if (FontMatAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), FontMatAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		FntMat = Manager->GetMaterial(Res);
-	}
-	if (LineMaterialAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), LineMaterialAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		LineMat = Manager->GetMaterial(Res);
-	}
-	if (HighlightMaterialAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), HighlightMaterialAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		HighMat = Manager->GetMaterial(Res);
-	}
-	if (FontAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), FontAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		Font = Manager->GetAssetManager()->GetAsset<LWFont>(Res);
-	}
+	if (OverAttr) OverMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), OverAttr->GetValue(), ActiveComponent, ActiveComponentNode));
+	if (DownAttr) DownMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), DownAttr->GetValue(), ActiveComponent, ActiveComponentNode));
+	if (OffAttr) OffMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), OffAttr->GetValue(), ActiveComponent, ActiveComponentNode));
+	if (BackAttr) BackMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), BackAttr->GetValue(), ActiveComponent, ActiveComponentNode));
+	if (FontMatAttr) FntMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), FontMatAttr->GetValue(), ActiveComponent, ActiveComponentNode));
+	if (LineMaterialAttr) LineMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), LineMaterialAttr->GetValue(), ActiveComponent, ActiveComponentNode));
+	if (HighlightMaterialAttr) HighMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), HighlightMaterialAttr->GetValue(), ActiveComponent, ActiveComponentNode));
+	if (FontAttr) Font = AM->GetAsset<LWFont>(ParseComponentAttribute(Buffer, sizeof(Buffer), FontAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	if (MinimumHeightAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), MinimumHeightAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		Tree->SetMinimumHeight((float)atof(Res));
+		LWUTF8Iterator Res = ParseComponentAttribute(Buffer, sizeof(Buffer), MinimumHeightAttr->GetValue(), ActiveComponent, ActiveComponentNode);
+		Tree->SetMinimumHeight((float)atof((const char*)Res()));
 	}
 	if (LineThicknessAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), LineThicknessAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		Tree->SetLineThickness((float)atof(Res));
+		LWUTF8Iterator Res = ParseComponentAttribute(Buffer, sizeof(Buffer), LineThicknessAttr->GetValue(), ActiveComponent, ActiveComponentNode);
+		Tree->SetLineThickness((float)atof((const char*)Res()));
 	}
 	if (FontScaleAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), FontScaleAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		Tree->SetFontScale((float)atof(Res));
+		LWUTF8Iterator Res = ParseComponentAttribute(Buffer, sizeof(Buffer), FontScaleAttr->GetValue(), ActiveComponent, ActiveComponentNode);
+		Tree->SetFontScale((float)atof((const char*)Res()));
 	}
 	Tree->SetOffMaterial(OffMat).SetOverMaterial(OverMat).SetDownMaterial(DownMat).SetBackgroundMaterial(BackMat).SetFontMaterial(FntMat);
 	Tree->SetLineMaterial(LineMat).SetHighlightMaterial(HighMat);
@@ -361,25 +336,16 @@ void LWEUITreeList::Destroy(void) {
 	return;
 }
 
-LWEUITreeList &LWEUITreeList::SetItemValue(uint32_t ID, const LWText &Value) {
+LWEUITreeList &LWEUITreeList::SetItemValue(uint32_t ID, const LWUTF8Iterator &Value) {
 	m_List[ID].SetValue(Value, m_Font, m_FontScale);
 	return *this;
 }
 
-LWEUITreeList &LWEUITreeList::SetItemValuef(uint32_t ID, const char *Fmt, ...) {
-	char Buffer[1024];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetItemValue(ID, Buffer);
-}
-
-uint32_t LWEUITreeList::InsertItemAt(const LWText &Value, void *UserData, uint32_t ParentID, uint32_t PrevID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) {
+uint32_t LWEUITreeList::InsertItemAt(const LWUTF8Iterator &Value, void *UserData, uint32_t ParentID, uint32_t PrevID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) {
 	if (m_ListLength >= m_ListBufferSize) {
 		LWAllocator::Destroy(m_OldList);
 		m_OldList = m_List;
-		LWEUITreeItem *L = Allocator.AllocateArray<LWEUITreeItem>(m_ListBufferSize + BatchSize);
+		LWEUITreeItem *L = Allocator.AllocateA<LWEUITreeItem>(m_ListBufferSize + BatchSize);
 		std::copy(m_List, m_List + m_ListLength, L);
 		m_List = L;
 		m_ListBufferSize += BatchSize;
@@ -391,11 +357,11 @@ uint32_t LWEUITreeList::InsertItemAt(const LWText &Value, void *UserData, uint32
 	return ID;
 }
 
-uint32_t LWEUITreeList::InsertChildFirst(const LWText &Value, void *UserData, uint32_t ParentID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) {
+uint32_t LWEUITreeList::InsertChildFirst(const LWUTF8Iterator &Value, void *UserData, uint32_t ParentID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) {
 	return InsertItemAt(Value, UserData, ParentID, -1, Allocator, OffMaterial, OverMaterial, DownMaterial);
 }
 
-uint32_t LWEUITreeList::InsertChildLast(const LWText &Value, void *UserData, uint32_t ParentID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) {
+uint32_t LWEUITreeList::InsertChildLast(const LWUTF8Iterator &Value, void *UserData, uint32_t ParentID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) {
 	uint32_t PrevID = m_LastChildID;
 	if (ParentID != -1) PrevID = m_List[ParentID].m_LastChildID;
 	return InsertItemAt(Value, UserData, ParentID, PrevID, Allocator, OffMaterial, OverMaterial, DownMaterial);
@@ -472,7 +438,7 @@ LWEUITreeList &LWEUITreeList::MoveItemTo(uint32_t SourceID, uint32_t ParentID, u
 }
 
 LWEUITreeList &LWEUITreeList::Prune(LWAllocator &Allocator) {
-	LWEUITreeItem *NewList = Allocator.AllocateArray<LWEUITreeItem>(m_ListBufferSize);
+	LWEUITreeItem *NewList = Allocator.AllocateA<LWEUITreeItem>(m_ListBufferSize);
 	uint32_t NewListLen = 0;
 	std::function<uint32_t(uint32_t, uint32_t)> ProcessNode = [&NewList, &NewListLen, this, &ProcessNode](uint32_t ID, uint32_t ParentID)->uint32_t {
 		LWEUITreeItem &Itm = m_List[ID];

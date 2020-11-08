@@ -69,6 +69,10 @@ LWTimer &LWTimer::Update(uint64_t Current){
 	return *this;
 }
 
+bool LWTimer::isCompleted(void) const {
+	return (m_Flag & Completed) != 0;
+}
+
 uint64_t LWTimer::GetFrequency(void){
 	return m_Frequency;
 }
