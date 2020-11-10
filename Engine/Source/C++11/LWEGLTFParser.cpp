@@ -51,7 +51,7 @@ bool LWEGLTFBuffer::ParseJSON(LWEGLTFBuffer &Buf, LWEJson &J, LWEJObject *Obj, L
 			return false;
 		}
 		Length = JByteLength->AsInt();
-		Buffer = Allocator.AllocateA<uint8_t>(Length);
+		Buffer = Allocator.Allocate<uint8_t>(Length);
 		//assert(false);
 		std::copy(BinChunk, BinChunk + Length, Buffer);
 	} else {
@@ -70,7 +70,7 @@ bool LWEGLTFBuffer::ParseJSON(LWEGLTFBuffer &Buf, LWEJson &J, LWEJObject *Obj, L
 			uint32_t DataLen = (uint32_t)strlen(Data);
 			if (i == 0) {
 				Length = LWCrypto::Base64Decode(Data, DataLen, nullptr, 0);
-				Buffer = Allocator.AllocateA<uint8_t>(Length);
+				Buffer = Allocator.Allocate<uint8_t>(Length);
 				LWCrypto::Base64Decode(Data, DataLen, (char*)Buffer, Length);
 			}
 		} else {
@@ -79,7 +79,7 @@ bool LWEGLTFBuffer::ParseJSON(LWEGLTFBuffer &Buf, LWEJson &J, LWEJObject *Obj, L
 				return false;
 			}
 			Length = Stream.Length();
-			Buffer = Allocator.AllocateA<uint8_t>(Length);
+			Buffer = Allocator.Allocate<uint8_t>(Length);
 			Stream.Read((char*)Buffer, Length);
 		}
 	}
@@ -879,7 +879,7 @@ bool LWEGLTFParser::LoadFileGLB(LWEGLTFParser &Parser, const LWUTF8Iterator &Pat
 	}
 	uint32_t Len = Stream.Length();
 	if (Len < sizeof(Header)) return false;
-	char8_t *Buffer = Allocator.AllocateA<char8_t>(Len);
+	char8_t *Buffer = Allocator.Allocate<char8_t>(Len);
 	Stream.Read(Buffer, Len);
 	LWByteBuffer Buf = LWByteBuffer((int8_t*)Buffer, Len);
 	
@@ -923,7 +923,7 @@ bool LWEGLTFParser::LoadFileGLTF(LWEGLTFParser &Parser, const LWUTF8Iterator &Pa
 		return false;
 	}
 	uint32_t Len = Stream.Length();
-	char8_t *Buffer = Allocator.AllocateA<char8_t>(Len);
+	char8_t *Buffer = Allocator.Allocate<char8_t>(Len);
 	Stream.Read(Buffer, Len);
 	LWEJson J(Allocator);
 	if (!LWEJson::Parse(J, Buffer)) {

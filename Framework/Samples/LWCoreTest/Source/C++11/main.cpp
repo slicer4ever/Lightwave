@@ -81,7 +81,7 @@ bool PerformAllocatorTest(const char *AllocatorName, LWAllocator &Allocator){
 	LWVector4i *m_AllocationsVec4t[AllocationCount]; 
 	fmt::print("Performing small POD allocation Tests.\n");
 	for (int32_t i = 0; i < AllocationCount; i++){
-		m_Allocations32t[i] = Allocator.AllocateA<int32_t>(SmallCount);
+		m_Allocations32t[i] = Allocator.Allocate<int32_t>(SmallCount);
 		if (!m_Allocations32t[i]){
 			fmt::print("Error allocation: {}\n", i);
 			return false;
@@ -98,7 +98,7 @@ bool PerformAllocatorTest(const char *AllocatorName, LWAllocator &Allocator){
 	}
 	fmt::print("Performing large POD allocation Tests.\n");
 	for (int32_t i = 0; i < AllocationCount; i++){
-		m_Allocations32t[i] = Allocator.AllocateA<int32_t>(LargeCount);
+		m_Allocations32t[i] = Allocator.Allocate<int32_t>(LargeCount);
 		if (!m_Allocations32t[i]){
 			fmt::print("Error allocation: {}\n", i);
 			return false;
@@ -116,7 +116,7 @@ bool PerformAllocatorTest(const char *AllocatorName, LWAllocator &Allocator){
 	}
 	fmt::print("Performing mixed POD allocation/deallocation Tests.\n");
 	for (int32_t i = 0; i < AllocationCount; i++){
-		m_Allocations32t[i] = Allocator.AllocateA<int32_t>(i);
+		m_Allocations32t[i] = Allocator.Allocate<int32_t>(i);
 		if (!m_Allocations32t[i]){
 			fmt::print("Error allocating: {}\n", i);
 			return false;
@@ -137,7 +137,7 @@ bool PerformAllocatorTest(const char *AllocatorName, LWAllocator &Allocator){
 	}
 	fmt::print("Performing small non-POD allocation Tests.\n");
 	for (int32_t i = 0; i < AllocationCount; i++){
-		m_AllocationsVec4t[i] = Allocator.AllocateA<LWVector4i>(SmallCount);
+		m_AllocationsVec4t[i] = Allocator.Allocate<LWVector4i>(SmallCount);
 		if (!m_AllocationsVec4t[i]){
 			fmt::print("Error allocating: {}\n", i);
 			return false;
@@ -154,7 +154,7 @@ bool PerformAllocatorTest(const char *AllocatorName, LWAllocator &Allocator){
 	}
 	fmt::print("Performing large non-POD allocation Tests.\n");
 	for (int32_t i = 0; i < AllocationCount; i++){
-		m_AllocationsVec4t[i] = Allocator.AllocateA<LWVector4i>(LargeCount);
+		m_AllocationsVec4t[i] = Allocator.Allocate<LWVector4i>(LargeCount);
 		if (!m_AllocationsVec4t[i]){
 			fmt::print("Error allocating: {}\n", i);
 			return false;
@@ -171,7 +171,7 @@ bool PerformAllocatorTest(const char *AllocatorName, LWAllocator &Allocator){
 	}
 	fmt::print("Performing mixed non-POD allocation/deallocation Tests.\n");
 	for (int32_t i = 0; i < AllocationCount; i++){
-		m_AllocationsVec4t[i] = Allocator.AllocateA<LWVector4i>(i);
+		m_AllocationsVec4t[i] = Allocator.Allocate<LWVector4i>(i);
 		if (!m_AllocationsVec4t[i]){
 			fmt::print("Error allocating: {}", i);
 			return false;
@@ -1644,9 +1644,9 @@ bool PerformLWUnicodeTest(void) {
 	const char8_t ValidText8[] = u8"Hello world, Καλημέρα\r\n\r\nκόσμε, コンニチハ\nგთხოვთ Hello 𐌳 сейчас\nต้องรบราฆ่าฟันจนบรรลัย, ሰማይ ᚳᚹᚫᚦ H₂ 𐀁.";
 	const char16_t ValidText16[] = u"Hello world, Καλημέρα\r\n\r\nκόσμε, コンニチハ\nგთხოვთ Hello 𐌳 сейчас\nต้องรบราฆ่าฟันจนบรรลัย, ሰማይ ᚳᚹᚫᚦ H₂ 𐀁.";
 	const char32_t ValidText32[] = U"Hello world, Καλημέρα\r\n\r\nκόσμε, コンニチハ\nგთხოვთ Hello 𐌳 сейчас\nต้องรบราฆ่าฟันจนบรรลัย, ሰማይ ᚳᚹᚫᚦ H₂ 𐀁.";
-	const char8_t ValidGText8[]  = u8"Hello _ ABg̈C가Dक्षिE\nᄀᄀᄀ각ᆨᆨF___g!ABg̈!";
-	const char16_t ValidGText16[] = u"Hello _ ABg̈C가Dक्षिE\nᄀᄀᄀ각ᆨᆨF___g!ABg̈!";
-	const char32_t ValidGText32[] = U"Hello _ ABg̈C가Dक्षिE\nᄀᄀᄀ각ᆨᆨF___g!ABg̈!";
+	const char8_t ValidGText8[]  = u8"Hello _ ABg̈C가Dक्षिE\nᄀᄀᄀ각ᆨᆨF___g!ABg̈!.";
+	const char16_t ValidGText16[] = u"Hello _ ABg̈C가Dक्षिE\nᄀᄀᄀ각ᆨᆨF___g!ABg̈!.";
+	const char32_t ValidGText32[] = U"Hello _ ABg̈C가Dक्षिE\nᄀᄀᄀ각ᆨᆨF___g!ABg̈!.";
 
 	const char8_t CompareText8[] = u8"Hello";  const char16_t CompareText16[] = u"Hello";  const char32_t CompareText32[] = U"Hello";
 	const char8_t GCompareText8[] = u8"ABg̈"; const char16_t GCompareText16[] = u"ABg̈"; const char32_t GCompareText32[] = U"ABg̈";
@@ -1680,7 +1680,7 @@ bool PerformLWUnicodeTest(void) {
 	//Used OutputTextIndexs to generate these values, if ValidText is modified, be sure to update these values.
 	uint32_t Token = ',';
 	uint32_t GToken = '_';
-	OutputTextIndexs<char8_t>(ValidText8, ValidGText8, Token, GToken, CompareText8, GCompareText8, TokenList8, GTokenList8);
+	//OutputTextIndexs<char8_t>(ValidText8, ValidGText8, Token, GToken, CompareText8, GCompareText8, TokenList8, GTokenList8);
 	//Codepoint Index's:
 	const uint32_t WordIndexs[] = { 0,  6,  13,  25,  32,  38,  45,  51,  53,  60,  84,  88,  93,  96 };
 	const uint32_t LineIndexs[] = { 0,  23,  25,  38,  60 };
@@ -1697,7 +1697,7 @@ bool PerformLWUnicodeTest(void) {
 	const uint32_t GrSubStringIndexs[] = { 10,  29 };
 	const uint32_t GTokenListIndexs[] = { 10,  16,  25,  26,  29,  30 };
 
-	uint32_t ValidGCharLen = 31; //Update if GValidText is modified.
+	uint32_t ValidGCharLen = 32; //Update if GValidText is modified.
 	fmt::print("Testing LWUTF{}Iterator.", sizeof(Type) * 8);
 	LWUnicodeIterator<Type> SampleIterator;
 	LWUnicodeGraphemeIterator<Type> GSampleIterator;
@@ -2290,13 +2290,13 @@ uint32_t GeneratePartitians(uint32_t Count, uint32_t *&PartitionLens, TypeA **&A
 	uint32_t Max = (std::numeric_limits<uint32_t>::max()-AllocatorSafeHeaderSize)/std::max<uint32_t>(sizeof(TypeA), sizeof(TypeB));
 	uint32_t PartCnt = (Count/Max);
 	if ((Count % Max) != 0) PartCnt++;
-	PartitionLens = Allocator.AllocateA<uint32_t>(PartCnt);
-	AArray = Allocator.AllocateA<TypeA*>(PartCnt);
-	BArray = Allocator.AllocateA<TypeB*>(PartCnt);
+	PartitionLens = Allocator.Allocate<uint32_t>(PartCnt);
+	AArray = Allocator.Allocate<TypeA*>(PartCnt);
+	BArray = Allocator.Allocate<TypeB*>(PartCnt);
 	for (uint32_t i = 0; i < PartCnt; i++) {
 		PartitionLens[i] = std::min<uint32_t>(Count - i * Max, Max);
-		AArray[i] = Allocator.AllocateA<TypeA>(PartitionLens[i]);
-		BArray[i] = Allocator.AllocateA<TypeB>(PartitionLens[i]);
+		AArray[i] = Allocator.Allocate<TypeA>(PartitionLens[i]);
+		BArray[i] = Allocator.Allocate<TypeB>(PartitionLens[i]);
 	}
 	return PartCnt;
 }
@@ -2513,7 +2513,6 @@ bool PerformSIMDComparisonTest(uint32_t Count) {
 
 int main(int, char **){
 	std::cout << "Testing LWFramework core features." << std::endl;
-	/*
 	if (!PerformLWAllocatorTest()) std::cout << "Error with LWAllocator test." << std::endl;
 	else if (!PerformLWByteBufferTest()) std::cout << "Error with LWByteBuffer Test." << std::endl;
 	else if (!PerformLWByteStreamTest()) std::cout << "Error with LWByteStream test." << std::endl;
@@ -2523,7 +2522,7 @@ int main(int, char **){
 	else if (!PerformLWSMatrixTest()) std::cout << "Error with LWSMatrix Test." << std::endl;
 	else if (!PerformLWQuaternionTest()) std::cout << "Error with LWQuaternion Test." << std::endl;
 	else if (!PerformLWSQuaternionTest()) std::cout << "Error with LWSQuaternion Test." << std::endl;
-	else */if (!PerformLWUnicodeTest<char8_t>()) std::cout << "Error with LWUTF8 Test." << std::endl;
+	else if (!PerformLWUnicodeTest<char8_t>()) std::cout << "Error with LWUTF8 Test." << std::endl;
 	else if (!PerformLWUnicodeTest<char16_t>()) std::cout << "Error with LWUTF16 Test." << std::endl;
 	else if (!PerformLWUnicodeTest<char32_t>()) std::cout << "Error with LWUTF32 Test." << std::endl;
 	else if (!PerformLWConcurrentTest()) std::cout << "Error with LWConcurrent Test." << std::endl;

@@ -489,7 +489,7 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 		}
 		ModifiedTime = std::max<uint64_t>(ModifiedTime, Stream.GetModifiedTime());
 		Length = Stream.Length()+1;
-		char8_t *Buffer = Allocator.AllocateA<char8_t>(Length);
+		char8_t *Buffer = Allocator.Allocate<char8_t>(Length);
 		Stream.ReadText(Buffer, Length);
 		LWUTF8Iterator Res = ParseSourceFunc(Buffer, Length, ModifiedTime, Allocator, &Stream);
 		if (Res() != Buffer) LWAllocator::Destroy(Buffer);
@@ -513,7 +513,7 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 					LWUTF8Iterator SubSource = ParsePath(Path, Len, ModifiedTime, Allocator, ExistingStream);
 					if(!SubSource.isInitialized()) continue;
 					uint32_t NewLen = (Len + Length - C.RawDistance(--N)) - 1; //-1 because both Len, and Length include a null character.
-					char8_t *Buf = Allocator.AllocateA<char8_t>(NewLen);
+					char8_t *Buf = Allocator.Allocate<char8_t>(NewLen);
 					uint32_t o = P.Copy(Buf, NewLen, C) - 1;
 					o += SubSource.Copy(Buf + o, NewLen - o) - 1;
 					o += N.Copy(Buf + o, NewLen - o);
@@ -816,7 +816,7 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 		}
 		ModifiedTime = std::max<uint64_t>(ModifiedTime, Stream.GetModifiedTime());
 		Length = Stream.Length()+1;
-		char8_t *Buffer = Alloc.AllocateA<char8_t>(Length);
+		char8_t *Buffer = Alloc.Allocate<char8_t>(Length);
 		if (Stream.ReadText(Buffer, Length) != Length) {
 			fmt::print("Did not read entire buffer.\n");
 		}
@@ -842,7 +842,7 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 					LWUTF8Iterator SubSource = ParsePath(Path, Len, ModifiedTime, ExistingStream);
 					if (!SubSource.isInitialized()) continue;
 					uint32_t NewLen = (Len + Length - (C.RawDistance(--N) + 1)); //-1 because Len, +Length both sizes account for a null character.
-					char8_t *Buf = Alloc.AllocateA<char8_t>(NewLen);
+					char8_t *Buf = Alloc.Allocate<char8_t>(NewLen);
 					uint32_t o = P.Copy(Buf, NewLen, C) - 1;
 					o += SubSource.Copy(Buf + o, NewLen - o) - 1;
 					o += N.Copy(Buf + o, NewLen - o);
@@ -939,7 +939,7 @@ bool LWEAssetManager::XMLParseVideoBuffer(LWEXMLNode *N, LWEAssetManager *AM) {
 		if (!LWFileStream::OpenStream(Stream, DataPathAttr->GetValue(), LWFileStream::ReadMode | LWFileStream::BinaryMode, Alloc)) {
 			fmt::print("Error cannot open file: '{}'\n", DataPathAttr->GetValue());
 		} else {
-			Data = Alloc.AllocateA<uint8_t>(Stream.Length());
+			Data = Alloc.Allocate<uint8_t>(Stream.Length());
 			Stream.Read(Data, Stream.Length());
 		}
 	}
@@ -1058,9 +1058,9 @@ bool LWEAssetManager::InsertAsset(const LWUTF8Iterator &Name, const LWEAsset &A)
 	uint32_t Pool = m_AssetCount / AssetPoolSize;
 	uint32_t PoolIdx = m_AssetCount % AssetPoolSize;
 	if (m_PoolCount <= Pool) {
-		LWEAsset **NewPools = m_Allocator.AllocateA<LWEAsset*>(Pool + 1);
+		LWEAsset **NewPools = m_Allocator.Allocate<LWEAsset*>(Pool + 1);
 		std::copy(Pools, Pools + Pool, NewPools);
-		NewPools[Pool] = m_Allocator.AllocateA<LWEAsset>(AssetPoolSize);
+		NewPools[Pool] = m_Allocator.Allocate<LWEAsset>(AssetPoolSize);
 		m_AssetPools = NewPools;
 		m_PoolCount++;
 	}

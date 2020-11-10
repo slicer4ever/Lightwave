@@ -255,17 +255,17 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 			V.m_GlyphCount = Buf.Read<uint32_t>();
 			V.m_KernCount = Buf.Read<uint32_t>();
 			if (V.m_NameLength) {
-				V.m_Name = Allocator.AllocateA<char>(V.m_NameLength + 1);
+				V.m_Name = Allocator.Allocate<char>(V.m_NameLength + 1);
 				Buf.ReadText(V.m_Name, V.m_NameLength + 1);
 				Buf.AlignPosition(4);
 			}
 			if (V.m_MetaDataLength) {
-				V.m_MetaData = Allocator.AllocateA<char>(V.m_MetaDataLength + 1);
+				V.m_MetaData = Allocator.Allocate<char>(V.m_MetaDataLength + 1);
 				Buf.ReadText(V.m_MetaData, V.m_MetaDataLength + 1);
 				Buf.AlignPosition(4);
 			}
-			V.m_GlyphList = Allocator.AllocateA<ARGlyph>(V.m_GlyphCount);
-			V.m_KernList = Allocator.AllocateA<ARKernPair>(V.m_KernCount);
+			V.m_GlyphList = Allocator.Allocate<ARGlyph>(V.m_GlyphCount);
+			V.m_KernList = Allocator.Allocate<ARKernPair>(V.m_KernCount);
 			for (uint32_t i = 0; i < V.m_GlyphCount; i++) {
 				if (!ARGlyph::Deserialize(V.m_GlyphList[i], Buf)) return false;
 			}
@@ -318,7 +318,7 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 			Image.m_MetaDataLength = Buf.Read<uint32_t>();
 			Image.m_DataLength = Buf.Read<uint32_t>();
 			if (Image.m_MetaDataLength) {
-				Image.m_MetaData = Allocator.AllocateA<char>(Image.m_MetaDataLength + 1);
+				Image.m_MetaData = Allocator.Allocate<char>(Image.m_MetaDataLength + 1);
 				Buf.ReadText(Image.m_MetaData, Image.m_MetaDataLength + 1);
 				Buf.AlignPosition(4);
 			}
@@ -339,7 +339,7 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 			Appendix.m_MetaDataLength = Buf.Read<uint32_t>();
 			Appendix.m_DataLength = Buf.Read<uint32_t>();
 			if (Appendix.m_MetaDataLength) {
-				Appendix.m_MetaData = Allocator.AllocateA<char>(Appendix.m_MetaDataLength + 1);
+				Appendix.m_MetaData = Allocator.Allocate<char>(Appendix.m_MetaDataLength + 1);
 				Buf.ReadText(Appendix.m_MetaData, Appendix.m_MetaDataLength + 1);
 				Buf.AlignPosition(4);
 			}
@@ -363,16 +363,16 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 		return nullptr;
 	};
 
-	char *FileBuffer = Allocator.AllocateA<char>(Stream->Length());
+	char *FileBuffer = Allocator.Allocate<char>(Stream->Length());
 	Stream->Read(FileBuffer, Stream->Length());
 	LWByteBuffer Buf = LWByteBuffer((const int8_t*)FileBuffer, Stream->Length(), LWByteBuffer::BufferNotOwned);
 	ARHeader Header;
 	ARFooter Footer;
 	if (!ARHeader::Deserialize(Header, Buf)) return Cleanup(FileBuffer, nullptr, nullptr, nullptr, nullptr);
 	uint32_t pPos = Buf.GetPosition();
-	ARFontVariant *Variants = Allocator.AllocateA<ARFontVariant>(Header.m_VariantCount);
-	ARImageHeader *Images = Allocator.AllocateA<ARImageHeader>(Header.m_ImageCount);
-	ARAppendix *Appendixs = Allocator.AllocateA<ARAppendix>(Header.m_AppendixCount);
+	ARFontVariant *Variants = Allocator.Allocate<ARFontVariant>(Header.m_VariantCount);
+	ARImageHeader *Images = Allocator.Allocate<ARImageHeader>(Header.m_ImageCount);
+	ARAppendix *Appendixs = Allocator.Allocate<ARAppendix>(Header.m_AppendixCount);
 	uint32_t SelectedVariant = -1;
 	for (uint32_t i = 0; i < Header.m_VariantCount; i++) {
 		if (!ARFontVariant::Deserialize(Variants[i], Buf, Allocator)) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
@@ -642,7 +642,7 @@ LWFont *LWFont::LoadFontTTF(LWFileStream *Stream, LWVideoDriver *Driver, uint32_
 	//Make 2N:
 	TextureWidth = LWNext2N(LongestLineWidth);
 	TextureHeight = LWNext2N(TallestCharacter*LineCount);
-	unsigned char *Texels = Allocator.AllocateA<unsigned char>(TextureWidth*PackSize*TextureHeight);
+	unsigned char *Texels = Allocator.Allocate<unsigned char>(TextureWidth*PackSize*TextureHeight);
 	uint32_t x = 0;
 	uint32_t y = 0;
 	bool HasKerning = FT_HAS_KERNING(ftFace);

@@ -273,7 +273,7 @@ public:
 		assert(O.m_Buffer != nullptr);
 		LWAllocator *Alloc = LWAllocator::GetAllocator(O.m_Buffer);
 		Type *oBuffer = m_Buffer;
-		Type *nBuffer = Alloc.AllocateA<Type>(O.m_Capacity);
+		Type *nBuffer = Alloc.Allocate<Type>(O.m_Capacity);
 		std::copy(O.m_Buffer, O.m_Buffer + O.m_RawLength, nBuffer);
 		m_Length = O.m_Length;
 		m_RawLength = O.m_RawLength;
@@ -435,7 +435,7 @@ public:
 		assert(O.m_Buffer != nullptr);
 		Type *oBuffer = m_Buffer;
 		LWAllocator *Alloc = LWAllocator::GetAllocator(O.m_Buffer);
-		m_Buffer = Alloc->AllocateA<Type>(m_Capacity);
+		m_Buffer = Alloc->Allocate<Type>(m_Capacity);
 		std::copy(O.m_Buffer, O.m_Buffer + m_RawLength, m_Buffer);
 		LWAllocator::Destroy(oBuffer);
 	}
@@ -444,7 +444,7 @@ public:
 	template<size_t Len>
 	LWUnicode(const Type(&Text)[Len], LWAllocator &Allocator) {
 		if (!LWUnicodeIterator<Type>::ValidateString(Text, m_Length, m_RawLength)) return;
-		m_Buffer = Allocator.AllocateA<Type>(m_RawLength);
+		m_Buffer = Allocator.Allocate<Type>(m_RawLength);
 		std::copy(Text, Text + m_RawLength, m_Buffer);
 		m_Capacity = m_RawLength;
 	}
@@ -452,14 +452,14 @@ public:
 	/*!< \brief Validates Text and allocates space for it. */
 	LWUnicode(const Type *Text, LWAllocator &Allocator) {
 		if (!LWUnicodeIterator<Type>::ValidateString(Text, m_Length, m_RawLength)) return; //If malformed text is detected, then no unicode string is created.
-		m_Buffer = Allocator.AllocateA<Type>(m_RawLength);
+		m_Buffer = Allocator.Allocate<Type>(m_RawLength);
 		std::copy(Text, Text + m_RawLength, m_Buffer);
 		m_Capacity = m_RawLength;
 	}
 
 	/*!< \brief constructs a unicode object, the application must ensure the text is not malformed. */
 	LWUnicode(const Type *Text, uint32_t Length, uint32_t RawLength, LWAllocator &Allocator) : m_Length(Length), m_RawLength(RawLength), m_Capacity(RawLength) {
-		m_Buffer = Allocator.AllocateA<Type>(m_Capacity);
+		m_Buffer = Allocator.Allocate<Type>(m_Capacity);
 		std::copy(Text, Text + m_RawLength, m_Buffer);
 	}
 
@@ -467,11 +467,11 @@ public:
 	LWUnicode(const LWUnicodeIterator<Type> &Text, LWAllocator &Allocator) {
 		if (!LWUnicodeIterator<Type>::ValidateString(Text(), m_Length, m_RawLength)) {
 			m_Capacity = m_RawLength = 1;
-			m_Buffer = Allocator.AllocateA<Type>(m_Capacity);
+			m_Buffer = Allocator.Allocate<Type>(m_Capacity);
 			*m_Buffer = '\0';
 			return;
 		}
-		m_Buffer = Allocator.AllocateA<Type>(m_RawLength);
+		m_Buffer = Allocator.Allocate<Type>(m_RawLength);
 		std::copy(Text(), Text() + m_RawLength, m_Buffer);
 		m_Capacity = m_RawLength;
 	}
@@ -487,7 +487,7 @@ private:
 		if (Length <= m_Capacity) return nullptr;
 		LWAllocator *Alloc = LWAllocator::GetAllocator(m_Buffer);
 		Type *oBuffer = m_Buffer;
-		Type *nBuffer = Alloc->AllocateA<Type>(Length);
+		Type *nBuffer = Alloc->Allocate<Type>(Length);
 		std::copy(oBuffer, oBuffer + m_RawLength, nBuffer);
 		m_Buffer = nBuffer;
 		m_Capacity = Length;

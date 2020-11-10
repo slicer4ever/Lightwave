@@ -206,7 +206,7 @@ bool LWFileStream::CpyFile(const LWUTF8Iterator &SrcFilePath, const LWUTF8Iterat
 		fmt::print("Error opening File: '{}'\n", DstFilePath);
 		return false;
 	}
-	char *Buffer = Allocator.AllocateA<char>(SrcStream.Length());
+	char *Buffer = Allocator.Allocate<char>(SrcStream.Length());
 	if (!Buffer) return false;
 	bool Result = true;
 	if (SrcStream.Read(Buffer, SrcStream.Length()) != SrcStream.Length()) Result = false;

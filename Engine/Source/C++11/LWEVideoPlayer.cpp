@@ -210,7 +210,7 @@ uint64_t LWEVideoPlayer::GetTotalPlayTime(void) const {
 LWEVideoPlayer::LWEVideoPlayer(LWVideoDriver *VideoDriver, LWEVideoDecoder *Decoder, const LWVector2i &FrameSize, uint64_t FrameRate, uint32_t FrameCount, uint32_t LoopCnt, uint32_t Flag, void *UserData, LWEVideoFinishedCallback FinishedCallback, float PlaybackSpeed, LWAllocator &Allocator) : m_FinishedCallback(FinishedCallback), m_VideoDriver(VideoDriver), m_Decoder(Decoder), m_LoopCount(LoopCnt), m_FrameSize(FrameSize), m_Framerate(FrameRate), m_LastTime(LWTimer::GetCurrent()), m_UserData(UserData), m_FrameCount(FrameCount), m_PlaybackSpeed(PlaybackSpeed), m_Flag(Flag) {
 	m_Texture = m_VideoDriver->CreateTexture2D(LWTexture::MinLinear | LWTexture::MagLinear, LWImage::R8U, LWVector2i(FrameSize.x, FrameSize.y + FrameSize.y / 2), nullptr, 0, Allocator);
 	for (uint32_t i = 0; i < MaxCachedFrames; i++) {
-		m_PixelBuffer[i] = Allocator.AllocateA<uint8_t>(m_FrameSize.x*(m_FrameSize.y + FrameSize.y / 2));
+		m_PixelBuffer[i] = Allocator.Allocate<uint8_t>(m_FrameSize.x*(m_FrameSize.y + FrameSize.y / 2));
 	}
 }
 

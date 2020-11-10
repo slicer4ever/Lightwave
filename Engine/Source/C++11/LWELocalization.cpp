@@ -101,7 +101,7 @@ bool LWELocalization::PushString(const LWUTF8Iterator &StringName, const LWUTF8I
 		return false;
 	}
 	uint32_t Len = String.RawDistance(String.NextEnd());
-	char8_t *Mem = m_Allocator.AllocateA<char8_t>(Len);
+	char8_t *Mem = m_Allocator.Allocate<char8_t>(Len);
 	if (String.Copy(Mem, Len) != Len) {
 		fmt::print("Error copying string.\n");
 		return false;

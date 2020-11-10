@@ -213,7 +213,7 @@ public:
 			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeGraphemeIterator<Type>(P, C);
 		}
 		if (!P.AtEnd()) {
-			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeIterator<Type>(P, C);
+			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeGraphemeIterator<Type>(P, C);
 			o++;
 		}
 		return o;
@@ -234,7 +234,7 @@ public:
 			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeGraphemeIterator<Type>(P, C);
 		}
 		if (!P.AtEnd()) {
-			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeIterator<Type>(P, C);
+			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeGraphemeIterator<Type>(P, C);
 			o++;
 		}
 		return o;
@@ -256,7 +256,7 @@ public:
 			} else ++C;
 		}
 		if (!P.AtEnd()) {
-			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeIterator<Type>(P, C);
+			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeGraphemeIterator<Type>(P, C);
 			o++;
 		}
 		return o;
@@ -278,7 +278,7 @@ public:
 			} else ++C;
 		}
 		if (!P.AtEnd()) {
-			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeIterator<Type>(P, C);
+			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeGraphemeIterator<Type>(P, C);
 			o++;
 		}
 		return o;

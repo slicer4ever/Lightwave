@@ -169,7 +169,7 @@ Scene *Scene::LoadGLTF(const LWUTF8Iterator &Path, LWVideoDriver *Driver, LWAllo
 			uint32_t IndexCount = 0;
 			LWVideoBuffer *VBuffer = nullptr;
 			LWVideoBuffer *IBuffer = nullptr;
-			Vertice *V = Allocator.AllocateA<Vertice>(VertCount);
+			Vertice *V = Allocator.Allocate<Vertice>(VertCount);
 			PosView.ReadValues<float>(&V[0].m_Position.x, sizeof(Vertice), VertCount);
 			if (P.CreateAccessorView(TangentView, GPrim.FindAttributeAccessor(LWEGLTFAttribute::TANGENT))) {
 				TangentView.ReadValues<float>(&V[0].m_Tangent.x, sizeof(Vertice), VertCount);
@@ -188,7 +188,7 @@ Scene *Scene::LoadGLTF(const LWUTF8Iterator &Path, LWVideoDriver *Driver, LWAllo
 			}
 			if (P.CreateAccessorView(IdxView, GPrim.m_IndiceID)) {
 				IndexCount = IdxView.m_Count;
-				uint32_t *I = Allocator.AllocateA<uint32_t>(IndexCount);
+				uint32_t *I = Allocator.Allocate<uint32_t>(IndexCount);
 				IdxView.ReadValues<uint32_t>(I, sizeof(uint32_t), IndexCount);
 				IBuffer = Driver->CreateVideoBuffer<uint32_t>(LWVideoBuffer::Index32, LWVideoBuffer::Static, IndexCount, Allocator, I);
 				LWAllocator::Destroy(I);

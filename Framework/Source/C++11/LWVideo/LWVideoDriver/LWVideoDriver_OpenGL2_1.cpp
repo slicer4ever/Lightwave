@@ -188,7 +188,7 @@ LWVideoBuffer *LWVideoDriver_OpenGL2_1::CreateVideoBuffer(uint32_t Type, uint32_
 		glBufferData(GTypes[Type],TypeSize*Length, Buffer, GUsage);
 		return Allocator.Create<LWOpenGL2_1Buffer>(Buffer, &Allocator, TypeSize, Length, UsageFlag | Type, Context);
 	} else {
-		Context.m_Buffer = Allocator.AllocateA<uint8_t>(Length*TypeSize);
+		Context.m_Buffer = Allocator.Allocate<uint8_t>(Length*TypeSize);
 		if (Buffer) std::copy(Buffer, Buffer + (TypeSize*Length), Context.m_Buffer);
 		return Allocator.Create<LWOpenGL2_1Buffer>(Buffer, &Allocator, TypeSize, Length, UsageFlag | LWVideoBuffer::LocalCopy | LWVideoBuffer::Dirty | Type, Context);
 	}

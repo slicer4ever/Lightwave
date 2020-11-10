@@ -27,7 +27,7 @@ bool LWImage::LoadImage(LWImage &Image, const LWUTF8Iterator &FilePath, const ui
 bool LWImage::LoadImageTGA(LWImage &Image, const LWUTF8Iterator &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream){
 	LWFileStream Stream;
 	if (!LWFileStream::OpenStream(Stream, FilePath, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, ExistingStream)) return false;
-	uint8_t *MemBuffer = Allocator.AllocateA<uint8_t>(Stream.Length());
+	uint8_t *MemBuffer = Allocator.Allocate<uint8_t>(Stream.Length());
 	Stream.Read(MemBuffer, Stream.Length());
 	bool Result = LoadImageTGA(Image, MemBuffer, Stream.Length(), Allocator);
 	LWAllocator::Destroy(MemBuffer);
@@ -236,7 +236,7 @@ bool LWImage::LoadImageTGA(LWImage &Image, const uint8_t *Buffer, uint32_t Buffe
 bool LWImage::LoadImagePNG(LWImage &Image, const LWUTF8Iterator &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream){
 	LWFileStream Stream;
 	if (!LWFileStream::OpenStream(Stream, FilePath, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, ExistingStream)) return false;
-	uint8_t *MemBuffer = Allocator.AllocateA<uint8_t>(Stream.Length());
+	uint8_t *MemBuffer = Allocator.Allocate<uint8_t>(Stream.Length());
 	Stream.Read(MemBuffer, Stream.Length());
 	bool Result = LoadImagePNG(Image, MemBuffer, Stream.Length(), Allocator);
 	LWAllocator::Destroy(MemBuffer);
@@ -305,7 +305,7 @@ bool LWImage::LoadImagePNG(LWImage &Image, const uint8_t *Buffer, uint32_t Buffe
 bool LWImage::LoadImageDDS(LWImage &Image, const LWUTF8Iterator &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream) {
 	LWFileStream Stream;
 	if (!LWFileStream::OpenStream(Stream, FilePath, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, ExistingStream)) return false;
-	uint8_t *MemBuffer = Allocator.AllocateA<uint8_t>(Stream.Length());
+	uint8_t *MemBuffer = Allocator.Allocate<uint8_t>(Stream.Length());
 	Stream.Read(MemBuffer, Stream.Length());
 	bool Result = LoadImageDDS(Image, MemBuffer, Stream.Length(), Allocator);
 	LWAllocator::Destroy(MemBuffer);
@@ -471,7 +471,7 @@ bool LWImage::LoadImageDDS(LWImage &Image, const uint8_t *Buffer, uint32_t Buffe
 bool LWImage::LoadImageKTX2(LWImage &Image, const LWUTF8Iterator &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream) {
 	LWFileStream Stream;
 	if (!LWFileStream::OpenStream(Stream, FilePath, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, ExistingStream)) return false;
-	uint8_t *MemBuffer = Allocator.AllocateA<uint8_t>(Stream.Length());
+	uint8_t *MemBuffer = Allocator.Allocate<uint8_t>(Stream.Length());
 	Stream.Read(MemBuffer, Stream.Length());
 	bool Result = LoadImageKTX2(Image, MemBuffer, Stream.Length(), Allocator);
 	LWAllocator::Destroy(MemBuffer);
@@ -657,7 +657,7 @@ bool LWImage::LoadImageKTX2(LWImage &Image, const uint8_t *Buffer, uint32_t Buff
 			GD.m_TableLength = Buf.Read<uint32_t>();
 			GD.m_ExtenededLength = Buf.Read<uint32_t>();
 			uint32_t DescCnt = Header.m_LevelCount * Header.m_LayerCount * Header.m_FaceCount;
-			GD.m_ImageDescriptors = Allocator.AllocateA<KTXImageDesc>(DescCnt);
+			GD.m_ImageDescriptors = Allocator.Allocate<KTXImageDesc>(DescCnt);
 			for (uint32_t i = 0; i < DescCnt; i++) {
 				if (!KTXImageDesc::Deserialize(GD.m_ImageDescriptors[i], Buf)) return false;
 			}
@@ -724,7 +724,7 @@ bool LWImage::SaveImagePNG(LWImage &Image, const LWUTF8Iterator &FilePath, LWAll
 	}
 	uint32_t Len = SaveImagePNG(Image, nullptr, 0);
 	if (!Len) return false;
-	uint8_t *Buf = Allocator.AllocateA<uint8_t>(Len);
+	uint8_t *Buf = Allocator.Allocate<uint8_t>(Len);
 	if (SaveImagePNG(Image, Buf, Len)!=Len) {
 		fmt::print("Image has incorrect size.\n");
 		LWAllocator::Destroy(Buf);
@@ -997,7 +997,7 @@ LWImage &LWImage::BuildMipmaps(uint32_t SampleMode) {
 		for (uint32_t i = m_MipmapCount+1; i <= MipmapCnt; i++) {
 			int32_t Width = MipmapSize1D(m_Size.x, i);
 			int32_t Len = GetLength1D(Width, rPackType);
-			m_Texels[i] = m_Allocator->AllocateA<uint8_t>(Len);
+			m_Texels[i] = m_Allocator->Allocate<uint8_t>(Len);
 			MakeMipmapLevel1D(m_Texels[i - 1], MipmapSize1D(m_Size.x, i - 1), rPackType, 1, m_Texels[i], SampleMode);
 		}
 		m_MipmapCount = MipmapCnt;
@@ -1006,7 +1006,7 @@ LWImage &LWImage::BuildMipmaps(uint32_t SampleMode) {
 		for (uint32_t i = m_MipmapCount + 1; i <= MipmapCnt; i++) {
 			LWVector2i Size = MipmapSize2D(LWVector2i(m_Size.x, m_Size.y), i);
 			int32_t Len = GetLength2D(Size, rPackType);
-			m_Texels[i] = m_Allocator->AllocateA<uint8_t>(Len);
+			m_Texels[i] = m_Allocator->Allocate<uint8_t>(Len);
 			MakeMipmapLevel2D(m_Texels[i - 1], MipmapSize2D(LWVector2i(m_Size.x, m_Size.y), i - 1), rPackType, 1, m_Texels[i], SampleMode);
 		}
 		m_MipmapCount = MipmapCnt;
@@ -1015,7 +1015,7 @@ LWImage &LWImage::BuildMipmaps(uint32_t SampleMode) {
 		for (uint32_t i = m_MipmapCount + 1; i <= MipmapCnt; i++) {
 			LWVector3i Size = MipmapSize3D(m_Size, i);
 			int32_t Len = GetLength3D(Size, rPackType);
-			m_Texels[i] = m_Allocator->AllocateA<uint8_t>(Len);
+			m_Texels[i] = m_Allocator->Allocate<uint8_t>(Len);
 			MakeMipmapLevel3D(m_Texels[i - 1], MipmapSize3D(m_Size, i - 1), rPackType, 1, m_Texels[i], SampleMode);
 		}
 		m_MipmapCount = MipmapCnt;
@@ -1030,7 +1030,7 @@ LWImage &LWImage::BuildMipmaps(uint32_t SampleMode) {
 			for (uint32_t d = 0; d <= MipmapCnt; d++) {
 				LWVector2i Size = MipmapSize2D(LWVector2i(m_Size.x, m_Size.y), d);
 				int32_t Len = GetLength2D(Size, rPackType);
-				m_Texels[i*(MipmapCnt+1)+d] = m_Allocator->AllocateA<uint8_t>(Len);
+				m_Texels[i*(MipmapCnt+1)+d] = m_Allocator->Allocate<uint8_t>(Len);
 				MakeMipmapLevel2D(m_Texels[i*(MipmapCnt+1)+(d - 1)], MipmapSize2D(LWVector2i(m_Size.x, m_Size.y), d - 1), rPackType, 1, m_Texels[i*(MipmapCnt+1)+d], SampleMode);
 			}
 		}
@@ -1201,7 +1201,7 @@ LWImage &LWImage::operator = (const LWImage &Image){
 			NextSize = m_Size;
 			for (uint32_t d = 0; d < TotalTextures; d++, o++) {
 				uint32_t Len = GetStride(NextSize.x, rPackType)*NextSize.y;
-				m_Texels[o] = m_Allocator->AllocateA<uint8_t>(Len);
+				m_Texels[o] = m_Allocator->Allocate<uint8_t>(Len);
 				std::copy(Image.m_Texels[o], Image.m_Texels[o] + Len, m_Texels[o]);
 				NextSize = LWVector3i(MipmapSize2D(LWVector2i(m_Size.x, m_Size.y), (d + 1)), 0);
 			}
@@ -1212,7 +1212,7 @@ LWImage &LWImage::operator = (const LWImage &Image){
 			if (rImageType == Image1D) Len = GetLength1D(NextSize.x, rPackType);
 			else if (rImageType == Image2D) Len = GetLength2D(LWVector2i(NextSize.x, NextSize.y), rPackType);
 			else if (rImageType == Image3D) Len = GetLength3D(NextSize, rPackType);
-			m_Texels[i] = m_Allocator->AllocateA<uint8_t>(Len);
+			m_Texels[i] = m_Allocator->Allocate<uint8_t>(Len);
 			std::copy(Image.m_Texels[i], Image.m_Texels[i] + Len, m_Texels[i]);
 			if (rImageType == Image1D) NextSize = LWVector3i(Image.GetMipmapSize1D(i), 0, 0);
 			else if (rImageType == Image2D) NextSize = LWVector3i(Image.GetMipmapSize2D(i), 0);
@@ -1250,7 +1250,7 @@ LWImage::LWImage(const LWImage &Image) : m_Allocator(Image.m_Allocator), m_Size(
 			NextSize = m_Size;
 			for (uint32_t d = 0; d < TotalTextures; d++, o++) {
 				uint32_t Len = GetStride(NextSize.x, rPackType)*NextSize.y;
-				m_Texels[o] = m_Allocator->AllocateA<uint8_t>(Len);
+				m_Texels[o] = m_Allocator->Allocate<uint8_t>(Len);
 				std::copy(Image.m_Texels[o], Image.m_Texels[o] + Len, m_Texels[o]);
 				NextSize = LWVector3i(MipmapSize2D(LWVector2i(m_Size.x, m_Size.y), (d + 1)), 0);
 			}
@@ -1261,7 +1261,7 @@ LWImage::LWImage(const LWImage &Image) : m_Allocator(Image.m_Allocator), m_Size(
 			if (rImageType == Image1D) Len = GetLength1D(NextSize.x, rPackType);
 			else if (rImageType == Image2D) Len = GetLength2D(LWVector2i(NextSize.x, NextSize.y), rPackType);
 			else if (rImageType == Image3D) Len = GetLength3D(NextSize, rPackType);
-			m_Texels[i] = m_Allocator->AllocateA<uint8_t>(Len);
+			m_Texels[i] = m_Allocator->Allocate<uint8_t>(Len);
 			std::copy(Image.m_Texels[i], Image.m_Texels[i] + Len, m_Texels[i]);
 			if (rImageType == Image1D) NextSize = LWVector3i(Image.GetMipmapSize1D(i), 0, 0);
 			else if (rImageType == Image2D) NextSize = LWVector3i(Image.GetMipmapSize2D(i), 0);
@@ -1277,7 +1277,7 @@ LWImage::LWImage(int32_t Size, uint32_t PackType, uint8_t **Texels, uint32_t Mip
 	uint32_t rImageType = m_Flag & ImageTypeBits;
 	for (uint32_t i = 0; i < TotalTextures; i++) {
 		uint32_t Len = GetLength1D(NextSize, rPackType);
-		m_Texels[i] = Allocator.AllocateA<uint8_t>(Len);
+		m_Texels[i] = Allocator.Allocate<uint8_t>(Len);
 		if (Texels) std::copy(Texels[i], Texels[i] + Len, m_Texels[i]);
 		NextSize = GetMipmapSize1D(i);
 	}
@@ -1294,7 +1294,7 @@ LWImage::LWImage(const LWVector2i &Size, uint32_t PackType, uint8_t **Texels, ui
 			for (uint32_t d = 0; d < TotalTextures; d++) {
 				uint32_t o = i * TotalTextures + d;
 				uint32_t Len = GetLength2D(NextSize, rPackType);
-				m_Texels[o] = Allocator.AllocateA<uint8_t>(Len);
+				m_Texels[o] = Allocator.Allocate<uint8_t>(Len);
 				if (Texels) std::copy(Texels[o], Texels[o] + Len, m_Texels[o]);
 				NextSize = MipmapSize2D(LWVector2i(m_Size.x, m_Size.y), d + 1);
 			}
@@ -1302,7 +1302,7 @@ LWImage::LWImage(const LWVector2i &Size, uint32_t PackType, uint8_t **Texels, ui
 	} else {
 		for (uint32_t i = 0; i < TotalTextures; i++) {
 			uint32_t Len = GetLength2D(NextSize, rPackType);
-			m_Texels[i] = Allocator.AllocateA<uint8_t>(Len);
+			m_Texels[i] = Allocator.Allocate<uint8_t>(Len);
 			if (Texels) std::copy(Texels[i], Texels[i] + Len, m_Texels[i]);
 			NextSize = GetMipmapSize2D(i);
 		}
@@ -1316,7 +1316,7 @@ LWImage::LWImage(const LWVector3i &Size, uint32_t PackType, uint8_t **Texels, ui
 	uint32_t rImageType = m_Flag & ImageTypeBits;
 	for (uint32_t i = 0; i < TotalTextures; i++) {
 		uint32_t Len = GetLength3D(NextSize, rPackType);
-		m_Texels[i] = Allocator.AllocateA<uint8_t>(Len);
+		m_Texels[i] = Allocator.Allocate<uint8_t>(Len);
 		if (Texels) std::copy(Texels[i], Texels[i] + Len, m_Texels[i]);
 		NextSize = GetMipmapSize3D(i);
 	}

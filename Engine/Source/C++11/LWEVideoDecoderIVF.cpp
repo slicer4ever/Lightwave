@@ -58,7 +58,7 @@ uint32_t LWEVideoDecoderIVF::AdvanceFrame(uint8_t *PixelBuffer, const LWVector2i
 	LWEVideoIVFFrameHeader FrameHeader(FrameHeaderBuf);
 	if (FrameHeader.m_FrameSize > m_FrameBufferSize) {
 		uint8_t *oBuffer = m_FrameBuffer;
-		m_FrameBuffer = m_Allocator.AllocateA<uint8_t>(FrameHeader.m_FrameSize);
+		m_FrameBuffer = m_Allocator.Allocate<uint8_t>(FrameHeader.m_FrameSize);
 		m_FrameBufferSize = FrameHeader.m_FrameSize;
 		LWAllocator::Destroy(oBuffer);
 	}
@@ -127,7 +127,7 @@ bool LWEVideoDecoderIVF::GoToFrame(uint32_t FrameIdx) {
 
 LWEVideoDecoderIVF::LWEVideoDecoderIVF(LWFileStream &Stream, vpx_codec_ctx &Codec, uint32_t FrameCount, LWAllocator &Allocator) : m_Allocator(Allocator), m_Stream(std::move(Stream)), m_FrameCount(FrameCount) {
 	m_Codec = Allocator.Create<vpx_codec_ctx>();
-	m_FramePositions = Allocator.AllocateA<uint32_t>(m_FrameCount);
+	m_FramePositions = Allocator.Allocate<uint32_t>(m_FrameCount);
 	*m_Codec = Codec;
 	std::fill(m_FramePositions, m_FramePositions + m_FrameCount, 0);
 }

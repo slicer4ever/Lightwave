@@ -215,7 +215,7 @@ public:
 		fmt::print("Active ");
 		OutputMode(Active);
 		uint32_t AvailableModes = LWVideoMode::GetAllDisplayModes(nullptr, 0);
-		LWVideoMode *Modes = Allocator.AllocateA<LWVideoMode>(AvailableModes);
+		LWVideoMode *Modes = Allocator.Allocate<LWVideoMode>(AvailableModes);
 		uint32_t nModes = LWVideoMode::GetAllDisplayModes(Modes, AvailableModes);
 		if (nModes != AvailableModes) {
 			SetFinished(LWUTF8Iterator::C_View<256>("Error incorrect mode list encountered {}, Expected: {}\n", nModes, AvailableModes));

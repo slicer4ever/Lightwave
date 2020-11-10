@@ -25,7 +25,7 @@ int32_t main(int32_t argc, char **argv) {
 		std::cout << "Failed to open '" << InPath << "'" << std::endl;
 		return 0;
 	}
-	char *Buffer = DefAlloc.AllocateArray<char>(Stream.Length()+1);
+	char *Buffer = DefAlloc.Allocate<char>(Stream.Length()+1);
 	Stream.ReadText(Buffer, Stream.Length());
 
 	LWUTF8Iterator FileIter;
@@ -42,7 +42,7 @@ int32_t main(int32_t argc, char **argv) {
 		LWAllocator::Destroy(Buffer);
 		return 0;
 	}
-	char *ResBuffer = DefAlloc.AllocateArray<char>(GenLen+1);
+	char *ResBuffer = DefAlloc.Allocate<char>(GenLen+1);
 	if (LWGraphemeTable::GenerateTable(ResBuffer, GenLen + 1, FileIter) != GenLen) {
 		std::cout << "Error: Generate table result changed?" << std::endl;
 		LWAllocator::Destroy(ResBuffer);

@@ -70,7 +70,7 @@ uint32_t LWEWebPacket::Deserialize(const char *Buffer, uint32_t BufferLen, LWAll
 		l += (uint32_t)Len;
 		uint32_t DLen = l % 4;
 		DLen = l + (DLen == 0 ? 0 : 4 - DLen);
-		char *NewData = Allocator.AllocateA<char>(DLen);
+		char *NewData = Allocator.Allocate<char>(DLen);
 		char *OldData = m_Data;
 		std::copy(OldData, OldData + m_DataLen, NewData);
 		m_Data = NewData;
@@ -83,7 +83,7 @@ uint32_t LWEWebPacket::Deserialize(const char *Buffer, uint32_t BufferLen, LWAll
 		if (opCodes == CONTROL_TEXT) m_DataLen++;
 		uint32_t DLen = m_DataLen % 4;
 		DLen = m_DataLen + (DLen == 0 ? 0 : 4 - DLen);
-		m_Data = Allocator.AllocateA<char>(DLen);
+		m_Data = Allocator.Allocate<char>(DLen);
 	}
 	ReadData(Buf);
 	return Buf.GetPosition();
@@ -185,7 +185,7 @@ LWEWebPacket::LWEWebPacket(const char *Data, uint32_t DataLen, LWAllocator &Allo
 	if (Data) {
 		uint32_t DLen = DataLen % 4;
 		DLen = DataLen + (DLen == 0 ? 0 : (4 - DLen));
-		m_Data = Allocator.AllocateA<char>(DLen);
+		m_Data = Allocator.Allocate<char>(DLen);
 		std::copy(Data, Data + m_DataLen, m_Data);
 	}
 }

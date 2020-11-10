@@ -15,7 +15,7 @@ LWEJObject &LWEJObject::SetValue(LWAllocator &Allocator, const LWUTF8Iterator &V
 		LWEJson::UnEscapeString(Value, m_Value, m_ValueBufferLen);
 	} else {
 		char8_t *Old = m_Value;
-		char8_t *New = Allocator.AllocateA<char8_t>(Len);
+		char8_t *New = Allocator.Allocate<char8_t>(Len);
 		uint32_t nLen = LWEJson::UnEscapeString(Value, New, Len);
 		m_Value = New;
 		m_ValueBufferLen = Len;
@@ -30,7 +30,7 @@ LWEJObject &LWEJObject::SetName(LWAllocator &Allocator, const LWUTF8Iterator &Na
 		Name.Copy(m_Name, m_NameBufferLen);
 	} else {
 		char *Old = m_Name;
-		char *New = Allocator.AllocateA<char>(Len);
+		char *New = Allocator.Allocate<char>(Len);
 		Name.Copy(New, Len);
 		m_Name = New;
 		m_NameBufferLen = Len;
@@ -82,7 +82,7 @@ LWEJObject &LWEJObject::PushChild(LWEJObject *Child, LWAllocator &Allocator) {
 LWEJObject &LWEJObject::InsertChild(uint32_t Position, LWEJObject *Child, LWAllocator &Allocator) {
 	if (m_Length >= m_PoolSize) {
 		uint32_t NextPoolSize = m_PoolSize == 0 ? LWEJson::ElementPoolSize : m_PoolSize * 2;
-		LWEJChild *Pool = Allocator.AllocateA<LWEJChild>(NextPoolSize);
+		LWEJChild *Pool = Allocator.Allocate<LWEJChild>(NextPoolSize);
 		LWEJChild *OPool = m_Children;
 		std::copy(m_Children, m_Children + m_PoolSize, Pool);
 		m_Children = Pool;
@@ -425,7 +425,7 @@ bool LWEJson::LoadFile(LWEJson &Json, const LWUTF8Iterator &Path, LWAllocator &A
 	LWFileStream Stream;
 	if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::BinaryMode | LWFileStream::ReadMode, Allocator, ExistingStream)) return false;
 	uint32_t Len = Stream.Length() + 1;
-	char8_t *B = Allocator.AllocateA<char8_t>(Len);
+	char8_t *B = Allocator.Allocate<char8_t>(Len);
 	Stream.ReadText(B, Len);
 	bool Res = Parse(Json, B, Parent);
 	LWAllocator::Destroy(B);
@@ -673,7 +673,7 @@ LWEJson &LWEJson::PushRootElement(LWEJObject *Object) {
 LWEJson &LWEJson::InsertRootElement(uint32_t Position, LWEJObject *Object) {
 	if (m_Length >= m_PoolSize) {
 		uint32_t NextPoolSize = m_PoolSize == 0 ? LWEJson::ElementPoolSize : m_PoolSize * 2;
-		uint32_t *Pool = m_Allocator.AllocateA<uint32_t>(NextPoolSize);
+		uint32_t *Pool = m_Allocator.Allocate<uint32_t>(NextPoolSize);
 		uint32_t *OPool = m_Elements;
 		std::copy(m_Elements, m_Elements + m_PoolSize, Pool);
 		m_Elements = Pool;

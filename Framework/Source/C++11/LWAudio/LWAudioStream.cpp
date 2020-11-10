@@ -50,13 +50,13 @@ LWAudioStream *LWAudioStream::Create(char *Buffer, uint32_t BufferLen, const LWU
 
 LWAudioStream *LWAudioStream::Create(LWFileStream &Stream, uint32_t Flag, uint32_t FormatType, LWAllocator &Allocator) {
 	uint32_t Len = Stream.Length();
-	char *Buffer = Allocator.AllocateA<char>(Len);
+	char *Buffer = Allocator.Allocate<char>(Len);
 	Stream.Read(Buffer, Len);
 	return Create(Buffer, Len, Flag, FormatType, Allocator);
 }
 
 LWAudioStream *LWAudioStream::Create(const char *Buffer, uint32_t BufferLen, uint32_t Flag, uint32_t FormatType, LWAllocator &Allocator) {
-	char *Buf = Allocator.AllocateA<char>(BufferLen);
+	char *Buf = Allocator.Allocate<char>(BufferLen);
 	std::copy(Buffer, Buffer + BufferLen, Buf);
 	return Create(Buf, BufferLen, Flag, FormatType, Allocator);
 }
@@ -139,7 +139,7 @@ LWAudioStream *LWAudioStream::Create(char *Buffer, uint32_t BufferLen, uint32_t 
 		LWAudioStream *Stream = nullptr;
 		if (Flag&Decompressed) {
 			uint32_t TotalBufferSize = TotalSamples * 2*2;//channels*(sizeof(uint16_t)/8))
-			char *RawBuffer = Allocator.AllocateA<char>(TotalBufferSize);
+			char *RawBuffer = Allocator.Allocate<char>(TotalBufferSize);
 			uint32_t o = 0;
 			int32_t cs = 0;
 			while (o != TotalBufferSize) {

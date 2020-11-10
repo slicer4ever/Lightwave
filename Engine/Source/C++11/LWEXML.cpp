@@ -94,7 +94,7 @@ bool LWEXML::LoadFile(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterator 
 	LWFileStream Stream;
 	if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::BinaryMode | LWFileStream::ReadMode, Allocator, ExistingStream)) return false;
 	uint32_t Len = Stream.Length() + 1;
-	char8_t *B = Allocator.AllocateA<char8_t>(Len);
+	char8_t *B = Allocator.Allocate<char8_t>(Len);
 	if (Stream.ReadText(B, Len) != Len) {
 		LWAllocator::Destroy(B);
 		return false;
@@ -108,7 +108,7 @@ bool LWEXML::LoadFile(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterator 
 	LWFileStream Stream;
 	if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::BinaryMode | LWFileStream::ReadMode, Allocator, ExistingStream)) return false;
 	uint32_t Len = Stream.Length() + 1;
-	char8_t *B = Allocator.AllocateA<char8_t>(Len);
+	char8_t *B = Allocator.Allocate<char8_t>(Len);
 	if (Stream.ReadText(B, Len) != Len) {
 		LWAllocator::Destroy(B);
 		return false;
@@ -336,8 +336,8 @@ LWEXMLNode *LWEXML::GetInsertedNodeAfter(LWEXMLNode *Parent, LWEXMLNode *Prev, L
 	uint32_t TargetPool = m_NodeCount / NodePoolSize;
 	uint32_t TargetIdx = m_NodeCount%NodePoolSize;
 	if (!TargetIdx) {
-		LWEXMLNode *NodePool = Allocator.AllocateA<LWEXMLNode>(NodePoolSize);
-		LWEXMLNode **NewPool = Allocator.AllocateA<LWEXMLNode*>(TargetPool + 1);
+		LWEXMLNode *NodePool = Allocator.Allocate<LWEXMLNode>(NodePoolSize);
+		LWEXMLNode **NewPool = Allocator.Allocate<LWEXMLNode*>(TargetPool + 1);
 		memcpy(NewPool, m_NodePool, sizeof(LWEXMLNode*)*(TargetPool));
 		NewPool[TargetPool] = NodePool;
 		LWEXMLNode **OldPool = m_NodePool;

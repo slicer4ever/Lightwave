@@ -24,7 +24,7 @@ bool LWByteStream::ResizeCacheBuffer(uint32_t NewBufferCacheLen, LWAllocator &Al
 	uint32_t Remain = m_CachedBufferLength - m_Position;
 	uint32_t NewSize = std::max<uint32_t>(Remain, NewBufferCacheLen);
 	int8_t *oBuffer = m_DataBuffer;
-	int8_t *nBuffer = Allocator.AllocateA<int8_t>(NewSize);
+	int8_t *nBuffer = Allocator.Allocate<int8_t>(NewSize);
 	std::copy(oBuffer + m_Position, oBuffer + m_CachedBufferLength, nBuffer);
 	m_Position = 0;
 	m_DataBuffer = nBuffer;
@@ -105,7 +105,7 @@ uint32_t LWByteStream::GetRemainingCache(void) const {
 }
 
 LWByteStream::LWByteStream(uint32_t CachedBufferLength, std::function<int32_t(int8_t*, uint32_t, void*)> DataReadCallback, uint32_t Flag, void *UserData, LWAllocator &Allocator) : m_ReadCallback(DataReadCallback), m_UserData(UserData), m_TargetCachedLength(CachedBufferLength), m_SelectedFunc((Flag&Network) == 0 ? 0 : 1), m_Flag(Flag), m_Allocator(&Allocator) {
-	m_DataBuffer = m_Allocator->AllocateA<int8_t>(CachedBufferLength);
+	m_DataBuffer = m_Allocator->Allocate<int8_t>(CachedBufferLength);
 }
 
 LWByteStream::LWByteStream(LWByteStream &&O) : m_Allocator(O.m_Allocator), m_ReadCallback(O.m_ReadCallback), m_DataBuffer(O.m_DataBuffer), m_UserData(O.m_UserData), m_TargetCachedLength(O.m_TargetCachedLength), m_CachedBufferLength(O.m_CachedBufferLength), m_Position(O.m_Position), m_SelectedFunc(O.m_SelectedFunc), m_Flag(O.m_Flag) {

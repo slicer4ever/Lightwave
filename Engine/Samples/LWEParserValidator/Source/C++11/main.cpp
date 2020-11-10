@@ -21,7 +21,7 @@ int32_t LWMain(int32_t argc, LWUTF8Iterator *Argv) {
 			fmt::print("Failed to open file: '{}'\n", Argv[i]);
 			return Failure;
 		}
-		char8_t *B = DefAlloc.AllocateA<char8_t>(Stream.Length());
+		char8_t *B = DefAlloc.Allocate<char8_t>(Stream.Length());
 		Stream.Read(B, Stream.Length());
 		LWUTF8Iterator BIter;
 		uint32_t Len, RawLen;

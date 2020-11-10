@@ -614,7 +614,7 @@ public:
 	/*!< \brief allocates an array of bytes for the padded type of length to occupy. */
 	template<class Type>
 	char *AllocatePaddedArray(uint32_t Length, LWAllocator &Allocator) {
-		return Allocator.AllocateA<char>(GetUniformBlockPaddedSize(sizeof(Type))*Length);
+		return Allocator.Allocate<char>(GetUniformBlockPaddedSize(sizeof(Type))*Length);
 	}
 
 	/*!< \brief calculates the uniform block's offset from the rawsize(taking into account how many uniform blocks are taken up by the struct.) */

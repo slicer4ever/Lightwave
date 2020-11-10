@@ -58,7 +58,7 @@ public:
 		\return a pointer to the memory allocated, or null if allocation was unsuccessful.
 	*/
 	template<class Type>
-	Type *AllocateA(uint32_t Length){
+	Type *Allocate(uint32_t Length){
 		Type *Mem = (Type*)AllocateMemory(sizeof(Type)*Length);
 		if (!Mem) return Mem;
 		if (!std::is_trivial<Type>::value) {
@@ -89,7 +89,7 @@ protected:
 		\param Length the number of bytes to allocate.
 		\return null if unable to allocate space, otherwise a pointer to the memory requested.
 	*/
-
+	
 	virtual void *AllocateMemory(uint32_t Length);
 
 	/*! \brief deallocates requested memory with supplementary meta data placed before Memory.

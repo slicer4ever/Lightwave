@@ -174,7 +174,7 @@ LWAllocator &LWPacketManager::GetPacketAllocator(void) const{
 	return *m_PacketAllocator;
 }
 
-LWPacketManager::LWPacketManager(uint32_t PacketBufferSize, LWAllocator &BufferAllocator, LWAllocator &PacketAllocator, std::function<bool(LWPacket *Pack, LWPacketManager *Man)> ReceivePacketFunc, std::function<bool(LWPacket *Pack, LWPacketManager *Man)> SendPacketFunc) : m_PacketBuffer(BufferAllocator.AllocateA<char>(PacketBufferSize)), m_ReceivePacketFunction(ReceivePacketFunc), m_SendPacketFunction(SendPacketFunc), m_PacketBufferLength(PacketBufferSize), m_PacketAllocator(&PacketAllocator), m_OutPacketCount(0){
+LWPacketManager::LWPacketManager(uint32_t PacketBufferSize, LWAllocator &BufferAllocator, LWAllocator &PacketAllocator, std::function<bool(LWPacket *Pack, LWPacketManager *Man)> ReceivePacketFunc, std::function<bool(LWPacket *Pack, LWPacketManager *Man)> SendPacketFunc) : m_PacketBuffer(BufferAllocator.Allocate<char>(PacketBufferSize)), m_ReceivePacketFunction(ReceivePacketFunc), m_SendPacketFunction(SendPacketFunc), m_PacketBufferLength(PacketBufferSize), m_PacketAllocator(&PacketAllocator), m_OutPacketCount(0){
 	RegisterDeserialization(LWPacket::PacketAck, LWPacket::Deserialize);
 }
 

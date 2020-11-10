@@ -383,9 +383,9 @@ Renderer::Renderer(LWVideoDriver *Driver, App *A, LWEAssetManager *AssetManager,
 		lFrame &F = m_Frames[i];
 		LWVideoBuffer *Buf = Driver->CreateVideoBuffer(LWVideoBuffer::Vertex, LWVideoBuffer::WriteDiscardable | LWVideoBuffer::LocalCopy, sizeof(LWVertexUI), MaxCharacters * 6, Allocator, nullptr);
 		F.m_FontWriter.m_Mesh = LWVertexUI::MakeMesh(Allocator, Buf, 0);
-		F.m_LightBuffer = Allocator.AllocateA<uint8_t>(m_LightArrayBuffer->GetRawLength());
-		F.m_InstanceBuffer = Allocator.AllocateA<uint8_t>(m_ModelUniform->GetRawLength());
-		F.m_MaterialBuffer = Allocator.AllocateA<uint8_t>(m_MaterialUniform->GetRawLength());
+		F.m_LightBuffer = Allocator.Allocate<uint8_t>(m_LightArrayBuffer->GetRawLength());
+		F.m_InstanceBuffer = Allocator.Allocate<uint8_t>(m_ModelUniform->GetRawLength());
+		F.m_MaterialBuffer = Allocator.Allocate<uint8_t>(m_MaterialUniform->GetRawLength());
 	}
 
 

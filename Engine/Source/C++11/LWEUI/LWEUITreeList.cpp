@@ -357,7 +357,7 @@ uint32_t LWEUITreeList::InsertItemAt(const LWUTF8Iterator &Value, void *UserData
 	if (m_ListLength >= m_ListBufferSize) {
 		LWAllocator::Destroy(m_OldList);
 		m_OldList = m_List;
-		LWEUITreeItem *L = Allocator.AllocateA<LWEUITreeItem>(m_ListBufferSize + BatchSize);
+		LWEUITreeItem *L = Allocator.Allocate<LWEUITreeItem>(m_ListBufferSize + BatchSize);
 		std::copy(m_List, m_List + m_ListLength, L);
 		m_List = L;
 		m_ListBufferSize += BatchSize;
@@ -458,7 +458,7 @@ LWEUITreeList &LWEUITreeList::MoveItemTo(const LWEUITreeEvent &Event) {
 }
 
 LWEUITreeList &LWEUITreeList::Prune(LWAllocator &Allocator) {
-	LWEUITreeItem *NewList = Allocator.AllocateA<LWEUITreeItem>(m_ListBufferSize);
+	LWEUITreeItem *NewList = Allocator.Allocate<LWEUITreeItem>(m_ListBufferSize);
 	uint32_t NewListLen = 0;
 	std::function<uint32_t(uint32_t, uint32_t)> ProcessNode = [&NewList, &NewListLen, this, &ProcessNode](uint32_t ID, uint32_t ParentID)->uint32_t {
 		LWEUITreeItem &Itm = m_List[ID];
