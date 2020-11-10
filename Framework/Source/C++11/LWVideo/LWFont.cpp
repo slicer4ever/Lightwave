@@ -933,7 +933,7 @@ uint32_t LWFont::CharacterAt(const LWUTF8GraphemeIterator &Text, float Width, fl
 	for (; !GIter.AtEnd(); ++GIter) {
 		for (LWUTF8Iterator C = GIter.ClusterIterator(); !C.AtEnd(); ++C) {
 			uint32_t CP = *C;
-			if (LWUTF8Iterator::isWhitespace(CP)) {
+			if (LWUTF8Iterator::isLineBreak(CP)) {
 				Pos.x = 0.0f;
 				Pos.y -= m_LineSize * Scale;
 				P = nullptr;

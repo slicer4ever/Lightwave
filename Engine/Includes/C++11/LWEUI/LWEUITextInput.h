@@ -6,16 +6,31 @@
 #define LWETEXTINPUT_MAXLINES 32
 
 struct LWETextLine {
-
+public:
 	LWUTF8Iterator GetValue(void) const;
 
 	LWUTF8Iterator GetValueLast(void) const;
+
+	char8_t m_Value[LWETEXTINPUT_MAXLINELENGTH] = "";
+	uint32_t m_RawLength = 1;
+	uint32_t m_Length = 0;
+
+	LWETextLine();
+
+private:
+
+	LWUTF8Iterator GetValue(bool isPassword) const;
+
+	LWUTF8Iterator GetValueLast(bool isPassword) const;
 
 	//Returns either this value, or the Passworded character field, since Grapheme cluster version is expected to be visible to the user, and not used internally.
 	LWUTF8GraphemeIterator GetValueGrapheme(bool isPassword) const;
 
 	//Returns either this value, or the Passworded character field, at the last codepoint, since Grapheme cluster version is expected to be visible to the user, and not used internally.
 	LWUTF8GraphemeIterator GetValueGraphemeLast(bool isPassword) const;
+
+	//Returns a new iterator at Pos but with an updated Last(for after edits).
+	LWUTF8Iterator UpdateIterator(const LWUTF8Iterator &Pos) const;
 
 	//Returns number of characters added
 	uint32_t Insert(const LWUTF8Iterator &Pos, const LWUTF8Iterator &Source);
@@ -26,12 +41,9 @@ struct LWETextLine {
 	
 	uint32_t Clear(void);
 
-	LWETextLine();
-
 	static char8_t PasswordField[LWETEXTINPUT_MAXLINELENGTH]; //Static password field filled with '*' tokens(this fill happens the first time a LWETextLine is created).
-	char8_t m_Value[LWETEXTINPUT_MAXLINELENGTH]="";
-	uint32_t m_RawLength=1;
-	uint32_t m_Length=0;
+
+	friend class LWEUITextInput;
 };
 
 struct LWETextInputTouchBtn {
@@ -47,6 +59,8 @@ struct LWETextInputTouchBtn {
 struct LWETextInputCursor {
 	uint32_t m_Line = 0;
 	LWUTF8Iterator m_Position;
+
+	LWUTF8Iterator AsIterator(const LWUTF8Iterator &SrcData); //Used in case SrcData is a password field instead of the text field(for copying out text).
 
 	LWUTF8GraphemeIterator AsGrapheme(const LWUTF8GraphemeIterator &SrcData); //SrcData in case the grapheme iterator is a password field.
 
@@ -99,6 +113,8 @@ public:
 
 	int32_t MoveCursorBy(LWETextInputCursor &Cursor, int32_t Distance);
 
+	int32_t MakeSelectionRange(const LWETextInputCursor &Cursor, LWETextInputCursor &RangeBegin, LWETextInputCursor &RangeEnd, int32_t Distance);
+
 	bool MoveCursorUp(LWETextInputCursor &Cursor, float UIScale);
 
 	bool MoveCursorDown(LWETextInputCursor &Cursor, float UIScale);
@@ -116,6 +132,8 @@ public:
 	bool ScrollToCursor(float Scale);
 
 	bool SetScroll(float HoriScroll, float VertScroll, float Scale);
+
+	LWETextInputCursor MakeCursorAt(uint32_t Line, uint32_t Index);
 
 	LWEUITextInput &Clear(void);
 
@@ -163,7 +181,10 @@ public:
 
 	LWEUITextInput &SetSelectRange(uint32_t Position, uint32_t Line, int32_t Length);
 
-	uint32_t GetSelectedText(char8_t *Buffer, uint32_t BufferLen);
+	uint32_t GetSelectedText(char8_t *Buffer, uint32_t BufferLen, bool PasswordField);
+
+	/*!< \brief Get's text starting at cursor in count range, count can be positive or negative.   add's \n for each line that cursor iterates over. */
+	uint32_t GetTextRange(const LWETextInputCursor &Cursor, int32_t Count, char8_t *Buffer, uint32_t BufferLen, bool PasswordField);
 
 	const LWETextLine *GetLine(uint32_t Line) const;
 
@@ -206,6 +227,10 @@ public:
 	float GetVerticalScroll(void) const;
 
 	float GetHorizontalScroll(void) const;
+
+	float GetHorizontalMaxScroll() const;
+
+	float GetVerticalMaxScroll(float Scale) const;
 
 	float GetFontScale(void) const;
 

@@ -52,7 +52,7 @@ LWUTF8Iterator LWEUI::ParseComponentAttribute(char8_t *Buffer, uint32_t BufferSi
 	char *B = Buffer;
 	char *BL = B + std::min<uint32_t>(BufferSize-1,BufferSize);
 	LWUTF8Iterator C = SrcAttribute;
-	for(; C.AtEnd() && B!=BL; ++C){
+	for(; !C.AtEnd() && B!=BL; ++C){
 		if (*C == '\\' && (*C + 1) == '{') {
 			*B++ = '{';
 			++C;
@@ -61,8 +61,12 @@ LWUTF8Iterator LWEUI::ParseComponentAttribute(char8_t *Buffer, uint32_t BufferSi
 			LWUTF8Iterator N = C.NextToken('}');
 			C = N;
 			if (N.AtEnd())  continue;
-			LWEXMLAttribute *Attr = ComponentNode->FindAttribute(LWUTF8Iterator(P + 1, N));
-			if (!Attr) continue;
+			LWUTF8Iterator Name = LWUTF8Iterator(P + 1, N);
+			LWEXMLAttribute *Attr = ComponentNode->FindAttribute(Name);
+			if (!Attr) {
+				Attr = Component->FindAttribute(Name);
+				if(!Attr) continue;
+			}
 			uint32_t r = Attr->GetValue().Copy(B, (uint32_t)(uintptr_t)(BL - B));
 			B = std::min<char8_t*>(B + r, BL);
 		} else {
@@ -81,7 +85,7 @@ LWEUI *LWEUI::XMLParseSubNodes(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIMa
 	if (StyleAttr) {
 		LWUTF8Iterator StyleName = ParseComponentAttribute(Buffer, sizeof(Buffer), StyleAttr->GetValue(), ActiveComponent, ActiveComponentNode);
 		auto Iter = StyleMap.find(StyleName.Hash());
-		if (Iter == StyleMap.end()) fmt::print("Error could not find style with name: '{}'\n", StyleName);
+		if (Iter == StyleMap.end()) fmt::print("Error could not find style with name: '{}' | '{}'\n", StyleName, StyleAttr->GetValue());
 		else Style = Iter->second;
 	}
 	uint32_t i = Node->GetName().CompareList("Label", "Button", "Rect", "TextInput", "ScrollBar", "ListBox", "RichLabel", "TreeList");
@@ -127,20 +131,22 @@ bool LWEUI::XMLParse(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Man
 		LWUTF8Iterator C = ParseComponentAttribute(Buffer, sizeof(Buffer), FlagAttr->GetValue(), ActiveComponent, ActiveComponentNode);
 		uint32_t FlagCnt = std::min<uint32_t>(C.SplitToken(FlagIterList, MaxFlagIters, '|'), MaxFlagIters);
 		for (uint32_t i = 0; i < FlagCnt; i++) {
-			uint32_t n = FlagIterList[i].Advance(true).CompareLista(TotalFlagCount, FlagNames);
+			uint32_t n = FlagIterList[i].AdvanceWord(true).CompareLista(TotalFlagCount, FlagNames);
 			if (n == -1) {
-				fmt::print("Unknown flag found: '{}' for: '{}'\n", FlagIterList[i], (NameAttr ? NameAttr->GetValue() : Node->GetName()));
+				fmt::print("Unknown flag found: {} '{}' for: '{}'\n", i, FlagIterList[i], (NameAttr ? NameAttr->GetValue() : Node->GetName()));
 			} else Flag ^= FlagValues[n];
 		}
 	}
 	if (NameAttr) {
 		LWUTF8Iterator Name = ParseComponentAttribute(Buffer, sizeof(Buffer), NameAttr->GetValue(), ActiveComponent, ActiveComponentNode);
 		if (!Name.AtEnd()) {
-			NameBuffer = LWUTF8Iterator::C_View<MaxBufferSize>("{}.{}", ActiveComponentNode->GetName(), Name);
-			Name = NameBuffer;
-		}
-		if (!Manager->InsertNamedUI(Name, UI)) {
-			fmt::print("Conflict detected: {}\n", Name);
+			if (!ActiveComponentName.AtEnd()) {
+				NameBuffer = LWUTF8Iterator::C_View<MaxBufferSize>("{}.{}", ActiveComponentName, Name);
+				Name = NameBuffer;
+			}
+			if (!Manager->InsertNamedUI(Name, UI)) {
+				fmt::print("Conflict detected: {}\n", Name);
+			}
 		}
 	}
 	if (TooltipAttr) {

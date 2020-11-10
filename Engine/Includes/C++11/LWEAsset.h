@@ -61,6 +61,16 @@ public:
 
 	static bool XMLParseTexture(LWEXMLNode *N, LWEAssetManager *AM);
 
+	/*<! \brief Parse's an XML Shader node
+		 \note Special Path parameters: 
+			"FontVertex" will grab the LWFont::VertexShaderSource
+			"FontColor" will grab the LWFont::ColorPixelShaderSource
+			"FontMSDF" will grab the LWFont::MSDFPixelShaderSource
+			"UIVertex" will grab the LWEUIManager::VertexShaderSource (note this is effectively idential source as Font::VertexShaderSource)
+			"UITexture" will grab the LWEUIManager::TexturePixelShaderSource
+			"UIColor" will grab the LWEUIManager::ColorPixelShaderSource
+			"UIYUVTexture" will grab the LWEUIManager::YUVPixelShaderSource
+	*/
 	static bool XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM);
 
 	static bool XMLParseVideoBuffer(LWEXMLNode *N, LWEAssetManager *AM);

@@ -79,8 +79,7 @@ LWEUI &LWEUIRichLabel::UpdateSelf(LWEUIManager &Manager, float Scale, const LWVe
 	bool isMDown = (Flag&MouseMDown) != 0;
 
 	if (m_CallbackMap.size()) {
-		uint32_t Count = (uint32_t)m_StyleList.size();
-		for (uint32_t i = 0; i < Count; i++) {
+		for (uint32_t i = 0; i < m_StyleCount; i++) {
 			LWEUITextStyle &Style = m_StyleList[i];
 			auto Iter = m_CallbackMap.find(Style.m_CallbackID);
 			if (Iter == m_CallbackMap.end()) continue;
@@ -113,7 +112,7 @@ LWEUI &LWEUIRichLabel::UpdateSelf(LWEUIManager &Manager, float Scale, const LWVe
 
 LWEUI &LWEUIRichLabel::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime) {
 	if (!m_Font) return *this;
-	if (!m_StyleList.size()) return *this;
+	if (!m_StyleCount) return *this;
 	uint32_t Align = (m_Flag&(LabelLeftAligned | LabelCenterAligned | LabelRightAligned));
 	uint32_t VAlign = (m_Flag&(LabelBottomAligned | LabelVCenterAligned | LabelTopAligned));
 	
@@ -126,14 +125,13 @@ LWEUI &LWEUIRichLabel::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float 
 	
 	LWVector4f Color = m_Material ? m_Material->m_ColorA : LWVector4f(1.0f);
 	LWVector2f TextPos = Pos;
-	uint32_t Count = (uint32_t)m_StyleList.size();
 	uint32_t Line = 0;
 	LWGlyph *P = nullptr;
 	LWVector2f LSize = m_LineSizes[Line] * Scale;
 	if (Align == LabelCenterAligned) TextPos.x = (VisiblePos.x + VisibleSize.x*0.5f - LSize.x*0.5f);
 	else if (Align == LabelRightAligned) TextPos.x = (VisiblePos.x + VisibleSize.x - LSize.x);
 	
-	for (uint32_t i = 0; i < Count; i++) {
+	for (uint32_t i = 0; i < m_StyleCount; i++) {
 		LWEUITextStyle &Style = m_StyleList[i];
 		float LScale = Style.m_Scale*m_FontScale*Scale;
 		float iLScale = 1.0f / LScale;
@@ -148,10 +146,10 @@ LWEUI &LWEUIRichLabel::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float 
 			for(LWUTF8Iterator C = G.ClusterIterator(); !C.AtEnd(); ++C) {
 				uint32_t CP = *C;
 				if(CP=='\n') {
-					Line++;
-					LSize = m_LineSizes[Line] * Scale;
+					LSize = m_LineSizes[++Line] * Scale;
 					TextPos.x = Pos.x;
 					TextPos.y -= LSize.y;
+					
 					if (Align == LabelCenterAligned) TextPos.x = (VisiblePos.x + VisibleSize.x*0.5f - LSize.x*0.5f);
 					else if (Align == LabelRightAligned) TextPos.x = (VisiblePos.x + VisibleSize.x - LSize.x);
 					P = nullptr;
@@ -184,32 +182,47 @@ void LWEUIRichLabel::Destroy(void) {
 
 LWEUIRichLabel &LWEUIRichLabel::SetText(const LWUTF8Iterator &Text) {
 	m_Text = Text;
-	m_StyleList.clear();
+	uint32_t StyleCnt = 0;
 	LWEUITextStyle LStyle;
 	uint32_t Color;
 	uint32_t CallbackID = -1;
 	LWUTF8GraphemeIterator P = m_Text.beginGrapheme();
-	for (LWUTF8GraphemeIterator G = P; !G.AtEnd(); ++G) {
+	LWUTF8GraphemeIterator G = P;
+	for (; !G.AtEnd(); ++G) {
 		if (*G == '\\') {
-			if (*(G + 1) == '[') ++G;
+			if (*(G + 1) == '[') {
+				LStyle.m_Iterator = LWUTF8GraphemeIterator(P, G);
+				if (P != G && StyleCnt < MaxStyles) m_StyleList[StyleCnt++] = LStyle;
+				P = ++G;
+			}
 		} else if (*G == '[') {
 			LWUTF8GraphemeIterator CloseBrack = G.NextToken(']');
 			if (CloseBrack.AtEnd()) continue;
 			LStyle.m_Iterator = LWUTF8GraphemeIterator(P, G);
 			LWEUITextStyle pStyle = LStyle;
-			G = (G + 1).NextWord(true);
-			bool Valid = true;
-			if (sscanf((const char*)G(), "#%x", &Color)) LStyle.m_ColorMult = LWUNPACK_COLORVEC4f(Color);
-			else if (sscanf((const char*)G(), "B#%x", &Color)) LStyle.m_BackgroundColorMult = LWUNPACK_COLORVEC4f(Color);
-			else if (sscanf((const char*)G(), "$%d", &CallbackID)) LStyle.m_CallbackID = CallbackID;
-			else if (*G == '/' || *G == '\\') LStyle.m_CallbackID = -1;
-			else sscanf((const char*)G(), "%f", &LStyle.m_Scale);
-			if (!pStyle.m_Iterator.AtEnd()) m_StyleList.push_back(pStyle);
-			G = CloseBrack + 1;
-			P = G;
-
+			LWUTF8GraphemeIterator PG = (G + 1).NextWord(true);
+			if (sscanf((const char*)PG(), "#%x", &Color)) LStyle.m_ColorMult = LWUNPACK_COLORVEC4f(Color);
+			else if (sscanf((const char*)PG(), "B#%x", &Color)) LStyle.m_BackgroundColorMult = LWUNPACK_COLORVEC4f(Color);
+			else if (sscanf((const char*)PG(), "$%d", &CallbackID)) {
+				LStyle.m_CallbackID = CallbackID;
+				LStyle.m_CallbackCode = LWUTF8GraphemeIterator(G, CloseBrack).NextToken(':')+1;
+			} else if (*PG == '/' || *PG == '\\') {
+				LStyle.m_CallbackID = -1;
+				LStyle.m_CallbackCode = LWUTF8GraphemeIterator();
+			} else sscanf((const char*)PG(), "%f", &LStyle.m_Scale);
+			if (P!=G && StyleCnt<MaxStyles) m_StyleList[StyleCnt++] = pStyle;
+			G = CloseBrack;
+			P = CloseBrack+1;
+		} else if (*G == '\n') {
+			LWUTF8GraphemeIterator GN = G + 1;
+			LStyle.m_Iterator = LWUTF8GraphemeIterator(P, GN);
+			if (StyleCnt<MaxStyles) m_StyleList[StyleCnt++] = LStyle;
+			P = GN;
 		}
 	}
+	LStyle.m_Iterator = LWUTF8GraphemeIterator(P, G);
+	if (P != G && StyleCnt < MaxStyles) m_StyleList[StyleCnt++] = LStyle;
+	m_StyleCount = StyleCnt;
 	return SetFont(m_Font);
 }
 
@@ -227,34 +240,31 @@ LWEUIRichLabel &LWEUIRichLabel::UnregisterCallback(uint32_t CallbackID) {
 
 LWEUIRichLabel &LWEUIRichLabel::SetFont(LWFont *Font) {
 	m_Font = Font;
-	m_LineSizes.clear();
 	if (!m_Font) return *this;
-	if (!m_StyleList.size()) return *this;
-	uint32_t Count = (uint32_t)m_StyleList.size();
+	if (!m_StyleCount) return *this;
 	LWVector2f LineSize = LWVector2f();
+	uint32_t LineCnt = 0;
 
 	//Need to first calculate heights first.
-	for (uint32_t i = 0; i < Count; i++) {
+	for (uint32_t i = 0; i < m_StyleCount; i++) {
 		LWEUITextStyle &Style = m_StyleList[i];
-		LWUTF8GraphemeIterator G = m_StyleList[i].m_Iterator;
 		float LScale = Style.m_Scale * m_FontScale;
 		LineSize.y = std::max<float>(LScale * m_Font->GetLineSize(), LineSize.y);
-		for (; !G.AtEnd(); ++G) {
-			if (*G == '\n') {
-				m_LineSizes.push_back(LineSize);
-				LineSize = LWVector2f();
-			}
+		LWUTF8GraphemeIterator G = m_StyleList[i].m_Iterator.NextEnd() - 1;
+		if (*G == '\n') {
+			if (LineCnt < MaxLines) m_LineSizes[LineCnt++] = LineSize;
+			LineSize = LWVector2f();
 		}
 	}
-	m_LineSizes.push_back(LineSize);
+	if (LineCnt < MaxLines) m_LineSizes[LineCnt++] = LineSize;
 	LineSize = LWVector2f();
 	
 	//Calculate widths now:
 	LWGlyph *P = nullptr;
 	LWVector2f TextPos = LWVector2f();
 	LWVector4f TextBounds = LWVector4f();
-	uint32_t LineCount = 0;
-	for(uint32_t i=0;i<Count;i++){
+	LineCnt = 0;
+	for(uint32_t i=0;i<m_StyleCount;i++){
 		LWEUITextStyle &Style = m_StyleList[i];
 		float LScale = Style.m_Scale * m_FontScale;
 		LWVector2f InitPos = TextPos;
@@ -265,9 +275,8 @@ LWEUIRichLabel &LWEUIRichLabel::SetFont(LWFont *Font) {
 				uint32_t CP = *C;
 				if (CP == '\n') {
 					P = nullptr;
-					m_LineSizes[LineCount].x = LineSize.x;
-					LineCount++;
-					TextPos = LWVector2f(0.0f, TextPos.y - m_LineSizes[LineCount].y);
+					if(LineCnt<MaxLines) m_LineSizes[LineCnt++].x = LineSize.x;
+					TextPos = LWVector2f(0.0f, TextPos.y - m_LineSizes[LineCnt].y);
 					LineSize = LWVector2f();
 				}else {
 					LWGlyph *G = m_Font->GetGlyph(CP);
@@ -296,9 +305,8 @@ LWEUIRichLabel &LWEUIRichLabel::SetFont(LWFont *Font) {
 		}
 		m_StyleList[i].m_Bounds = StyleBounds - LWVector4f(InitPos, InitPos);
 	}
-	m_LineSizes[LineCount].x = LineSize.x;
-	LineCount++;
-
+	if(LineCnt<MaxLines) m_LineSizes[LineCnt].x = LineSize.x;
+	m_LineCount = LineCnt;
 	m_TextSize = LWVector2f(TextBounds.z - TextBounds.x, TextBounds.y - TextBounds.w);
 	if ((m_Flag&NoAutoWidthSize) == 0) m_Size.z = m_TextSize.x;
 	if ((m_Flag&NoAutoHeightSize) == 0) m_Size.w = m_TextSize.y;
@@ -333,7 +341,7 @@ const LWEUITextStyle &LWEUIRichLabel::GetTextStyle(uint32_t i) const {
 }
 
 uint32_t LWEUIRichLabel::GetStyleCount(void) const {
-	return (uint32_t)m_StyleList.size();
+	return m_StyleCount;
 }
 
 LWVector2f LWEUIRichLabel::GetLineSize(uint32_t i) const {
@@ -341,14 +349,14 @@ LWVector2f LWEUIRichLabel::GetLineSize(uint32_t i) const {
 }
 
 uint32_t LWEUIRichLabel::GetLineCount(void) const {
-	return (uint32_t)m_LineSizes.size();
+	return m_LineCount;
 }
 
 const LWUTF8 &LWEUIRichLabel::GetText(void) const {
 	return m_Text;
 }
 
-LWEUIRichLabel::LWEUIRichLabel(const LWUTF8Iterator &Text, LWFont *Font, LWAllocator &Allocator, LWEUIMaterial *Material, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : LWEUI(Position, Size, Flag), m_Font(Font), m_Material(Material), m_FontScale(1.0f), m_BufferLength(MinimumBufferSize) {
+LWEUIRichLabel::LWEUIRichLabel(const LWUTF8Iterator &Text, LWFont *Font, LWAllocator &Allocator, LWEUIMaterial *Material, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : LWEUI(Position, Size, Flag), m_Font(Font), m_Text("", Allocator), m_Material(Material), m_FontScale(1.0f), m_BufferLength(MinimumBufferSize) {
 	SetFont(Font);
 	SetText(Text);
 }

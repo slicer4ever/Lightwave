@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30621.155
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LWEUIIntegrationTest", "LWEUIIntegrationTest\LWEUIIntegrationTest.vcxproj", "{BB691C38-BC66-4742-B6C0-1E07D6239F7F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BB691C38-BC66-4742-B6C0-1E07D6239F7F}.Debug|x64.ActiveCfg = Debug|x64
+		{BB691C38-BC66-4742-B6C0-1E07D6239F7F}.Debug|x64.Build.0 = Debug|x64
+		{BB691C38-BC66-4742-B6C0-1E07D6239F7F}.Debug|x86.ActiveCfg = Debug|Win32
+		{BB691C38-BC66-4742-B6C0-1E07D6239F7F}.Debug|x86.Build.0 = Debug|Win32
+		{BB691C38-BC66-4742-B6C0-1E07D6239F7F}.Release|x64.ActiveCfg = Release|x64
+		{BB691C38-BC66-4742-B6C0-1E07D6239F7F}.Release|x64.Build.0 = Release|x64
+		{BB691C38-BC66-4742-B6C0-1E07D6239F7F}.Release|x86.ActiveCfg = Release|Win32
+		{BB691C38-BC66-4742-B6C0-1E07D6239F7F}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D7582BEE-729C-48DA-AE2C-99B09A4A0115}
+	EndGlobalSection
+EndGlobal

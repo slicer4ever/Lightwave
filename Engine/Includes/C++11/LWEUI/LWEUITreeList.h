@@ -37,7 +37,7 @@ struct LWEUITreeItem {
 
 	LWEUITreeItem() = default;
 
-	char8_t m_Value[MaxNameSize];
+	char8_t m_Value[MaxNameSize]="";
 	void *m_UserData = nullptr;
 	LWVector2f m_TextSize;
 	uint32_t m_ParentID = -1;
@@ -51,7 +51,7 @@ struct LWEUITreeItem {
 };
 
 /*!< \brief callback when a tree change event wants to occur(either adding a new branch/leaf, or moving an item to a different branch/leaf, the tree does not do change automatically, instead InsertAt/RemoveAt/MoveTo functions should be called based on the event being passed. */
-typedef std::function<void(LWEUITreeList &, LWEUITreeEvent &, LWEUIManager &UIManager, void *UserData)> LWEUITreeChangeCallback;
+typedef std::function<void(LWEUITreeList &, LWEUITreeEvent &, LWEUIManager &, void *)> LWEUITreeChangeCallback;
 
 class LWEUITreeList : public LWEUI {
 public:
@@ -83,6 +83,9 @@ public:
 
 	LWEUITreeList &SetItemValue(uint32_t ID, const LWUTF8Iterator &Value);
 
+	/*!< \brief Inserts object at Event location, returns the id of the item. */
+	uint32_t InsertItemAt(const LWUTF8Iterator &Value, void *UserData, const LWEUITreeEvent &Event, LWAllocator &Allocator, LWEUIMaterial *OffMaterial = nullptr, LWEUIMaterial *OverMaterial = nullptr, LWEUIMaterial *DownMaterial = nullptr);
+
 	/*!< \brief inserts a new leaf to the specified location.  if ParentIdx is -1 then the leaf is added to the root of the list.  If PrevChildIdx==-1 then the item is added to the head of the children for the specified leaf, otherwise it's added after the specified index. 
 		 \return the id for the item inserted.
 	*/
@@ -97,8 +100,14 @@ public:
 	/*!< \brief removes the leaf at the specified location, and any children are also removed. This function does not remove the memory used by this item+children, call Prune if that is necessary. */
 	LWEUITreeList &RemoveItemAt(uint32_t ID);
 
+	/*!< \brief removes the leaf at the event location. */
+	LWEUITreeList &RemoveItemAt(const LWEUITreeEvent &Event);
+
 	/*!< \brief moves child to new location, with it's children in tact. */
 	LWEUITreeList &MoveItemTo(uint32_t SourceID, uint32_t ParentID, uint32_t PrevID);
+
+	/*!< \brief moves Event item to specified location. */
+	LWEUITreeList &MoveItemTo(const LWEUITreeEvent &Event);
 
 	/*!< \brief rebuilds the tree and condenses the list's contents, This function will change the ID's for most of the tree elements. */
 	LWEUITreeList &Prune(LWAllocator &Allocator);

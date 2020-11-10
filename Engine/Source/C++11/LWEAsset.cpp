@@ -488,7 +488,7 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 			return LWUTF8Iterator();
 		}
 		ModifiedTime = std::max<uint64_t>(ModifiedTime, Stream.GetModifiedTime());
-		Length = Stream.Length();
+		Length = Stream.Length()+1;
 		char8_t *Buffer = Allocator.AllocateA<char8_t>(Length);
 		Stream.ReadText(Buffer, Length);
 		LWUTF8Iterator Res = ParseSourceFunc(Buffer, Length, ModifiedTime, Allocator, &Stream);
@@ -512,7 +512,7 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 					uint32_t Len = 0;
 					LWUTF8Iterator SubSource = ParsePath(Path, Len, ModifiedTime, Allocator, ExistingStream);
 					if(!SubSource.isInitialized()) continue;
-					uint32_t NewLen = (Len + Length - C.RawDistance(N)) - 1; //-1 because both Len, and Length include a null character.
+					uint32_t NewLen = (Len + Length - C.RawDistance(--N)) - 1; //-1 because both Len, and Length include a null character.
 					char8_t *Buf = Allocator.AllocateA<char8_t>(NewLen);
 					uint32_t o = P.Copy(Buf, NewLen, C) - 1;
 					o += SubSource.Copy(Buf + o, NewLen - o) - 1;
@@ -752,7 +752,7 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 		}
 		
 		if (CompiledPathAttr && SourcesModifiedTime) {
-			CBuffer = LWUTF8Iterator::C_View<MaxNameLen>("{}.{}{}", CompiledPathAttr->GetValue(), CompiledNames[Type], DriverNames[AM->GetDriver()->GetDriverID()]);
+			CBuffer = LWUTF8I::Fmt<MaxNameLen>("{}.{}{}", CompiledPathAttr->GetValue(), CompiledNames[Type], DriverNames[AM->GetDriver()->GetDriverID()]);
 			LWFileStream Stream;
 			if (LWFileStream::OpenStream(Stream, CBuffer, LWFileStream::ReadMode | LWFileStream::BinaryMode, Alloc)) {
 				if (Stream.GetModifiedTime() > SourcesModifiedTime) {
@@ -815,9 +815,11 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 			return nullptr;
 		}
 		ModifiedTime = std::max<uint64_t>(ModifiedTime, Stream.GetModifiedTime());
-		Length = Stream.Length();
+		Length = Stream.Length()+1;
 		char8_t *Buffer = Alloc.AllocateA<char8_t>(Length);
-		Stream.ReadText(Buffer, Length);
+		if (Stream.ReadText(Buffer, Length) != Length) {
+			fmt::print("Did not read entire buffer.\n");
+		}
 		LWUTF8Iterator Res = ParseSourceFunc(Buffer, Length, ModifiedTime, &Stream);
 		if (Res() != Buffer) LWAllocator::Destroy(Buffer);
 		return Res;
@@ -839,7 +841,7 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 					uint32_t Len = 0;
 					LWUTF8Iterator SubSource = ParsePath(Path, Len, ModifiedTime, ExistingStream);
 					if (!SubSource.isInitialized()) continue;
-					uint32_t NewLen = (Len + Length - C.RawDistance(N)) - 1; //-1 because Len, +Length both sizes account for a null character.
+					uint32_t NewLen = (Len + Length - (C.RawDistance(--N) + 1)); //-1 because Len, +Length both sizes account for a null character.
 					char8_t *Buf = Alloc.AllocateA<char8_t>(NewLen);
 					uint32_t o = P.Copy(Buf, NewLen, C) - 1;
 					o += SubSource.Copy(Buf + o, NewLen - o) - 1;
@@ -1114,6 +1116,7 @@ LWEAssetManager::~LWEAssetManager() {
 		m_AssetCount -= Cnt;
 		LWAllocator::Destroy(m_AssetPools[i]);
 	}
+	LWAllocator::Destroy(m_AssetPools);
 }
 
 #pragma endregion

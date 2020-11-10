@@ -1,0 +1,47 @@
+<DPIScale DPI="72" Scale="1.0" />
+<DPIScale DPI="96" Scale="1.25" />
+<DPIScale DPI="200" Scale="0.8" />
+<DPIScale DPI="300" Scale="1.0" />
+<DPIScale DPI="400" Scale="0.8" />
+<DPIScale DPI="500" Scale="0.75" />
+<UIScale Width="0" Height="0" Scale="0.3" />
+<UIScale Width="480" Height="320" Scale="0.65" />
+<UIScale Width="900" Height="500" Scale="0.9" />
+<UIScale Width="1280" Height="720" Scale="1.0" />
+<UIScale Width="1920" Height="1080" Scale="2.0" />
+<UIScale Width="2560" Height="1440" Scale="2.5" />
+<Material Name="White" Color="#FFFFFFFF" />
+<Material Name="White" Color="#FFFFFFFF" />
+<Material Name="Black" Color="#FF" />
+<Material Name="Red" Color="#ff0000ff" />
+<Material Name="Blue" Color="#ffff" />
+<Material Name="MenuBackground" Color="#F9F9FAFF" />
+<Material Name="OffMenuBackground" Color="#E8E8E9FF" />
+<Material Name="TouchBtnOff" Color="#FAFAFAFF" />
+<Material Name="ButtonOver" Color="#E1E1E2FF" />
+<Material Name="ButtonDown" Color="#D5D5D6FF" />
+<Material Name="Toggled" Color="#0A84FFFF" />
+<Material Name="ToggleLocked" Color="#ff0000ff" />
+<Material Name="Select" Color="#4C4C" />
+
+<Style Name="DefaultStyle" Font="SeguiFont" Material="White" OverMaterial="ButtonOver" DownMaterial="ButtonDown" OffMaterial="MenuBackground" BorderMaterial="Black" BackgroundMaterial="Black" />
+<Style Name="DefaultTIStyle" Style="DefaultStyle" CursorMaterial="Black" FontMaterial="Black" SelectMaterial="Select" TextAreaMaterial="White" ButtonFontScale="0.6" ButtonFontMaterial="Black" MaxLines="1" DefaultMaterial="Black" />
+<Style Name="DefaultListStyle" Style="DefaultStyle" FontMaterial="Black" BorderSize="2.0" />
+
+<Style Name="SmallFnt" Style="DefaultStyle" Scale="0.45" />
+<Style Name="TinyMenuFnt" Style="DefaultStyle" Scale="0.4" Material="Black" />
+<Style Name="MenuFnt" Style="DefaultStyle" Scale="0.45" Material="Black" />
+<Style Name="MenuButton" Style="DefaultStyle" Size="x: 100% +10px y: 100%" />
+
+<Style Name="TIStyle" Style="DefaultTIStyle" Size="x: 400px y: 100%+30px" />
+<Style Name="TINbrStyle" Style="DefaultTIStyle" Size="x: 400px y:100%+30px" AllowedCharacters="+-0123456789." />
+<Style Name="TISmallStyle" Style="DefaultTIStyle" Size="x: 200px y: 22px" FontScale="0.7" DefaultFontScale="0.8"  />
+<Style Name="TISmallNbrStyle" Style="DefaultTIStyle" Size="x: 200px y: 22px" AllowedCharacters="+-0123456789." FontScale="0.4" DefaultFontScale="0.5"  />
+<Style Name="ListBoxStyle" Style="DefaultStyle" OffMaterial="OffMenuBackground" FontScale="0.55" />
+<Style Name="ScrollStyle" Style="DefaultStyle" OffMaterial="Red" MaxScroll="1.1" ScrollSize="0.1" />
+<Style Name="BorderStyle" Material="Black" Flag="PAMC|LAMC" Size="x: 100%+1px y: 100%+1px" />
+<Style Name="TreeListStyle" Style="DefaultListStyle" LineMaterial="Black" BackgroundMaterial="MenuBackground" HighlightMaterial="Select" FontScale="0.55" />
+
+<Tooltip BackgroundMaterial="MenuBackground" Font="SeguiFont" FontMaterial="Black" BorderMaterial="Black" FontScale="0.6" BorderSize="1.0" />
+<Include Src="App:UIToolkit.xml" />
+<Include Src="App:UITextInputTest.xml" />

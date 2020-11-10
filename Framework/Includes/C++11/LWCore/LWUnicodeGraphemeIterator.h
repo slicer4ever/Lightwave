@@ -81,8 +81,8 @@ public:
 			C.Advance();
 			pType = cType;
 		}
-		Length = C.m_Index;
-		RawLength = C.RawIndex() + 1;
+		Length = Iter.Distance(C);
+		RawLength = Iter.RawDistance(C) + 1;
 		return C.AtEnd();
 	}
 
@@ -212,8 +212,11 @@ public:
 		for (; !C.AtEnd(); P = C.Next(), C.AdvanceToken(Token), o++) {
 			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeGraphemeIterator<Type>(P, C);
 		}
-		if (o < IterBufferSize) IterBuffer[o] = LWUnicodeGraphemeIterator<Type>(P, C);
-		return o + 1;
+		if (!P.AtEnd()) {
+			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeIterator<Type>(P, C);
+			o++;
+		}
+		return o;
 	}
 
 	/*!< \brief generates iterator's between each token in the token list, and end at next token(or end of Iterator).
@@ -230,8 +233,11 @@ public:
 		for (; !C.AtEnd(); P = C.Next(), C.AdvanceTokens(TokenList), o++) {
 			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeGraphemeIterator<Type>(P, C);
 		}
-		if (o < IterBufferSize) IterBuffer[o] = LWUnicodeGraphemeIterator<Type>(P, C);
-		return o + 1;
+		if (!P.AtEnd()) {
+			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeIterator<Type>(P, C);
+			o++;
+		}
+		return o;
 	}
 
 	/*!< \brief generates iterator's between each word, and end at end of word(or end of iterator).
@@ -249,7 +255,10 @@ public:
 				P = C.AdvanceWord(true);
 			} else ++C;
 		}
-		if (o++ < IterBufferSize) IterBuffer[o - 1] = LWUnicodeGraphemeIterator<Type>(P, C);
+		if (!P.AtEnd()) {
+			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeIterator<Type>(P, C);
+			o++;
+		}
 		return o;
 	}
 
@@ -268,7 +277,10 @@ public:
 				P = C.AdvanceLine();
 			} else ++C;
 		}
-		if (o++ < IterBufferSize) IterBuffer[o - 1] = LWUnicodeGraphemeIterator<Type>(P, C);
+		if (!P.AtEnd()) {
+			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeIterator<Type>(P, C);
+			o++;
+		}
 		return o;
 	}
 
@@ -735,6 +747,7 @@ public:
 	}
 
 	LWUnicodeGraphemeIterator(const Type *First, const Type *End, int32_t Index = 0, int32_t Character = 0) : LWUnicodeIterator<Type>(First, End, Index), m_Character(Character) {
+		m_CodePointCount = CountGraphemeCluster(*this);
 	}
 
 	LWUnicodeGraphemeIterator(const LWUnicodeIterator<Type> &Iterator, int32_t Character = 0) : LWUnicodeIterator<Type>(Iterator), m_Character(Character) {

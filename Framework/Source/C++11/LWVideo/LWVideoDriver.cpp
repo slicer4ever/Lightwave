@@ -34,8 +34,8 @@ uint32_t LWVideoDriver::FindModule(const LWUTF8Iterator &ShaderCode, const LWUTF
 	char8_t *BL = B + std::min<uint32_t>(ModuleBufferLen - 1, ModuleBufferLen);
 
 	for (uint32_t i = 0; i < DefinedCount; i++) {
-		DefineNameHash[i] = DefinedList[i*2].Hash();
 		DefineValueList[i] = DefinedList[i*2 + 1];
+		DefineNameHash[i] = DefinedList[i * 2].Hash();
 	}
 
 	uint32_t ModuleHash = ModuleName.Hash();
@@ -43,9 +43,9 @@ uint32_t LWVideoDriver::FindModule(const LWUTF8Iterator &ShaderCode, const LWUTF
 	uint32_t Longest = 0;
 	bool InTargetModule = false;
 	//This is a terrible name.
-	bool WriteInDefineTable[MaxDefineTable];
-	WriteInDefineTable[0] = true;
-	uint32_t DefineTablePosition = 1;
+	bool isInDefinedTable[MaxDefineTable] = { true };
+	LWUTF8Iterator DefinedTableNames[MaxDefineTable];
+	uint32_t DefineTablePosition = 0;
 	uint32_t o = 0;
 	LWUTF8Iterator P = ShaderCode;
 	for (LWUTF8Iterator C = P; !C.AtEnd(); ++C) {
@@ -59,52 +59,83 @@ uint32_t LWVideoDriver::FindModule(const LWUTF8Iterator &ShaderCode, const LWUTF
 				uint32_t WordCnt = Line.SplitWords(WordList, MaxWords);
 				if (i == 0) { //#module
 					InTargetModule = false;
-					if (WordCnt < 1) continue;
+					if (WordCnt < 1) {
+						fmt::print("Line {}: Encounted #module with no parameters.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(ShaderCode, C)));
+						continue;
+					}
 					uint32_t ModuleCnt = WordList[0].SplitToken(ModuleList, MaxModules, '|');
 					bool isTargetModule = false;
 					for (uint32_t i = 0; i < ModuleCnt && !isTargetModule; i++) isTargetModule = ModuleList[i].Hash() == ModuleHash;
 					if (!isTargetModule) continue;
 					for (uint32_t i = 1; i < WordCnt && !InTargetModule; i++) InTargetModule = WordList[i].Hash() == EnvironmentHash;
 				} else if (i == 1) { //#define 
-					if (WordCnt < 1 || DefinedCount >= MaxDefineTable) continue;
-					if (WriteInDefineTable[DefineTablePosition - 1]) {
+					if (WordCnt < 1 || DefinedCount >= MaxDefineTable) {
+						fmt::print("Line {}: Encounted #define with no parameters(or exceeded maximum defines({}/{})).\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(ShaderCode, C)), DefinedCount, MaxDefineTable);
+						continue;
+					}
+					if (isInDefinedTable[DefineTablePosition]) {
 						DefineNameHash[DefinedCount] = WordList[0].Hash();
 						if (WordCnt > 1) DefineValueList[DefinedCount] = LWUTF8Iterator(WordList[1], WordList[WordCnt - 1].NextEnd());
 						DefinedCount++;
 					}
 				} else if (i == 2) { //#ifdef
-					if (WordCnt < 1) continue;
+					if (WordCnt < 1) {
+						fmt::print("Line {}: Encounted #ifdef with no parameters.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(ShaderCode, C)));
+						continue;
+					}
 					uint32_t Hash = WordList[0].Hash();
 					bool isDefined = false;
 					for (uint32_t i = 0; i < DefinedCount && !isDefined; ++i) isDefined = DefineNameHash[i] == Hash;
-					WriteInDefineTable[DefineTablePosition] = isDefined && WriteInDefineTable[DefineTablePosition - 1];
-					DefineTablePosition++;
+					isInDefinedTable[DefineTablePosition+1] = isDefined && isInDefinedTable[DefineTablePosition];
+					DefinedTableNames[++DefineTablePosition] = WordList[0];
 				} else if (i == 3) { //#ifndef 
-					if (WordCnt < 1) continue;
+					if (WordCnt < 1) {
+						fmt::print("Line {}: Encounted #ifndef with no parameters.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(ShaderCode, C)));
+						continue;
+					}
 					bool isDefined = false;
 					uint32_t Hash = WordList[0].Hash();
 					for (uint32_t i = 0; i < DefinedCount && !isDefined; i++) isDefined = DefineNameHash[i] == Hash;
-					WriteInDefineTable[DefineTablePosition] = !isDefined && WriteInDefineTable[DefineTablePosition - 1];
-					DefineTablePosition++;
+					isInDefinedTable[DefineTablePosition + 1] = !isDefined && isInDefinedTable[DefineTablePosition];
+					DefinedTableNames[++DefineTablePosition] = WordList[0];
 				} else if (i == 4) { //#endif
-					DefineTablePosition = DefineTablePosition == 1 ? 1 : DefineTablePosition - 1;
+					if (!DefineTablePosition) {
+						fmt::print("Line {}: Encounted #endif while not in #if block.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(ShaderCode, C)));
+					} else --DefineTablePosition;
 				} else if (i == 5) {//#else
-					if (DefineTablePosition == 1) continue;
-					WriteInDefineTable[DefineTablePosition - 1] = WriteInDefineTable[DefineTablePosition - 2] && !WriteInDefineTable[DefineTablePosition - 1];
+					if (!DefineTablePosition) {
+						fmt::print("Line {}: Encounted #else while not in #if block.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(ShaderCode, C)));
+						continue;
+					}
+					isInDefinedTable[DefineTablePosition] = isInDefinedTable[DefineTablePosition - 1] && !isInDefinedTable[DefineTablePosition];
 				} else if (i == 6) { //#elifn
-					if (WordCnt < 1) continue;
-					if (DefineTablePosition == 1) continue;
+					if (WordCnt < 1) {
+						fmt::print("Line {}: Encounted #elifn with no parameters.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(ShaderCode, C)));
+						continue;
+					}
+					if (!DefineTablePosition) {
+						fmt::print("Line {}: Encounted #elifn while not in #if block.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(ShaderCode, C)));
+						continue;
+					}
 					bool isDefined = false;
 					uint32_t Hash = WordList[0].Hash();
 					for (uint32_t i = 0; i < DefinedCount && !isDefined; i++) isDefined = DefineNameHash[i] == Hash;
-					WriteInDefineTable[DefineTablePosition - 1] = WriteInDefineTable[DefineTablePosition - 2] && !isDefined;
-				} else if (i == 7) { //#elifn
-					if (WordCnt < 1) continue;
-					if (DefineTablePosition == 1) continue;
+					isInDefinedTable[DefineTablePosition] = isInDefinedTable[DefineTablePosition - 1] && !isDefined;
+					DefinedTableNames[DefineTablePosition] = WordList[0];
+				} else if (i == 7) { //#elif
+					if (WordCnt < 1) {
+						fmt::print("Line {}: Encounted #elif with no parameters.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(ShaderCode, C)));
+						continue;
+					}
+					if (!DefineTablePosition) {
+						fmt::print("Line {}: Encounted #elif while not in #if block.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(ShaderCode, C)));
+						continue;
+					}
 					uint32_t Hash = WordList[0].Hash();
 					bool isDefined = false;
 					for (uint32_t i = 0; i < DefinedCount && !isDefined; i++) isDefined = DefineNameHash[i] == Hash;
-					WriteInDefineTable[DefineTablePosition - 1] = WriteInDefineTable[DefineTablePosition - 2] && isDefined;
+					isInDefinedTable[DefineTablePosition] = isInDefinedTable[DefineTablePosition - 1] && isDefined;
+					DefinedTableNames[DefineTablePosition] = WordList[0];
 				}
 			} else {
 				LWUTF8Iterator N = C + 1;
@@ -115,7 +146,7 @@ uint32_t LWVideoDriver::FindModule(const LWUTF8Iterator &ShaderCode, const LWUTF
 				for (; i < DefinedCount && DefineNameHash[i] != Hash; i++) {}
 				if (i < DefinedCount) {
 					C = N;
-					if (InTargetModule && WriteInDefineTable[DefineTablePosition - 1]) {
+					if (InTargetModule && isInDefinedTable[DefineTablePosition]) {
 						uint32_t r = DefineValueList[i].Copy(B, (uint32_t)(uintptr_t)(BL - B)) - 1;
 						B = std::min<char8_t*>(B + r, BL);
 						o += r;
@@ -124,15 +155,15 @@ uint32_t LWVideoDriver::FindModule(const LWUTF8Iterator &ShaderCode, const LWUTF
 				}
 			}
 		}
-		if (InTargetModule && WriteInDefineTable[DefineTablePosition - 1]) {
+		if (InTargetModule && isInDefinedTable[DefineTablePosition]) {
 			uint32_t r = LWUTF8Iterator::EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL - B), *C);
 			B = std::min<char8_t*>(B + r, BL);
 			o += r;
 		}
 	}
 	if (ModuleBufferLen) *B = '\0';
-	if (DefineTablePosition != 1) {
-		fmt::print("Error shader preprocessor if statement was left open.\n");
+	if (DefineTablePosition != 0) {
+		fmt::print("Line {}: Shader preprocessor if statement '{}' was left open.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(ShaderCode, DefinedTableNames[DefineTablePosition])), DefinedTableNames[DefineTablePosition]);
 	}
 	return o+1;
 }

@@ -31,6 +31,14 @@ LWEUITreeItem &LWEUITreeItem::UpdateTextBounds(LWFont *Font, float FontScale) {
 	return *this;
 }
 
+LWUTF8Iterator LWEUITreeItem::GetValue(void) const {
+	return m_Value;
+}
+
+LWUTF8GraphemeIterator LWEUITreeItem::GetValueGrapheme(void) const {
+	return m_Value;
+}
+
 LWEUITreeItem::LWEUITreeItem(const LWUTF8Iterator &Value, void *UserData, LWFont *Font, float FontScale, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) : m_UserData(UserData), m_OffMaterial(OffMaterial), m_OverMaterial(OverMaterial), m_DownMaterial(DownMaterial) {
 	SetValue(Value, Font, FontScale);
 }
@@ -341,6 +349,10 @@ LWEUITreeList &LWEUITreeList::SetItemValue(uint32_t ID, const LWUTF8Iterator &Va
 	return *this;
 }
 
+uint32_t LWEUITreeList::InsertItemAt(const LWUTF8Iterator &Value, void *UserData, const LWEUITreeEvent &Event, LWAllocator &Allocator, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) {
+	return InsertItemAt(Value, UserData, Event.m_SourceID, -1, Allocator, OffMaterial, OverMaterial, DownMaterial);
+}
+
 uint32_t LWEUITreeList::InsertItemAt(const LWUTF8Iterator &Value, void *UserData, uint32_t ParentID, uint32_t PrevID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) {
 	if (m_ListLength >= m_ListBufferSize) {
 		LWAllocator::Destroy(m_OldList);
@@ -396,6 +408,10 @@ LWEUITreeList &LWEUITreeList::RemoveItemAt(uint32_t ID) {
 	return *this;
 }
 
+LWEUITreeList &LWEUITreeList::RemoveItemAt(const LWEUITreeEvent &Event) {
+	return RemoveItemAt(Event.m_SourceID);
+}
+
 /*!< \brief moves child to new location, with it's children in tact. */
 LWEUITreeList &LWEUITreeList::MoveItemTo(uint32_t SourceID, uint32_t ParentID, uint32_t PrevID) {
 	LWEUITreeItem &Itm = m_List[SourceID];
@@ -435,6 +451,10 @@ LWEUITreeList &LWEUITreeList::MoveItemTo(uint32_t SourceID, uint32_t ParentID, u
 		Prev.m_NextID = SourceID;
 	}
 	return *this;
+}
+
+LWEUITreeList &LWEUITreeList::MoveItemTo(const LWEUITreeEvent &Event) {
+	return MoveItemTo(Event.m_SourceID, Event.m_DestParentID, Event.m_DestPrevID);
 }
 
 LWEUITreeList &LWEUITreeList::Prune(LWAllocator &Allocator) {

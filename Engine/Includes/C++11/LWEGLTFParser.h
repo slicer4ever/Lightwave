@@ -129,12 +129,12 @@ struct LWEGLTFAccessorView {
 
 	LWEGLTFAccessorView() = default;
 
-	uint8_t *m_Buffer;
-	uint32_t m_ComponentCount;
-	uint32_t m_ComponentType;
-	uint32_t m_Count;
+	uint8_t *m_Buffer = nullptr;
+	uint32_t m_ComponentCount = 0;
+	uint32_t m_ComponentType = 0;
+	uint32_t m_Count = 0;
 	uint32_t m_Position = 0;
-	bool m_Normalize;
+	bool m_Normalize = false;
 };
 
 
@@ -153,8 +153,8 @@ struct LWEGLTFBuffer {
 
 	~LWEGLTFBuffer();
 
-	char8_t m_Name[256];
-	uint32_t m_NameHash;
+	char8_t m_Name[256]="";
+	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 	uint8_t *m_Buffer = nullptr;
 	uint32_t m_Length = 0;
 };
@@ -183,10 +183,10 @@ struct LWEGLTFCameraOrtho {
 
 	LWEGLTFCameraOrtho() = default;
 
-	float m_xMag;
-	float m_yMag;
-	float m_zNear;
-	float m_zFar;
+	float m_xMag = 0.0f;
+	float m_yMag = 0.0f;
+	float m_zNear = 0.0f;
+	float m_zFar = 0.0f;
 };
 
 struct LWEGLTFCameraPerspective {
@@ -200,8 +200,8 @@ struct LWEGLTFCameraPerspective {
 
 	LWEGLTFCameraPerspective() = default;
 
-	float m_FOV;
-	float m_zNear;
+	float m_FOV = 0.0f;
+	float m_zNear = 0.0f;
 	float m_ZFar = 100000.0f; //Set to "infinite" by default.
 	float m_Aspect = 1.0f;
 };
@@ -222,11 +222,11 @@ struct LWEGLTFCamera {
 
 	LWEGLTFCamera() = default;
 
-	char8_t m_Name[256];
+	char8_t m_Name[256]="";
 	LWEGLTFCameraOrtho m_Ortho;
 	LWEGLTFCameraPerspective m_Perspective;
-	uint32_t m_NameHash;
-	uint32_t m_CameraType;
+	uint32_t m_NameHash = LWCrypto::FNV1AHash;
+	uint32_t m_CameraType = 0;
 };
 
 struct LWEGLTFAttribute {
@@ -277,8 +277,8 @@ struct LWEGLTFMesh {
 
 	LWEGLTFMesh() = default;
 
-	char8_t m_Name[256];
-	uint32_t m_NameHash;
+	char8_t m_Name[256]="";
+	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 	std::vector<LWEGLTFPrimitive> m_Primitives;
 };
 
@@ -310,14 +310,14 @@ struct LWEGLTFTexture {
 
 	LWUTF8Iterator GetName(void) const;
 
-	LWEGLTFTexture() = default;
-
 	LWEGLTFTexture(const LWUTF8Iterator &Name, uint32_t ImageID, uint32_t SamplerFlag);
 
-	char8_t m_Name[256];
-	uint32_t m_NameHash;
-	uint32_t m_ImageID;
-	uint32_t m_SamplerFlag;
+	LWEGLTFTexture() = default;
+
+	char8_t m_Name[256]="";
+	uint32_t m_NameHash=LWCrypto::FNV1AHash;
+	uint32_t m_ImageID = 0;
+	uint32_t m_SamplerFlag = 0;
 };
 
 struct LWEGLTFTextureInfo {
@@ -327,7 +327,7 @@ struct LWEGLTFTextureInfo {
 
 	LWEGLTFTextureInfo() = default;
 
-	uint32_t m_TextureIndex;
+	uint32_t m_TextureIndex = 0;
 	uint32_t m_TexCoord = 0;
 	LWVector2f m_Offset = LWVector2f(0.0f);
 	LWVector2f m_Scale = LWVector2f(1.0f);
@@ -389,8 +389,8 @@ struct LWEGLTFMaterial {
 
 	LWEGLTFMaterial() = default;
 
-	char8_t m_Name[256];
-	uint32_t m_NameHash;
+	char8_t m_Name[256]="";
+	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 	LWEGLTFMatMetallicRoughness m_MetallicRoughness;
 	LWEGLTFMatSpecularGlossyness m_SpecularGlossy;
 	LWEGLTFTextureInfo m_NormalMapTexture;
@@ -415,8 +415,8 @@ struct LWEGLTFLight {
 
 	LWEGLTFLight() = default;
 
-	char8_t m_Name[256];
-	uint32_t m_NameHash;
+	char8_t m_Name[256] = "";
+	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 	LWVector3f m_Color = LWVector3f(1.0f);
 	float m_Intensity = 1.0f;
 	float m_InnerConeTheta = 0.0f;
@@ -434,8 +434,8 @@ struct LWEGLTFNode {
 
 	LWEGLTFNode() = default;
 	
-	char8_t m_Name[256];
-	uint32_t m_NameHash;
+	char8_t m_Name[256]="";
+	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 	std::vector<uint32_t> m_Children;
 	LWMatrix4f m_TransformMatrix;
 	uint32_t m_ParentID = -1;
@@ -456,22 +456,22 @@ struct LWEGLTFScene {
 
 	LWEGLTFScene() = default;
 
-	char8_t m_Name[256];
-	uint32_t m_NameHash;
+	char8_t m_Name[256]="";
+	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 	std::vector<uint32_t> m_NodeList;
 };
 
 struct LWEGLTFSkin {
 	static bool ParseJSON(LWEGLTFSkin &Skin, LWEJson &J, LWEJObject *Obj);
 
-	LWUTF8Iterator &GetName(void) const;
+	LWUTF8Iterator GetName(void) const;
 
 	LWEGLTFSkin(const LWUTF8Iterator &Name, uint32_t JointCnt, uint32_t InverseBindMatrices, uint32_t SkeletonNode);
 
 	LWEGLTFSkin() = default;
 
-	char8_t m_Name[256];
-	uint32_t m_NameHash;
+	char8_t m_Name[256] = "";
+	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 	uint32_t m_InverseBindMatrices = -1;
 	uint32_t m_SkeletonNode = -1;
 	std::vector<uint32_t> m_JointList;
@@ -510,8 +510,8 @@ struct LWEGLTFAnimation {
 
 	LWEGLTFAnimation() = default;
 
-	char8_t m_Name[256];
-	uint32_t m_NameHash;
+	char8_t m_Name[256] = "";
+	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 	std::vector<LWEGLTFAnimChannel> m_Channels;
 };
 

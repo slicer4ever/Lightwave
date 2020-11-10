@@ -135,9 +135,11 @@ uint32_t LWWindow::MakeLoadFileMultipleDialog(const LWUTF8Iterator &FilterText, 
 bool LWWindow::WriteClipboardText(const LWUTF8Iterator &Text) {
 	if (!OpenClipboard(nullptr)) return false;
 	if (!EmptyClipboard()) return false;
+	
 	uint32_t Len16 = Text.MakeUTF<char16_t>(nullptr, 0);
-	HGLOBAL cMem = GlobalAlloc(GMEM_MOVEABLE, Len16*sizeof(char16_t));
-	if(!Text.MakeUTF<char16_t>((char16_t*)GlobalLock(cMem), Len16)!=Len16) return false;
+	HGLOBAL cMem = GlobalAlloc(GMEM_MOVEABLE, Len16 * sizeof(char16_t));
+	char16_t *Mem = (char16_t*)GlobalLock(cMem);
+	if (Text.MakeUTF<char16_t>(Mem, Len16) != Len16) return false;
 	GlobalUnlock(cMem);
 	if (!SetClipboardData(CF_UNICODETEXT, cMem)) return false;
 	CloseClipboard();

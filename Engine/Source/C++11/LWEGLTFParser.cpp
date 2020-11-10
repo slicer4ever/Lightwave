@@ -317,6 +317,10 @@ bool LWEGLTFMesh::ParseJSON(LWEGLTFMesh &Mesh, LWEJson &J, LWEJObject *Obj) {
 	return true;
 }
 
+LWUTF8Iterator LWEGLTFMesh::GetName(void) const {
+	return m_Name;
+}
+
 LWEGLTFMesh::LWEGLTFMesh(const LWUTF8Iterator &Name, uint32_t PrimitiveCount) {
 	Name.Copy(m_Name, sizeof(m_Name));
 	m_NameHash = LWUTF8Iterator(m_Name).Hash();
@@ -334,11 +338,20 @@ bool LWEGLTFImage::ParseJSON(LWEGLTFImage &Img, LWEJson &J, LWEJObject *Obj, LWF
 	if (JUri) {
 		LWUTF8Iterator Dir, Name;
 		LWFileStream::SplitPath(*Stream.GetFilePath(), Dir, Name);
-		auto Res = fmt::format_to_n(Img.m_URI, sizeof(Img.m_URI)-1, "{}{}", Dir, JUri->GetValue());
-		Img.m_URI[Res.size] = '\0';
+		uint32_t Len = std::min<uint32_t>((uint32_t)fmt::format_to_n(Img.m_URI, sizeof(Img.m_URI), "{}{}", Dir, JUri->GetValue()).size, sizeof(Img.m_URI)-1);
+		Img.m_URI[Len] = '\0';
 	}
 	return true;
 }
+
+LWUTF8Iterator LWEGLTFImage::GetName(void) const {
+	return m_Name;
+}
+
+LWUTF8Iterator LWEGLTFImage::GetURI(void) const {
+	return m_URI;
+}
+
 
 LWEGLTFImage::LWEGLTFImage(const LWUTF8Iterator &Name, const LWUTF8Iterator &URI, uint32_t MimeType, uint32_t BufferView) : m_MimeType(MimeType), m_BufferView(BufferView){
 	Name.Copy(m_Name, sizeof(m_Name));
@@ -433,6 +446,10 @@ bool LWEGLTFTexture::ParseJSON(LWEGLTFTexture &Tex, LWEJson &J, LWEJObject *Obj)
 
 
 	return true;
+}
+
+LWUTF8Iterator LWEGLTFTexture::GetName(void) const {
+	return m_Name;
 }
 
 LWEGLTFTexture::LWEGLTFTexture(const LWUTF8Iterator &Name, uint32_t ImageID, uint32_t SamplerFlag) : m_ImageID(ImageID), m_SamplerFlag(SamplerFlag) {
@@ -588,6 +605,10 @@ uint32_t LWEGLTFMaterial::GetType(void) const {
 	return (m_Flag&TypeBits);
 }
 
+LWUTF8Iterator LWEGLTFMaterial::GetName(void) const {
+	return m_Name;
+}
+
 LWEGLTFMaterial::LWEGLTFMaterial(const LWUTF8Iterator &Name) {
 	Name.Copy(m_Name, sizeof(m_Name));
 	m_NameHash = LWUTF8Iterator(m_Name).Hash();
@@ -619,6 +640,10 @@ bool LWEGLTFLight::ParseJSON(LWEGLTFLight &L, LWEJson &J, LWEJObject *Obj) {
 	}
 	return true;
 };
+
+LWUTF8Iterator LWEGLTFLight::GetName(void) const {
+	return m_Name;
+}
 
 LWEGLTFLight::LWEGLTFLight(const LWUTF8Iterator &Name, uint32_t Type) : m_Type(Type) {
 	Name.Copy(m_Name, sizeof(m_Name));
@@ -663,6 +688,10 @@ bool LWEGLTFNode::ParseJSON(LWEGLTFNode &Node, LWEJson &J, LWEJObject *Obj) {
 	return true;
 }
 
+LWUTF8Iterator LWEGLTFNode::GetName(void) const {
+	return m_Name;
+}
+
 LWEGLTFNode::LWEGLTFNode(const LWUTF8Iterator &Name, uint32_t MeshID, uint32_t SkinID, uint32_t CameraID, uint32_t ChildrenCnt, const LWMatrix4f &TransformMatrix) : m_MeshID(MeshID), m_SkinID(SkinID), m_CameraID(CameraID), m_TransformMatrix(TransformMatrix){
 	Name.Copy(m_Name, sizeof(m_Name));
 	m_NameHash = LWUTF8Iterator(m_Name).Hash();
@@ -682,6 +711,11 @@ bool LWEGLTFScene::ParseJSON(LWEGLTFScene &Scene, LWEJson &J, LWEJObject *Obj) {
 	}
 	return true;
 }
+
+LWUTF8Iterator LWEGLTFScene::GetName(void) const {
+	return m_Name;
+}
+
 LWEGLTFScene::LWEGLTFScene(const LWUTF8Iterator &Name, uint32_t NodeCnt) {
 	Name.Copy(m_Name, sizeof(m_Name));
 	m_NameHash = LWUTF8Iterator(m_Name).Hash();
@@ -706,6 +740,10 @@ bool LWEGLTFSkin::ParseJSON(LWEGLTFSkin &Skin, LWEJson &J, LWEJObject *Obj) {
 		Skin.m_JointList.push_back(JJnt->AsInt());
 	}
 	return true;
+}
+
+LWUTF8Iterator LWEGLTFSkin::GetName(void) const {
+	return m_Name;
 }
 
 LWEGLTFSkin::LWEGLTFSkin(const LWUTF8Iterator &Name, uint32_t JointCnt, uint32_t InverseBindMatrices, uint32_t SkeletonNode) : m_InverseBindMatrices(InverseBindMatrices), m_SkeletonNode(SkeletonNode) {
@@ -784,6 +822,10 @@ bool LWEGLTFAnimation::ParseJSON(LWEGLTFAnimation &Anim, LWEJson &J, LWEJObject 
 		Anim.m_Channels.push_back(Channel);
 	}
 	return true;
+}
+
+LWUTF8Iterator LWEGLTFAnimation::GetName(void) const {
+	return m_Name;
 }
 
 LWEGLTFAnimation::LWEGLTFAnimation(const LWUTF8Iterator &Name, uint32_t ChannelCnt) {

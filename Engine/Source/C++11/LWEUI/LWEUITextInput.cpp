@@ -15,21 +15,35 @@
 char8_t LWETextLine::PasswordField[LWETEXTINPUT_MAXLINELENGTH] = "";
 
 LWUTF8Iterator LWETextLine::GetValue(void) const {
-	return { m_Value };
+	return LWUTF8Iterator(0, m_Value, m_Value, m_Value+m_RawLength-1);
 }
 
 LWUTF8Iterator LWETextLine::GetValueLast(void) const {
-	return LWUTF8Iterator(m_Length, m_Value + m_RawLength, m_Value, m_Value + m_RawLength);
+	return LWUTF8Iterator(m_Length, m_Value + m_RawLength-1, m_Value, m_Value + m_RawLength-1);
 };
+
+LWUTF8Iterator LWETextLine::GetValue(bool isPassword) const {
+	const char8_t *Src = isPassword ? PasswordField : m_Value;
+	return LWUTF8Iterator(0, Src, Src, Src + m_RawLength - 1);
+}
+
+LWUTF8Iterator LWETextLine::GetValueLast(bool isPassword) const {
+	const char8_t *Src = isPassword ? PasswordField : m_Value;
+	return LWUTF8Iterator(m_Length, Src + m_RawLength - 1, Src, Src + m_RawLength - 1); //we don't know the actual character count, but at minimum it's Length, this shouldn't be necessary for how this method is used.
+}
 
 LWUTF8GraphemeIterator LWETextLine::GetValueGrapheme(bool isPassword) const {
 	const char8_t *Src = isPassword ? PasswordField : m_Value;
-	return LWUTF8GraphemeIterator(0, 0, Src, Src, Src + m_RawLength);
+	return LWUTF8GraphemeIterator(0, 0, Src, Src, Src + m_RawLength - 1);
 }
 
 LWUTF8GraphemeIterator LWETextLine::GetValueGraphemeLast(bool isPassword) const {
 	const char8_t *Src = isPassword ? PasswordField : m_Value;
-	return LWUTF8GraphemeIterator(m_Length, m_Length, Src + m_RawLength, Src, Src + m_RawLength); //we don't know the actual character count, but at minimum it's Length, this shouldn't be necessary for how this method is used.
+	return LWUTF8GraphemeIterator(m_Length, m_Length, Src + m_RawLength-1, Src, Src + m_RawLength-1); //we don't know the actual character count, but at minimum it's Length, this shouldn't be necessary for how this method is used.
+}
+
+LWUTF8Iterator LWETextLine::UpdateIterator(const LWUTF8Iterator &Pos) const {
+	return LWUTF8Iterator(Pos.m_Index, Pos(), m_Value, m_Value + m_RawLength-1);
 }
 
 uint32_t LWETextLine::Insert(const LWUTF8Iterator &Pos, const LWUTF8Iterator &Source) {
@@ -60,10 +74,11 @@ uint32_t LWETextLine::Erase(const LWUTF8Iterator &Begin, const LWUTF8Iterator &E
 	if (eP < bP) return Erase(End, Begin);
 	uint32_t bIndex = Begin.RawIndex();
 	uint32_t eIndex = End.RawIndex();
+	uint32_t Len = Begin.Distance(End);
 	std::copy(m_Value + eIndex, m_Value + m_RawLength, m_Value + bIndex);
-	m_RawLength -= (eIndex - bIndex);
-	m_Length -= Begin.Distance(End);
-	return (eIndex - bIndex);
+	m_RawLength -= eIndex - bIndex;
+	m_Length -= Len;
+	return Len;
 }
 
 uint32_t LWETextLine::Clear(void) {
@@ -80,9 +95,12 @@ LWETextLine::LWETextLine() {
 
 
 //LWETextInputCursor
+LWUTF8Iterator LWETextInputCursor::AsIterator(const LWUTF8Iterator &SrcData) {
+	return LWUTF8Iterator(m_Position.m_Index, SrcData() + m_Position.RawIndex(), SrcData.GetFirst(), SrcData.GetLast());
+}
 
 LWUTF8GraphemeIterator LWETextInputCursor::AsGrapheme(const LWUTF8GraphemeIterator &SrcData) {
-	return LWUTF8GraphemeIterator(m_Position.m_Index, m_Position.m_Index, SrcData() + m_Position.m_Index, SrcData(), SrcData.GetLast());
+	return LWUTF8GraphemeIterator(m_Position.m_Index, m_Position.m_Index, SrcData() + m_Position.RawIndex(), SrcData.GetFirst(), SrcData.GetLast());
 }
 
 LWETextInputCursor::LWETextInputCursor(uint32_t Line, const LWUTF8Iterator &Pos) : m_Line(Line), m_Position(Pos) {}
@@ -366,7 +384,6 @@ LWEUI &LWEUITextInput::UpdateSelf(LWEUIManager &Manager, float Scale, const LWVe
 }
 
 LWEUI &LWEUITextInput::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime) {
-	
 	Frame.WriteRect(m_BorderMaterial, VisiblePos - LWVector2f(m_BorderSize), VisibleSize + LWVector2f(m_BorderSize*2.0f));
 	if (!Frame.WriteRect(m_TextAreaMaterial, VisiblePos, VisibleSize)) return *this;
 	if (!m_Font) return *this;
@@ -377,11 +394,8 @@ LWEUI &LWEUITextInput::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float 
 	bool isPassField = isPasswordField();
 	bool isFocused = Manager.GetFocusedUI() == this;
 
-	LWETextInputCursor SBegin = m_SelectCursor;
-	LWETextInputCursor SEnd = m_SelectCursor;
-	int32_t SelectDis = 0;
-	if (m_SelectCursorLength < 0) SelectDis = MoveCursorBy(SBegin, m_SelectCursorLength);
-	else SelectDis = MoveCursorBy(SEnd, m_SelectCursorLength);
+	LWETextInputCursor SBegin, SEnd;
+	int32_t SelectDis = MakeSelectionRange(m_SelectCursor, SBegin, SEnd, m_SelectCursorLength);
 	if (m_CurrentLength == 0 && !isFocused) {
 		if (!*m_DefaultText) return *this;
 		LWVector4f TextBounds = m_Font->MeasureText(m_DefaultText, Scale*m_DefaultFontScale);
@@ -396,6 +410,9 @@ LWEUI &LWEUITextInput::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float 
 		if (SelectDis) {
 			LWUTF8GraphemeIterator GBegin = SBegin.AsGrapheme(m_Lines[SBegin.m_Line].GetValueGrapheme(isPassField));
 			LWUTF8GraphemeIterator GEnd = SEnd.AsGrapheme(m_Lines[SEnd.m_Line].GetValueGrapheme(isPassField));
+			float SpaceWidth = 0.0f; //Added to end of a selection line.
+			LWGlyph *WGlyph = m_Font->GetGlyph(' ');
+			if (WGlyph) SpaceWidth = WGlyph->m_Advance.x * m_FontScale * Scale;
 			for (uint32_t i = SBegin.m_Line; i <= SEnd.m_Line; i++) {
 				LWUTF8GraphemeIterator Line = m_Lines[i].GetValueGrapheme(isPassField);
 				LWUTF8GraphemeIterator LineEnd = m_Lines[i].GetValueGraphemeLast(isPassField);
@@ -410,7 +427,8 @@ LWEUI &LWEUITextInput::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float 
 				} else {
 					EndPos = m_Font->MeasureText(Line, m_FontScale*Scale);
 				}
-				Frame.WriteClippedRect(m_SelectMaterial, VisiblePos + LWVector2f(BeginPos.z, VisibleSize.y - (LineSize*(i + 1) + LineSize * 0.25f)) + LWVector2f(-m_HorizontalScroll, m_VerticalScroll), LWVector2f(EndPos.z - BeginPos.z, LineSize), LWVector4f(VisiblePos, VisibleSize));
+				if (i==SEnd.m_Line) SpaceWidth = 0.0f;
+				Frame.WriteClippedRect(m_SelectMaterial, VisiblePos + LWVector2f(BeginPos.z, VisibleSize.y - (LineSize*(i + 1) + LineSize * 0.25f)) + LWVector2f(-m_HorizontalScroll, m_VerticalScroll), LWVector2f(EndPos.z - BeginPos.z + SpaceWidth, LineSize), LWVector4f(VisiblePos, VisibleSize));
 			}
 		}
 		if (isFocused) {
@@ -434,7 +452,7 @@ void LWEUITextInput::Destroy(void) {
 }
 
 bool LWEUITextInput::ProcessKey(LWKey Key, bool ShiftDown, bool CtrlDown, float Scale) {
-	char8_t SelectBuffer[512];
+	char8_t SelectBuffer[1024];
 
 	if (Key == LWKey::Return) {
 		if (m_SelectCursorLength) ProcessKey(LWKey::Delete, ShiftDown, CtrlDown, Scale);
@@ -457,24 +475,22 @@ bool LWEUITextInput::ProcessKey(LWKey Key, bool ShiftDown, bool CtrlDown, float 
 			m_SelectCursor = m_Cursor;
 			m_SelectCursorLength = 1;
 		}
-		LWETextInputCursor SBegin = m_SelectCursor;
-		LWETextInputCursor SEnd = m_SelectCursor;
-		if (m_SelectCursorLength < 0) MoveCursorBy(SBegin, m_SelectCursorLength);
-		else MoveCursorBy(SEnd, m_SelectCursorLength);
 
+		LWETextInputCursor SBegin, SEnd;
+		MakeSelectionRange(m_SelectCursor, SBegin, SEnd, m_SelectCursorLength);
 		LWETextLine &BeginLine = m_Lines[SBegin.m_Line];
 		LWETextLine &EndLine = m_Lines[SEnd.m_Line];
 		if (SBegin.m_Line == SEnd.m_Line) {
 			m_CurrentLength -= BeginLine.Erase(SBegin.m_Position, SEnd.m_Position);
 		} else {
 			m_CurrentLength -= BeginLine.Erase(SBegin.m_Position, BeginLine.GetValueLast());
-			m_CurrentLength += BeginLine.Insert(SBegin.m_Position, SEnd.m_Position);
+			BeginLine.Insert(SBegin.m_Position, SEnd.m_Position);
 			m_CurrentLength -= EndLine.Erase(EndLine.GetValue(), SEnd.m_Position);
 			for (uint32_t i = SBegin.m_Line + 1; i < SEnd.m_Line; i++) m_CurrentLength -= m_Lines[i].m_Length;
 			std::copy(m_Lines + SEnd.m_Line + 1, m_Lines + m_LineCount, m_Lines + SBegin.m_Line + 1);
 			m_LineCount -= (SEnd.m_Line - SBegin.m_Line);
 		}
-		m_Cursor = SBegin;
+		m_Cursor = LWETextInputCursor(SBegin.m_Line, BeginLine.UpdateIterator(SBegin.m_Position));
 		m_SelectCursorLength = 0;
 		return true;
 	} else if (Key == LWKey::Back) {
@@ -503,18 +519,18 @@ bool LWEUITextInput::ProcessKey(LWKey Key, bool ShiftDown, bool CtrlDown, float 
 		if (Key == LWKey::A) {
 			m_SelectCursor = LWETextInputCursor(0, m_Lines[0].GetValue());
 			m_SelectCursorLength = m_CurrentLength + m_LineCount;
-			m_Cursor = LWETextInputCursor(m_LineCount - 1, m_Lines[m_LineCount].GetValueLast());
+			m_Cursor = LWETextInputCursor(m_LineCount - 1, m_Lines[m_LineCount-1].GetValueLast());
 			m_Flag |= SelectEnabled;
 			return true;
 		} else if (Key == LWKey::C) {
 			if (m_SelectCursorLength == 0) return false;
-			GetSelectedText(SelectBuffer, sizeof(SelectBuffer));
+			GetSelectedText(SelectBuffer, sizeof(SelectBuffer), isPasswordField());
 			LWWindow::WriteClipboardText(SelectBuffer);
 			return true;
 		} else if (Key == LWKey::X) {
 			if (m_SelectCursorLength == 0) return false;
 			
-			GetSelectedText(SelectBuffer, sizeof(SelectBuffer));
+			GetSelectedText(SelectBuffer, sizeof(SelectBuffer), isPasswordField());
 			LWWindow::WriteClipboardText(SelectBuffer);
 			ProcessKey(LWKey::Delete, ShiftDown, CtrlDown, Scale);
 			return true;
@@ -522,7 +538,6 @@ bool LWEUITextInput::ProcessKey(LWKey Key, bool ShiftDown, bool CtrlDown, float 
 			bool Res = false;
 			if (m_SelectCursorLength) Res = ProcessKey(LWKey::Delete, ShiftDown, CtrlDown, Scale);
 			uint32_t Len = LWWindow::ReadClipboardText(SelectBuffer, sizeof(SelectBuffer));
-			SelectBuffer[Len] = '\0';
 			InsertText(SelectBuffer, false, false, Scale);
 			return true;
 		} else if (Key == LWKey::N) { //special key for touch presses!
@@ -571,13 +586,13 @@ int32_t LWEUITextInput::GetCursorDistance(const LWETextInputCursor &ACursor, con
 	LWETextInputCursor A = ACursor;
 	LWETextInputCursor B = BCursor;
 	while (B.m_Line > A.m_Line) {
-		Distance += B.m_Position.m_Index;
+		Distance += B.m_Position.m_Index+1; //Add newline.
 		RawDistance += B.m_Position.RawIndex();
 		B.m_Line--;
 		B.m_Position = m_Lines[B.m_Line].GetValueLast();
 	}
 	while (A.m_Line > B.m_Line) {
-		Distance -= A.m_Position.m_Index;
+		Distance -= A.m_Position.m_Index+1; //Add newline.
 		RawDistance -= A.m_Position.RawIndex();
 		A.m_Line--;
 		A.m_Position = m_Lines[A.m_Line].GetValueLast();
@@ -585,6 +600,12 @@ int32_t LWEUITextInput::GetCursorDistance(const LWETextInputCursor &ACursor, con
 	Distance += B.m_Position.m_Index - A.m_Position.m_Index;
 	RawDistance += B.m_Position.RawIndex() - A.m_Position.RawIndex();
 	return Distance;
+}
+
+int32_t LWEUITextInput::MakeSelectionRange(const LWETextInputCursor &Cursor, LWETextInputCursor &RangeBegin, LWETextInputCursor &RangeEnd, int32_t Distance) {
+	RangeBegin = RangeEnd = Cursor;
+	if (Distance < 0) return MoveCursorBy(RangeBegin, Distance);
+	return MoveCursorBy(RangeEnd, Distance);
 }
 
 int32_t LWEUITextInput::MoveCursorBy(LWETextInputCursor &Cursor, int32_t Distance) {
@@ -608,7 +629,7 @@ bool LWEUITextInput::MoveCursorUp(LWETextInputCursor &Cursor, float UIScale) {
 		LWUTF8GraphemeIterator C = m_Lines[Cursor.m_Line].GetValueGrapheme(isPassword);
 		LWUTF8GraphemeIterator P = m_Lines[Cursor.m_Line - 1].GetValueGrapheme(isPassword);
 		LWUTF8GraphemeIterator CP = Cursor.AsGrapheme(C);
-		LWVector4f CSize = m_Font->MeasureText(LWUTF8GraphemeIterator(C, P), m_FontScale * UIScale);
+		LWVector4f CSize = m_Font->MeasureText(LWUTF8GraphemeIterator(C, CP), m_FontScale * UIScale);
 		uint32_t Idx = m_Font->CharacterAt(P, CSize.z, m_FontScale * UIScale);
 		Cursor.m_Position = m_Lines[Cursor.m_Line - 1].GetValueGrapheme(false).Next(Idx);
 	}
@@ -630,7 +651,7 @@ bool LWEUITextInput::MoveCursorDown(LWETextInputCursor &Cursor, float UIScale) {
 		LWUTF8GraphemeIterator C = m_Lines[Cursor.m_Line].GetValueGrapheme(isPassword);
 		LWUTF8GraphemeIterator P = m_Lines[Cursor.m_Line + 1].GetValueGrapheme(isPassword);
 		LWUTF8GraphemeIterator CP = Cursor.AsGrapheme(C);
-		LWVector4f CSize = m_Font->MeasureText(LWUTF8GraphemeIterator(C, P), m_FontScale * UIScale);
+		LWVector4f CSize = m_Font->MeasureText(LWUTF8GraphemeIterator(C, CP), m_FontScale * UIScale);
 		uint32_t Idx = m_Font->CharacterAt(P, CSize.z, m_FontScale * UIScale);
 		Cursor.m_Position = m_Lines[Cursor.m_Line + 1].GetValueGrapheme(false).Next(Idx);
 	}
@@ -686,6 +707,7 @@ bool LWEUITextInput::InsertChar(uint32_t Char, bool ShiftDown, bool CtrlDown, fl
 	uint32_t r = m_Lines[m_Cursor.m_Line].Insert(m_Cursor.m_Position, Char);
 	if (!r) return false;
 	m_CurrentLength += r;
+	m_Cursor.m_Position = m_Lines[m_Cursor.m_Line].UpdateIterator(m_Cursor.m_Position);
 	++m_Cursor.m_Position;
 	return true;
 }
@@ -711,14 +733,17 @@ bool LWEUITextInput::ScrollToCursor(float Scale) {
 }
 
 bool LWEUITextInput::SetScroll(float HoriScroll, float VertScroll, float Scale) {
-	if (!m_Font) return false;
-	float MaxHoriScroll = std::max<float>(0.0f, m_LongestLine - m_VisibleSize.x);
-	float MaxVerticalScroll = std::max<float>(0.0f, (m_LineCount*m_Font->GetLineSize()*m_FontScale*Scale + (m_Font->GetLineSize()*m_FontScale*Scale*0.25f)) - m_VisibleSize.y);
-	m_HorizontalScroll = std::max<float>(std::min<float>(HoriScroll, MaxHoriScroll), 0.0f);
-	m_VerticalScroll = std::max<float>(std::min<float>(VertScroll, MaxVerticalScroll), 0.0f);
+	float MaxHoriScroll = GetHorizontalMaxScroll();
+	float MaxVerticalScroll = GetVerticalMaxScroll(Scale);
+	m_HorizontalScroll = std::max<float>(std::min<float>(HoriScroll, MaxHoriScroll - m_VisibleSize.x), 0.0f);
+	m_VerticalScroll = std::max<float>(std::min<float>(VertScroll, MaxVerticalScroll - m_VisibleSize.y), 0.0f);
 	return true;
 }
 
+LWETextInputCursor LWEUITextInput::MakeCursorAt(uint32_t Line, uint32_t Index) {
+	Line = std::min<uint32_t>(Line, m_LineCount - 1);
+	return LWETextInputCursor(Line, m_Lines[Line].GetValue().Next(Index));
+}
 
 LWEUITextInput &LWEUITextInput::Clear(void) {
 	m_Lines[0].Clear();
@@ -728,6 +753,7 @@ LWEUITextInput &LWEUITextInput::Clear(void) {
 	m_LineCount = 1;
 	m_CurrentLength = 0;
 	m_VerticalScroll = m_HorizontalScroll = 0.0f;
+	m_LongestLine = 0.0f;
 	return *this;
 }
 
@@ -860,27 +886,31 @@ LWEUITextInput &LWEUITextInput::SetSelectRange(uint32_t Position, uint32_t Line,
 	return *this;
 }
 
-uint32_t LWEUITextInput::GetSelectedText(char8_t *Buffer, uint32_t BufferLen) {
-	if (isPasswordField() || !m_SelectCursorLength) {
+uint32_t LWEUITextInput::GetSelectedText(char8_t *Buffer, uint32_t BufferLen, bool PasswordField) {
+	return GetTextRange(m_SelectCursor, m_SelectCursorLength, Buffer, BufferLen, PasswordField);
+}
+
+uint32_t LWEUITextInput::GetTextRange(const LWETextInputCursor &Cursor, int32_t Count, char8_t *Buffer, uint32_t BufferLen, bool PasswordField) {
+	LWETextInputCursor Begin, End;
+	if (!MakeSelectionRange(Cursor, Begin, End, Count)) {
 		if (BufferLen) *Buffer = '\0';
 		return 1;
 	}
 	char8_t *B = Buffer;
 	char8_t *BL = Buffer + std::min<uint32_t>(BufferLen - 1, BufferLen);
 	uint32_t o = 0;
-	LWETextInputCursor S = m_SelectCursor;
-	LWETextInputCursor E = m_Cursor;
-	if (m_SelectCursorLength < 0) std::swap(S, E);
-	LWUTF8Iterator P = S.m_Position;
-	for (; P != E.m_Position;) {
+	LWUTF8Iterator E = End.AsIterator(m_Lines[End.m_Line].GetValue(PasswordField));
+	LWUTF8Iterator P = Begin.AsIterator(m_Lines[Begin.m_Line].GetValue(PasswordField));
+	for (; P != E;) {
 		if (P.AtEnd()) {
-			P = m_Lines[++S.m_Line].GetValue();
+			P = m_Lines[++Begin.m_Line].GetValue(PasswordField);
 			if (B != BL) *B++ = '\n';
 			o++;
 		} else {
 			uint32_t r = LWUTF8Iterator::EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL - B), *P);
 			B = std::min<char8_t*>(B + r, BL);
 			o += r;
+			++P;
 		}
 	}
 	if (BufferLen) *B = '\0';
@@ -969,6 +999,16 @@ float LWEUITextInput::GetVerticalScroll(void) const {
 
 float LWEUITextInput::GetHorizontalScroll(void) const {
 	return m_HorizontalScroll;
+}
+
+float LWEUITextInput::GetHorizontalMaxScroll() const {
+	return m_LongestLine;
+}
+
+float LWEUITextInput::GetVerticalMaxScroll(float Scale) const {
+	if (!m_Font) return 0.0f;
+	float LineHeight = m_Font->GetLineSize() * m_FontScale * Scale;
+	return m_LineCount * LineHeight + (LineHeight * 0.25f);
 }
 
 float LWEUITextInput::GetFontScale(void) const {

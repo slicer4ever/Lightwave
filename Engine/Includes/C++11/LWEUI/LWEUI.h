@@ -8,6 +8,24 @@ struct LWEUIEvent {
 	void *m_UserData;
 };
 
+class LWEUIButton;
+
+class LWEUIComponent;
+
+class LWEUILabel;
+
+class LWEUIListBox;
+
+class LWEUIRect;
+
+class LWEUIRichLabel;
+
+class LWEUIScrollBar;
+
+class LWEUITextInput;
+
+class LWEUITreeList;
+
 class LWEUI {
 public:
 	enum : uint64_t {

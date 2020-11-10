@@ -465,7 +465,12 @@ public:
 
 	/*!< \brief constructs a unicode object from an iterator. */
 	LWUnicode(const LWUnicodeIterator<Type> &Text, LWAllocator &Allocator) {
-		if (!LWUnicodeIterator<Type>::ValidateString(Text(), m_Length, m_RawLength)) return;
+		if (!LWUnicodeIterator<Type>::ValidateString(Text(), m_Length, m_RawLength)) {
+			m_Capacity = m_RawLength = 1;
+			m_Buffer = Allocator.AllocateA<Type>(m_Capacity);
+			*m_Buffer = '\0';
+			return;
+		}
 		m_Buffer = Allocator.AllocateA<Type>(m_RawLength);
 		std::copy(Text(), Text() + m_RawLength, m_Buffer);
 		m_Capacity = m_RawLength;

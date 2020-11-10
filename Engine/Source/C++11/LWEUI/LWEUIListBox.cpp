@@ -9,6 +9,10 @@
 
 //LWEUIListBoxItem
 
+LWUTF8Iterator LWEUIListBoxItem::GetName(void) const {
+	return m_Name;
+}
+
 LWEUIListBoxItem::LWEUIListBoxItem(const LWUTF8Iterator &Name, const LWVector2f &TextSize, float TextUnderHang, void *UserData, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) : m_TextSize(TextSize), m_TextUnderhang(TextUnderHang), m_UserData(UserData), m_OffMaterial(OffMaterial), m_OverMaterial(OverMaterial), m_DownMaterial(DownMaterial) {
 	Name.Copy(m_Name, sizeof(m_Name));
 }

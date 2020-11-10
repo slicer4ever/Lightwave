@@ -71,8 +71,8 @@ public:
 	static bool ValidateIterator(const LWUnicodeIterator<Type> &Iter, uint32_t &Length, uint32_t &RawLength) {
 		LWUnicodeIterator<Type> C = Iter;
 		while (C.ValidateAdvance()) C.Advance();
-		Length = C.m_Index;
-		RawLength = C.RawIndex() + 1; //Include null.
+		Length = Iter.Distance(C);
+		RawLength = Iter.RawDistance(C) + 1; //Include null.
 		return C.AtEnd();
 	}
 
@@ -120,6 +120,56 @@ public:
 		if (!ValidateString(Buffer, Length, RawLength)) return false;
 		Res = LWUnicodeIterator<Type>(Buffer, RawLength);
 		return true;
+	}
+
+	/*!< \brief count's the number of lines in source. */
+	static uint32_t CountLines(const LWUnicodeIterator<Type> &Source) {
+		uint32_t Line = 0;
+		for (LWUnicodeIterator<Type> C = Source; !C.AtEnd(); ++C) {
+			if (C.isLineBreak()) ++Line;
+		}
+		return Line;
+	}
+
+	/*!< \brief count's the number of word's in source. */
+	static uint32_t CountWords(const LWUnicodeIterator<Type> &Source) {
+		bool InWord = false;
+		uint32_t Words = 0;
+		for (LWUnicodeIterator<Type> C = Source; !C.AtEnd(); ++C) {
+			if (C.isWhitespace()) InWord = false;
+			else if (!InWord) {
+				Words++;
+				InWord = true;
+			}
+		}
+		return Words;
+	}
+
+	/*!< \brief count's the number of substring's in source. */
+	static uint32_t CountSubStrings(const LWUnicodeIterator<Type> &Source, const LWUnicodeIterator<Type> &SubString) {
+		uint32_t SubStrings = 0;
+		for (LWUnicodeIterator<Type> C = Source; !C.AtEnd(); ++C) {
+			if (C.isSubString(SubString)) ++SubStrings;
+		}
+		return SubStrings;
+	}
+
+	/*!< \brief count's the number of token's in source. */
+	static uint32_t CountToken(const LWUnicodeIterator<Type> &Source, uint32_t Token) {
+		uint32_t TokenCnt = 0;
+		for (LWUnicodeIterator<Type> C = Source; !C.AtEnd(); ++C) {
+			if (C.isToken(Token)) ++TokenCnt;
+		}
+		return TokenCnt;
+	}
+
+	/*!< \brief count's the number of tokenlist's in source upto Pos. */
+	static uint32_t CountTokens(const LWUnicodeIterator<Type> &Source, const LWUnicodeIterator<Type> &TokenList) {
+		uint32_t TokenCnt = 0;
+		for (LWUnicodeIterator<Type> C = Source; !C.AtEnd(); ++C) {
+			if (C.isTokens(TokenList)) ++TokenCnt;
+		}
+		return TokenCnt;
 	}
 
 	/*!< \brief returns true if the codepoint is a whitespace. */
@@ -350,8 +400,11 @@ public:
 		for (; !C.AtEnd(); P=C.Next(), C.AdvanceToken(Token), o++) {
 			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeIterator<Type>(P, C);
 		}
-		if (o < IterBufferSize) IterBuffer[o] = LWUnicodeIterator<Type>(P, C);
-		return o + 1;
+		if (!P.AtEnd()) {
+			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeIterator<Type>(P, C);
+			o++;
+		}
+		return o;
 	}
 
 	/*!< \brief generates iterator's between each token in the token list, and end at next token(or end of Iterator).
@@ -367,8 +420,11 @@ public:
 		for (; !C.AtEnd(); P = C.Next(), C.AdvanceTokens(TokenList), o++) {
 			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeIterator<Type>(P, C);
 		}
-		if (o < IterBufferSize) IterBuffer[o] = LWUnicodeIterator<Type>(P, C);
-		return o + 1;
+		if (!P.AtEnd()) {
+			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeIterator<Type>(P, C);
+			o++;
+		}
+		return o;
 	}
 
 	/*!< \brief generates iterator's between each word, and end at end of word(or end of iterator).
@@ -387,7 +443,8 @@ public:
 			} else ++C;
 		}
 		if (!P.AtEnd()) {
-			if (o++ < IterBufferSize) IterBuffer[o - 1] = LWUnicodeIterator<Type>(P, C);
+			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeIterator<Type>(P, C);
+			o++;
 		}
 		return o;
 	}
@@ -408,7 +465,8 @@ public:
 			} else ++C;
 		}
 		if (!P.AtEnd()) {
-			if (o++ < IterBufferSize) IterBuffer[o - 1] = LWUnicodeIterator<Type>(P, C);
+			if (o < IterBufferSize) IterBuffer[o] = LWUnicodeIterator<Type>(P, C);
+			o++;
 		}
 		return o;
 	}

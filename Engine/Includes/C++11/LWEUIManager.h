@@ -223,6 +223,11 @@ public:
 
 	LWEUI *GetNamedUI(const LWUTF8Iterator &Name);
 
+	template<class Type>
+	Type *GetNamedUI(const LWUTF8Iterator &Name) {
+		return (Type*)GetNamedUI(Name);
+	}
+
 	LWEUIMaterial *InsertMaterial(const LWUTF8Iterator &Name, const LWVector4f &ColorA, const LWVector4f &ColorB, uint32_t FillMode, LWTexture *Texture, const LWVector4f &SubRegion);
 
 	LWEUIMaterial *GetMaterial(const LWUTF8Iterator &Name);

@@ -1,0 +1,24 @@
+<Component Name="TextInputTest">
+	<Rect Flag="PAMC|LAMC" Material="MenuBackground" Size="x: 600px y: 375px">
+		<TextInput Name="TextDialog" Flag="PAML|LAML" Style="TISmallStyle" Default="Write some text." MaxLines="50" MaxLength="500" Size="x: 375px y: 300px" Position="x: 10px">
+			<ScrollBar Name="HoriScrollBar" Flag="PABL|LATL|HorizontalBar" Position="y: -2px" Style="ScrollStyle" Size="x: 100% y: 10px" />
+			<ScrollBar Name="VertScrollBar" Flag="PATR|LATL" Position="x: 2px" Style="ScrollStyle" Size="x: 10px y: 100%" />
+			
+			<Label Name="CharacterCountLbl" Flag="PABL|LATL" Position="y: -15px" Style="MenuFnt">
+				<BtnLbl Name="ClearBtn" Flag="PAMR|LAML|NoAutoSize" Size="x: 60px y: 20px" Position="x: 5px" Value="Clear" /> 
+			</Label>
+			<Label Name="LineCountLbl" Flag="PABR|LATR" Position="y: -15px" Style="MenuFnt" />
+			<Toggle Name="PasswordTgl" Value="Passworded\nlala" Flag="PABC|LATC|NoAutoSize" Position="y: -10px" Size="x: 90px y: 20px" />
+			
+			<Label Flag="PATR|LATL" Value="Rich Label:" Style="MenuFnt" Position="x: 10px">
+				<RichLabel Name="RichLbl" Flag="PABL|LATL|AlignCenter" Position="y: -5px" Style="MenuFnt" Material="White" />
+			</Label>
+		</TextInput>
+		<Rect Flag="PATL|LATR" Material="Red" Size="x: 200px y: 375px" Position="x: -5px">
+			<TreeList Name="Tree" Flag="PABL|LABL" Style="TreeListStyle" Size="x: 90% y: 90%" Position="x: 5% y: 5%" />
+		</Rect>
+		<Rect Flag="PATR|LATL" Material="MenuBackground" Size="x: 200px y: 375px" Position="x: 5px">
+			<ListBox Name="ListBox" Style="ListBoxStyle" Flag="PABL|LABL" Size="x: 90% y: 90%" Position="x: 5% y: 5%" />
+		</Rect>
+	</Rect>
+</Component>

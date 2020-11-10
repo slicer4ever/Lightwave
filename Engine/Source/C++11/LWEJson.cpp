@@ -434,12 +434,8 @@ bool LWEJson::LoadFile(LWEJson &Json, const LWUTF8Iterator &Path, LWAllocator &A
 
 
 bool LWEJson::Parse(LWEJson &JSon, const LWUTF8Iterator &Source, LWEJObject *Parent) {
-		auto OutputLineError = [](const LWUTF8Iterator &Source, const LWUTF8Iterator &P, const LWUTF8Iterator &Error)->LWUTF8Iterator {
-		uint32_t Line = 0;
-		for (LWUTF8Iterator C = Source; C!=P; ++C) {
-			if (C.isLineBreak()) Line++;
-		}
-		fmt::print("Line {}: {}\n", Line, Error);
+	auto OutputLineError = [](const LWUTF8Iterator &Source, const LWUTF8Iterator &P, const LWUTF8Iterator &Error)->LWUTF8Iterator {
+		fmt::print("Line {}: {}\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, P)), Error);
 		return LWUTF8Iterator();
 	};
 

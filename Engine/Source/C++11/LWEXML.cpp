@@ -95,7 +95,10 @@ bool LWEXML::LoadFile(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterator 
 	if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::BinaryMode | LWFileStream::ReadMode, Allocator, ExistingStream)) return false;
 	uint32_t Len = Stream.Length() + 1;
 	char8_t *B = Allocator.AllocateA<char8_t>(Len);
-	Stream.ReadText(B, Len);
+	if (Stream.ReadText(B, Len) != Len) {
+		LWAllocator::Destroy(B);
+		return false;
+	}
 	bool Res = ParseBuffer(XML, Allocator, B, StripFormatting, Parent, Prev);
 	LWAllocator::Destroy(B);
 	return Res;
@@ -106,7 +109,10 @@ bool LWEXML::LoadFile(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterator 
 	if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::BinaryMode | LWFileStream::ReadMode, Allocator, ExistingStream)) return false;
 	uint32_t Len = Stream.Length() + 1;
 	char8_t *B = Allocator.AllocateA<char8_t>(Len);
-	Stream.ReadText(B, Len);
+	if (Stream.ReadText(B, Len) != Len) {
+		LWAllocator::Destroy(B);
+		return false;
+	}
 	bool Res = ParseBuffer(XML, Allocator, B, StripFormatting);
 	LWAllocator::Destroy(B);
 	return Res;
@@ -128,14 +134,6 @@ bool LWEXML::ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterat
 		}
 		Target->SetText(LWUTF8Iterator(F, E));
 		return;
-	};
-
-	auto CalculateLine = [](const LWUTF8Iterator &Source, const LWUTF8Iterator &Pos)->uint32_t {
-		uint32_t Line = 1;
-		for (LWUTF8Iterator C = Source; C != Pos; ++C) {
-			if (C.isLineBreak()) Line++;
-		}
-		return Line;
 	};
 
 	//Comments look like: <!-- comment here --> 
@@ -162,12 +160,12 @@ bool LWEXML::ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterat
 			}else if(*C=='/') { //is termination node for our active node:
 				++C;
 				if (!ActiveNode) {
-					fmt::print("Line {}: Error found termination node with no active node.\n", CalculateLine(Source, F));
+					fmt::print("Line {}: Error found termination node with no active node.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)));
 					return false;
 				}else {
 					if (!C.isSubString(ActiveNode->GetName())) {
 						LWUTF8Iterator E = C.NextTokens(u8"> ");
-						fmt::print("Line {}: Error found incorrect termination name, active: '{}' Discovered: '{}'\n", CalculateLine(Source, F), ActiveNode->GetName(), LWUTF8Iterator(C, E));
+						fmt::print("Line {}: Error found incorrect termination name, active: '{}' Discovered: '{}'\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)), ActiveNode->GetName(), LWUTF8Iterator(C, E));
 						return false;
 					}
 					C.AdvanceToken('>');
@@ -188,14 +186,14 @@ bool LWEXML::ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterat
 			}
 			LWUTF8Iterator E = C.NextTokens("> ");
 			if (E.AtEnd()) {
-				fmt::print("Line {}: Error could not find closing > token.\n", CalculateLine(Source, C));
+				fmt::print("Line {}: Error could not find closing > token.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)));
 				return false;
 			}
 			ActiveNode->SetName(LWUTF8Iterator(C, E));
 			for(C = E.NextWord(true);;C.AdvanceWord(true)) {
 				if (*C == '/') {
 					if (!ActiveNode) {
-						fmt::print("Line {}: Error encountered second / before > token.\n", CalculateLine(Source, C));
+						fmt::print("Line {}: Error encountered second / before > token.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)));
 						return false;
 					}
 					ChildNode = ActiveNode;
@@ -214,18 +212,18 @@ bool LWEXML::ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterat
 						++C;
 						E = C.NextToken('\"', false);
 						if (E.AtEnd()) {
-							fmt::print("Line {}: Error did not find matching \" token.\n", CalculateLine(Source, C));
+							fmt::print("Line {}: Error did not find matching \" token.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)));
 							return false;
 						}
 						Attr.SetValue(LWUTF8Iterator(C, E));
 						C = E + 1;
 					} else {
-						fmt::print("Line {}: Error invalid token found: '{:c}'.\n", CalculateLine(Source, F), *C);
+						fmt::print("Line {}: Error invalid token found: '{:c}'.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)), *C);
 						return false;
 					}
 				}
 				if (!ActiveNode->PushAttribute(Attr)) {
-					fmt::print("Line {}: Node '{}' has exceeded the amount of attributes this implementation supports.\n", CalculateLine(Source, F), ActiveNode->GetName());
+					fmt::print("Line {}: Node '{}' has exceeded the amount of attributes this implementation supports.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)), ActiveNode->GetName());
 				}
 			}
 			P = C+1;
