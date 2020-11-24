@@ -11,20 +11,6 @@ LWMatrix4<double> LWSMatrix4<double>::AsMat4(void) const {
 	return R;
 }
 
-double *LWSMatrix4<double>::AsArray(void) {
-	return (double*)&m_Row0;
-}
-
-const double *LWSMatrix4<double>::AsArray(void) const {
-	return (double*)&m_Row0;
-}
-
-LWSMatrix4<double> &LWSMatrix4<double>::sRC(uint32_t Row, uint32_t Column, double Value) {
-	double *v = AsArray();
-	v[Row * 4 + Column] = Value;
-	return *this;
-}
-
 LWSVector4<double> LWSMatrix4<double>::DecomposeScale(bool doTranspose3x3) const {
 	LWSMatrix4<double> v = doTranspose3x3 ? Transpose3x3() : *this;
 	__m256d R0 = v.m_Row0;
@@ -105,7 +91,6 @@ void LWSMatrix4<double>::Decompose(LWSVector4<double> &Scale, LWSQuaternion<doub
 	return;
 }
 
-
 LWSMatrix4<double> LWSMatrix4<double>::TransformInverse(void) const {
 
 	__m256d E = _mm256_set1_pd((double)std::numeric_limits<float>::epsilon());
@@ -130,7 +115,6 @@ LWSMatrix4<double> LWSMatrix4<double>::TransformInverse(void) const {
 	Dr = _mm256_blend_pd(Dr, T3.m_Row3, 0x8); //Keep w component of original Row3.
 	return LWSMatrix4(A, B, C, Dr);
 }
-
 
 LWSMatrix4<double> LWSMatrix4<double>::Inverse(void) const {
 	//adapted Non-simd version Found from: https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
@@ -222,17 +206,8 @@ LWSMatrix4<double> LWSMatrix4<double>::Inverse(void) const {
 LWSVector4<double> LWSMatrix4<double>::Column(uint32_t Index) const {
 	//Transpose for column.
 	LWSMatrix4<double> T = Transpose();
-	return T.Row(Index);
+	return T[Index];
 };
-
-LWSVector4<double> LWSMatrix4<double>::Row(uint32_t Index) const {
-	__m256d R;
-	if (Index == 0) R = m_Row0;
-	else if (Index == 1) R = m_Row1;
-	else if (Index == 2) R = m_Row2;
-	else if (Index == 3) R = m_Row3;
-	return LWSVector4<double>(R);
-}
 
 LWSMatrix4<double> LWSMatrix4<double>::Transpose(void) const {
 
@@ -417,6 +392,14 @@ bool LWSMatrix4<double>::operator == (const LWSMatrix4<double>& Rhs) const {
 
 bool LWSMatrix4<double>::operator != (const LWSMatrix4<double>& Rhs) const {
 	return !(*this == Rhs);
+}
+
+LWSVector4<double> LWSMatrix4<double>::operator[](uint32_t i) const {
+	return m_Rows[i];
+}
+
+LWSVector4<double> &LWSMatrix4<double>::operator[](uint32_t i) {
+	return m_Rows[i];
 }
 
 std::ostream& operator<<(std::ostream& o, const LWSMatrix4<double>& M) {

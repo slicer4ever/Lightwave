@@ -12,34 +12,6 @@ LWSVector4<double> LWSVector4<double>::Sign(void) const {
 	return _mm256_blendv_pd(_mm256_set_pd(1.0, 1.0, 1.0, 1.0), _mm256_set_pd(-1.0, -1.0, -1.0, -1.0), c);
 }
 
-double *LWSVector4<double>::AsArray(void) {
-	return (double*)&m_Data;
-}
-
-const double *LWSVector4<double>::AsArray(void) const {
-	return (double*)&m_Data;
-}
-
-LWSVector4<double> &LWSVector4<double>::sX(double Value) {
-	((double*)&m_Data)[0] = Value;
-	return *this;
-}
-
-LWSVector4<double> &LWSVector4<double>::sY(double Value) {
-	((double*)&m_Data)[1] = Value;
-	return *this;
-}
-
-LWSVector4<double> &LWSVector4<double>::sZ(double Value) {
-	((double*)&m_Data)[2] = Value;
-	return *this;
-}
-
-LWSVector4<double> &LWSVector4<double>::sW(double Value) {
-	((double*)&m_Data)[3] = Value;
-	return *this;
-}
-
 LWSVector4<double> LWSVector4<double>::Normalize(void) const {
 	const double e = std::numeric_limits<double>::epsilon();
 	__m256d eps = _mm256_set1_pd(e);
@@ -457,6 +429,14 @@ bool LWSVector4<double>::GreaterEqual2(const LWSVector4<double> &Rhs) const {
 	return _mm256_test_all_ones(_mm256_blend_epi32(t, one, 0xF0));
 }
 
+double LWSVector4<double>::operator[](uint32_t i) const {
+	return (&x)[i];
+}
+
+double &LWSVector4<double>::operator[](uint32_t i) {
+	return (&x)[i];
+}
+
 LWSVector4<double>& LWSVector4<double>::operator = (const LWSVector4<double>& Rhs) {
 	m_Data = Rhs.m_Data;
 	return *this;
@@ -768,6 +748,18 @@ LWSVector4<double> LWSVector4<double>::xyzy(void) const {
 
 LWSVector4<double> LWSVector4<double>::xyzz(void) const {
 	return _mm256_permute4x64_pd(m_Data, _MM_SHUFFLE(2, 2, 1, 0));
+}
+
+LWSVector4<double> LWSVector4<double>::xyz0(void) const {
+	LWSVector4<double> v = m_Data;
+	v.w = 0.0;
+	return v;
+}
+
+LWSVector4<double> LWSVector4<double>::xyz1(void) const {
+	LWSVector4<double> v = m_Data;
+	v.w = 1.0;
+	return v;
 }
 
 LWSVector4<double> LWSVector4<double>::xywx(void) const {
@@ -1804,23 +1796,6 @@ LWSVector4<double> LWSVector4<double>::yx(void) const {
 
 LWSVector4<double> LWSVector4<double>::yy(void) const {
 	return _mm256_permute4x64_pd(m_Data, _MM_SHUFFLE(3, 2, 1, 1));
-}
-
-double LWSVector4<double>::x(void) const {
-	return ((double*)&m_Data)[0];
-}
-
-double LWSVector4<double>::y(void) const {
-	return ((double*)&m_Data)[1];
-}
-
-double LWSVector4<double>::z(void) const {
-	return ((double*)&m_Data)[2];
-
-}
-
-double LWSVector4<double>::w(void) const {
-	return ((double*)&m_Data)[3];
 }
 
 LWSVector4<double>::LWSVector4(const __m256d Data) : m_Data(Data) {}

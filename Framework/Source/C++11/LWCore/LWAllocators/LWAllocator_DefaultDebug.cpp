@@ -45,8 +45,9 @@ void *LWAllocator_DefaultDebug::AllocateMemory(uint32_t Length) {
 	void *Memory = AllocateBytes(Length + sizeof(LWAllocatorEnvironmentDebug));
 	if (!Memory) return nullptr;
 	LWAllocatorEnvironmentDebug *Env = (LWAllocatorEnvironmentDebug*)Memory;
-	assert(m_NextID != m_CrashID);
-	Env->m_AllocID = m_NextID++;
+	Env->m_AllocID = m_NextID.fetch_add(1);
+	assert(Env->m_AllocID != m_CrashID);
+
 	Env->m_NextAlloc = m_FirstAllocation;
 	Env->m_PrevAlloc = nullptr;
 	if (m_FirstAllocation) ((LWAllocatorEnvironmentDebug*)m_FirstAllocation)->m_PrevAlloc = Env;
@@ -59,7 +60,7 @@ void *LWAllocator_DefaultDebug::AllocateMemory(uint32_t Length) {
 }
 
 void *LWAllocator_DefaultDebug::DeallocateMemory(void *Memory) {
-	LWAllocatorEnvironmentDebug *Env = (LWAllocatorEnvironmentDebug*)(((int8_t*)Memory) - sizeof(LWAllocatorEnvironmentDebug));
+	LWAllocatorEnvironmentDebug *Env = LWAllocator::GetEnvironment<LWAllocatorEnvironmentDebug>(Memory);
 	
 	if (Env->m_NextAlloc) ((LWAllocatorEnvironmentDebug*)Env->m_NextAlloc)->m_PrevAlloc = Env->m_PrevAlloc;
 	if (Env->m_PrevAlloc) ((LWAllocatorEnvironmentDebug*)Env->m_PrevAlloc)->m_NextAlloc = Env->m_NextAlloc;

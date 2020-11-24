@@ -25,7 +25,7 @@ private:
 
 	virtual void *DeallocateBytes(void *Memory);
 
-	uint32_t m_NextID;
+	std::atomic<uint32_t> m_NextID;
 	uint32_t m_CrashID;
 	void *m_FirstAllocation;
 

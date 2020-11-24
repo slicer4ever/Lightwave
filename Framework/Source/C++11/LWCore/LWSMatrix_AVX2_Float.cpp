@@ -9,20 +9,6 @@ LWMatrix4<float> LWSMatrix4<float>::AsMat4(void) const {
 	return R;
 }
 
-float *LWSMatrix4<float>::AsArray(void) {
-	return (float*)&m_Row01;
-}
-
-const float *LWSMatrix4<float>::AsArray(void) const {
-	return (float*)&m_Row01;
-}
-
-LWSMatrix4<float> &LWSMatrix4<float>::sRC(uint32_t Row, uint32_t Column, float Value) {
-	float *v = AsArray();
-	v[Row * 4 + Column] = Value;
-	return *this;
-}
-
 LWSVector4<float> LWSMatrix4<float>::DecomposeScale(bool doTranspose3x3) const {
 	LWSMatrix4<float> v = doTranspose3x3 ? Transpose3x3() : *this;
 	__m128 R0 = _mm256_extractf128_ps(v.m_Row01, 0);
@@ -218,15 +204,6 @@ LWSVector4<float> LWSMatrix4<float>::Column(uint32_t Index) const {
 	return LWSVector4<float>(R);
 };
 
-LWSVector4<float> LWSMatrix4<float>::Row(uint32_t Index) const {
-	__m128 R;
-	if (Index == 0) R = _mm256_extractf128_ps(m_Row01, 0);
-	else if (Index == 1) R = _mm256_extractf128_ps(m_Row01, 1);
-	else if (Index == 2) R = _mm256_extractf128_ps(m_Row23, 0);
-	else if (Index == 3) R = _mm256_extractf128_ps(m_Row23, 1);
-	return LWSVector4<float>(R);
-}
-
 LWSMatrix4<float> LWSMatrix4<float>::Transpose(void) const {
 	__m256 A = _mm256_unpacklo_ps(m_Row01, m_Row23);
 	__m256 B = _mm256_unpackhi_ps(m_Row01, m_Row23);
@@ -329,6 +306,14 @@ LWSMatrix4<float>& LWSMatrix4<float>::operator*= (const LWSMatrix4<float>& Rhs) 
 	m_Row23 = _mm256_add_ps(m_Row23, _mm256_mul_ps(CDzw, Rhs.m_Row23));
 	m_Row23 = _mm256_add_ps(m_Row23, _mm256_mul_ps(CDwz, Row32));
 	return *this;
+}
+
+LWSVector4<float> LWSMatrix4<float>::operator[](uint32_t i) const {
+	return m_Rows[i];
+}
+
+LWSVector4<float> &LWSMatrix4<float>::operator[](uint32_t i) {
+	return m_Rows[i];
 }
 
 LWSMatrix4<float>& LWSMatrix4<float>::operator *=(float Rhs) {

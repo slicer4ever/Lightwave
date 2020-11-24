@@ -368,6 +368,10 @@ bool LWWindow::isVisible(void) const {
 	return (m_Flag&Visible) != 0;
 }
 
+bool LWWindow::DidError(void) const {
+	return (m_Flag & Error) != 0;
+}
+
 bool LWWindow::isVirtualKeyboardPresent(void) const {
 	return (m_Flag&KeyboardPresent) != 0;
 }

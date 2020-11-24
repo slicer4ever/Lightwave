@@ -87,6 +87,12 @@ bool LWEGLTFBuffer::ParseJSON(LWEGLTFBuffer &Buf, LWEJson &J, LWEJObject *Obj, L
 	return true;
 }
 
+LWEGLTFBuffer &LWEGLTFBuffer::SetName(const LWUTF8Iterator &Name) {
+	Name.Copy(m_Name, sizeof(m_Name));
+	m_NameHash = LWUTF8I(m_Name).Hash();
+	return *this;
+}
+
 LWUTF8Iterator LWEGLTFBuffer::GetName(void) const {
 	return LWUTF8Iterator(m_Name);
 }
@@ -106,14 +112,14 @@ LWEGLTFBuffer::LWEGLTFBuffer(LWEGLTFBuffer &&O) : m_Buffer(O.m_Buffer), m_Length
 }
 
 LWEGLTFBuffer::LWEGLTFBuffer(const LWUTF8Iterator &Name, uint8_t *Buffer, uint32_t Length) : m_Buffer(Buffer), m_Length(Length) {
-	Name.Copy(m_Name, sizeof(m_Name));
-	m_NameHash = LWUTF8Iterator(m_Name).Hash();
+	SetName(Name);
 }
 
 LWEGLTFBuffer::~LWEGLTFBuffer() {
 	LWAllocator::Destroy(m_Buffer);
 }
 #pragma endregion
+
 #pragma region LWEGLTFBUFFERVIEW
 bool LWEGLTFBufferView::ParseJSON(LWEGLTFBufferView &BufView, LWEJson &J, LWEJObject *Obj) {
 	LWEJObject *JBuffer = Obj->FindChild("buffer", J);
@@ -132,7 +138,6 @@ LWEGLTFBufferView::LWEGLTFBufferView(uint32_t BufferID, uint32_t Offset, uint32_
 #pragma endregion
 
 #pragma region LWEGLTFACCESSOR
-
 bool LWEGLTFAccessor::ParseJSON(LWEGLTFAccessor &Buf, LWEJson &J, LWEJObject *Obj) {
 	//Values pre recorded from LWText::MakeHash: 
 	//                            "Scalar",   "Vec2",     "Vec3",     "Vec4",    "Mat2",      "Mat3",     "Mat4"
@@ -242,6 +247,12 @@ bool LWEGLTFCamera::ParseJSON(LWEGLTFCamera &Camera, LWEJson &J, LWEJObject *Obj
 	return true;
 }
 
+LWEGLTFCamera &LWEGLTFCamera::SetName(const LWUTF8Iterator &Name) {
+	Name.Copy(m_Name, sizeof(m_Name));
+	m_NameHash = LWUTF8I(m_Name).Hash();
+	return *this;
+}
+
 LWUTF8Iterator LWEGLTFCamera::GetName(void) const {
 	return LWUTF8Iterator(m_Name);
 }
@@ -257,8 +268,7 @@ LWMatrix4f LWEGLTFCamera::GetMatrix(float Aspect) {
 }
 
 LWEGLTFCamera::LWEGLTFCamera(const LWUTF8Iterator &Name, uint32_t CameraType) : m_CameraType(CameraType) {
-	Name.Copy(m_Name, sizeof(m_Name));
-	m_NameHash = LWUTF8Iterator(m_Name).Hash();
+	SetName(Name);
 }
 #pragma endregion
 
@@ -317,13 +327,18 @@ bool LWEGLTFMesh::ParseJSON(LWEGLTFMesh &Mesh, LWEJson &J, LWEJObject *Obj) {
 	return true;
 }
 
+LWEGLTFMesh &LWEGLTFMesh::SetName(const LWUTF8Iterator &Name) {
+	Name.Copy(m_Name, sizeof(m_Name));
+	m_NameHash = LWUTF8I(m_Name).Hash();
+	return *this;
+}
+
 LWUTF8Iterator LWEGLTFMesh::GetName(void) const {
 	return m_Name;
 }
 
 LWEGLTFMesh::LWEGLTFMesh(const LWUTF8Iterator &Name, uint32_t PrimitiveCount) {
-	Name.Copy(m_Name, sizeof(m_Name));
-	m_NameHash = LWUTF8Iterator(m_Name).Hash();
+	SetName(Name);
 	m_Primitives.reserve(PrimitiveCount);
 }
 #pragma endregion
@@ -344,6 +359,17 @@ bool LWEGLTFImage::ParseJSON(LWEGLTFImage &Img, LWEJson &J, LWEJObject *Obj, LWF
 	return true;
 }
 
+LWEGLTFImage &LWEGLTFImage::SetName(const LWUTF8Iterator &Name) {
+	Name.Copy(m_Name, sizeof(m_Name));
+	m_NameHash = LWUTF8I(m_Name).Hash();
+	return *this;
+}
+
+LWEGLTFImage &LWEGLTFImage::SetURI(const LWUTF8Iterator &URI) {
+	URI.Copy(m_URI, sizeof(m_URI));
+	return *this;
+}
+
 LWUTF8Iterator LWEGLTFImage::GetName(void) const {
 	return m_Name;
 }
@@ -354,9 +380,7 @@ LWUTF8Iterator LWEGLTFImage::GetURI(void) const {
 
 
 LWEGLTFImage::LWEGLTFImage(const LWUTF8Iterator &Name, const LWUTF8Iterator &URI, uint32_t MimeType, uint32_t BufferView) : m_MimeType(MimeType), m_BufferView(BufferView){
-	Name.Copy(m_Name, sizeof(m_Name));
-	URI.Copy(m_URI, sizeof(m_URI));
-	m_NameHash = LWUTF8Iterator(m_Name).Hash();
+	SetName(Name).SetURI(URI);
 };
 #pragma endregion
 
@@ -443,9 +467,13 @@ bool LWEGLTFTexture::ParseJSON(LWEGLTFTexture &Tex, LWEJson &J, LWEJObject *Obj)
 		LWEJObject *JMsftExtension = JExtension->FindChild("MSFT_texture_dds", J);
 		if (JMsftExtension) ParseMSFTtextureddsExtension(Tex, J, JMsftExtension);
 	}
-
-
 	return true;
+}
+
+LWEGLTFTexture &LWEGLTFTexture::SetName(const LWUTF8Iterator &Name) {
+	Name.Copy(m_Name, sizeof(m_Name));
+	m_NameHash = LWUTF8I(m_Name).Hash();
+	return *this;
 }
 
 LWUTF8Iterator LWEGLTFTexture::GetName(void) const {
@@ -453,8 +481,7 @@ LWUTF8Iterator LWEGLTFTexture::GetName(void) const {
 }
 
 LWEGLTFTexture::LWEGLTFTexture(const LWUTF8Iterator &Name, uint32_t ImageID, uint32_t SamplerFlag) : m_ImageID(ImageID), m_SamplerFlag(SamplerFlag) {
-	Name.Copy(m_Name, sizeof(m_Name));
-	m_NameHash = LWUTF8Iterator(m_Name).Hash();
+	SetName(Name);
 }
 #pragma endregion
 
@@ -601,6 +628,12 @@ bool LWEGLTFMaterial::ParseJSON(LWEGLTFMaterial &Mat, LWEJson &J, LWEJObject *Ob
 	return true;
 }
 
+LWEGLTFMaterial &LWEGLTFMaterial::SetName(const LWUTF8Iterator &Name) {
+	Name.Copy(m_Name, sizeof(m_Name));
+	m_NameHash = LWUTF8I(m_Name).Hash();
+	return *this;
+}
+
 uint32_t LWEGLTFMaterial::GetType(void) const {
 	return (m_Flag&TypeBits);
 }
@@ -610,8 +643,7 @@ LWUTF8Iterator LWEGLTFMaterial::GetName(void) const {
 }
 
 LWEGLTFMaterial::LWEGLTFMaterial(const LWUTF8Iterator &Name) {
-	Name.Copy(m_Name, sizeof(m_Name));
-	m_NameHash = LWUTF8Iterator(m_Name).Hash();
+	SetName(Name);
 }
 #pragma endregion
 
@@ -641,13 +673,19 @@ bool LWEGLTFLight::ParseJSON(LWEGLTFLight &L, LWEJson &J, LWEJObject *Obj) {
 	return true;
 };
 
+
+LWEGLTFLight &LWEGLTFLight::SetName(const LWUTF8Iterator &Name) {
+	Name.Copy(m_Name, sizeof(m_Name));
+	m_NameHash = LWUTF8I(m_Name).Hash();
+	return *this;
+}
+
 LWUTF8Iterator LWEGLTFLight::GetName(void) const {
 	return m_Name;
 }
 
 LWEGLTFLight::LWEGLTFLight(const LWUTF8Iterator &Name, uint32_t Type) : m_Type(Type) {
-	Name.Copy(m_Name, sizeof(m_Name));
-	m_NameHash = LWUTF8Iterator(m_Name).Hash();
+	SetName(Name);
 }
 #pragma endregion
 
@@ -688,13 +726,19 @@ bool LWEGLTFNode::ParseJSON(LWEGLTFNode &Node, LWEJson &J, LWEJObject *Obj) {
 	return true;
 }
 
+
+LWEGLTFNode &LWEGLTFNode::SetName(const LWUTF8Iterator &Name) {
+	Name.Copy(m_Name, sizeof(m_Name));
+	m_NameHash = LWUTF8I(m_Name).Hash();
+	return *this;
+}
+
 LWUTF8Iterator LWEGLTFNode::GetName(void) const {
 	return m_Name;
 }
 
 LWEGLTFNode::LWEGLTFNode(const LWUTF8Iterator &Name, uint32_t MeshID, uint32_t SkinID, uint32_t CameraID, uint32_t ChildrenCnt, const LWMatrix4f &TransformMatrix) : m_MeshID(MeshID), m_SkinID(SkinID), m_CameraID(CameraID), m_TransformMatrix(TransformMatrix){
-	Name.Copy(m_Name, sizeof(m_Name));
-	m_NameHash = LWUTF8Iterator(m_Name).Hash();
+	SetName(Name);
 	m_Children.reserve(ChildrenCnt);
 }
 
@@ -712,13 +756,18 @@ bool LWEGLTFScene::ParseJSON(LWEGLTFScene &Scene, LWEJson &J, LWEJObject *Obj) {
 	return true;
 }
 
+LWEGLTFScene &LWEGLTFScene::SetName(const LWUTF8Iterator &Name) {
+	Name.Copy(m_Name, sizeof(m_Name));
+	m_NameHash = LWUTF8I(m_Name).Hash();
+	return *this;
+}
+
 LWUTF8Iterator LWEGLTFScene::GetName(void) const {
 	return m_Name;
 }
 
 LWEGLTFScene::LWEGLTFScene(const LWUTF8Iterator &Name, uint32_t NodeCnt) {
-	Name.Copy(m_Name, sizeof(m_Name));
-	m_NameHash = LWUTF8Iterator(m_Name).Hash();
+	SetName(Name);
 	m_NodeList.reserve(NodeCnt);
 }
 
@@ -742,14 +791,20 @@ bool LWEGLTFSkin::ParseJSON(LWEGLTFSkin &Skin, LWEJson &J, LWEJObject *Obj) {
 	return true;
 }
 
+
+LWEGLTFSkin &LWEGLTFSkin::SetName(const LWUTF8Iterator &Name) {
+	Name.Copy(m_Name, sizeof(m_Name));
+	m_NameHash = LWUTF8I(m_Name).Hash();
+	return *this;
+}
+
 LWUTF8Iterator LWEGLTFSkin::GetName(void) const {
 	return m_Name;
 }
 
 LWEGLTFSkin::LWEGLTFSkin(const LWUTF8Iterator &Name, uint32_t JointCnt, uint32_t InverseBindMatrices, uint32_t SkeletonNode) : m_InverseBindMatrices(InverseBindMatrices), m_SkeletonNode(SkeletonNode) {
-	Name.Copy(m_Name, sizeof(m_Name));
+	SetName(Name);
 	m_JointList.reserve(JointCnt);
-	m_NameHash = LWUTF8Iterator(m_Name).Hash();
 }
 #pragma endregion
 
@@ -824,13 +879,18 @@ bool LWEGLTFAnimation::ParseJSON(LWEGLTFAnimation &Anim, LWEJson &J, LWEJObject 
 	return true;
 }
 
+LWEGLTFAnimation &LWEGLTFAnimation::SetName(const LWUTF8Iterator &Name) {
+	Name.Copy(m_Name, sizeof(m_Name));
+	m_NameHash = LWUTF8I(m_Name).Hash();
+	return *this;
+}
+
 LWUTF8Iterator LWEGLTFAnimation::GetName(void) const {
 	return m_Name;
 }
 
 LWEGLTFAnimation::LWEGLTFAnimation(const LWUTF8Iterator &Name, uint32_t ChannelCnt) {
-	Name.Copy(m_Name, sizeof(m_Name));
-	m_NameHash = LWUTF8Iterator(m_Name).Hash();
+	SetName(Name);
 	m_Channels.reserve(ChannelCnt);
 }
 #pragma endregion

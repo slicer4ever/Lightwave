@@ -13,10 +13,13 @@ struct LWEUIListBoxItem {
 	LWEUIMaterial *m_OffMaterial;
 	LWEUIMaterial *m_OverMaterial;
 	LWEUIMaterial *m_DownMaterial;
+	LWEUIMaterial *m_FontMaterial;
 
 	LWUTF8Iterator GetName(void) const;
-	
-	LWEUIListBoxItem(const LWUTF8Iterator &Name, const LWVector2f &TextSize, float TextUnderHang = 0.0f, void *UserData = nullptr, LWEUIMaterial *OffMaterial = nullptr, LWEUIMaterial *OverMaterial = nullptr, LWEUIMaterial *DownMaterial = nullptr);
+
+	LWEUIMaterial *GetMaterial(bool isOver, bool isDown, LWEUIMaterial *DefOffMaterial, LWEUIMaterial *DefOverMaterial, LWEUIMaterial *DefDownMaterial);
+
+	LWEUIListBoxItem(const LWUTF8Iterator &Name, const LWVector2f &TextSize, float TextUnderHang = 0.0f, void *UserData = nullptr, LWEUIMaterial *OffMaterial = nullptr, LWEUIMaterial *OverMaterial = nullptr, LWEUIMaterial *DownMaterial = nullptr, LWEUIMaterial *FontMaterial = nullptr);
 
 	LWEUIListBoxItem() = default;
 };
@@ -45,9 +48,7 @@ public:
 
 	virtual void Destroy(void);
 
-	bool PushItem(const LWUTF8Iterator &ItemName, void *UserData, LWEUIMaterial *OffMat = nullptr, LWEUIMaterial *OverMat = nullptr, LWEUIMaterial *DownMat = nullptr);
-
-	bool PushItemf(const char *Fmt, void *UserData, LWEUIMaterial *OffMat, LWEUIMaterial *OverMat, LWEUIMaterial *DownMat, ...);
+	bool PushItem(const LWUTF8Iterator &ItemName, void *UserData, LWEUIMaterial *OffMat = nullptr, LWEUIMaterial *OverMat = nullptr, LWEUIMaterial *DownMat = nullptr, LWEUIMaterial *FontMat = nullptr);
 
 	bool Clear(void);
 

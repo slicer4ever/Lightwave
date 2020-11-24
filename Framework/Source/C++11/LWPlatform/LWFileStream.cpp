@@ -97,16 +97,19 @@ uint32_t LWFileStream::ConcatExtension(const LWUTF8Iterator &FilePath, const LWU
 	char8_t *BL = Buffer + std::min<uint32_t>(BufferLen - 1, BufferLen);
 	uint32_t o = 0;
 	for (; !C.AtEnd(); ++C) {
-		uint32_t r = LWUTF8Iterator::CodePointUnitSize(*C);
-		if (B + r < BL) B += LWUTF8Iterator::EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL - B), *C);
-		if (*C == '.') ExtPart = C;
+		uint32_t r = LWUTF8Iterator::EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL - B), *C);
+		B = std::min<char8_t*>(B + r, BL);
+		if (*C == '.') ExtPart = C+1;
 		o += r;
 	}
 	if (!ExtPart.isInitialized() || !Extension.Compare(ExtPart)) {
 		C = Extension;
+		uint32_t r = LWUTF8Iterator::EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL - B), '.');
+		B = std::min<char8_t*>(B + r, BL);
+		o += r;
 		for (; !C.AtEnd(); ++C) {
-			uint32_t r = LWUTF8Iterator::CodePointUnitSize(*C);
-			if (B + r < BL) B += LWUTF8Iterator::EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL - B), *C);
+			uint32_t r = LWUTF8Iterator::EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL - B), *C);
+			B = std::min<char8_t*>(B + r, BL);
 			o += r;
 		}
 	}

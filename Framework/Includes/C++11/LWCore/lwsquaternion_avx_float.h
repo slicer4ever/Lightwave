@@ -6,8 +6,13 @@
 #include <immintrin.h>
 
 template<>
-struct LWSQuaternion<float> {
-	__m128 m_Data;
+struct alignas(__m128) LWSQuaternion<float> {
+	union {
+		__m128 m_Data;
+		struct {
+			float x, y, z, w;
+		};
+	};
 
 	static LWSQuaternion<float> FromEuler(float Pitch, float Yaw, float Roll);
 
@@ -40,6 +45,10 @@ struct LWSQuaternion<float> {
 	LWSQuaternion<float> Inverse(void) const;
 
 	LWSVector4<float> RotatePoint(const LWSVector4<float> Pnt) const;
+
+	float operator[](uint32_t i) const;
+
+	float &operator[](uint32_t i);
 
 	bool operator == (const LWSQuaternion<float>& Rhs) const;
 
@@ -74,14 +83,6 @@ struct LWSQuaternion<float> {
 	friend LWSQuaternion<float> operator - (float Lhs, const LWSQuaternion<float> &Rhs);
 
 	friend LWSQuaternion<float> operator / (float Lhs, const LWSQuaternion<float> &Rhs);
-
-	float x(void) const;
-
-	float y(void) const;
-
-	float z(void) const;
-
-	float w(void) const;
 
 	LWSQuaternion(__m128 Data);
 

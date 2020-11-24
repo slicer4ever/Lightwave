@@ -233,9 +233,10 @@ inline LWSQuaternionf LWETweenFrame<LWSQuaternionf>::CubicTween(const LWETweenFr
 
 template<>
 inline LWSQuaterniond LWETweenFrame<LWSQuaterniond>::CubicTween(const LWETweenFrame<LWSQuaterniond> &A, const LWETweenFrame<LWSQuaterniond> &B, float p) {
-	float t2 = p * p;
-	float t3 = p * p * p;
-	LWSQuaterniond Res = (2.0f * t3 - 3.0f * t2 + 1.0f) * A.m_Value[1] + (t3 - 2.0f * t2 + p) * A.m_Value[0] + (-2.0f * t3 + 3.0f * t2) * B.m_Value[1] + (t3 - t2) * B.m_Value[2];
+	double pd = (double)p;
+	double t2 = pd * pd;
+	double t3 = pd * pd * pd;
+	LWSQuaterniond Res = (2.0 * t3 - 3.0 * t2 + 1.0) * A.m_Value[1] + (t3 - 2.0 * t2 + pd) * A.m_Value[0] + (-2.0 * t3 + 3.0 * t2) * B.m_Value[1] + (t3 - t2) * B.m_Value[2];
 	return Res.Normalize();
 }
 
@@ -249,9 +250,10 @@ inline LWQuaternionf LWETweenFrame<LWQuaternionf>::CubicTween(const LWETweenFram
 
 template<>
 inline LWQuaterniond LWETweenFrame<LWQuaterniond>::CubicTween(const LWETweenFrame<LWQuaterniond> &A, const LWETweenFrame<LWQuaterniond> &B, float p) {
-	float t2 = p * p;
-	float t3 = p * p * p;
-	LWQuaterniond Res = (2.0f * t3 - 3.0f * t2 + 1.0f) * A.m_Value[1] + (t3 - 2.0f * t2 + p) * A.m_Value[0] + (-2.0f * t3 + 3.0f * t2) * B.m_Value[1] + (t3 - t2) * B.m_Value[2];
+	double pd = (double)p;
+	double t2 = pd * pd;
+	double t3 = pd * pd * pd;
+	LWQuaterniond Res = (2.0 * t3 - 3.0 * t2 + 1.0) * A.m_Value[1] + (t3 - 2.0 * t2 + pd) * A.m_Value[0] + (-2.0 * t3 + 3.0 * t2) * B.m_Value[1] + (t3 - t2) * B.m_Value[2];
 	return Res.Normalize();
 }
 

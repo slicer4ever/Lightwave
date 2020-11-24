@@ -613,7 +613,7 @@ public:
 
 	/*!< \brief allocates an array of bytes for the padded type of length to occupy. */
 	template<class Type>
-	char *AllocatePaddedArray(uint32_t Length, LWAllocator &Allocator) {
+	char *AllocatePadded(uint32_t Length, LWAllocator &Allocator) {
 		return Allocator.Allocate<char>(GetUniformBlockPaddedSize(sizeof(Type))*Length);
 	}
 

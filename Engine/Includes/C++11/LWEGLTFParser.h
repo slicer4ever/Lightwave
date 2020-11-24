@@ -141,6 +141,8 @@ struct LWEGLTFAccessorView {
 struct LWEGLTFBuffer {
 	static bool ParseJSON(LWEGLTFBuffer &Buf, LWEJson &J, LWEJObject *Obj, LWAllocator &Allocator, LWFileStream &FileStream, const char *BinChunk);
 
+	LWEGLTFBuffer &SetName(const LWUTF8Iterator &Name);
+
 	LWUTF8Iterator GetName(void) const;
 
 	LWEGLTFBuffer &operator = (LWEGLTFBuffer &&O);
@@ -212,6 +214,8 @@ struct LWEGLTFCamera {
 	
 	static bool ParseJSON(LWEGLTFCamera &Camera, LWEJson &J, LWEJObject *Obj);
 
+	LWEGLTFCamera &SetName(const LWUTF8Iterator &Name);
+
 	LWUTF8Iterator GetName(void) const;
 
 	LWMatrix4f GetMatrix(void);
@@ -271,6 +275,8 @@ struct LWEGLTFPrimitive {
 struct LWEGLTFMesh {
 	static bool ParseJSON(LWEGLTFMesh &Mesh, LWEJson &J, LWEJObject *Obj);
 
+	LWEGLTFMesh &SetName(const LWUTF8Iterator &Name);
+
 	LWUTF8Iterator GetName(void) const;
 
 	LWEGLTFMesh(const LWUTF8Iterator &Name, uint32_t PrimitiveCount);
@@ -290,6 +296,10 @@ struct LWEGLTFImage {
 
 	static bool ParseJSON(LWEGLTFImage &Img, LWEJson &J, LWEJObject *Obj, LWFileStream &Stream);
 
+	LWEGLTFImage &SetName(const LWUTF8Iterator &Name);
+
+	LWEGLTFImage &SetURI(const LWUTF8Iterator &URI);
+
 	LWUTF8Iterator GetName(void) const;
 
 	LWUTF8Iterator GetURI(void) const;
@@ -298,15 +308,17 @@ struct LWEGLTFImage {
 
 	LWEGLTFImage(const LWUTF8Iterator &Name, const LWUTF8Iterator &URI, uint32_t MimeType, uint32_t BufferView);
 
-	char8_t m_Name[256];
-	char8_t m_URI[256];
-	uint32_t m_NameHash;
+	char8_t m_Name[256]="";
+	char8_t m_URI[256]="";
+	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 	uint32_t m_BufferView = -1;
 	uint32_t m_MimeType = 0;
 };
 
 struct LWEGLTFTexture {
 	static bool ParseJSON(LWEGLTFTexture &Tex, LWEJson &J, LWEJObject *Obj);
+
+	LWEGLTFTexture &SetName(const LWUTF8Iterator &Name);
 
 	LWUTF8Iterator GetName(void) const;
 
@@ -381,6 +393,8 @@ struct LWEGLTFMaterial {
 
 	static bool ParseJSON(LWEGLTFMaterial &Mat, LWEJson &J, LWEJObject *Obj);
 
+	LWEGLTFMaterial &SetName(const LWUTF8Iterator &Name);
+
 	uint32_t GetType(void) const;
 
 	LWUTF8Iterator GetName(void) const;
@@ -409,6 +423,8 @@ struct LWEGLTFLight {
 
 	static bool ParseJSON(LWEGLTFLight &L, LWEJson &J, LWEJObject *Obj);
 	
+	LWEGLTFLight &SetName(const LWUTF8Iterator &Name);
+
 	LWUTF8Iterator GetName(void) const;
 
 	LWEGLTFLight(const LWUTF8Iterator &Name, uint32_t Type);
@@ -427,6 +443,8 @@ struct LWEGLTFLight {
 
 struct LWEGLTFNode {
 	static bool ParseJSON(LWEGLTFNode &Node, LWEJson &J, LWEJObject *Obj);
+
+	LWEGLTFNode &SetName(const LWUTF8Iterator &Name);
 
 	LWUTF8Iterator GetName(void) const;
 
@@ -450,6 +468,8 @@ struct LWEGLTFNode {
 struct LWEGLTFScene {
 	static bool ParseJSON(LWEGLTFScene &Scene, LWEJson &J, LWEJObject *Obj);
 
+	LWEGLTFScene &SetName(const LWUTF8Iterator &Name);
+
 	LWUTF8Iterator GetName(void) const;
 
 	LWEGLTFScene(const LWUTF8Iterator &Name, uint32_t NodeCnt);
@@ -463,6 +483,8 @@ struct LWEGLTFScene {
 
 struct LWEGLTFSkin {
 	static bool ParseJSON(LWEGLTFSkin &Skin, LWEJson &J, LWEJObject *Obj);
+
+	LWEGLTFSkin &SetName(const LWUTF8Iterator &Name);
 
 	LWUTF8Iterator GetName(void) const;
 
@@ -503,6 +525,8 @@ struct LWEGLTFAnimChannel {
 struct LWEGLTFAnimation {
 
 	static bool ParseJSON(LWEGLTFAnimation &Anim, LWEJson &J, LWEJObject *Obj);
+
+	LWEGLTFAnimation &SetName(const LWUTF8Iterator &Name);
 
 	LWUTF8Iterator GetName(void) const;
 

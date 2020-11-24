@@ -46,7 +46,7 @@ LWWindow &LWWindow::SetSize(const LWVector2i &Size){
 	return *this;
 }
 
-LWWindow &LWWindow::SetVisible(bool isVisible){
+LWWindow &LWWindow::SetVisible(bool iVisible){
 	return *this;
 }
 
@@ -58,7 +58,7 @@ LWWindow &LWWindow::SetMousePosition(const LWVector2i &Position){
 	return *this;
 }
 
-LWWindow &LWWindow::SetMouseVisible(bool isVisible){
+LWWindow &LWWindow::SetMouseVisible(bool iVisible){
 	return *this;
 }
 
@@ -270,6 +270,10 @@ bool LWWindow::FocusUpdated(void) const {
 
 bool LWWindow::isVisible(void) const {
 	return (m_Flag&Visible) != 0;
+}
+
+bool LWWindow::DidError(void) const {
+    return (m_Flag & Error) != 0;
 }
 
 bool LWWindow::isVirtualKeyboardPresent(void) const {

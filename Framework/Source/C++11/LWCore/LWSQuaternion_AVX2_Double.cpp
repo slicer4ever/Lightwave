@@ -181,6 +181,14 @@ LWSVector4<double> LWSQuaternion<double>::RotatePoint(const LWSVector4<double> P
 	return r;
 }
 
+double LWSQuaternion<double>::operator[](uint32_t i) const {
+	return (&x)[i];
+}
+
+double &LWSQuaternion<double>::operator[](uint32_t i) {
+	return (&x)[i];
+}
+
 bool LWSQuaternion<double>::operator == (const LWSQuaternion<double>& Rhs) const {
 	//use float epison for closeness.
 	__m256d e = _mm256_set1_pd((double)std::numeric_limits<float>::epsilon());
@@ -279,22 +287,6 @@ LWSQuaternion<double> operator / (double Lhs, const LWSQuaternion<double> &Rhs) 
 	return _mm256_div_pd(_mm256_set1_pd(Lhs), Rhs.m_Data);
 }
 
-double LWSQuaternion<double>::x(void) const {
-	return ((double*)&m_Data)[0];
-}
-
-double LWSQuaternion<double>::y(void) const {
-	return ((double*)&m_Data)[1];
-}
-
-double LWSQuaternion<double>::z(void) const {
-	return ((double*)&m_Data)[2];
-}
-
-double LWSQuaternion<double>::w(void) const {
-	return ((double*)&m_Data)[3];
-}
-
 LWSQuaternion<double>::LWSQuaternion(__m256d Data) : m_Data(Data) {}
 
 LWSQuaternion<double>::LWSQuaternion(const LWQuaternion<double> &Q) : m_Data(_mm256_set_pd(Q.w, Q.z, Q.y, Q.x)) {}
@@ -302,10 +294,11 @@ LWSQuaternion<double>::LWSQuaternion(const LWQuaternion<double> &Q) : m_Data(_mm
 LWSQuaternion<double>::LWSQuaternion(double vw, double vx, double vy, double vz) : m_Data(_mm256_set_pd(vw, vz, vy, vx)) {}
 
 LWSQuaternion<double>::LWSQuaternion(const LWSMatrix4<double> &Mat) {
-	LWVector4<double> R0 = Mat.Row(0).AsVec4();
-	LWVector4<double> R1 = Mat.Row(1).AsVec4();
-	LWVector4<double> R2 = Mat.Row(2).AsVec4();
-	LWVector4<double> R3 = Mat.Row(3).AsVec4();
+	//Need to properly simd this function...
+	LWVector4<double> R0 = Mat[0].AsVec4();
+	LWVector4<double> R1 = Mat[1].AsVec4();
+	LWVector4<double> R2 = Mat[2].AsVec4();
+	LWVector4<double> R3 = Mat[3].AsVec4();
 
 	double tr = R0.x + R1.y + R2.z;
 	if (tr > 0.0) {

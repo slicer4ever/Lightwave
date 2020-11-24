@@ -176,6 +176,16 @@ struct LWQuaternion {
 		return LWVector4<Type>((Type)2 * dA*u + (w*w - dB)*v + (Type)2 * w*u.Cross(v), Pnt.w);
 	}
 
+	/*!< \brief accesses rows of the matrix as if it were an array. */
+	Type operator[](uint32_t i) const {
+		return (&x)[i];
+	}
+
+	/*!< \brief accesses rows of the matrix as if it were an array. */
+	Type &operator[](uint32_t i) {
+		return (&x)[i];
+	}
+
 	bool operator == (const LWQuaternion<Type> &Rhs) const {
 		const Type e = std::numeric_limits<Type>::epsilon();
 		return (Type)abs(x - Rhs.x) <= e && (Type)abs(y - Rhs.y) <= e && (Type)abs(z - Rhs.z) <= e && (Type)abs(w - Rhs.w) <= e;

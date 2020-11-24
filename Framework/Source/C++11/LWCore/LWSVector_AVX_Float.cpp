@@ -13,34 +13,6 @@ LWSVector4<float> LWSVector4<float>::Sign(void) const {
 	return _mm_blendv_ps(_mm_set1_ps(1.0f), _mm_set1_ps(-1.0f), c);
 }
 
-float *LWSVector4<float>::AsArray(void) {
-	return (float*)&m_Data;
-}
-
-const float *LWSVector4<float>::AsArray(void) const {
-	return (float*)&m_Data;
-}
-
-LWSVector4<float> &LWSVector4<float>::sX(float Value) {
-	((float*)&m_Data)[0] = Value;
-	return *this;
-}
-
-LWSVector4<float> &LWSVector4<float>::sY(float Value) {
-	((float*)&m_Data)[1] = Value;
-	return *this;
-}
-
-LWSVector4<float> &LWSVector4<float>::sZ(float Value) {
-	((float*)&m_Data)[2] = Value;
-	return *this;
-}
-
-LWSVector4<float> &LWSVector4<float>::sW(float Value) {
-	((float*)&m_Data)[3] = Value;
-	return *this;
-}
-
 LWSVector4<float> LWSVector4<float>::Normalize(void) const {
 	const float e = std::numeric_limits<float>::epsilon();
 	__m128 eps = _mm_set_ps1(e);
@@ -396,6 +368,14 @@ bool LWSVector4<float>::GreaterEqual2(const LWSVector4<float> &Rhs) const {
 	return _mm_test_all_ones(_mm_blend_epi32(t, one, 0xC));
 }
 
+float LWSVector4<float>::operator[](uint32_t i) const {
+	return (&x)[i];
+}
+
+float &LWSVector4<float>::operator[](uint32_t i) {
+	return (&x)[i];
+}
+
 LWSVector4<float>& LWSVector4<float>::operator = (const LWSVector4<float>& Rhs) {
 	m_Data = Rhs.m_Data;
 	return *this;
@@ -707,6 +687,19 @@ LWSVector4<float> LWSVector4<float>::xyzy(void) const {
 LWSVector4<float> LWSVector4<float>::xyzz(void) const {
 	return _mm_permute_ps(m_Data, _MM_SHUFFLE(2, 2, 1, 0));
 }
+
+LWSVector4<float> LWSVector4<float>::xyz0(void) const {
+	LWSVector4<float> v = m_Data;
+	v.w = 0.0f;
+	return v;
+}
+
+LWSVector4<float> LWSVector4<float>::xyz1(void) const {
+	LWSVector4<float> v = m_Data;
+	v.w = 1.0f;
+	return v;
+}
+
 
 LWSVector4<float> LWSVector4<float>::xywx(void) const {
 	return _mm_permute_ps(m_Data, _MM_SHUFFLE(0, 3, 1, 0));
@@ -1744,23 +1737,6 @@ LWSVector4<float> LWSVector4<float>::yy(void) const {
 	return _mm_permute_ps(m_Data, _MM_SHUFFLE(3, 2, 1, 1));
 }
 
-float LWSVector4<float>::x(void) const {
-	return ((float*)&m_Data)[0];
-}
-
-float LWSVector4<float>::y(void) const {
-	return ((float*)&m_Data)[1];
-}
-
-float LWSVector4<float>::z(void) const {
-	return ((float*)&m_Data)[2];
-
-}
-
-float LWSVector4<float>::w(void) const {
-	return ((float*)&m_Data)[3];
-}
-	
 LWSVector4<float>::LWSVector4(__m128 Data) : m_Data(Data) {}
 
 LWSVector4<float>::LWSVector4(const LWVector4<float>& vxyzw) : m_Data(_mm_set_ps(vxyzw.w, vxyzw.z, vxyzw.y, vxyzw.x)) {}

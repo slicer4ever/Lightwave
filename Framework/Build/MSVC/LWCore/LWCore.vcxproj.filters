@@ -127,9 +127,6 @@
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWCrypto.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWText.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWTimer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

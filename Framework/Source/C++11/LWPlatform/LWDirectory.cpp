@@ -19,6 +19,10 @@ bool LWFile::isWriteable(void) const {
 	return (m_Flag & LWDirectory::CanWrite) != 0;
 }
 
+LWUTF8Iterator LWFile::GetName(void) const {
+	return m_Name;
+}
+
 LWFile::LWFile(const LWUTF8Iterator &Name, uint64_t Size, uint32_t Flag) : m_Size(Size), m_Flag(Flag) {
 	Name.Copy(m_Name, sizeof(m_Name));
 }

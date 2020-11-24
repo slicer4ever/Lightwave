@@ -6,24 +6,17 @@
 #include <immintrin.h>
 
 template<>
-struct LWSVector4<float> {
-	__m128 m_Data;
+struct alignas(__m128) LWSVector4<float> {
+	union {
+		__m128 m_Data;
+		struct {
+			float x, y, z, w;
+		};
+	};
 
 	LWVector4<float> AsVec4(void) const;
 
 	LWSVector4<float> Sign(void) const;
-
-	float *AsArray(void);
-
-	const float *AsArray(void) const;
-
-	LWSVector4<float> &sX(float Value);
-	
-	LWSVector4<float> &sY(float Value);
-	
-	LWSVector4<float> &sZ(float Value);
-
-	LWSVector4<float> &sW(float Value);
 
 	LWSVector4<float> Normalize(void) const;
 
@@ -170,6 +163,10 @@ struct LWSVector4<float> {
 
 	bool GreaterEqual2(const LWSVector4<float> &Rhs) const;
 
+	float operator[](uint32_t i) const;
+
+	float &operator[](uint32_t i);
+
 	LWSVector4<float>& operator = (const LWSVector4<float>& Rhs);
 
 	LWSVector4<float>& operator += (const LWSVector4<float>& Rhs);
@@ -311,6 +308,10 @@ struct LWSVector4<float> {
 	LWSVector4<float> xyzy(void) const;
 
 	LWSVector4<float> xyzz(void) const;
+
+	LWSVector4<float> xyz0(void) const;
+
+	LWSVector4<float> xyz1(void) const;
 
 	LWSVector4<float> xywx(void) const;
 
@@ -829,14 +830,6 @@ struct LWSVector4<float> {
 	LWSVector4<float> yx(void) const;
 
 	LWSVector4<float> yy(void) const;
-
-	float x(void) const;
-
-	float y(void) const;
-
-	float z(void) const;
-
-	float w(void) const;
 
 	LWSVector4(__m128 Data);
 

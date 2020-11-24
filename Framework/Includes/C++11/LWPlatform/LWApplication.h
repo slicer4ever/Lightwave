@@ -11,7 +11,7 @@ const uint32_t LWSignal_Logoff = 3; /*!< \brief user has logged off. */
 const uint32_t LWSignal_Shutdown = 4; /*!< \brief platform is shutting off. */
 const uint32_t LWSignal_Unknown = 5; /*!< \brief if this value is received it means the signal received was an unknown type. */
 
-/*!< \brief Signal handler function defintion. */
+/*!< \brief Signal handler function defintion.  return true if handled signal, false if not and to let the application handle the signal. */
 typedef std::function<bool(uint32_t, void*)> LWSignalHandlerFunc;
 
 /*!< \brief split's a single command line into series of iterator's, returns the number of iterator's needed to store the command iter list. 

@@ -7,29 +7,12 @@
 
 /*!< \brief an accelerated simd matrix4 class, non-implemented or disabled sse functions default to a generic class. */
 template<class Type>
-struct LWSMatrix4 {
+struct alignas(LWSVector4<Type>[4]) LWSMatrix4 {
 	LWSVector4<Type> m_Rows[4];
 
 	/*! \brief returns a mat4 version of the SMatrix. */
 	LWMatrix4<Type> AsMat4(void) const {
 		return LWMatrix4<Type>(m_Rows[0].AsVec4(), m_Rows[1].AsVec4(), m_Rows[2].AsVec4(), m_Rows[3].AsVec4());
-	}
-
-	/*! \brief returns the internal components as a array of data. */
-	Type *AsArray(void) {
-		return m_Rows[0].AsArray();
-	}
-
-	/*! \brief returns the internal components as a const array of data. */
-	const Type *AsArray(void) const {
-		return m_Rows[0].AsArray();
-	}
-
-	/*! \brief set's a row*4+column of the matrix to value. */
-	LWMatrix4<Type> &sRC(uint32_t Row, uint32_t Column, Type Value) {
-		Type *V = AsArray();
-		V[Row * 4 + Column] = Value;
-		return *this;
 	}
 
 	/*!< \brief decomposes 4x4 matrix to get the scalar for each axis.
@@ -137,10 +120,6 @@ struct LWSMatrix4 {
 		return Transpose().m_Rows[Index];
 	};
 
-	LWSVector4<Type> Row(uint32_t Index) const {
-		return m_Rows[Index];
-	}
-
 	/*! \brief returns the transpose of the this matrix. */
 	LWSMatrix4 Transpose(void) const {
 		LWSVector4<Type> A = m_Rows[0];
@@ -215,6 +194,14 @@ struct LWSMatrix4 {
 		
 		LWSVector4<Type> Mul = LWSVector4<Type>(1, -1, 1, -1);
 		return ((A * (B.yxxx() * A2323_A2323_A1323_A1223 - B.zzyy() * A1323_A0323_A0323_A0223 + B.wwwy() * A1223_A0223_A0123_A0123))*Mul).Sum4();
+	}
+
+	LWSVector4<Type> operator[](uint32_t i) const {
+		return m_Rows[i];
+	}
+
+	LWSVector4<Type> &operator[](uint32_t i) {
+		return m_Rows[i];
 	}
 
 	/*! \cond */

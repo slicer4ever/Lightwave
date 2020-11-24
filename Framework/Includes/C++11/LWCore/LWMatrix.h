@@ -20,16 +20,6 @@ struct LWMatrix4{
 		return LWSMatrix4<Type>(m_Rows[0].AsSVec4(), m_Rows[1].AsSVec4(), m_Rows[2].AsSVec4(), m_Rows[3].AsSVec4());
 	}
 
-	/*! \brief returns the internal components as a array of data. */
-	Type *AsArray(void) {
-		return &m_Rows[0].x;
-	}
-
-	/*! \brief returns the internal components as a const array of data. */
-	const Type *AsArray(void) const {
-		return &m_Rows[0].x;
-	}
-
 	/*!< \brief returns the inverse of an transformation only matrix, if the matrix is more complex then this function will return incorrect results. */
 	LWMatrix4 TransformInverse(void) const {
 		const Type E = std::numeric_limits<Type>::epsilon();
@@ -123,18 +113,6 @@ struct LWMatrix4{
 		return LWVector4<Type>(Arry[Index], Arry[Index + 4], Arry[Index + 8], Arry[Index + 12]);
 	};
 
-	/*! \brief returns the specified row of the matrix(this function exists for parody to LWSMatrix4's row function.) */
-	LWVector4<Type> Row(uint32_t Index) const {
-		return m_Rows[Index];
-	}
-
-	/*! \brief set's a value of the matrix at row*4+Column position, this function exists for parody to LWSMatrix4's sRC function.) */
-	LWMatrix4 &sRC(uint32_t Row, uint32_t Column, Type Value) {
-		Type *Arry = &m_Rows[0].x;
-		Arry[Row * 4 + Column] = Value;
-		return *this;
-	}
-
 	/*! \brief returns the transpose of the this matrix. */
 	LWMatrix4 Transpose(void) const{
 		return LWMatrix4(LWVector4<Type>(m_Rows[0].x, m_Rows[1].x, m_Rows[2].x, m_Rows[3].x), LWVector4<Type>(m_Rows[0].y, m_Rows[1].y, m_Rows[2].y, m_Rows[3].y), LWVector4<Type>(m_Rows[0].z, m_Rows[1].z, m_Rows[2].z, m_Rows[3].z), LWVector4<Type>(m_Rows[0].w, m_Rows[1].w, m_Rows[2].w, m_Rows[3].w));
@@ -223,6 +201,16 @@ struct LWMatrix4{
 			A.y * (B.x * A2323 - B.z * A0323 + B.w * A0223) +
 			A.z * (B.x * A1323 - B.y * A0323 + B.w * A0123) -
 			A.w * (B.x * A1223 - B.y * A0223 + B.y * A0123);
+	}
+
+	/*!< \brief accesses rows of the matrix as if it were an array. */
+	LWVector4<Type> operator[](uint32_t i) const {
+		return m_Rows[i];
+	}
+
+	/*!< \brief accesses rows of the matrix as if it were an array. */
+	LWVector4<Type> &operator[](uint32_t i) {
+		return m_Rows[i];
 	}
 
 	/*! \cond */
@@ -977,24 +965,11 @@ template<class Type>
 struct LWMatrix3{
 	LWVector3<Type> m_Rows[3]; /*!< The 4x4 matrix in row-major order. */
 
-
 	/*!< \brief returns the specified column of the matrix. */
 	LWVector3<Type> Column(uint32_t Index) const {
 		const Type *Arry = &m_Rows[0].x;
 		return LWVector3<Type>(Arry[Index], Arry[Index + 3], Arry[Index + 6]);
 	};
-
-	/*! \brief returns the specified row of the matrix(this function exists for parody to LWSMatrix4's row function.) */
-	LWVector3<Type> Row(uint32_t Index) const {
-		return m_Rows[Index];
-	}
-
-	/*! \brief set's a value of the matrix at row*3+Column position, this function exists for parody to LWSMatrix4's sRC function.) */
-	LWMatrix3 &sRC(uint32_t Row, uint32_t Column, Type Value) {
-		Type *Arry = &m_Rows[0].x;
-		Arry[Row * 3 + Column] = Value;
-		return *this;
-	}
 
 	/*! \brief Returns an copied inverse of this matrix. */
 	LWMatrix3 Inverse(void) const{
@@ -1039,6 +1014,16 @@ struct LWMatrix3{
 	/*! \brief calculates the determinant of this matrix. */
 	Type Determinant(void) const{
 		return m_Rows[0].x*m_Rows[1].y*m_Rows[2].z + m_Rows[0].y*m_Rows[1].z*m_Rows[2].x - m_Rows[0].x*m_Rows[1].z*m_Rows[2].y - m_Rows[0].y*m_Rows[1].x*m_Rows[2].z - m_Rows[0].z*m_Rows[1].y*m_Rows[2].x;
+	}
+
+	/*!< \brief accesses rows of the matrix as if it were an array. */
+	LWVector3<Type> operator[](uint32_t i) const {
+		return m_Rows[i];
+	}
+
+	/*!< \brief accesses rows of the matrix as if it were an array. */
+	LWVector3<Type> &operator[](uint32_t i) {
+		return m_Rows[i];
 	}
 
 	/*! \cond */
@@ -1544,19 +1529,6 @@ struct LWMatrix2{
 		return LWVector2<Type>(Arry[Index], Arry[Index + 2]);
 	};
 
-	/*! \brief returns the specified row of the matrix(this function exists for parody to LWSMatrix4's row function.) */
-	LWVector2<Type> Row(uint32_t Index) const {
-		return m_Rows[Index];
-	}
-
-	/*! \brief set's a value of the matrix at row*2+Column position, this function exists for parody to LWSMatrix4's sRC function.) */
-	LWMatrix2 &sRC(uint32_t Row, uint32_t Column, Type Value) {
-		Type *Arry = &m_Rows[0].x;
-		Arry[Row * 2 + Column] = Value;
-		return *this;
-	}
-
-
 	/*! \brief Returns an copied inverse of this matrix. */
 	LWMatrix2 Inverse(void) const{
 		Type D = Determinant();
@@ -1583,6 +1555,16 @@ struct LWMatrix2{
 	/*! \brief calculates the determinant of this matrix. */
 	Type Determinant(void) const{
 		return m_Rows[0].x*m_Rows[1].y - m_Rows[0].y*m_Rows[1].x;
+	}
+
+	/*!< \brief accesses rows of the matrix as if it were an array. */
+	LWVector2<Type> operator[](uint32_t i) const {
+		return m_Rows[i];
+	}
+
+	/*!< \brief accesses rows of the matrix as if it were an array. */
+	LWVector2<Type> &operator[](uint32_t i) {
+		return m_Rows[i];
 	}
 
 	/*! \cond */

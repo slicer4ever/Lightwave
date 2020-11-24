@@ -31,6 +31,9 @@ struct LWFile{
 	/*!< \brief returns if he file is writeable. */
 	bool isWriteable(void) const;
 
+	/*!< \brief returns an iterator of m_Name. */
+	LWUTF8Iterator GetName(void) const;
+
 	/*!< \brief constructor for LWFile. */
 	LWFile(const LWUTF8Iterator &Name, uint64_t Size, uint32_t Flag);
 

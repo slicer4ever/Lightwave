@@ -13,7 +13,16 @@ LWUTF8Iterator LWEUIListBoxItem::GetName(void) const {
 	return m_Name;
 }
 
-LWEUIListBoxItem::LWEUIListBoxItem(const LWUTF8Iterator &Name, const LWVector2f &TextSize, float TextUnderHang, void *UserData, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) : m_TextSize(TextSize), m_TextUnderhang(TextUnderHang), m_UserData(UserData), m_OffMaterial(OffMaterial), m_OverMaterial(OverMaterial), m_DownMaterial(DownMaterial) {
+LWEUIMaterial *LWEUIListBoxItem::GetMaterial(bool isOver, bool isDown, LWEUIMaterial *DefOffMaterial, LWEUIMaterial *DefOverMaterial, LWEUIMaterial *DefDownMaterial) {
+	LWEUIMaterial *Mat = m_OffMaterial ? m_OffMaterial : DefOffMaterial;
+	if (isOver) {
+		if (isDown) Mat = m_DownMaterial ? m_DownMaterial : DefDownMaterial;
+		else Mat = m_OverMaterial ? m_OverMaterial : DefOverMaterial;
+	}
+	return Mat;
+}
+
+LWEUIListBoxItem::LWEUIListBoxItem(const LWUTF8Iterator &Name, const LWVector2f &TextSize, float TextUnderHang, void *UserData, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial, LWEUIMaterial *FontMaterial) : m_TextSize(TextSize), m_TextUnderhang(TextUnderHang), m_UserData(UserData), m_OffMaterial(OffMaterial), m_OverMaterial(OverMaterial), m_DownMaterial(DownMaterial), m_FontMaterial(FontMaterial) {
 	Name.Copy(m_Name, sizeof(m_Name));
 }
 
@@ -190,30 +199,25 @@ LWEUI &LWEUIListBox::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float Sc
 	for (uint32_t i = n; i < c; i++) {
 		float CellPos = (float)i*CellHeight - m_Scroll;
 		LWEUIListBoxItem &Item = m_ItemList[i];
-		LWEUIMaterial *Mat = Item.m_OffMaterial?Item.m_OffMaterial:m_OffMaterial;
-		if (i == m_OverItem) {
-			Mat = Item.m_OverMaterial ? Item.m_OverMaterial : m_OverMaterial;
-			if (m_Flag&(MouseLDown | MouseMDown | MouseRDown)) {
-				Mat = Item.m_DownMaterial ? Item.m_DownMaterial : m_DownMaterial;
-			}
-		}
+		LWEUIMaterial *Mat = Item.GetMaterial(i == m_OverItem, (m_Flag & (MouseLDown | MouseMDown | MouseRDown)) != 0, m_OffMaterial, m_OverMaterial, m_DownMaterial);
+		LWEUIMaterial *FntMat = Item.m_FontMaterial ? Item.m_FontMaterial : m_FontMaterial;
 		LWVector2f CellP = LWVector2f(VisiblePos.x, VisiblePos.y + (VisibleSize.y - CellPos - CellHeight));
 		Frame.WriteClippedRect(Mat, CellP, LWVector2f(VisibleSize.x, CellHeight), LWVector4f(VisiblePos, VisibleSize));
 		
 		CellP.y += (CellHeight*0.5f) - (Item.m_TextSize.y*0.5f)*Scale - Item.m_TextUnderhang*Scale;
 		if (m_Flag&LabelRightAligned) CellP.x += VisibleSize.x - Item.m_TextSize.x*Scale;
 		else if (m_Flag&LabelCenterAligned) CellP.x += VisibleSize.x*0.5f - Item.m_TextSize.x*0.5f*Scale;
-		Frame.WriteClippedText(m_FontMaterial, Item.m_Name, m_Font, CellP, m_FontScale*Scale, LWVector4f(VisiblePos, VisibleSize));
+		Frame.WriteClippedText(FntMat, Item.m_Name, m_Font, CellP, m_FontScale*Scale, LWVector4f(VisiblePos, VisibleSize));
 	}
 	return *this;
 }
 
-bool LWEUIListBox::PushItem(const LWUTF8Iterator &ItemName, void *UserData, LWEUIMaterial *OffMat, LWEUIMaterial *OverMat, LWEUIMaterial *DownMat) {
+bool LWEUIListBox::PushItem(const LWUTF8Iterator &ItemName, void *UserData, LWEUIMaterial *OffMat, LWEUIMaterial *OverMat, LWEUIMaterial *DownMat, LWEUIMaterial *FontMat) {
 	if (m_ItemCount >= LWELISTBOX_MAXITEMS) return false;
 	LWVector4f BV = LWVector4f();
 	if (m_Font) BV = m_Font->MeasureText(LWUTF8GraphemeIterator(ItemName), m_FontScale);
 
-	m_ItemList[m_ItemCount++] = LWEUIListBoxItem(ItemName, LWVector2f(BV.z - BV.z, BV.y - BV.w), BV.w, OffMat, OverMat, DownMat);
+	m_ItemList[m_ItemCount++] = LWEUIListBoxItem(ItemName, LWVector2f(BV.z - BV.z, BV.y - BV.w), BV.w, UserData, OffMat, OverMat, DownMat, FontMat);
 	return true;
 }
 

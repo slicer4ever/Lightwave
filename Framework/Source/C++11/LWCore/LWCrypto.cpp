@@ -163,7 +163,7 @@ uint32_t LWCrypto::HashFNV1A<char8_t>(const LWUnicodeIterator<char8_t> &Iter, ui
 	const uint32_t Prime = 16777619;
 	const char8_t *P = Iter();
 	const char8_t *L = Iter.GetLast();
-	for (; *P && P != L; ++P) Hash = (Hash ^ ((uint32_t)*P & 0xFF)) * Prime;
+	for (; P != L && *P; ++P) Hash = (Hash ^ ((uint32_t)*P & 0xFF)) * Prime;
 	return Hash;
 }
 
@@ -173,7 +173,7 @@ uint32_t LWCrypto::HashFNV1A<char16_t>(const LWUnicodeIterator<char16_t> &Iter, 
 	const uint32_t Prime = 16777619;
 	const char16_t *P = Iter();
 	const char16_t *L = Iter.GetLast();
-	for (; *P && P != L; ++P) Hash = (Hash ^ ((uint32_t)*P & 0xFFFF)) * Prime;
+	for (; P != L && *P; ++P) Hash = (Hash ^ ((uint32_t)*P & 0xFFFF)) * Prime;
 	return Hash;
 }
 
@@ -182,7 +182,7 @@ uint32_t LWCrypto::HashFNV1A<char32_t>(const LWUnicodeIterator<char32_t> &Iter, 
 	const uint32_t Prime = 16777619;
 	const char32_t *P = Iter();
 	const char32_t *L = Iter.GetLast();
-	for (; *P && P != L; ++P) Hash = (Hash ^ *P) * Prime;
+	for (; P != L && *P; ++P) Hash = (Hash ^ *P) * Prime;
 	return Hash;
 }
 

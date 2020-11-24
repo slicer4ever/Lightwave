@@ -236,6 +236,9 @@ public:
 	/*!< \brief returns true if the window is set to be visible or not. */
 	bool isVisible(void) const;
 
+	/*!< \brief returns true if an error occurred during window creation. */
+	bool DidError(void) const;
+
 	/*!< \brief returns true if the on screen keyboard is present. */
 	bool isVirtualKeyboardPresent(void) const;
 

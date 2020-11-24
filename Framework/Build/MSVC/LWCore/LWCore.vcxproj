@@ -180,12 +180,6 @@
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSVector_AVX2_Double.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSVector_AVX_Float.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSVector_AVX_Int.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWText.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWTimer.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWUnicode.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWUnicodeGraphemeIterator.cpp" />

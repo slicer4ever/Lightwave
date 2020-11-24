@@ -1432,10 +1432,10 @@ bool PerformLWSMatrixTest(void) {
 	if (!TestEquality("LWSMatrix4f<Column1>", Trans.Column(1), LWSVector4f(2.0f, 6.0f, 10.0f, 14.0f))) return false;
 	if (!TestEquality("LWSMatrix4f<Column2>", Trans.Column(2), LWSVector4f(3.0f, 7.0f, 11.0f, 15.0f))) return false;
 	if (!TestEquality("LWSMatrix4f<Column3>", Trans.Column(3), LWSVector4f(4.0f, 8.0f, 12.0f, 16.0f))) return false;
-	if (!TestEquality("LWSMatrix4f<Row0>", Trans.Row(0), LWSVector4f(1.0f, 2.0f, 3.0f, 4.0f))) return false;
-	if (!TestEquality("LWSMatrix4f<Row1>", Trans.Row(1), LWSVector4f(5.0f, 6.0f, 7.0f, 8.0f))) return false;
-	if (!TestEquality("LWSMatrix4f<Row2>", Trans.Row(2), LWSVector4f(9.0f, 10.0f, 11.0f, 12.0f))) return false;
-	if (!TestEquality("LWSMatrix4f<Row3>", Trans.Row(3), LWSVector4f(13.0f, 14.0f, 15.0f, 16.0f))) return false;
+	if (!TestEquality("LWSMatrix4f<Row0>", Trans[0], LWSVector4f(1.0f, 2.0f, 3.0f, 4.0f))) return false;
+	if (!TestEquality("LWSMatrix4f<Row1>", Trans[1], LWSVector4f(5.0f, 6.0f, 7.0f, 8.0f))) return false;
+	if (!TestEquality("LWSMatrix4f<Row2>", Trans[2], LWSVector4f(9.0f, 10.0f, 11.0f, 12.0f))) return false;
+	if (!TestEquality("LWSMatrix4f<Row3>", Trans[3], LWSVector4f(13.0f, 14.0f, 15.0f, 16.0f))) return false;
 
 	float S = sinf(LW_PI * 0.25f);
 	float C = cosf(LW_PI * 0.25f);
@@ -1485,10 +1485,10 @@ bool PerformLWSMatrixTest(void) {
 	if (!TestEquality("LWSMatrix4d<Column1>", Transd.Column(1), LWSVector4d(2.0, 6.0, 10.0, 14.0))) return false;
 	if (!TestEquality("LWSMatrix4d<Column2>", Transd.Column(2), LWSVector4d(3.0, 7.0, 11.0, 15.0))) return false;
 	if (!TestEquality("LWSMatrix4d<Column3>", Transd.Column(3), LWSVector4d(4.0, 8.0, 12.0, 16.0))) return false;
-	if (!TestEquality("LWSMatrix4d<Row0>", Transd.Row(0), LWSVector4d(1.0, 2.0, 3.0, 4.0))) return false;
-	if (!TestEquality("LWSMatrix4d<Row1>", Transd.Row(1), LWSVector4d(5.0, 6.0, 7.0, 8.0))) return false;
-	if (!TestEquality("LWSMatrix4d<Row2>", Transd.Row(2), LWSVector4d(9.0, 10.0, 11.0, 12.0))) return false;
-	if (!TestEquality("LWSMatrix4d<Row3>", Transd.Row(3), LWSVector4d(13.0, 14.0, 15.0, 16.0))) return false;
+	if (!TestEquality("LWSMatrix4d<Row0>", Transd[0], LWSVector4d(1.0, 2.0, 3.0, 4.0))) return false;
+	if (!TestEquality("LWSMatrix4d<Row1>", Transd[1], LWSVector4d(5.0, 6.0, 7.0, 8.0))) return false;
+	if (!TestEquality("LWSMatrix4d<Row2>", Transd[2], LWSVector4d(9.0, 10.0, 11.0, 12.0))) return false;
+	if (!TestEquality("LWSMatrix4d<Row3>", Transd[3], LWSVector4d(13.0, 14.0, 15.0, 16.0))) return false;
 
 	double Sd = sin(LW_PI * 0.25);
 	double Cd = cos(LW_PI * 0.25);

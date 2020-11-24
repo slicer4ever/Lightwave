@@ -6,19 +6,18 @@
 #include <immintrin.h>
 
 template<>
-struct LWSMatrix4<double> {
-	__m256d m_Row0;
-	__m256d m_Row1;
-	__m256d m_Row2;
-	__m256d m_Row3;
+struct alignas(__m256d[4]) LWSMatrix4<double> {
+	union {
+		struct {
+			__m256d m_Row0;
+			__m256d m_Row1;
+			__m256d m_Row2;
+			__m256d m_Row3;
+		};
+		LWSVector4<double> m_Rows[4];
+	};
 
 	LWMatrix4<double> AsMat4(void) const;
-
-	double *AsArray(void);
-
-	const double *AsArray(void) const;
-
-	LWSMatrix4<double> &sRC(uint32_t Row, uint32_t Column, double Value);
 
 	LWSVector4<double> DecomposeScale(bool doTranspose3x3) const;
 
@@ -30,8 +29,6 @@ struct LWSMatrix4<double> {
 
 	LWSVector4<double> Column(uint32_t Index) const;
 
-	LWSVector4<double> Row(uint32_t Index) const;
-
 	LWSMatrix4<double> Transpose(void) const;
 
 	LWSMatrix4<double> Transpose3x3(void) const;
@@ -39,6 +36,10 @@ struct LWSMatrix4<double> {
 	LWSMatrix4<double> Transpose2x2(void) const;
 
 	double Determinant(void) const;
+
+	LWSVector4<double> operator[](uint32_t i) const;
+
+	LWSVector4<double> &operator[](uint32_t i);
 
 	LWSMatrix4<double>& operator = (const LWSMatrix4<double>& Rhs);
 

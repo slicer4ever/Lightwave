@@ -39,7 +39,7 @@ LWUTF8GraphemeIterator LWEUITreeItem::GetValueGrapheme(void) const {
 	return m_Value;
 }
 
-LWEUITreeItem::LWEUITreeItem(const LWUTF8Iterator &Value, void *UserData, LWFont *Font, float FontScale, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) : m_UserData(UserData), m_OffMaterial(OffMaterial), m_OverMaterial(OverMaterial), m_DownMaterial(DownMaterial) {
+LWEUITreeItem::LWEUITreeItem(const LWUTF8Iterator &Value, void *UserData, LWFont *Font, float FontScale, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial, LWEUIMaterial *FontMaterial) : m_UserData(UserData), m_OffMaterial(OffMaterial), m_OverMaterial(OverMaterial), m_DownMaterial(DownMaterial), m_FontMaterial(FontMaterial) {
 	SetValue(Value, Font, FontScale);
 }
 
@@ -222,6 +222,7 @@ LWEUI &LWEUITreeList::UpdateSelf(LWEUIManager &Manager, float Scale, const LWVec
 
 	MaxScroll.y = Pos.y;
 	m_MaxScroll = LWVector2f(MaxScroll.x - InitPos.x, InitPos.y - MaxScroll.y);
+	m_Scroll = m_Scroll.Min(m_MaxScroll - GetScrollPageSize()).Max(LWVector2f(0.0f));
 	m_OverID = OverID;
 	m_OverEditID = OverEditID;
 	m_DragDestParentID = DragDestParentID;
@@ -270,7 +271,7 @@ LWEUI &LWEUITreeList::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float S
 		Pos.x += LineOffset * 0.5f;
 		Pos.y -= hHeight;
 		Frame.WriteClippedRect(Itm.GetMaterial((m_OverID==ID && m_OverEditID==-1) || (m_DraggingID==ID), isDown || (m_DraggingID==ID), m_OffMaterial, m_OverMaterial, m_DownMaterial), Pos, Size, AABB);
-		m_Font->DrawClippedTextm(Itm.m_Value, Pos + LWVector2f(BorderSize*0.5f), m_FontScale*Scale, m_FontMaterial ? m_FontMaterial->m_ColorA : LWVector4f(1.0f), AABB, &Frame, &LWEUIFrame::WriteFontGlyph);
+		Frame.WriteClippedText(Itm.m_FontMaterial ? Itm.m_FontMaterial : m_FontMaterial, Itm.GetValue(), m_Font, Pos + LWVector2f(BorderSize * 0.5f), m_FontScale * Scale, AABB);
 		
 		if (isEditEnabled) {
 			if (m_DraggingID == -1) {
@@ -278,10 +279,10 @@ LWEUI &LWEUITreeList::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float S
 				LWVector2f AddSize = m_EditAddItem.GetSize(Scale, BorderSize, 0.0f, 0.0f);
 				LWVector2f DelSize = m_EditDelItem.GetSize(Scale, BorderSize, 0.0f, 0.0f);
 				Frame.WriteClippedRect(m_EditAddItem.GetMaterial(m_OverID == ID && m_OverEditID == EditIDAdd, isDown, m_OffMaterial, m_OverMaterial, m_DownMaterial), Pos, AddSize, AABB);
-				m_Font->DrawClippedTextm(m_EditAddItem.m_Value, Pos + LWVector2f(BorderSize*0.5f), m_FontScale*Scale, m_FontMaterial ? m_FontMaterial->m_ColorA : LWVector4f(1.0f), AABB, &Frame, &LWEUIFrame::WriteFontGlyph);
+				Frame.WriteClippedText(m_FontMaterial, m_EditAddItem.GetValue(), m_Font, Pos + LWVector2f(BorderSize * 0.5f), m_FontScale * Scale, AABB);
 				Pos.x += AddSize.x + BorderSize;
 				Frame.WriteClippedRect(m_EditDelItem.GetMaterial(m_OverID == ID && m_OverEditID == EditIDDel, isDown, m_OffMaterial, m_OverMaterial, m_DownMaterial), Pos, AddSize, AABB);
-				m_Font->DrawClippedTextm(m_EditDelItem.m_Value, Pos + LWVector2f(BorderSize*0.5f), m_FontScale*Scale, m_FontMaterial ? m_FontMaterial->m_ColorA : LWVector4f(1.0f), AABB, &Frame, &LWEUIFrame::WriteFontGlyph);
+				Frame.WriteClippedText(m_FontMaterial, m_EditDelItem.GetValue(), m_Font, Pos + LWVector2f(BorderSize * 0.5f), m_FontScale * Scale, AABB);
 			} else {
 				if (m_DragDestParentID == ID && m_DragDestPrevID == -1) {
 					Frame.WriteClippedLine(m_HighlightMaterial, Pos + LWVector2f(Size.x*0.5f, 0.0f), Pos + LWVector2f(Size.x*1.5f, 0.5f), LineThick, AABB);
@@ -333,7 +334,7 @@ LWEUI &LWEUITreeList::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float S
 			LWVector2f AddSize = m_EditAddItem.GetSize(Scale, BorderSize, 0.0f, 0.0f);
 			Pos += LWVector2f(BorderSize, -AddSize.y);
 			Frame.WriteClippedRect(m_EditAddItem.GetMaterial(m_OverID == -1 && m_OverEditID == EditIDAdd, isDown, m_OffMaterial, m_OverMaterial, m_DownMaterial), Pos, AddSize, AABB);
-			m_Font->DrawClippedTextm(m_EditAddItem.m_Value, Pos + LWVector2f(BorderSize*0.5f), m_FontScale*Scale, m_FontMaterial ? m_FontMaterial->m_ColorA : LWVector4f(1.0f), AABB, &Frame, &LWEUIFrame::WriteFontGlyph);
+			Frame.WriteClippedText(m_FontMaterial, m_EditAddItem.GetValue(), m_Font, Pos + LWVector2f(BorderSize * 0.5f), m_FontScale * Scale, AABB);
 		}
 	}
 	return *this;
@@ -349,11 +350,11 @@ LWEUITreeList &LWEUITreeList::SetItemValue(uint32_t ID, const LWUTF8Iterator &Va
 	return *this;
 }
 
-uint32_t LWEUITreeList::InsertItemAt(const LWUTF8Iterator &Value, void *UserData, const LWEUITreeEvent &Event, LWAllocator &Allocator, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) {
-	return InsertItemAt(Value, UserData, Event.m_SourceID, -1, Allocator, OffMaterial, OverMaterial, DownMaterial);
+uint32_t LWEUITreeList::InsertItemAt(const LWUTF8Iterator &Value, void *UserData, const LWEUITreeEvent &Event, LWAllocator &Allocator, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial, LWEUIMaterial *FontMaterial) {
+	return InsertChildLast(Value, UserData, Event.m_SourceID, Allocator, OffMaterial, OverMaterial, DownMaterial, FontMaterial);
 }
 
-uint32_t LWEUITreeList::InsertItemAt(const LWUTF8Iterator &Value, void *UserData, uint32_t ParentID, uint32_t PrevID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) {
+uint32_t LWEUITreeList::InsertItemAt(const LWUTF8Iterator &Value, void *UserData, uint32_t ParentID, uint32_t PrevID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial, LWEUIMaterial *FontMaterial) {
 	if (m_ListLength >= m_ListBufferSize) {
 		LWAllocator::Destroy(m_OldList);
 		m_OldList = m_List;
@@ -363,20 +364,20 @@ uint32_t LWEUITreeList::InsertItemAt(const LWUTF8Iterator &Value, void *UserData
 		m_ListBufferSize += BatchSize;
 	}	
 	uint32_t ID = m_ListLength;
-	m_List[ID] = LWEUITreeItem(Value, UserData, m_Font, m_FontScale, OffMaterial, OverMaterial, DownMaterial);
+	m_List[ID] = LWEUITreeItem(Value, UserData, m_Font, m_FontScale, OffMaterial, OverMaterial, DownMaterial, FontMaterial);
 	MoveItemTo(ID, ParentID, PrevID);
 	m_ListLength++;
 	return ID;
 }
 
-uint32_t LWEUITreeList::InsertChildFirst(const LWUTF8Iterator &Value, void *UserData, uint32_t ParentID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) {
-	return InsertItemAt(Value, UserData, ParentID, -1, Allocator, OffMaterial, OverMaterial, DownMaterial);
+uint32_t LWEUITreeList::InsertChildFirst(const LWUTF8Iterator &Value, void *UserData, uint32_t ParentID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial, LWEUIMaterial *FontMaterial) {
+	return InsertItemAt(Value, UserData, ParentID, -1, Allocator, OffMaterial, OverMaterial, DownMaterial, FontMaterial);
 }
 
-uint32_t LWEUITreeList::InsertChildLast(const LWUTF8Iterator &Value, void *UserData, uint32_t ParentID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial) {
+uint32_t LWEUITreeList::InsertChildLast(const LWUTF8Iterator &Value, void *UserData, uint32_t ParentID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial, LWEUIMaterial *FontMaterial) {
 	uint32_t PrevID = m_LastChildID;
 	if (ParentID != -1) PrevID = m_List[ParentID].m_LastChildID;
-	return InsertItemAt(Value, UserData, ParentID, PrevID, Allocator, OffMaterial, OverMaterial, DownMaterial);
+	return InsertItemAt(Value, UserData, ParentID, PrevID, Allocator, OffMaterial, OverMaterial, DownMaterial, FontMaterial);
 }
 
 LWEUITreeList &LWEUITreeList::RemoveItemAt(uint32_t ID) {
@@ -695,4 +696,9 @@ const LWEUITreeItem &LWEUITreeList::GetItem(uint32_t ID) const {
 
 LWEUITreeList::LWEUITreeList(const LWVector4f &Position, const LWVector4f &Size, uint64_t Flags) : LWEUI(Position, Size, Flags) {
 
+}
+
+LWEUITreeList::~LWEUITreeList() {
+	LWAllocator::Destroy(m_OldList);
+	LWAllocator::Destroy(m_List);
 }

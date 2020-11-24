@@ -25,16 +25,6 @@ struct LWVector4{
 		return LWSVector4<Type>(x, y, z, w);
 	}
 
-	/*! \brief returns an array representation of the underlying data. */
-	Type *AsArray(void) {
-		return &x;
-	}
-
-	/*! \brief returns the internal components as a const array of data. */
-	const Type *AsArray(void) const {
-		return &x;
-	}
-
 	/*! \brief returns a copy of the normalized vector4. */
 	LWVector4<Type> Normalize(void) const{
 		Type L = x*x + y*y + z*z + w*w;
@@ -148,32 +138,7 @@ struct LWVector4{
 		return LWVector4<Type>(Diff.x > e ? Value.x : x, Diff.y > e ? Value.y : y, Diff.z > e ? Value.z : z, Diff.w > e ? Value.w : w);
 	}
 
-	/*! \brief set's the x component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector4<Type> &sX(Type v) {
-		x = v;
-		return *this;
-	}
-	
-	/*! \brief set's the y component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector4<Type> &sY(Type v) {
-		y = v;
-		return *this;
-	}
-
-	/*! \brief set's the z component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector4<Type> &sZ(Type v) {
-		z = v;
-		return *this;
-	}
-
-	/*! \brief set's the w component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector4<Type> &sW(Type v) {
-		w = v;
-		return *this;
-	}
-
 	/*! \cond */
-
 	LWVector4<Type> &operator = (const LWVector4<Type> &Rhs){
 		x = Rhs.x;
 		y = Rhs.y;
@@ -252,6 +217,16 @@ struct LWVector4{
 
 	friend LWVector4<Type> operator - (const LWVector4<Type> &Rhs){
 		return LWVector4<Type>(-Rhs.x, -Rhs.y, -Rhs.z, -Rhs.w);
+	}
+
+	/*!< \brief accesses components of the vector as if it were an array. */
+	Type operator[](uint32_t i) const {
+		return (&x)[i];
+	}
+
+	/*!< \brief accesses components of the vector as if it were an array(and can set value directly) */
+	Type &operator[](uint32_t i) {
+		return (&x)[i];
 	}
 
 	/*! \brief returns true if all components are > than rhs components. */
@@ -1730,16 +1705,6 @@ struct LWVector3{
 	Type y; /*!< \brief y component of the Vector3 */
 	Type z; /*!< \brief z component of the Vector3 */
 
-	/*! \brief returns the internal components as an array of data. */
-	Type *AsArray(void) {
-		return &x;
-	}
-
-	/*! \brief returns the internal components as a const array of data. */
-	const Type *AsArray(void) const {
-		return &x;
-	}
-
 	/*! \brief returns a copy of the normalized vector3. */
 	LWVector3<Type> Normalize(void) const{
 		Type L = x*x + y*y + z*z;
@@ -1872,26 +1837,17 @@ struct LWVector3{
 		return LWVector3<Type>(Diff.x > e ? Value.x : x, Diff.y > e ? Value.y : y, Diff.z > e ? Value.z : z);
 	}
 
-	/*! \brief set's the x component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector3<Type> &sX(Type v) {
-		x = v;
-		return *this;
+	/*!< \brief accesses components of the vector as if it were an array. */
+	Type operator[](uint32_t i) const {
+		return (&x)[i];
 	}
 
-	/*! \brief set's the y component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector3<Type> &sY(Type v) {
-		y = v;
-		return *this;
-	}
-
-	/*! \brief set's the z component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector3<Type> &sZ(Type v) {
-		z = v;
-		return *this;
+	/*!< \brief accesses components of the vector as if it were an array(and can set value directly) */
+	Type &operator[](uint32_t i) {
+		return (&x)[i];
 	}
 
 	/*! \cond */
-
 	LWVector3<Type> &operator = (const LWVector3<Type> &Rhs){
 		x = Rhs.x;
 		y = Rhs.y;
@@ -2359,18 +2315,6 @@ struct LWVector2{
 		return LWVector2<Type>(Pnt.x*x + Pnt.y*y, Pnt.x*y - Pnt.y*x);
 	}
 
-	/*! \brief set's the x component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector2<Type> &sX(Type v) {
-		x = v;
-		return *this;
-	}
-
-	/*! \brief set's the y component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector2<Type> &sY(Type v) {
-		y = v;
-		return *this;
-	}
-
 	/*! \cond */
 	LWVector2<Type> &operator = (const LWVector2<Type> &Rhs){
 		x = Rhs.x;
@@ -2424,6 +2368,16 @@ struct LWVector2{
 		x /= Rhs;
 		y /= Rhs;
 		return *this;
+	}
+
+	/*!< \brief accesses components of the vector as if it were an array. */
+	Type operator[](uint32_t i) const {
+		return (&x)[i];
+	}
+
+	/*!< \brief accesses components of the vector as if it were an array(and can set value directly) */
+	Type &operator[](uint32_t i) {
+		return (&x)[i];
 	}
 
 	friend LWVector2<Type> operator + (const LWVector2<Type> &Rhs){
