@@ -1059,7 +1059,7 @@ protected:
 };
 
 template<>
-inline static uint32_t LWUnicodeIterator<char8_t>::CodePointUnitSize(uint32_t CodePoint){
+inline uint32_t LWUnicodeIterator<char8_t>::CodePointUnitSize(uint32_t CodePoint){
 	if (CodePoint > 0xFFFF) return 4;
 	if (CodePoint > 0x7FF) return 3;
 	if (CodePoint > 0x7F) return 2;
@@ -1067,18 +1067,18 @@ inline static uint32_t LWUnicodeIterator<char8_t>::CodePointUnitSize(uint32_t Co
 }
 
 template<>
-inline static uint32_t LWUnicodeIterator<char16_t>::CodePointUnitSize(uint32_t CodePoint) {
+inline uint32_t LWUnicodeIterator<char16_t>::CodePointUnitSize(uint32_t CodePoint) {
 	if (CodePoint > 0xFFFF) return 2;
 	return 1;
 }
 
 template<>
-inline static uint32_t LWUnicodeIterator<char32_t>::CodePointUnitSize(uint32_t CodePoint) {
+inline uint32_t LWUnicodeIterator<char32_t>::CodePointUnitSize(uint32_t CodePoint) {
 	return 1;
 }
 
 template<>
-inline static uint32_t LWUnicodeIterator<char8_t>::CodePointUnitSize(const char8_t *Pos) {
+inline uint32_t LWUnicodeIterator<char8_t>::CodePointUnitSize(const char8_t *Pos) {
 	if ((*Pos & 0xF0) == 0xF0) return 4;
 	if ((*Pos & 0xE0) == 0xE0) return 3;
 	if ((*Pos & 0xC0) == 0xC0) return 2;  
@@ -1086,18 +1086,18 @@ inline static uint32_t LWUnicodeIterator<char8_t>::CodePointUnitSize(const char8
 }
 
 template<>
-inline static uint32_t LWUnicodeIterator<char16_t>::CodePointUnitSize(const char16_t *Pos) {
+inline uint32_t LWUnicodeIterator<char16_t>::CodePointUnitSize(const char16_t *Pos) {
 	if ((*Pos & 0xD800) == 0xD800) return 2;
 	return 1;
 }
 
 template<>
-inline static uint32_t LWUnicodeIterator<char32_t>::CodePointUnitSize(const char32_t *Pos) {
+inline uint32_t LWUnicodeIterator<char32_t>::CodePointUnitSize(const char32_t *Pos) {
 	return 1;
 }
 
 template<>
-inline static uint32_t LWUnicodeIterator<char8_t>::DecodeCodePoint(const char8_t *Pos) {
+inline uint32_t LWUnicodeIterator<char8_t>::DecodeCodePoint(const char8_t *Pos) {
 	if ((*Pos & 0xF0) == 0xF0) return (*Pos & 0x7) << 18 | (*(Pos + 1) & 0x3F) << 12 | (*(Pos + 2) & 0x3F) << 6 | (*(Pos + 3) & 0x3F);
 	else if ((*Pos & 0xE0) == 0xE0) return (*Pos & 0xF) << 12 | (*(Pos + 1) & 0x3F) << 6 | (*(Pos + 2) & 0x3F);
 	else if ((*Pos & 0xC0) == 0xC0) return (*Pos & 0x1F) << 6 | (*(Pos + 1) & 0x3F);
@@ -1105,18 +1105,18 @@ inline static uint32_t LWUnicodeIterator<char8_t>::DecodeCodePoint(const char8_t
 }
 
 template<>
-inline static uint32_t LWUnicodeIterator<char16_t>::DecodeCodePoint(const char16_t *Pos) {
+inline uint32_t LWUnicodeIterator<char16_t>::DecodeCodePoint(const char16_t *Pos) {
 	if ((*Pos & 0xD800) == 0xD800) return ((*Pos & 0x3FF) << 10) | (*(Pos + 1) & 0x3FF) + 0x10000;
 	return *Pos;
 }
 
 template<>
-inline static uint32_t LWUnicodeIterator<char32_t>::DecodeCodePoint(const char32_t *Pos) {
+inline uint32_t LWUnicodeIterator<char32_t>::DecodeCodePoint(const char32_t *Pos) {
 	return *Pos;
 }
 
 template<>
-inline static uint32_t LWUnicodeIterator<char8_t>::EncodeCodePoint(char8_t *Buffer, uint32_t BufferSize, uint32_t CodePoint) {
+inline uint32_t LWUnicodeIterator<char8_t>::EncodeCodePoint(char8_t *Buffer, uint32_t BufferSize, uint32_t CodePoint) {
 	if (CodePoint <= 0x7F) {
 		if (BufferSize>0) Buffer[0] = (char8_t)CodePoint;
 		return 1;
@@ -1146,7 +1146,7 @@ inline static uint32_t LWUnicodeIterator<char8_t>::EncodeCodePoint(char8_t *Buff
 }
 
 template<>
-inline static uint32_t LWUnicodeIterator<char16_t>::EncodeCodePoint(char16_t *Buffer, uint32_t BufferSize, uint32_t CodePoint) {
+inline uint32_t LWUnicodeIterator<char16_t>::EncodeCodePoint(char16_t *Buffer, uint32_t BufferSize, uint32_t CodePoint) {
 	if (CodePoint <= 0xD7FF) { //We ignore the range of 
 		if (BufferSize > 0) Buffer[0] = (char16_t)CodePoint;
 		return 1;
@@ -1165,38 +1165,38 @@ inline static uint32_t LWUnicodeIterator<char16_t>::EncodeCodePoint(char16_t *Bu
 }
 
 template<>
-inline static uint32_t LWUnicodeIterator<char32_t>::EncodeCodePoint(char32_t *Buffer, uint32_t BufferSize, uint32_t CodePoint) {
+inline uint32_t LWUnicodeIterator<char32_t>::EncodeCodePoint(char32_t *Buffer, uint32_t BufferSize, uint32_t CodePoint) {
 	if (BufferSize > 0) *Buffer = CodePoint;
 	return 1;
 }
 
 template<>
-inline static bool LWUnicodeIterator<char8_t>::isLeadCodeUnit(const char8_t *Pos) {
+inline bool LWUnicodeIterator<char8_t>::isLeadCodeUnit(const char8_t *Pos) {
 	return (*Pos & 0xC0) != 0x80;
 }
 
 template<>
-inline static bool LWUnicodeIterator<char16_t>::isLeadCodeUnit(const char16_t *Pos) {
+inline bool LWUnicodeIterator<char16_t>::isLeadCodeUnit(const char16_t *Pos) {
 	return (*Pos & 0xFC00) != 0xDC00;
 }
 
 template<>
-inline static bool LWUnicodeIterator<char32_t>::isLeadCodeUnit(const char32_t *Pos) {
+inline bool LWUnicodeIterator<char32_t>::isLeadCodeUnit(const char32_t *Pos) {
 	return true;
 }
 
 template<>
-inline static bool LWUnicodeIterator<char8_t>::isTrailingCodeUnit(const char8_t *Pos) {
+inline bool LWUnicodeIterator<char8_t>::isTrailingCodeUnit(const char8_t *Pos) {
 	return (*Pos & 0xC0) == 0x80;
 }
 
 template<>
-inline static bool LWUnicodeIterator<char16_t>::isTrailingCodeUnit(const char16_t *Pos) {
+inline bool LWUnicodeIterator<char16_t>::isTrailingCodeUnit(const char16_t *Pos) {
 	return (*Pos & 0xFC00) == 0xDC00;
 }
 
 template<>
-inline static bool LWUnicodeIterator<char32_t>::isTrailingCodeUnit(const char32_t *Pos) {
+inline bool LWUnicodeIterator<char32_t>::isTrailingCodeUnit(const char32_t *Pos) {
 	return false;
 }
 
