@@ -277,7 +277,7 @@ struct LWQuaternion {
 		return LWQuaternion(Lhs / Rhs.w, Lhs / Rhs.x, Lhs / Rhs.y, Lhs / Rhs.z);
 	}
 
-	LWQuaternion(Type w, Type x, Type y, Type z) : w(w), x(x), y(y), z(z){}
+	LWQuaternion(Type w, Type x, Type y, Type z) : x(x), y(y), z(z), w(w){}
 
 	LWQuaternion(const LWMatrix3<Type> &Mat) {
 		LWVector3<Type> R0 = Mat.m_Rows[0];
