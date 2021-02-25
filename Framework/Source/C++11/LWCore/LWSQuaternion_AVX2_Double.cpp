@@ -1,6 +1,6 @@
 #include "LWCore/LWSQuaternion.h"
 #include "LWCore/LWSMatrix.h"
-#ifndef LW_NOAVX2
+#ifdef __AVX2__
 
 LWSQuaternion<double> LWSQuaternion<double>::FromEuler(double Pitch, double Yaw, double Roll) {
 	double c1 = cos(Yaw * 0.5);

@@ -1773,17 +1773,17 @@ struct alignas(Type[4]) LWSVector4 {
 };
 
 /*!< \brief float implementation of LWSVector4 */
-#ifndef LW_NOAVX
+#ifdef __AVX__
 #include "LWCore/LWSVector_AVX_Float.h"
 #endif
 
 /*!< \brief int32_t implementation of LWSVector4. */
-#ifndef LW_NOAVX
+#ifdef __AVX__
 #include "LWCore/LWSVector_AVX_Int.h"
 #endif
 
 /*!< \brief double implementation of LWSVector4 */
-#ifndef LW_NOAVX2
+#ifdef __AVX2__
 #include "LWCORE/LWSVector_AVX2_Double.h"
 #endif
 #endif

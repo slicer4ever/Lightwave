@@ -726,7 +726,7 @@ struct alignas(LWSVector4<Type>[4]) LWSMatrix4 {
 	};
 };
 
-#ifndef LW_NOAVX2
+#ifdef __AVX2__
 #include "LWCore/LWSMatrix_AVX2_Float.h"
 #include "LWCore/LWSMatrix_AVX2_Double.h"
 #endif

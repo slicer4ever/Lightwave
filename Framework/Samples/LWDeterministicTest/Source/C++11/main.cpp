@@ -4,6 +4,24 @@
 #include <LWCore/LWByteBuffer.h>
 #include <LWCore/LWSVector.h>
 #include <LWPlatform/LWFileStream.h>
+const char FPNames[][16] = { "Fast", "Precise", "Strict", "Exceptions", "Unknown" };
+const uint32_t FPFast = 0;
+const uint32_t FPPrecise = 1;
+const uint32_t FPStrict = 2;
+const uint32_t FPExceptions = 3;
+const uint32_t FPUnknown = 4;
+
+#ifdef _M_FP_FAST
+static uint32_t FPMode = FPFast;
+#elif _M_FP_PRECISE
+static uint32_t FPMode = FPPrecise;
+#elif _M_FP_STRICT
+static uint32_t FPMode = FPStrict;
+#elif _M_FP_EXCEPT
+static uint32_t FPMode = FPExceptions;
+#else
+static uint32_t FPMode = FPUnknown;
+#endif
 
 template<class Type>
 bool ValidateResults(const LWUTF8Iterator &TestName, LWByteBuffer &Buffer, const Type &Value, bool WriteMode) {
@@ -37,32 +55,36 @@ bool ValidateResults(const LWUTF8Iterator &TestName, LWByteBuffer &Buffer, const
 
 bool WriteFile(const LWUTF8Iterator &FileName, LWByteBuffer &Buffer, LWAllocator &Allocator) {
 	LWFileStream Stream;
-	if (!LWFileStream::OpenStream(Stream, FileName, LWFileStream::WriteMode | LWFileStream::BinaryMode, Allocator)) {
+	if (!LWFileStream::OpenStream(Stream, LWUTF8I::Fmt<128>("{}.bin", FileName, FPNames[FPMode]), LWFileStream::WriteMode | LWFileStream::BinaryMode, Allocator)) {
 		fmt::print("Error opening file '{}' for writing.\n", FileName);
 		return false;
 	}
+	Stream.Write((char*)&FPMode, sizeof(int32_t));
 	Stream.Write((const char*)Buffer.GetReadBuffer(), Buffer.GetBytesWritten());
 	return true;
 }
 
 bool ReadFile(const LWUTF8Iterator &FileName, int8_t *Buffer, uint32_t BufferSize, LWAllocator &Allocator) {
 	LWFileStream Stream;
-	if (!LWFileStream::OpenStream(Stream, FileName, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator)) {
+	if (!LWFileStream::OpenStream(Stream, LWUTF8I::Fmt<128>("{}.bin", FileName, FPNames[FPMode]), LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator)) {
 		fmt::print("Error opening file '{}' for reading, switching to write mode for test.\n", FileName);
 		return false;
 	}
 	LWVerify(Stream.Length() <= BufferSize);
 	LWVerify(Stream.Read((char*)Buffer, Stream.Length())==Stream.Length());
+	uint32_t FileMode = *(int32_t*)Buffer;
+	fmt::print("File '{}' was generated with '{}' mode.\n", FileName, FPNames[FPMode]);
 	return true;
 }
 
 bool LinearMathTest(const LWUTF8Iterator &Name, int8_t *Buffer, uint32_t BufferSize, LWAllocator &Allocator) {
 	fmt::print("Starting Test: {}\n", Name);
-	char FileName[] = "LinearMathTest.bin";
+	char FileName[] = "LinearMathTest";
 	const uint32_t FloatTestCount = 128;
 	bool WriteMode = !ReadFile(FileName, Buffer, BufferSize, Allocator);
 	float fBuffer[FloatTestCount];
-	LWByteBuffer Buf = LWByteBuffer(Buffer, BufferSize, LWByteBuffer::BufferNotOwned);
+	LWByteBuffer Buf = LWByteBuffer(Buffer + sizeof(int32_t), BufferSize, LWByteBuffer::BufferNotOwned);
+	
 	//Initialize fbuffer.
 	for (uint32_t i = 0; i < FloatTestCount; i++) {
 		fBuffer[i] = ((float)i) * 0.1f;
@@ -105,10 +127,10 @@ bool LinearMathTest(const LWUTF8Iterator &Name, int8_t *Buffer, uint32_t BufferS
 
 bool TrigMathTest(const LWUTF8Iterator &Name, int8_t *Buffer, uint32_t BufferSize, LWAllocator &Allocator) {
 	fmt::print("Starting Test: {}\n", Name);
-	char FileName[] = "TrigMathTest.bin";
+	char FileName[] = "TrigMathTest";
 	const uint32_t FloatTestCount = 4096;
-	bool WriteMode = !ReadFile(FileName, Buffer, BufferSize, Allocator);
-	LWByteBuffer Buf = LWByteBuffer(Buffer, BufferSize, LWByteBuffer::BufferNotOwned);
+	bool WriteMode = !ReadFile(FileName, Buffer+sizeof(int32_t), BufferSize, Allocator);
+	LWByteBuffer Buf = LWByteBuffer(Buffer+sizeof(int32_t), BufferSize, LWByteBuffer::BufferNotOwned);
 	float fBuffer[FloatTestCount];
 	for (uint32_t i = 0; i < FloatTestCount; i++) {
 		fBuffer[i] = ((float)i) * LW_DEGTORAD * 0.5f - LW_2PI*2.0f;
@@ -144,11 +166,11 @@ bool TrigMathTest(const LWUTF8Iterator &Name, int8_t *Buffer, uint32_t BufferSiz
 
 bool LinearSSEMathTest(const LWUTF8Iterator &Name, int8_t *Buffer, uint32_t BufferSize, LWAllocator &Allocator) {
 	fmt::print("Starting Test: {}\n", Name);
-	char FileName[] = "SSELinearMathTest.bin";
+	char FileName[] = "SSELinearMathTest";
 	const uint32_t TestCount = 128;
 	bool WriteMode = !ReadFile(FileName, Buffer, BufferSize, Allocator);
 	LWSVector4f vBuffer[TestCount];
-	LWByteBuffer Buf = LWByteBuffer(Buffer, BufferSize, LWByteBuffer::BufferNotOwned);
+	LWByteBuffer Buf = LWByteBuffer(Buffer + sizeof(int32_t), BufferSize, LWByteBuffer::BufferNotOwned);
 	//Initialize fbuffer.
 	for (uint32_t i = 0; i < TestCount; i++) {
 		float n = ((float)i) * 0.1f;
@@ -191,15 +213,6 @@ bool LinearSSEMathTest(const LWUTF8Iterator &Name, int8_t *Buffer, uint32_t Buff
 
 int main(int argc, char **argv) {
 	const uint32_t MaxBufferSize = 1024 * 1024;
-	const char *FPNames[] = { "Except", "Fast", "Precise", "Strict" };
-	uint32_t FPMode = 0;
-#ifdef _M_FP_FAST
-	FPMode = 1;
-#elif _M_FP_PRECISE
-	FPMode = 2;
-#elif _M_FP_STRICT
-	FPMode = 3;
-#endif
 	LWAllocator_Default DefAlloc;
 	int8_t *Buffer = DefAlloc.Allocate<int8_t>(MaxBufferSize);
 	fmt::print("Starting determnistic tests, fpmode: {}\n", FPNames[FPMode]);

@@ -1,6 +1,6 @@
 #include "LWCore/LWSMatrix.h"
 #include "LWCore/LWSQuaternion.h"
-#ifndef LW_NOAVX2
+#ifdef __AVX2__
 
 LWMatrix4<double> LWSMatrix4<double>::AsMat4(void) const {
 	alignas(64) LWMatrix4<double> R;

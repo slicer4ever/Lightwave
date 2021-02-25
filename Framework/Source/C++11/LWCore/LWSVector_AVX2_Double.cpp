@@ -1,5 +1,5 @@
 #include "LWCore/LWSVector.h"
-#ifndef LW_NOAVX2
+#ifdef __AVX2__
 
 LWVector4<double> LWSVector4<double>::AsVec4(void) const {
 	alignas(32) LWVector4<double> R;

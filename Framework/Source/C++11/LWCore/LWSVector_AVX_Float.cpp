@@ -1,6 +1,6 @@
 #include "LWCore/LWSVector.h"
 #include <numeric>
-#ifndef LW_NOAVX
+#ifdef __AVX__
 
 LWVector4<float> LWSVector4<float>::AsVec4(void) const {
 	alignas(16) LWVector4<float> R;

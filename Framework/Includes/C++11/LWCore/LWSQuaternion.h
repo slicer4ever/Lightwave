@@ -274,11 +274,11 @@ struct alignas(Type[4]) LWSQuaternion {
 	LWSQuaternion() : w((Type)1), x((Type)0), y((Type)0), z((Type)0) {}
 };
 
-#ifndef LW_NOAVX
+#ifdef __AVX__
 #include "LWCore/LWSQuaternion_AVX_Float.h"
 #endif
 
-#ifndef LW_NOAVX2
+#ifdef __AVX2__
 #include "LWCore/LWSQuaternion_AVX2_Double.h"
 #endif
 #endif
