@@ -697,10 +697,10 @@ struct LWMatrix4 {
 		Type zz = Q.z*Q.z;
 		Type zw = Q.z*Q.w;
 
-		m_Rows[0] = { (Type)(1 - 2 * (yy + zz)), (Type)(2 * (xy - zw)), (Type)(2 * (xz + yw)), (Type)0 }*Scale.x;
-		m_Rows[1] = { (Type)2 * (xy + zw), (Type)(1 - 2 * (xx + zz)), (Type)(2 * (yz - xw)), 0 }*Scale.y;
-		m_Rows[2] = { (Type)(2 * (xz - yw)), (Type)(2 * (yz + xw)), (Type)(1 - 2 * (xx + yy)), (Type)0 }*Scale.z;
-		m_Rows[3] = { (Type)Pos.x, (Type)Pos.y, (Type)Pos.z, (Type)1 };
+		m_Rows[0] = LWVector4<Type>((Type)(1 - 2 * (yy + zz)), (Type)(2 * (xy - zw)), (Type)(2 * (xz + yw)), (Type)0)*Scale.x;
+		m_Rows[1] = LWVector4<Type>((Type)2 * (xy + zw), (Type)(1 - 2 * (xx + zz)), (Type)(2 * (yz - xw)), 0)*Scale.y;
+		m_Rows[2] = LWVector4<Type>((Type)(2 * (xz - yw)), (Type)(2 * (yz + xw)), (Type)(1 - 2 * (xx + yy)), (Type)0)*Scale.z;
+		m_Rows[3] = LWVector4<Type>((Type)Pos.x, (Type)Pos.y, (Type)Pos.z, (Type)1 );
 	};
 };
 
