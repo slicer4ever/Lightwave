@@ -1033,7 +1033,7 @@ public:
 
 	/*!< \brief constructs an iterator to a c_view of a c string created by another iterator, this constructor is provided for implict conversions to an interator when a c_view is returned(such as what Format does). */
 	template<size_t Len>
-	LWUnicodeIterator(const LWUnicodeIterator<Type>::C_View<Len> &CStr) : LWUnicodeIterator<Type>(CStr.m_Data) {}
+	LWUnicodeIterator(const LWUnicodeIterator::C_View<Len> &CStr) : LWUnicodeIterator<Type>(CStr.m_Data) {}
 
 	/*!< \brief constructs an iterator to stack allocated array. */
 	template<size_t Len>
