@@ -733,8 +733,8 @@ public:
 		m_CodePointCount = CountGraphemeCluster(*this);
 	}
 
-	template<size_t Len>
-	LWUnicodeGraphemeIterator(const LWUnicodeGraphemeIterator<Type>::C_View<Len> &CStr) : LWUnicodeGraphemeIterator(CStr.m_Data) {
+	template<std::size_t Len>
+	LWUnicodeGraphemeIterator(const LWUnicodeIterator<Type>::C_View<Len> &CStr) : LWUnicodeGraphemeIterator(CStr.m_Data) {
 		m_CodePointCount = CountGraphemeCluster(*this);
 	}
 

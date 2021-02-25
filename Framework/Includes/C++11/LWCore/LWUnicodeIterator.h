@@ -1106,7 +1106,7 @@ inline uint32_t LWUnicodeIterator<char8_t>::DecodeCodePoint(const char8_t *Pos) 
 
 template<>
 inline uint32_t LWUnicodeIterator<char16_t>::DecodeCodePoint(const char16_t *Pos) {
-	if ((*Pos & 0xD800) == 0xD800) return ((*Pos & 0x3FF) << 10) | (*(Pos + 1) & 0x3FF) + 0x10000;
+	if ((*Pos & 0xD800) == 0xD800) return ((*Pos & 0x3FF) << 10) | ((*(Pos + 1) & 0x3FF) + 0x10000);
 	return *Pos;
 }
 
