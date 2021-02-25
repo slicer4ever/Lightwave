@@ -78,7 +78,7 @@ public:
 	*/
 	uint32_t GetAllocatedBytes(void);
 protected:
-	std::atomic<uint32_t> m_AllocatedBytes = 0; /*!< \brief the total number of bytes still allocated, this value does include the meta data that is also allocated with LWAllocators. */
+	std::atomic<uint32_t> m_AllocatedBytes; /*!< \brief the total number of bytes still allocated, this value does include the meta data that is also allocated with LWAllocators. */
 
 	/*!< \brief convenience function to get the environment for a piece of memory. */
 	template<class Type>
@@ -109,6 +109,8 @@ protected:
 		\param Memory the pointer to the data to be deallocated.
 	*/
 	virtual void *DeallocateBytes(void *Memory) = 0;
+
+	LWAllocator() : m_AllocatedBytes(0) {}
 };
 /*! @} */
 
