@@ -271,7 +271,7 @@ struct alignas(Type[4]) LWSQuaternion {
 	}
 
 	/*!< \brief constructs a unit identity quaternion. */
-	LWSQuaternion() : w((Type)1), x((Type)0), y((Type)0), z((Type)0) {}
+	LWSQuaternion() : x((Type)0), y((Type)0), z((Type)0), w((Type)1) {}
 };
 
 #ifdef __AVX__

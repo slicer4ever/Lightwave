@@ -333,7 +333,7 @@ struct LWQuaternion {
 	}
 
 	/*!< \brief constructs a unit identity quaternion. */
-	LWQuaternion() : w(1.0f), x(0.0f), y(0.0f), z(0.0f) {}
+	LWQuaternion() : x((Type)0), y((Type)0), z((Type)0), w((Type)1) {}
 
 };
 #endif
