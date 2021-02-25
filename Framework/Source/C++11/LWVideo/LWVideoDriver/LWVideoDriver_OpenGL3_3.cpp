@@ -19,7 +19,7 @@ LWShader *LWVideoDriver_OpenGL3_3::CreateShader(uint32_t ShaderType, const LWUTF
 }
 
 LWShader *LWVideoDriver_OpenGL3_3::CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledCodeLen, LWAllocator &Allocator, char8_t *ErrorBuffer, uint32_t ErrorBufferLen) {
-	GLenum GShaderTypes[] = { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, GL_GEOMETRY_SHADER, GL_COMPUTE_SHADER };
+	GLenum GShaderTypes[] = { GL_VERTEX_SHADER, GL_GEOMETRY_SHADER, GL_FRAGMENT_SHADER,  GL_COMPUTE_SHADER };
 	uint32_t ShaderID = glCreateShader(GShaderTypes[ShaderType]);
 	int32_t CompileResult = 0;
 	glShaderSource(ShaderID, 1, &CompiledCode, nullptr);
@@ -127,15 +127,14 @@ LWPipeline *LWVideoDriver_OpenGL3_3::CreatePipeline(LWPipeline *Source, LWAlloca
 		for (uint32_t n = 0; n < Length*Attr.RowMultiplier; n++) {
 			LWShaderInput &In = Inputs[InputCount];
 			In = LWShaderInput((const char8_t*)NameBuffer, Attr.AttributeType, 1);
-			In.m_VideoContext = (void*)(uintptr_t)glGetAttribLocation(Context.m_ProgramID, NameBuffer);
-			glEnableVertexAttribArray((uint32_t)(uintptr_t)In.m_VideoContext);
+			In.m_BindIndex = glGetAttribLocation(Context.m_ProgramID, NameBuffer);
+			glEnableVertexAttribArray(In.m_BindIndex);
 			InputCount++;
 		}
 	}
 	for (int32_t i = 0; i < BlockCount; i++) {
 		glGetActiveUniformBlockName(Context.m_ProgramID, i, sizeof(NameBuffer), &NameLen, NameBuffer);
-		Blocks[i] = LWShaderResource((const char8_t*)NameBuffer, 0, LWPipeline::UniformBlock, 0);
-		Blocks[i].m_VideoContext = (void*)(uintptr_t)i;
+		Blocks[i] = LWShaderResource(LWUTF8I(NameBuffer).Hash(), LWPipeline::UniformBlock, 0, i);
 		glUniformBlockBinding(Context.m_ProgramID, i, i);
 
 	}
@@ -149,8 +148,7 @@ LWPipeline *LWVideoDriver_OpenGL3_3::CreatePipeline(LWPipeline *Source, LWAlloca
 		if (Type == GL_SAMPLER_1D || Type == GL_SAMPLER_2D || Type == GL_SAMPLER_3D ||
 			Type == GL_SAMPLER_CUBE || Type == GL_SAMPLER_1D_SHADOW || Type == GL_SAMPLER_2D_SHADOW || Type == GL_SAMPLER_CUBE_SHADOW ||
 			Type == GL_SAMPLER_2D_MULTISAMPLE || Type==GL_SAMPLER_2D_MULTISAMPLE_ARRAY) {
-			R = LWShaderResource(NameHash, 0, LWPipeline::Texture, Length);
-			R.m_VideoContext = (void*)(uintptr_t)NextTexID;
+			R = LWShaderResource(NameHash, LWPipeline::Texture, Length, NextTexID);
 			glUniform1i(ResourceCount, NextTexID);
 			NextTexID++;
 			ResourceCount++;
@@ -354,6 +352,7 @@ bool LWVideoDriver_OpenGL3_3::UpdateTexture(LWTexture *Texture){
 	int32_t CompareModes[] = { GL_NONE, GL_COMPARE_REF_TO_TEXTURE };
 	int32_t CompareFuncs[] = { GL_NEVER, GL_ALWAYS, GL_LESS, GL_EQUAL, GL_LEQUAL, GL_GREATER, GL_GEQUAL, GL_NOTEQUAL };
 	int32_t DepthReadMode[] = { GL_DEPTH_COMPONENT, GL_STENCIL_COMPONENTS }; //Possible bug, GL_STENCIL_COMPONENTS instead of GL_STENCIL_COMPONENT (note: S) is only defined.
+	float AnisotropyValues[] = { 1.0f, 2.0f, 4.0f, 8.0f, 16.0f }; //Anisotropy
 
 	int32_t Type = GTypes[Texture->GetType()];
 	if (!Type) return false;
@@ -370,6 +369,8 @@ bool LWVideoDriver_OpenGL3_3::UpdateTexture(LWTexture *Texture){
 		uint32_t CFunc = (State&LWTexture::CompareFuncFlag) >> LWTexture::CompareFuncBitOffset;
 		uint32_t CMode = (State&LWTexture::CompareModeFlag) >> LWTexture::CompareModeBitOffset;
 		uint32_t DRMode = (State&LWTexture::DepthReadFlag) >> LWTexture::DepthReadBitOffset;
+		uint32_t Anisotropy = (State & LWTexture::AnisotropyFlag) >> LWTexture::AnisotropyBitOffset;
+
 		if (!MultiSampled) { //Sampler states not supported by multi-sampled textures
 			glTexParameteri(Type, GL_TEXTURE_MIN_FILTER, MinMagFilters[MinFilter]);
 			glTexParameteri(Type, GL_TEXTURE_MAG_FILTER, MinMagFilters[MagFilter]);
@@ -379,6 +380,7 @@ bool LWVideoDriver_OpenGL3_3::UpdateTexture(LWTexture *Texture){
 			glTexParameteri(Type, GL_TEXTURE_COMPARE_FUNC, CompareFuncs[CFunc]);
 			glTexParameteri(Type, GL_TEXTURE_COMPARE_MODE, CompareModes[CMode]);
 			glTexParameteri(Type, GL_DEPTH_STENCIL_TEXTURE_MODE, DepthReadMode[DRMode]);
+			glTexParameterf(Type, GL_TEXTURE_MAX_ANISOTROPY_EXT, AnisotropyValues[Anisotropy]);
 		}
 
 		Texture->ClearDirty();
@@ -711,11 +713,10 @@ bool LWVideoDriver_OpenGL3_3::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *V
 		LWOpenGL3_3Buffer *B = (LWOpenGL3_3Buffer*)R.m_Resource;
 		if (!B) continue;
 		uint32_t VideoID = B->GetContext();
-		uint32_t BlockID = (uint32_t)(uintptr_t)R.m_VideoContext;
 		LWVideoDriver::UpdateVideoBuffer(B);
 		if(!Update) continue;
 		uint32_t Offset = R.m_Offset*m_UniformBlockSize;
-		glBindBufferRange(GBTypes[B->GetType()], BlockID, VideoID, Offset, B->GetRawLength() - Offset);
+		glBindBufferRange(GBTypes[B->GetType()], R.m_StageBindings, VideoID, Offset, B->GetRawLength() - Offset);
 	}
 
 	for (uint32_t i = 0; i < ResourceCount; i++) {
@@ -725,15 +726,14 @@ bool LWVideoDriver_OpenGL3_3::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *V
 		LWOpenGL3_3Texture *T = (LWOpenGL3_3Texture *)R.m_Resource;
 		LWOpenGL3_3Buffer *B = (LWOpenGL3_3Buffer *)R.m_Resource;
 		uint32_t TypeID = R.GetTypeID();
-		uint32_t VideoID = (uint32_t)(uintptr_t)R.m_VideoContext;
 		if (TypeID == LWPipeline::Texture) {
 			if (!T) continue;
-			glActiveTexture(GL_TEXTURE0 + VideoID);
+			glActiveTexture(GL_TEXTURE0 + R.m_StageBindings);
 			UpdateTexture(T);
 		} else if (TypeID == LWPipeline::ImageBuffer) {
 			if (!B) continue;
 			LWVideoDriver::UpdateVideoBuffer(B);
-			if (Update) glBindBufferBase(GBTypes[B->GetType()], VideoID, B->GetContext());
+			if (Update) glBindBufferBase(GBTypes[B->GetType()], R.m_StageBindings, B->GetContext());
 		}
 	}
 	if (VertexBuffer) {
@@ -743,13 +743,12 @@ bool LWVideoDriver_OpenGL3_3::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *V
 		glBindBuffer(GL_ARRAY_BUFFER, VBuffer->GetContext());
 		for (uint32_t i = 0; i < Pipeline->GetInputCount(); i++) {
 			LWShaderInput &I = Pipeline->GetInput(i);
-			uint32_t VideoID = (uint32_t)(uintptr_t)I.m_VideoContext;
 			int32_t GBaseType = GIBaseType[I.m_Type];
 			int32_t GCompCnt = GIComponentCnt[I.m_Type];
 			if (GBaseType == GL_INT || GBaseType == GL_UNSIGNED_INT) {
-				glVertexAttribIPointer(VideoID, GCompCnt, GBaseType, VertexStride, (void*)(uintptr_t)I.m_Offset);
+				glVertexAttribIPointer(I.m_BindIndex, GCompCnt, GBaseType, VertexStride, (void*)(uintptr_t)I.m_Offset);
 			} else {
-				glVertexAttribPointer(VideoID, GCompCnt, GBaseType, false, VertexStride, (void*)(uintptr_t)I.m_Offset);
+				glVertexAttribPointer(I.m_BindIndex, GCompCnt, GBaseType, false, VertexStride, (void*)(uintptr_t)I.m_Offset);
 			}
 		}
 	}

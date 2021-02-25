@@ -5,7 +5,6 @@
 #include "LWPlatform/LWPlatform.h"
 #include "LWNetwork/LWProtocolManager.h"
 #include <iostream>
-#include <cassert>
 
 const char8_t *LWSocket::ProtocolNames[LWSocket::ProtocolCount] = { u8"https", u8"http", u8"wss", u8"ws", u8"ftp", u8"telnet", u8"ssh" };
 const uint32_t LWSocket::ProtocolPorts[LWSocket::ProtocolCount] = { 443, 80, 443, 80, 20, 23, 22 };
@@ -17,7 +16,7 @@ uint32_t LWSocket::MakeIP(uint8_t First, uint8_t Second, uint8_t Third, uint8_t 
 uint32_t LWSocket::MakeIP(const LWUTF8Iterator &Address) {
 	uint32_t A, B, C, D;
 	if (sscanf(Address(), "%d.%d.%d.%d", &A, &B, &C, &D) != 4) return 0;
-	assert(A >= 0 && A <= 255 && B >= 0 && B <= 255 && C >= 0 && C <= 255 && D >= 0 && D <= 255);
+	LWVerify(A >= 0 && A <= 255 && B >= 0 && B <= 255 && C >= 0 && C <= 255 && D >= 0 && D <= 255);
 	return (A << 24) | (B << 16) | (C << 8) | D;
 }
 

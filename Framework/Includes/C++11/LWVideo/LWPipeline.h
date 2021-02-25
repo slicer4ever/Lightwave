@@ -17,10 +17,10 @@ public:
 		ImageBuffer, /*!< \brief Resource is an unordered buffer.(RWStructureBuffer, shader storage buffer object). */
 		UniformBlock, /*!< \brief Resource is a uniform block. */
 
-		Compute = 0, /*!< \brief compute stage of shader(this should be the only stage for a pipeline, this overrides the vertex shader, and will only configure the shader for compute). */
 		Vertex = 0, /*!< \brief Vertex stage shader. */
 		Geometry, /*!< \brief geometry stage shader. */
 		Pixel, /*!< \brief pixel stage shader. */
+		Compute, /*!< \brief compute stage of shader. */
 		StageCount, /*!< \brief total supported stages. */
 
 		DEPTH_TEST = 0x1, /*!< \brief depth testing is enabled. */

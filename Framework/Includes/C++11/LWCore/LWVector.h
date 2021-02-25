@@ -419,6 +419,14 @@ struct LWVector4{
 		return { x,y,z,z };
 	}
 
+	LWVector4<Type> xyz0(void) const {
+		return { x,y,z,(Type)0 };
+	}
+
+	LWVector4<Type> xyz1(void) const {
+		return { x,y,z,(Type)1 };
+	}
+
 	LWVector4<Type> xywx(void) const {
 		return { x,y,w,x };
 	}

@@ -55,7 +55,7 @@ bool LWGraphemeTable::EvaluateGraphemeRules(uint32_t LeftGraphemeType, uint32_t 
 		//LVT x " "
 		{       true,  true, true,  true,    false,  false, true,  true,    false,   true,  true,  false, true,  true }
 	};
-	assert(LeftGraphemeType < LWGRAPHEME_TYPECOUNT && RightGraphemeType < LWGRAPHEME_TYPECOUNT);
+	LWVerify(LeftGraphemeType < LWGRAPHEME_TYPECOUNT && RightGraphemeType < LWGRAPHEME_TYPECOUNT);
 	return RulesMatrix[LeftGraphemeType][RightGraphemeType];
 }
 

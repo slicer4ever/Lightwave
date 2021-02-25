@@ -1,6 +1,7 @@
 #ifndef LWALLOCATOR_DEFAULTDEBUG_H
 #define LWALLOCATOR_DEFAULTDEBUG_H
 #include "LWCore/LWAllocator.h"
+#include <mutex>
 
 /*! \addtogroup LWAllocator
 @{
@@ -26,6 +27,7 @@ private:
 	virtual void *DeallocateBytes(void *Memory);
 
 	std::atomic<uint32_t> m_NextID;
+	std::mutex m_Lock;
 	uint32_t m_CrashID;
 	void *m_FirstAllocation;
 

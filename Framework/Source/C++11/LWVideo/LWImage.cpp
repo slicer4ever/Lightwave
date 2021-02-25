@@ -245,6 +245,8 @@ bool LWImage::LoadImagePNG(LWImage &Image, const LWUTF8Iterator &FilePath, LWAll
 
 bool LWImage::LoadImagePNG(LWImage &Image, const uint8_t *Buffer, uint32_t BufferLen, LWAllocator &Allocator) {
 	const uint32_t RGB8 = 0xFE;
+	//					PNG_COLOR_TYPE_: _Gray, Pallete(Gray?), RGB,  RGB+Pallete, GRAY_ALPHA, (Gray_Alpha+Palette(Invalid?), RGB_ALPHA, (Color+Alpha+Palette(Invalid?))
+	const uint32_t ColorPackTypes[8] = { R8U,   R8U,            RGB8, RGB8,        RG8U,       RG8U,                          RGBA8U,    RGBA8U };
 	png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
 	if (!png_ptr) return false;
 	png_infop info_ptr = png_create_info_struct(png_ptr);
@@ -273,8 +275,8 @@ bool LWImage::LoadImagePNG(LWImage &Image, const uint8_t *Buffer, uint32_t Buffe
 	png_set_sig_bytes(png_ptr, 0);
 	png_read_info(png_ptr, info_ptr);
 	png_get_IHDR(png_ptr, info_ptr, &Width, &Height, &bit_depth, &color_type, &interlace_type, nullptr, nullptr);
-
-	uint32_t PackType = (color_type&PNG_COLOR_MASK_COLOR) ? ((color_type&PNG_COLOR_MASK_ALPHA) ? RGBA8U : RGB8) : R8;
+	
+	uint32_t PackType = ColorPackTypes[color_type];
 	uint32_t RealPackType = (PackType == RGB8 ? RGBA8U : PackType);
 	if (Height > MaxHeight) {
 		png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
@@ -286,16 +288,16 @@ bool LWImage::LoadImagePNG(LWImage &Image, const uint8_t *Buffer, uint32_t Buffe
 	uint32_t PNGByteSize = PackType == RGB8 ? 3 : GetBitSize(RealPackType) / 8;
 	uint32_t RealByteSize = GetBitSize(RealPackType) / 8;
 
-	uint8_t *Texels = Image.GetTexels(0u) + (Width*Height*RealByteSize) - (Width*Height*PNGByteSize);
-	for (uint32_t i = 0; i < Height; i++) SubTexels[i] = Texels + (i*Width*PNGByteSize);
+	uint8_t *PNGTexels = Image.GetTexels(0u) + (Width*Height*RealByteSize) - (Width*Height*PNGByteSize);
+	for (uint32_t i = 0; i < Height; i++) SubTexels[i] = PNGTexels + (i*Width*PNGByteSize);
 	png_read_image(png_ptr, SubTexels);
 	png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
-	if (RealPackType != PackType) {
+	if (RealPackType != PackType) { //Map RGB8 to RGBA8
 		uint8_t *RealTexels = Image.GetTexels(0u);
 		for (uint32_t i = 0; i < Width*Height; i++) {
-			RealTexels[i * 4 + 0] = Texels[i * 3 + 0];
-			RealTexels[i * 4 + 1] = Texels[i * 3 + 1];
-			RealTexels[i * 4 + 2] = Texels[i * 3 + 2];
+			RealTexels[i * 4 + 0] = PNGTexels[i * 3 + 0];
+			RealTexels[i * 4 + 1] = PNGTexels[i * 3 + 1];
+			RealTexels[i * 4 + 2] = PNGTexels[i * 3 + 2];
 			RealTexels[i * 4 + 3] = 0xFF;
 		}
 	}
@@ -1330,5 +1332,4 @@ LWImage::~LWImage(){
 	uint32_t ImageCnt = (m_MipmapCount + 1);
 	if ((m_Flag&ImageTypeBits) == ImageCubeMap) ImageCnt *= 6;
 	for (uint32_t i = 0; i < ImageCnt; i++) LWAllocator::Destroy(m_Texels[i]);
-
 }

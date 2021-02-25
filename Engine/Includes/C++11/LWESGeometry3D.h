@@ -72,8 +72,13 @@ bool LWERayPlaneIntersect(const LWSVector4<Type> &RayStart, const LWSVector4<Typ
 	//use float epsilon instead of double's.
 	Type d = RayDir.Dot3(Plane);
 	if ((Type)abs(d) < e) return false;
-	if (Dis) *Dis = -(RayStart.Dot3(Plane) - Plane.w()) / d;
+	if (Dis) *Dis = -(RayStart.Dot3(Plane) - Plane.w) / d;
 	return true;
+}
+
+template<class Type>
+bool LWEPointInsideAABB(const LWSVector4<Type> &MinBounds, const LWSVector4<Type> &MaxBounds, const LWSVector4<Type> &Pnt) {
+	return Pnt.x >= MinBounds.x && Pnt.x <= MaxBounds.x && Pnt.y >= MinBounds.y && Pnt.y <= MaxBounds.y && Pnt.z >= MinBounds.z && Pnt.z <= MaxBounds.z;
 }
 
 template<class Type>
@@ -83,7 +88,7 @@ bool LWEAABBIntersect(const LWSVector4<Type> &aAABBMin, const LWSVector4<Type> &
 		LWSVector4<Type> Nrms[6] = { LWSVector4<Type>(-1, 0, 0, 0), LWSVector4<Type>(-1, 0, 0, 0), LWSVector4<Type>(0, -1, 0, 0), LWSVector4<Type>(0, -1, 0, 0), LWVector4<Type>(0, 0, -1, 0), LWVector4<Type>(0, 0, -1, 0) };
 		LWSVector4<Type> A = (aAABBMin - bAABBMax);
 		LWSVector4<Type> B = (aAABBMax - bAABBMin);
-		Type d[6] = { A.x(), B.x(), A.y(), B.y(), A.z(), B.z() };
+		Type d[6] = { A.x, B.x, A.y, B.y, A.z, B.z };
 		uint32_t Low = 0;
 		for (uint32_t i = 1; i < 6; i++) {
 			if ((Type)abs(d[i]) < (Type)(d[Low])) Low = i;
@@ -104,28 +109,26 @@ bool LWEPlanePlaneIntersect(const LWSVector4<Type> &aPlane, const LWSVector4<Typ
 		LWSVector4<Type> Dir = aPlane.Cross3(bPlane).AAAB(LWSVector4<Type>(0));
 		if (IntersectDir) *IntersectDir = Dir;
 		if (IntersectPnt) {
-			LWVector4<Type> vDir = Dir.AsVec4();
-			LWVector4<Type> aDir = vDir.Abs();
-			uint32_t BestDir = aDir.x() > aDir.y() ? (aDir.x() > aDir.z() ? 0 : 3) : (aDir.y() > aDir.z() ? 1 : 2);
+			LWSVector4<Type> iDir = 1.0f / Dir;
+			LWSVector4<Type> aDir = Dir.Abs();
+			uint32_t BestDir = aDir.x > aDir.y ? (aDir.x > aDir.z ? 0 : 2) : (aDir.y > aDir.z ? 1 : 2);
+
 			LWSVector4<Type> baW = bPlane * aPlane.wwww();
 			LWSVector4<Type> abW = aPlane * bPlane.wwww();
 			LWSVector4<Type> ab = abW - baW;
 			LWSVector4<Type> ba = baW - abW;
 			if (BestDir == 0) {
-				Type iX = 1 / vDir.x;
-				ab *= iX;
-				ba *= iX;
-				*IntersectPnt = LWSVector4<Type>(0, ab.z(), ba.y(), 1);
+				ab *= iDir.x;
+				ba *= iDir.x;
+				*IntersectPnt = LWSVector4<Type>(0, ba.z, ab.y, 1);
 			} else if (BestDir == 1) {
-				Type iY = 1 / vDir.y;
-				ab *= iY;
-				ba *= iY;
-				*IntersectPnt = LWSVector4<Type>(ba.z(), 0, ab.x(), 1);
+				ab *= iDir.y;
+				ba *= iDir.y;
+				*IntersectPnt = LWSVector4<Type>(ab.z, 0, ba.x, 1);
 			} else {
-				Type iZ = 1 / vDir.z;
-				ab *= iZ;
-				ba *= iZ;
-				*IntersectPnt = LWSVector4<Type>(ab.y(), ba.x(), 0, 1);
+				ab *= iDir.z;
+				ba *= iDir.z;
+				*IntersectPnt = LWSVector4<Type>(ba.y, ab.x, 0, 1);
 			}
 		}
 	}
@@ -139,7 +142,7 @@ bool LWEPlanePlanePlaneIntersect(const LWSVector4<Type> &aPlane, const LWSVector
 	Type t;
 	if (!LWEPlanePlaneIntersect(aPlane, bPlane, &tPnt, &tDir)) return false;
 	if (!LWERayPlaneIntersect(tPnt, tDir, cPlane, &t)) return false;
-	if (IntersectPoint) *IntersectPoint = tPnt - tDir * t;
+	if (IntersectPoint) *IntersectPoint = tPnt + tDir * t;
 	return true;
 }
 
@@ -258,10 +261,10 @@ bool LWESphereConvexHullIntersect(const LWSVector4<Type> &CircCenterPnt, Type Ra
 /*!< \brief Constructs a new AABB from the transform matrix applied to the passed in aabb's. (If TransformMatrix is not a standard scale/rotation/translation matrix then this method will produce incorrect results.) */
 template<class Type>
 static void LWETransformAABB(const LWSVector4<Type> &AAMin, const LWSVector4<Type> &AAMax, const LWSMatrix4<Type> &TransformMatrix, LWSVector4<Type> &AAMinResult, LWSVector4<Type> &AAMaxResult) {
-	LWSVector4<Type> R0 = TransformMatrix.Row(0);
-	LWSVector4<Type> R1 = TransformMatrix.Row(1);
-	LWSVector4<Type> R2 = TransformMatrix.Row(2);
-	LWSVector4<Type> R3 = TransformMatrix.Row(3);
+	LWSVector4<Type> R0 = TransformMatrix[0];
+	LWSVector4<Type> R1 = TransformMatrix[1];
+	LWSVector4<Type> R2 = TransformMatrix[2];
+	LWSVector4<Type> R3 = TransformMatrix[3];
 
 	LWSVector4<Type> xAxisA = R0 * AAMin.xxxx();
 	LWSVector4<Type> xAxisB = R0 * AAMax.xxxx();
@@ -311,7 +314,7 @@ bool LWEConeInFrustum(const LWSVector4<Type> &Position, const LWSVector4<Type> &
 		Type mq = Q.AAAB(LWSVector4<Type>(1)).Dot(Plane);
 		return mq >= 0 || md >= 0;
 	};
-	LWSVector4<Type> P = (Position - FrustumPosition).AAAB(LWSVector4<Type>(1));
+	LWSVector4<Type> P = (Position - FrustumPosition).xyz1();
 	Type Radi = (Type)tan(Theta) * Length;
 	for (uint32_t i = 0; i < 6; i++) {
 		if (!ConeInPlane(Frustum[i], P, Direction, Length, Radi)) return false;

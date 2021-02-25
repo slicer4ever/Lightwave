@@ -11,19 +11,27 @@
 template<class Type>
 struct ViewArray {
 	static const uint32_t MaxViews = 32;
-	Type *m_Views[MaxViews];
-	uint32_t m_First[MaxViews];
-	uint32_t m_Length[MaxViews];
+	Type *m_Views[MaxViews] = {};
+	uint32_t m_First[MaxViews] = {};
+	uint32_t m_Length[MaxViews] = {};
 	uint32_t m_Count;
 
-	static bool PushLists(Type *View, uint32_t First, uint32_t Length, uint32_t Flag, ViewArray<Type> &VertexList, ViewArray<Type> &GeomList, ViewArray<Type> &PixelList, ViewArray<Type> &ComputeList) {
-		if (Flag&LWShaderResource::VertexStage) VertexList.Push(View, First, Length);
-		if (Flag&LWShaderResource::GeometryStage) GeomList.Push(View, First, Length);
-		if (Flag&LWShaderResource::PixelStage) PixelList.Push(View, First, Length);
-		if (Flag&LWShaderResource::ComputeStage) ComputeList.Push(View, First, Length);
+	static bool SetLists(LWShaderResource &Source, Type *View, uint32_t First, uint32_t Length, ViewArray<Type> &VertexList, ViewArray<Type> &GeomList, ViewArray<Type> &PixelList, ViewArray<Type> &ComputeList) {
+		if (Source.hasVertexStage()) VertexList.Set(Source.GetVertexStageBinding(), View, First, Length);
+		if (Source.hasGeometryStage()) GeomList.Set(Source.GetGeometryStageBinding(), View, First, Length);
+		if (Source.hasPixelStage()) PixelList.Set(Source.GetPixelStageBinding(), View, First, Length);
+		if (Source.hasComputeStage()) ComputeList.Set(Source.GetComputeStageBinding(), View, First, Length);
 		return true;
 	};
 
+	static bool PushLists(LWShaderResource &Source, Type *View, uint32_t First, uint32_t Length, ViewArray<Type> &VertexList, ViewArray<Type> &GeomList, ViewArray<Type> &PixelList, ViewArray<Type> &ComputeList) {
+		if (Source.hasVertexStage()) VertexList.Push(View, First, Length);
+		if (Source.hasGeometryStage()) GeomList.Push(View, First, Length);
+		if (Source.hasPixelStage()) PixelList.Push(View, First, Length);
+		if (Source.hasComputeStage()) ComputeList.Push(View, First, Length);
+		return true;
+	};
+	
 	bool Push(Type *View, uint32_t First, uint32_t Length) {
 		if (m_Count >= MaxViews) return false;
 		m_Views[m_Count] = View;
@@ -31,10 +39,24 @@ struct ViewArray {
 		m_Length[m_Count] = Length;
 		m_Count++;
 		return true;
-	}
+	};
+
+	bool Set(uint32_t Idx, Type *View, uint32_t First, uint32_t Length) {
+		if (Idx >= MaxViews) return false;
+		m_Views[Idx] = View;
+		m_First[Idx] = First;
+		m_Length[Idx] = Length;
+		m_Count = std::max<uint32_t>(Idx + 1, m_Count);
+		return true;	
+	};
 
 	void Fill(uint32_t TotalCount, Type *Value, uint32_t First, uint32_t Length) {
-		while (m_Count < TotalCount) Push(Value, First, Length);
+		while (m_Count < TotalCount) {
+			m_Views[m_Count] = Value;
+			m_First[m_Count] = First;
+			m_Length[m_Count] = Length;
+			m_Count++;
+		}
 		return;
 	}
 
@@ -50,7 +72,7 @@ LWVideoDriver &LWVideoDriver_DirectX11_1::ViewPort(const LWVector4i &Viewport) {
 
 LWShader *LWVideoDriver_DirectX11_1::CreateShader(uint32_t ShaderType, const LWUTF8Iterator &Source, LWAllocator &Allocator, char *CompiledBuffer, char8_t *ErrorBuffer, uint32_t &CompiledBufferLen, uint32_t ErrorBufferLen) {
 	const uint32_t ShaderCnt = 4;
-	const char *CompileModes[ShaderCnt] = { "vs_5_0", "ps_5_0", "gs_5_0", "cs_5_0" };
+	const char *CompileModes[ShaderCnt] = { "vs_5_0", "gs_5_0", "ps_5_0", "cs_5_0" };
 	uint32_t CompileFlag = D3D10_SHADER_ENABLE_STRICTNESS;
 #if _DEBUG
 	CompileFlag |= D3DCOMPILE_DEBUG;
@@ -148,7 +170,6 @@ LWShader *LWVideoDriver_DirectX11_1::CreateShaderCompiled(uint32_t ShaderType, c
 	return Allocator.Create<LWDirectX11_1Shader>(Context, LWCrypto::HashFNV1A((const uint8_t*)CompiledCode, CompiledLen), ShaderType);
 }
 
-
 LWPipeline *LWVideoDriver_DirectX11_1::CreatePipeline(LWPipeline *Source, LWAllocator &Allocator) {
 	LWDirectX11_1PipelineContext Context;
 	LWShaderResource ResourceList[LWShader::MaxResources];
@@ -159,32 +180,27 @@ LWPipeline *LWVideoDriver_DirectX11_1::CreatePipeline(LWPipeline *Source, LWAllo
 	uint32_t BlockCount = 0;
 	uint32_t InputCount = 0;
 
-	auto ForceInsertResource = [](uint32_t ShaderStage, LWDirectX11_1ShaderResource &Resource, LWShaderResource *List, uint32_t &ListCnt) {
-		List[ListCnt++] = LWShaderResource(Resource.m_Name, ShaderStage, Resource.m_Type, Resource.m_Length);
-		return;
-	};
-
-	auto InsertResource = [](uint32_t ShaderStage, LWDirectX11_1ShaderResource &Resource, LWShaderResource *List, uint32_t &ListCnt) {
-		for (uint32_t i = 0; i < ListCnt; i++) {
-			if (List[i].m_NameHash == Resource.m_Name) {
-				List[i].m_Flag |= ShaderStage;
-				return;
+	auto InsertResource = [](uint32_t StageID, uint32_t StageBindIdx, LWDirectX11_1ShaderResource &Resource, LWShaderResource *List, uint32_t &ListCnt, bool FirstStage = false) {
+		if (!FirstStage) { //First stage will not have duplicates, so no need to check resource's overlapping.
+			for (uint32_t i = 0; i < ListCnt; i++) {
+				if (List[i].m_NameHash == Resource.m_Name) {
+					List[i].SetStageBinding(StageID, StageBindIdx);
+					return;
+				}
 			}
 		}
-		List[ListCnt++] = LWShaderResource(Resource.m_Name, ShaderStage, Resource.m_Type, Resource.m_Length);
+		List[ListCnt++] = LWShaderResource(Resource.m_Name, Resource.m_Type, Resource.m_Length, StageID, StageBindIdx);
 		return;
 	};
 
-	auto MergeStage = [&ResourceList, &BlockList, &ResourceCount, &BlockCount, &InsertResource](LWDirectX11_1ShaderContext &StageContext, uint32_t StageFlag)->void {
-		for (uint32_t i = 0; i < StageContext.m_BlockCount; i++) InsertResource(StageFlag, StageContext.m_BlockList[i], BlockList, BlockCount);
-		for (uint32_t i = 0; i < StageContext.m_ResourceCount; i++) InsertResource(StageFlag, StageContext.m_ResourceList[i], ResourceList, ResourceCount);
+	auto MergeStage = [&ResourceList, &BlockList, &ResourceCount, &BlockCount, &InsertResource](LWDirectX11_1ShaderContext &StageContext, uint32_t StageID, bool FirstStage = false)->void {
+		for (uint32_t i = 0; i < StageContext.m_BlockCount; i++) InsertResource(StageID, i, StageContext.m_BlockList[i], BlockList, BlockCount);
+		for (uint32_t i = 0; i < StageContext.m_ResourceCount; i++) InsertResource(StageID, i, StageContext.m_ResourceList[i], ResourceList, ResourceCount);
 		return;
 	};
 	if (Source->isComputePipeline()) {
 		LWDirectX11_1ShaderContext &CContext = ((LWDirectX11_1Shader*)StageList[LWPipeline::Compute])->GetContext();
-
-		for (uint32_t i = 0; i < CContext.m_BlockCount; i++) ForceInsertResource(LWShaderResource::ComputeStage, CContext.m_BlockList[i], BlockList, BlockCount);
-		for (uint32_t i = 0; i < CContext.m_ResourceCount; i++) ForceInsertResource(LWShaderResource::ComputeStage, CContext.m_ResourceList[i], ResourceList, ResourceCount);
+		MergeStage(CContext, LWShader::Compute, true);
 		Context.m_ComputeShader = CContext.m_ComputeShader;
 		Context.m_ComputeShader->AddRef();
 		return Allocator.Create<LWDirectX11_1Pipeline>(Context, StageList, BlockList, ResourceList, nullptr, BlockCount, ResourceCount, 0, LWPipeline::InternalPipeline|LWPipeline::ComputePipeline);
@@ -196,7 +212,7 @@ LWPipeline *LWVideoDriver_DirectX11_1::CreatePipeline(LWPipeline *Source, LWAllo
 			InputList[i] = LWShaderInput(In.m_Name, In.m_Type, In.m_Length);
 		}
 		InputCount = VContext.m_InputCount;
-		MergeStage(VContext, LWShaderResource::VertexStage);
+		MergeStage(VContext, LWShader::Vertex, true);
 		Context.m_VertexShader = VContext.m_VertexShader;
 		Context.m_InputLayout = VContext.m_InputLayout;
 		Context.m_VertexShader->AddRef();
@@ -204,19 +220,18 @@ LWPipeline *LWVideoDriver_DirectX11_1::CreatePipeline(LWPipeline *Source, LWAllo
 	}
 	if (StageList[LWPipeline::Geometry]) {
 		LWDirectX11_1ShaderContext &GContext = ((LWDirectX11_1Shader*)StageList[LWPipeline::Geometry])->GetContext();
-		MergeStage(GContext, LWShaderResource::GeometryStage);
+		MergeStage(GContext, LWShader::Geometry);
 		Context.m_GeometryShader = GContext.m_GeometryShader;
 		Context.m_GeometryShader->AddRef();
 	}
 	if (StageList[LWPipeline::Pixel]) {
 		LWDirectX11_1ShaderContext &PContext = ((LWDirectX11_1Shader*)StageList[LWPipeline::Pixel])->GetContext();
-		MergeStage(PContext, LWShaderResource::PixelStage);
+		MergeStage(PContext, LWShader::Pixel);
 		Context.m_PixelShader = PContext.m_PixelShader;
 		Context.m_PixelShader->AddRef();
 	}
 	return Allocator.Create<LWDirectX11_1Pipeline>(Context, StageList, BlockList, ResourceList, InputList, BlockCount, ResourceCount, InputCount, LWPipeline::InternalPipeline);
 }
-
 
 LWVideoDriver &LWVideoDriver_DirectX11_1::ClonePipeline(LWPipeline *Target, LWPipeline *Source) {
 	LWVideoDriver::ClonePipeline(Target, Source);
@@ -392,7 +407,6 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeMap(uint32_t TextureState
 	return Allocator.Create<LWDirectX11_1Texture>(Context, TextureState, PackType, MakeMipmaps ? LWImage::MipmapCount(Size) : MipmapCnt, LWVector3i(Size, 0), LWTexture::TextureCubeMap);
 }
 
-
 LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DMS(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, LWAllocator &Allocator) {
 	//PackTypes:                   RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                          Depth32,                  Depth24Stencil8,                   DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
 	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
@@ -556,7 +570,6 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeArray(uint32_t TextureSta
 
 }
 
-
 LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DMSArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, uint32_t Layers, LWAllocator &Allocator) {
 	//PackTypes:                   RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                          Depth32,                  Depth24Stencil8,                   DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
 	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
@@ -635,9 +648,10 @@ bool LWVideoDriver_DirectX11_1::UpdateTexture(LWTexture *Texture) {
 	D3D11_FILTER DXCompareFuncs[] = { D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT, D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT, D3D11_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR, D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR, D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT, D3D11_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT,	D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, D3D11_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT, D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, D3D11_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR, D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR };
 	D3D11_COMPARISON_FUNC DXCompareModes[] = { D3D11_COMPARISON_NEVER, D3D11_COMPARISON_ALWAYS, D3D11_COMPARISON_LESS, D3D11_COMPARISON_EQUAL, D3D11_COMPARISON_LESS_EQUAL, D3D11_COMPARISON_GREATER, D3D11_COMPARISON_GREATER_EQUAL, D3D11_COMPARISON_NOT_EQUAL };
 	D3D11_TEXTURE_ADDRESS_MODE DXWrapModes[] = { D3D11_TEXTURE_ADDRESS_CLAMP, D3D11_TEXTURE_ADDRESS_BORDER, D3D11_TEXTURE_ADDRESS_MIRROR, D3D11_TEXTURE_ADDRESS_WRAP };
+	int32_t DAnisotropyValues[] = { 1,2,4,8,16 };
 	if (!Texture->isDirty()) return false;
 	uint32_t TextureState = Texture->GetTextureState();
-	uint32_t SamplerHash = (TextureState & (LWTexture::MinFilterFlag | LWTexture::MagFilterFlag | LWTexture::WrapSFilterFlag | LWTexture::WrapTFilterFlag | LWTexture::WrapRFilterFlag | LWTexture::CompareFuncFlag | LWTexture::CompareModeFlag | LWTexture::DepthReadFlag));
+	uint32_t SamplerHash = (TextureState & (LWTexture::MinFilterFlag | LWTexture::MagFilterFlag | LWTexture::WrapSFilterFlag | LWTexture::WrapTFilterFlag | LWTexture::WrapRFilterFlag | LWTexture::CompareFuncFlag | LWTexture::CompareModeFlag | LWTexture::DepthReadFlag | LWTexture::AnisotropyFlag));
 	bool MakeMips = (TextureState & LWTexture::MakeMipmaps)!=0;
 
 	auto Iter = m_Context.m_SamplerMap.find(SamplerHash);
@@ -650,16 +664,18 @@ bool LWVideoDriver_DirectX11_1::UpdateTexture(LWTexture *Texture) {
 		uint32_t WrapR = (TextureState&LWTexture::WrapRFilterFlag) >> LWTexture::WrapRFilterBitOffset;
 		uint32_t CFunc = (TextureState&LWTexture::CompareFuncFlag) >> LWTexture::CompareFuncBitOffset;
 		uint32_t CMode = (TextureState&LWTexture::CompareModeFlag) >> LWTexture::CompareModeBitOffset;
+		uint32_t Anisotropy = (TextureState & LWTexture::AnisotropyFlag) >> LWTexture::AnisotropyBitOffset;
 
 		D3D11_SAMPLER_DESC SamplerDesc;
 		SamplerDesc.Filter = CMode ? DXCompareFuncs[Filter] : DXFilters[Filter];
+		if (Anisotropy) SamplerDesc.Filter = CMode ? D3D11_FILTER_COMPARISON_ANISOTROPIC : D3D11_FILTER_ANISOTROPIC;
 		SamplerDesc.AddressU = DXWrapModes[WrapS];
 		SamplerDesc.AddressV = DXWrapModes[WrapT];
 		SamplerDesc.AddressW = DXWrapModes[WrapR];
 		SamplerDesc.MinLOD = -FLT_MAX;
 		SamplerDesc.MaxLOD = FLT_MAX;
 		SamplerDesc.MipLODBias = 0.0f;
-		SamplerDesc.MaxAnisotropy = 1;
+		SamplerDesc.MaxAnisotropy = DAnisotropyValues[Anisotropy];
 		SamplerDesc.ComparisonFunc = DXCompareModes[CFunc];
 		SamplerDesc.BorderColor[0] = SamplerDesc.BorderColor[1] = SamplerDesc.BorderColor[2] = SamplerDesc.BorderColor[3] = 1.0f;
 		if (FAILED(m_Context.m_DXDevice->CreateSamplerState(&SamplerDesc, &SampleState))) {
@@ -1040,7 +1056,7 @@ bool LWVideoDriver_DirectX11_1::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer 
 			Buf = VB->GetContext().m_Buffer;
 			LWVideoDriver::UpdateVideoBuffer(VB);
 		}
-		ViewArray<ID3D11Buffer>::PushLists(Buf, BufOffset, BufLen, Block.m_Flag, VertexConstantViews, GeomConstantViews, PixelConstantViews, ComputeConstantViews);
+		ViewArray<ID3D11Buffer>::SetLists(Block, Buf, BufOffset, BufLen, VertexConstantViews, GeomConstantViews, PixelConstantViews, ComputeConstantViews);
 	}
 	for (uint32_t i = 0; i < ResourceCnt; i++) {
 		LWShaderResource &Resrc = Pipeline->GetResource(i);
@@ -1063,13 +1079,14 @@ bool LWVideoDriver_DirectX11_1::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer 
 			UView = BufCon.m_UView;
 		}
 		if (TypeID == LWPipeline::Texture) {
-			ViewArray<ID3D11SamplerState>::PushLists(Sampler, 0, 0, Resrc.m_Flag, VertexSamplerViews, GeomSamplerViews, PixelSamplerViews, ComputeSamplerViews);
-			ViewArray<ID3D11ShaderResourceView>::PushLists(SView, 0, 0, Resrc.m_Flag, VertexResourceViews, GeomResourceViews, PixelResourceViews, ComputeResourceViews);
+			ViewArray<ID3D11SamplerState>::PushLists(Resrc, Sampler, 0, 0, VertexSamplerViews, GeomSamplerViews, PixelSamplerViews, ComputeSamplerViews);
+			//This is a hack for how sampler's+texture's work.  future work needs to be done to ensure samplers are correctly bound to the right index.
+			ViewArray<ID3D11ShaderResourceView>::SetLists(Resrc, SView, 0, 0, VertexResourceViews, GeomResourceViews, PixelResourceViews, ComputeResourceViews);
 		} else if (TypeID == LWPipeline::TextureBuffer) {
-			ViewArray<ID3D11ShaderResourceView>::PushLists(SView, 0, 0, Resrc.m_Flag, VertexResourceViews, GeomResourceViews, PixelResourceViews, ComputeResourceViews);
+			ViewArray<ID3D11ShaderResourceView>::SetLists(Resrc, SView, 0, 0, VertexResourceViews, GeomResourceViews, PixelResourceViews, ComputeResourceViews);
 		} else {
-			if (Resrc.m_Flag&LWShaderResource::ComputeStage) ComputeUAVViews.Push(UView, 0, 0);
-			else ViewArray<ID3D11ShaderResourceView>::PushLists(SView, 0, 0, Resrc.m_Flag, VertexResourceViews, GeomResourceViews, PixelResourceViews, ComputeResourceViews);
+			if (Resrc.hasComputeStage()) ComputeUAVViews.Set(Resrc.GetComputeStageBinding(), UView, 0, 0);
+			else ViewArray<ID3D11ShaderResourceView>::SetLists(Resrc, SView, 0, 0, VertexResourceViews, GeomResourceViews, PixelResourceViews, ComputeResourceViews);
 		}
 	}
 	if (VertexBuffer) {

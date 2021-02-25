@@ -1,6 +1,5 @@
 #include "LWCore/LWAllocators/LWAllocator_DefaultDebug.h"
 #include <iostream>
-#include <cassert>
 
 /*! \cond */
 struct alignas(16) LWAllocatorEnvironmentDebug {
@@ -44,9 +43,10 @@ LWAllocator_DefaultDebug::~LWAllocator_DefaultDebug() {}
 void *LWAllocator_DefaultDebug::AllocateMemory(uint32_t Length) {
 	void *Memory = AllocateBytes(Length + sizeof(LWAllocatorEnvironmentDebug));
 	if (!Memory) return nullptr;
+	m_Lock.lock();
 	LWAllocatorEnvironmentDebug *Env = (LWAllocatorEnvironmentDebug*)Memory;
 	Env->m_AllocID = m_NextID.fetch_add(1);
-	assert(Env->m_AllocID != m_CrashID);
+	LWVerify(Env->m_AllocID != m_CrashID);
 
 	Env->m_NextAlloc = m_FirstAllocation;
 	Env->m_PrevAlloc = nullptr;
@@ -55,17 +55,22 @@ void *LWAllocator_DefaultDebug::AllocateMemory(uint32_t Length) {
 
 	Env->m_Allocator = this;
 	Env->m_Size = Length;
-	m_AllocatedBytes += (Length + sizeof(LWAllocatorEnvironmentDebug));
+	m_AllocatedBytes.fetch_add(Length + sizeof(LWAllocatorEnvironmentDebug));
+	m_Lock.unlock();
 	return ((int8_t*)Memory) + sizeof(LWAllocatorEnvironmentDebug);
 }
 
 void *LWAllocator_DefaultDebug::DeallocateMemory(void *Memory) {
+	m_Lock.lock();
 	LWAllocatorEnvironmentDebug *Env = LWAllocator::GetEnvironment<LWAllocatorEnvironmentDebug>(Memory);
-	
-	if (Env->m_NextAlloc) ((LWAllocatorEnvironmentDebug*)Env->m_NextAlloc)->m_PrevAlloc = Env->m_PrevAlloc;
-	if (Env->m_PrevAlloc) ((LWAllocatorEnvironmentDebug*)Env->m_PrevAlloc)->m_NextAlloc = Env->m_NextAlloc;
-	if (Env == m_FirstAllocation) m_FirstAllocation = Env->m_NextAlloc;
-	m_AllocatedBytes -= (Env->m_Size + sizeof(LWAllocatorEnvironmentDebug));
+	LWAllocatorEnvironmentDebug *NextEnv = (LWAllocatorEnvironmentDebug*)Env->m_NextAlloc;
+	LWAllocatorEnvironmentDebug *PrevEnv = (LWAllocatorEnvironmentDebug*)Env->m_PrevAlloc;
+
+	if (NextEnv) NextEnv->m_PrevAlloc = Env->m_PrevAlloc;
+	if (PrevEnv) PrevEnv->m_NextAlloc = Env->m_NextAlloc;
+	if (Env == m_FirstAllocation) m_FirstAllocation = NextEnv;
+	m_AllocatedBytes.fetch_sub(Env->m_Size + sizeof(LWAllocatorEnvironmentDebug));
+	m_Lock.unlock();
 	return DeallocateBytes(Env);
 }
 

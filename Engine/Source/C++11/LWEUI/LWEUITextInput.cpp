@@ -70,7 +70,7 @@ uint32_t LWETextLine::Insert(const LWUTF8Iterator &Pos, uint32_t Char) {
 uint32_t LWETextLine::Erase(const LWUTF8Iterator &Begin, const LWUTF8Iterator &End) {
 	const char8_t *bP = Begin();
 	const char8_t *eP = End();
-	assert(bP >= m_Value && bP <= m_Value + m_RawLength && eP >= m_Value && eP <= m_Value + m_RawLength);
+	LWVerify(bP >= m_Value && bP <= m_Value + m_RawLength && eP >= m_Value && eP <= m_Value + m_RawLength);
 	if (eP < bP) return Erase(End, Begin);
 	uint32_t bIndex = Begin.RawIndex();
 	uint32_t eIndex = End.RawIndex();

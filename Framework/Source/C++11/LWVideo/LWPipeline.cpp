@@ -269,13 +269,13 @@ LWPipeline &LWPipeline::ClonePipeline(LWPipeline *Pipe) {
 	for (uint32_t i = 0; i < m_BlockCount; i++) {
 		m_BlockList[i].m_NameHash = BlockList[i].m_NameHash;
 		m_BlockList[i].m_Flag = BlockList[i].m_Flag;
-		m_BlockList[i].m_VideoContext = BlockList[i].m_VideoContext;
+		m_BlockList[i].m_StageBindings = BlockList[i].m_StageBindings;
 	}
 	std::copy(ResourceMap, ResourceMap + LWShader::MaxResources, m_ResourceMap);
 	for (uint32_t i = 0; i < m_ResourceCount; i++) {
 		m_ResourceList[i].m_NameHash = ResourceList[i].m_NameHash;
 		m_ResourceList[i].m_Flag = ResourceList[i].m_Flag;
-		m_ResourceList[i].m_VideoContext = ResourceList[i].m_VideoContext;
+		m_ResourceList[i].m_StageBindings = ResourceList[i].m_StageBindings;
 	}
 	std::copy(BlockMap, BlockMap + LWShader::MaxBlocks, m_BlockMap);
 	return *this;

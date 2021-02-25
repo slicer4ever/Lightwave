@@ -349,7 +349,7 @@ LWShader *LWVideoDriver::ParseShader(uint32_t ShaderType, const LWUTF8Iterator &
 	const uint32_t BufferSize = 16 * 1024;
 	char Buffer[BufferSize];
 	char *DriverNames[] = LWVIDEODRIVER_NAMES;
-	char *ModuleNames[] = { "Vertex", "Pixel", "Geometry", "Compute" };
+	char *ModuleNames[] = { "Vertex", "Geometry", "Pixel", "Compute" };
 	uint32_t DriverID = GetDriverID();
 	uint32_t Len = FindModule(Source, DriverNames[DriverID], ModuleNames[ShaderType], DefinedCount, DefinedList, Buffer, BufferSize);
 	if (!Len) return nullptr;

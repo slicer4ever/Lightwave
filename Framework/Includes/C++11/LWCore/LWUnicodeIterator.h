@@ -3,7 +3,6 @@
 #include "LWCore/LWTypes.h"
 #include "LWCore/LWCrypto.h"
 #include <iostream>
-#include <cassert>
 #include <cstdarg>
 
 /*!< \brief Unicode UTF iterator, iterates over codepoints for utf-8, utf-16, and utf-32.  String should be validated first with Create, otherwise if constructed directly the application must ensure the utf is valid.  utf-8 is specialized as char8_t, utf-16 is char16_t, and utf-32 is char32_t.  no other specializations were created. */
@@ -252,7 +251,7 @@ public:
 		Type *Last = Buffer + std::min<uint32_t>(BufferSize, BufferSize-1);
 		const Type *P = m_Position;
 		const Type *OP = Other.m_Position;
-		assert(Other.m_Position >= m_First && Other.m_Position <= m_Last);
+		LWVerify(Other.m_Position >= m_First && Other.m_Position <= m_Last);
 		for (; P != OP; P++, o++) {
 			if (Buffer < Last) *Buffer++ = *P;
 		}
@@ -1014,6 +1013,11 @@ public:
 	template<std::size_t Len>
 	C_View<Len> c_str(void) const {
 		return C_View<Len>(*this);
+	}
+
+	/*!< \brief returns a c_str view of this iterator, note that using this method the program must guarantee the iterator is null terminated, as well the position is not checked against Last so the contents will be read upto the end of the buffer that iterator is pointing to. */
+	const char *c_str(void) const {
+		return (const char*)m_Position;
 	}
 
 	/*!< \brief returns the raw length remaining from position to Last. does not indicate actual number of characters the iterator has to end. */

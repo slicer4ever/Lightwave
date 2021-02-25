@@ -129,21 +129,6 @@ public:
 		return o;
 	}
 
-	/*
-	float GetValue(float Time, float DefValue) const {
-		auto N = std::lower_bound(m_Frames.begin(), m_Frames.end(), Time);
-		if (N == m_Frames.end()) {
-			if (m_Frames.size() == 0) return DefValue;
-			--N;
-			return (*N).m_Value;
-		} else if (N == m_Frames.begin()) return (*N).m_Value;
-		auto C = N - 1;
-		float Len = (*N).m_Time - (*C).m_Time;
-		float Diff = (*N).m_Value - (*C).m_Value;
-		float d = (Time - (*C).m_Time) / Len;
-		return (*C).m_Value + Diff * d;
-	}*/
-
 	Type GetValue(float Time, const Type DefValue = Type()) const {
 		auto RFrame = std::lower_bound(m_Frames.begin(), m_Frames.end(), Time);
 		if (RFrame == m_Frames.end()) {

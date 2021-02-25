@@ -52,7 +52,6 @@ bool LWEGLTFBuffer::ParseJSON(LWEGLTFBuffer &Buf, LWEJson &J, LWEJObject *Obj, L
 		}
 		Length = JByteLength->AsInt();
 		Buffer = Allocator.Allocate<uint8_t>(Length);
-		//assert(false);
 		std::copy(BinChunk, BinChunk + Length, Buffer);
 	} else {
 		uint32_t EmbedHash = LWCrypto::HashFNV1A((uint8_t*)JURI->m_Value, 5);

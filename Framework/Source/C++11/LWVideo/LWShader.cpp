@@ -2,27 +2,110 @@
 #include "LWCore/LWUnicode.h"
 #include <cstdarg>
 
-
+//LWShaderInput:
 LWShaderInput::LWShaderInput(const LWUTF8Iterator &Name, uint32_t Type, uint32_t Length) : m_NameHash(Name.Hash()), m_Type(Type), m_Length(Length) {}
 
 LWShaderInput::LWShaderInput(uint32_t NameHash, uint32_t Type, uint32_t Length) : m_NameHash(NameHash), m_Type(Type), m_Length(Length) {}
 
-uint32_t LWShaderResource::GetTypeID(void) {
-	return (m_Flag&TypeBits) >> TypeBitOffset;
+//LWShaderResource:
+LWShaderResource &LWShaderResource::SetStageBinding(uint32_t StageID, uint32_t Idx) {
+	uint32_t StageBits = VertexBindingBits << (StageID * BindingBitCount);
+	m_StageBindings = (m_StageBindings & ~StageBits) | (Idx << (StageID * BindingBitCount));
+	m_Flag |= (VertexStage << StageID);
+	return *this;
 }
 
-uint32_t LWShaderResource::GetLength(void) {
-	return (m_Flag&LengthBits) >> LengthBitOffset;
+LWShaderResource &LWShaderResource::SetVertexStageBinding(uint32_t Idx) {
+	m_StageBindings = LWBitFieldSet(VertexBinding, m_StageBindings, Idx);
+	m_Flag |= VertexStage;
+	return *this;
 }
 
-LWShaderResource::LWShaderResource(const LWUTF8Iterator &Name, uint32_t Flag, uint32_t Type, uint32_t Length) : m_NameHash(Name.Hash()) {
-	m_Flag = Flag | (Type << TypeBitOffset) | (Length << LengthBitOffset);
+LWShaderResource &LWShaderResource::SetComputeStageBinding(uint32_t Idx) {
+	m_StageBindings = LWBitFieldSet(ComputeBinding, m_StageBindings, Idx);
+	m_Flag |= ComputeStage;
+	return *this;
 }
 
-LWShaderResource::LWShaderResource(uint32_t NameHash, uint32_t Flag, uint32_t Type, uint32_t Length) : m_NameHash(NameHash) {
-	m_Flag = Flag | (Type << TypeBitOffset) | (Length << LengthBitOffset);
+LWShaderResource &LWShaderResource::SetPixelStageBinding(uint32_t Idx) {
+	m_StageBindings = LWBitFieldSet(PixelBinding, m_StageBindings, Idx);
+	m_Flag |= PixelStage;
+	return *this;
 }
 
+LWShaderResource &LWShaderResource::SetGeometryStageBinding(uint32_t Idx) {
+	m_StageBindings = LWBitFieldSet(GeometryBinding, m_StageBindings, Idx);
+	m_Flag |= GeometryStage;
+	return *this;
+}
+
+uint32_t LWShaderResource::GetTypeID(void) const {
+	return LWBitFieldGet(Type, m_Flag);
+}
+
+uint32_t LWShaderResource::GetLength(void) const {
+	return LWBitFieldGet(Length, m_Flag);
+}
+
+uint32_t LWShaderResource::GetStageBinding(uint32_t StageID) const {
+	uint32_t StageBits = VertexBindingBits << (StageID * BindingBitCount);
+	return (m_StageBindings & StageBits) >> (StageID * BindingBitCount);
+}
+
+uint32_t LWShaderResource::GetVertexStageBinding(void) const {
+	return LWBitFieldGet(VertexBinding, m_StageBindings);
+}
+
+uint32_t LWShaderResource::GetComputeStageBinding(void) const {
+	return LWBitFieldGet(ComputeBinding, m_StageBindings);
+}
+
+uint32_t LWShaderResource::GetPixelStageBinding(void) const {
+	return LWBitFieldGet(PixelBinding, m_StageBindings);
+}
+
+uint32_t LWShaderResource::GetGeometryStageBinding(void) const {
+	return LWBitFieldGet(GeometryBinding, m_StageBindings);
+}
+
+bool LWShaderResource::HasStage(uint32_t StageID) const {
+	return (m_Flag & (VertexStage << StageID)) != 0;
+}
+
+bool LWShaderResource::hasVertexStage(void) const {
+	return (m_Flag & VertexStage) != 0;
+}
+
+bool LWShaderResource::hasComputeStage(void) const {
+	return (m_Flag & ComputeStage) != 0;
+}
+
+bool LWShaderResource::hasPixelStage(void) const {
+	return (m_Flag & PixelStage) != 0;
+}
+
+bool LWShaderResource::hasGeometryStage(void) const {
+	return (m_Flag & GeometryStage) != 0;
+}
+
+LWShaderResource::LWShaderResource(const LWUTF8Iterator &Name, uint32_t Type, uint32_t Length) : m_NameHash(Name.Hash()) {
+	m_Flag = (Type << TypeBitsOffset) | (Length << LengthBitsOffset);
+}
+
+LWShaderResource::LWShaderResource(uint32_t NameHash, uint32_t Type, uint32_t Length) : m_NameHash(NameHash) {
+	m_Flag = (Type << TypeBitsOffset) | (Length << LengthBitsOffset);
+}
+
+LWShaderResource::LWShaderResource(uint32_t NameHash, uint32_t Type, uint32_t Length, uint32_t StageID, uint32_t StageBindIdx) : m_NameHash(NameHash) {
+	m_Flag = (Type << TypeBitsOffset) | (Length << LengthBitsOffset);
+	SetStageBinding(StageID, StageBindIdx);
+}
+
+LWShaderResource::LWShaderResource(uint32_t NameHash, uint32_t Type, uint32_t Length, uint32_t StageBindIdx) : m_NameHash(NameHash), m_StageBindings(StageBindIdx) {
+	m_Flag = (Type << TypeBitsOffset) | (Length << LengthBitsOffset);
+}
+
+//LWShader:
 uint32_t LWShader::GenerateInputOffsets(uint32_t Count, LWShaderInput *InputMap) {
 	//	                           Float, UInt, Int, Double, Vec2, Vec3, Vec4, uvec2, uvec3, uvec4, iVec2, iVec3, iVec4, dVec2, dVec3, dVec4
 	const uint32_t TypeSizes[] = { 4,     4,    4,   8,      8,    12,   16,   8,     12,    16,    8,     12,    16,    16,    24,    32 };

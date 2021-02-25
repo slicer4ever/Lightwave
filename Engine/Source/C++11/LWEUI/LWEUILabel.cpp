@@ -72,8 +72,9 @@ LWEUI &LWEUILabel::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float Scal
 	LWVector2f Pos = VisiblePos - LWVector2f(0.0f, m_UnderHang * Scale);
 	if (VertAlign == LabelVCenterAligned) Pos.y += (VisibleSize.y - TSize.y)*0.5f;
 	else if (VertAlign == LabelTopAligned) Pos.y += (VisibleSize.y - TSize.y);
+	LWVector4f Color = m_Material ? m_Material->m_ColorA : LWVector4f(1.0f);
 
-	if (HoriAlign == LabelLeftAligned) m_Font->DrawTextm(m_Text.beginGrapheme(), Pos, m_FontScale*Scale, m_Material->m_ColorA, &Frame, &LWEUIFrame::WriteFontGlyph);
+	if (HoriAlign == LabelLeftAligned) m_Font->DrawTextm(m_Text.beginGrapheme(), Pos, m_FontScale*Scale, Color, &Frame, &LWEUIFrame::WriteFontGlyph);
 	else {
 		LWUTF8GraphemeIterator C = m_Text.beginGrapheme();
 		LWUTF8GraphemeIterator N = C.NextLine();
@@ -84,7 +85,7 @@ LWEUI &LWEUILabel::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float Scal
 			float LS = (LineSize.z - LineSize.x);
 			if (HoriAlign == LabelCenterAligned) Pos.x = (VisiblePos.x + VisibleSize.x * 0.5f - LS * 0.5f);
 			else Pos.x = VisiblePos.x + VisibleSize.x - LS;
-			m_Font->DrawTextm(Line, Pos, m_FontScale * Scale, m_Material->m_ColorA, &Frame, &LWEUIFrame::WriteFontGlyph);
+			m_Font->DrawTextm(Line, Pos, m_FontScale * Scale, Color, &Frame, &LWEUIFrame::WriteFontGlyph);
 			Pos.y -= m_Font->GetLineSize() * m_FontScale * Scale;
 		}
 	}

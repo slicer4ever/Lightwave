@@ -75,6 +75,12 @@ struct alignas(__m256[2]) LWSMatrix4<float> {
 
 	friend LWSVector4<float> operator * (const LWSVector4<float>& Lhs, const LWSMatrix4<float>& Rhs);
 
+	static LWSMatrix4<float> FromEuler(float Pitch, float Yaw, float Roll);
+
+	static LWSMatrix4<float> FromEuler(const LWVector3<float> &Euler);
+
+	LWVector3<float> ToEuler(void) const;
+
 	static LWSMatrix4<float> RotationX(float Theta);
 
 	static LWSMatrix4<float> RotationY(float Theta);

@@ -14,7 +14,7 @@ LWVideoDriver &LWVideoDriver_OpenGL4_5::ViewPort(const LWVector4i &Viewport) {
 }
 
 LWShader *LWVideoDriver_OpenGL4_5::CreateShader(uint32_t ShaderType, const LWUTF8Iterator &Source, LWAllocator &Allocator, char *CompiledBuffer, char8_t *ErrorBuffer, uint32_t &CompiledBufferLen, uint32_t ErrorBufferLen) {
-	GLenum GShaderTypes[] = { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, GL_GEOMETRY_SHADER, GL_COMPUTE_SHADER };
+	GLenum GShaderTypes[] = { GL_VERTEX_SHADER, GL_GEOMETRY_SHADER, GL_FRAGMENT_SHADER, GL_COMPUTE_SHADER };
 	int32_t CompileResult = 0;
 	int32_t LinkResult = 0;
 	int32_t Len = Source.RawDistance(Source.NextEnd());
@@ -62,7 +62,7 @@ LWShader *LWVideoDriver_OpenGL4_5::CreateShader(uint32_t ShaderType, const LWUTF
 }
 
 LWShader *LWVideoDriver_OpenGL4_5::CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledCodeLen, LWAllocator &Allocator, char8_t *ErrorBuffer, uint32_t ErrorBufferLen) {
-	GLenum GShaderTypes[] = { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, GL_GEOMETRY_SHADER, GL_COMPUTE_SHADER };
+	GLenum GShaderTypes[] = { GL_VERTEX_SHADER, GL_GEOMETRY_SHADER, GL_FRAGMENT_SHADER, GL_COMPUTE_SHADER };
 	int32_t LinkResult = 0;
 	int32_t Len = 0;
 	uint32_t ProgramID = glCreateProgram();
@@ -105,9 +105,9 @@ LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWPipeline *Source, LWAlloca
 	LWShaderResource Resources[LWShader::MaxResources];
 	LWShaderInput Inputs[LWShader::MaxInputs];
 	LWOpenGL4_5PipelineContext Context;
-	int32_t BlockCount = 0;
-	int32_t ResourceCount = 0;
-	int32_t InputCount = 0;
+	uint32_t BlockCount = 0;
+	uint32_t ResourceCount = 0;
+	uint32_t InputCount = 0;
 	int32_t NameLen = 0;
 	int32_t Len = 0;
 	int32_t NextTexIdx = 0;
@@ -156,16 +156,18 @@ LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWPipeline *Source, LWAlloca
 		return { LWShaderInput::Float, 1 };
 	};
 
-	auto InsertList = [](const LWUTF8Iterator &Name, int32_t Type, int32_t Length, int32_t Location, LWShaderResource *List, int32_t &Cnt) ->int32_t {
+	auto InsertList = [](const LWUTF8Iterator &Name, uint32_t BindIdx, uint32_t Type, uint32_t Length, LWShaderResource *List, uint32_t &Cnt) ->int32_t {
 		uint32_t Hash = Name.Hash();
-		for (int32_t i = 0; i < Cnt; i++) {
-			if (List[i].m_NameHash == Hash) return i;
+		for (uint32_t i = 0; i < Cnt; i++) {
+			if (List[i].m_NameHash == Hash) {
+				List[i].m_StageBindings = i;
+				return (int32_t)i;
+			}
 		}
 		LWShaderResource &L = List[Cnt];
-		L = LWShaderResource(Hash, 0, Type, Length);
-		L.m_VideoContext = (void*)(uintptr_t)Location;
+		L = LWShaderResource(Hash, Type, Length, BindIdx);
 		Cnt++;
-		return Cnt - 1;
+		return (int32_t)(Cnt - 1);
 	};
 
 	auto ReflectShader = [&InsertList, &Blocks, &Resources, &BlockCount, &ResourceCount, &NextTexIdx](int32_t ProgramID) {
@@ -199,12 +201,11 @@ LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWPipeline *Source, LWAlloca
 				Type == GL_SAMPLER_2D_ARRAY_SHADOW || Type == GL_SAMPLER_CUBE_SHADOW ||
 				Type == GL_SAMPLER_CUBE_MAP_ARRAY || Type == GL_SAMPLER_CUBE_MAP_ARRAY_SHADOW ||
 				Type == GL_SAMPLER_2D_MULTISAMPLE || Type == GL_SAMPLER_2D_MULTISAMPLE_ARRAY) {
-				Loc = InsertList(NameBuffer, LWPipeline::Texture, Length, Loc, Resources, ResourceCount);
+				Loc = InsertList(NameBuffer, Loc, LWPipeline::Texture, Length, Resources, ResourceCount);
 				glProgramUniform1i(ProgramID, glLoc, Loc);
 				if (Loc == pTexIdx) NextTexIdx++;
-				
 			} else if (Type == GL_IMAGE_1D || Type == GL_IMAGE_2D || Type == GL_IMAGE_3D || Type == GL_IMAGE_CUBE || Type == GL_IMAGE_BUFFER) {
-				Loc = InsertList(NameBuffer, LWPipeline::Image, Length, Loc, Resources, ResourceCount);
+				Loc = InsertList(NameBuffer, Loc, LWPipeline::Image, Length, Resources, ResourceCount);
 				glProgramUniform1i(ProgramID, glLoc, Loc);
 				if (Loc == pTexIdx) NextTexIdx++;
 			}
@@ -215,7 +216,7 @@ LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWPipeline *Source, LWAlloca
 			glGetProgramResourceiv(ProgramID, GL_UNIFORM_BLOCK, i, BlockPropCnt, BlockProps, sizeof(PropValues), &Len, PropValues);
 			int32_t Loc = PropValues[0];
 			int32_t Size = PropValues[1];
-			int32_t BlockIdx = InsertList(NameBuffer, LWPipeline::UniformBlock, Size, BlockCount, Blocks, BlockCount);
+			int32_t BlockIdx = InsertList(NameBuffer, BlockCount, LWPipeline::UniformBlock, Size, Blocks, BlockCount);
 			glUniformBlockBinding(ProgramID, i, BlockIdx);
 		}
 
@@ -224,7 +225,7 @@ LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWPipeline *Source, LWAlloca
 			glGetProgramResourceiv(ProgramID, GL_SHADER_STORAGE_BLOCK, i, BlockPropCnt, BlockProps, sizeof(PropValues), &Len, PropValues);
 			int32_t Loc = PropValues[0];
 			int32_t Size = PropValues[1];
-			InsertList(NameBuffer, LWPipeline::ImageBuffer, Size, Loc, Resources, ResourceCount);
+			InsertList(NameBuffer, Loc, LWPipeline::ImageBuffer, Size, Resources, ResourceCount);
 		}
 	};
 	glGenProgramPipelines(1, &Context.m_ProgramID);
@@ -254,16 +255,13 @@ LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWPipeline *Source, LWAlloca
 			for (uint32_t n = 0; n < Map.RowMultiplier*AttributeValues[1]; n++) {
 				LWShaderInput &In = Inputs[InputCount];
 				In = LWShaderInput(NameBuffer, Map.AttributeType, 1);
-				fmt::print("{}: {} | {}\n", i, NameBuffer, In.m_NameHash);
-				In.m_VideoContext = (void*)(uintptr_t)AttributeValues[2];
-				glEnableVertexAttribArray(AttributeValues[2]);
+				In.m_BindIndex = AttributeValues[2];
+				glEnableVertexAttribArray(In.m_BindIndex);
 				InputCount++;
 			}
 		}
-		fmt::print("\n");
 		ReflectShader(VertexID);
 	}
-
 
 	if(StageList[LWPipeline::Geometry]){
 		uint32_t GeomID = ((LWOpenGL4_5Shader*)StageList[LWPipeline::Geometry])->GetContext();
@@ -555,38 +553,43 @@ LWFrameBuffer *LWVideoDriver_OpenGL4_5::CreateFrameBuffer(const LWVector2i &Size
 }
 
 bool LWVideoDriver_OpenGL4_5::UpdateTexture(LWTexture *Texture) {
+	const int32_t GTypes[] = { GL_TEXTURE_1D, GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_CUBE_MAP, GL_TEXTURE_1D_ARRAY, GL_TEXTURE_2D_ARRAY, GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_2D_MULTISAMPLE_ARRAY };
+	const int32_t MinMagFilters[] = { GL_NEAREST, GL_LINEAR, GL_NEAREST_MIPMAP_NEAREST, GL_LINEAR_MIPMAP_NEAREST, GL_NEAREST_MIPMAP_LINEAR, GL_LINEAR_MIPMAP_LINEAR };
+	const int32_t WrapFilters[] = { GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT, GL_REPEAT };
+	const int32_t CompareModes[] = { GL_NONE, GL_COMPARE_REF_TO_TEXTURE };
+	const int32_t CompareFuncs[] = { GL_NEVER, GL_ALWAYS, GL_LESS, GL_EQUAL, GL_LEQUAL, GL_GREATER, GL_GEQUAL, GL_NOTEQUAL };
+	const int32_t DepthReadMode[] = { GL_DEPTH_COMPONENT, GL_STENCIL_COMPONENTS }; //Possible bug, GL_STENCIL_COMPONENTS instead of GL_STENCIL_COMPONENT (note: S) is only defined.
+	const float AnisotropyValues[] = { 1.0f, 2.0f, 4.0f, 8.0f, 16.0f }; //Anisotropy
+
 	uint32_t VideoID = ((LWOpenGL4_5Texture*)Texture)->GetContext();
-
-	int32_t GTypes[] = { GL_TEXTURE_1D, GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_CUBE_MAP, GL_TEXTURE_1D_ARRAY, GL_TEXTURE_2D_ARRAY, GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_2D_MULTISAMPLE_ARRAY };
-	int32_t MinMagFilters[] = { GL_NEAREST, GL_LINEAR, GL_NEAREST_MIPMAP_NEAREST, GL_LINEAR_MIPMAP_NEAREST, GL_NEAREST_MIPMAP_LINEAR, GL_LINEAR_MIPMAP_LINEAR };
-	int32_t WrapFilters[] = { GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT, GL_REPEAT };
-	int32_t CompareModes[] = { GL_NONE, GL_COMPARE_REF_TO_TEXTURE };
-	int32_t CompareFuncs[] = { GL_NEVER, GL_ALWAYS, GL_LESS, GL_EQUAL, GL_LEQUAL, GL_GREATER, GL_GEQUAL, GL_NOTEQUAL };
-	int32_t DepthReadMode[] = { GL_DEPTH_COMPONENT, GL_STENCIL_COMPONENTS }; //Possible bug, GL_STENCIL_COMPONENTS instead of GL_STENCIL_COMPONENT (note: S) is only defined.
-
 	int32_t Type = GTypes[Texture->GetType()];
 	glBindTexture(Type, VideoID);
 	if (!Texture->isDirty()) return true;
 	uint32_t State = Texture->GetTextureState();
 	bool MakeMipmaps = (State & LWTexture::MakeMipmaps) != 0;
 	bool MultiSampled = Texture->isMultiSampled();
-	uint32_t MinFilter = (State&LWTexture::MinFilterFlag) >> LWTexture::MinFilterBitOffset;
-	uint32_t MagFilter = (State&LWTexture::MagFilterFlag) >> LWTexture::MagFilterBitOffset;
-	uint32_t WrapS = (State&LWTexture::WrapSFilterFlag) >> LWTexture::WrapSFilterBitOffset;
-	uint32_t WrapT = (State&LWTexture::WrapTFilterFlag) >> LWTexture::WrapTFilterBitOffset;
-	uint32_t WrapR = (State&LWTexture::WrapRFilterFlag) >> LWTexture::WrapRFilterBitOffset;
-	uint32_t CFunc = (State&LWTexture::CompareFuncFlag) >> LWTexture::CompareFuncBitOffset;
-	uint32_t CMode = (State&LWTexture::CompareModeFlag) >> LWTexture::CompareModeBitOffset;
-	uint32_t DRMode = (State&LWTexture::DepthReadFlag) >> LWTexture::DepthReadBitOffset;
 	if (!MultiSampled) { //Sampler states not supported by multisamplers.
+		uint32_t MinFilter = (State&LWTexture::MinFilterFlag) >> LWTexture::MinFilterBitOffset;
+		uint32_t MagFilter = (State&LWTexture::MagFilterFlag) >> LWTexture::MagFilterBitOffset;
+		uint32_t WrapS = (State&LWTexture::WrapSFilterFlag) >> LWTexture::WrapSFilterBitOffset;
+		uint32_t WrapT = (State&LWTexture::WrapTFilterFlag) >> LWTexture::WrapTFilterBitOffset;
+		uint32_t WrapR = (State&LWTexture::WrapRFilterFlag) >> LWTexture::WrapRFilterBitOffset;
+		uint32_t CFunc = (State&LWTexture::CompareFuncFlag) >> LWTexture::CompareFuncBitOffset;
+		uint32_t CMode = (State&LWTexture::CompareModeFlag) >> LWTexture::CompareModeBitOffset;
+		uint32_t DRMode = (State&LWTexture::DepthReadFlag) >> LWTexture::DepthReadBitOffset;
+		uint32_t Anisotropy = (State & LWTexture::AnisotropyFlag) >> LWTexture::AnisotropyBitOffset;
+		
 		glTexParameteri(Type, GL_TEXTURE_MIN_FILTER, MinMagFilters[MinFilter]);
 		glTexParameteri(Type, GL_TEXTURE_MAG_FILTER, MinMagFilters[MagFilter]);
+		
 		glTexParameteri(Type, GL_TEXTURE_WRAP_S, WrapFilters[WrapS]);
 		glTexParameteri(Type, GL_TEXTURE_WRAP_T, WrapFilters[WrapT]);
 		glTexParameteri(Type, GL_TEXTURE_WRAP_R, WrapFilters[WrapR]);
 		glTexParameteri(Type, GL_TEXTURE_COMPARE_FUNC, CompareFuncs[CFunc]);
 		glTexParameteri(Type, GL_TEXTURE_COMPARE_MODE, CompareModes[CMode]);
 		glTexParameteri(Type, GL_DEPTH_STENCIL_TEXTURE_MODE, DepthReadMode[DRMode]);
+		
+		glTexParameterf(Type, GL_TEXTURE_MAX_ANISOTROPY_EXT, AnisotropyValues[Anisotropy]);
 		if (MakeMipmaps) glGenerateMipmap(Type);
 	}
 	Texture->ClearDirty();
@@ -934,14 +937,11 @@ bool LWVideoDriver_OpenGL4_5::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *V
 		LWOpenGL4_5Buffer *B = (LWOpenGL4_5Buffer*)Block.m_Resource;
 		if(!B) continue;
 		uint32_t VideoID = B->GetContext();
-		uint32_t BlockID = (uint32_t)(uintptr_t)Block.m_VideoContext;
 		LWVideoDriver::UpdateVideoBuffer(B);
 		if(!Update) continue;
 		uint32_t Offset = Block.m_Offset*m_UniformBlockSize;
-		glBindBufferRange(GBTypes[B->GetType()], BlockID, VideoID, Offset, Block.GetLength());
+		glBindBufferRange(GBTypes[B->GetType()], Block.m_StageBindings, VideoID, Offset, Block.GetLength());
 	}
-
-
 	for (uint32_t i = 0; i < ResourceCount; i++) {
 		//Image Formats:      RGBA8,    RGBA8U,      RGBA16,     RGBA16U,     RGBA32,     RGBA32U,     RGBA32F,    RG8,     RG8U,     RG16,     RG16U,     RG32,     RG32U,     RG32F,    R8,     R8U,     R16,     R16U,     R32,     R32U,     R32F,    D16,     D24, D32,     D24S8, DXT1, DXT2, DXT3, DXT4, DXT5, DXT6, DXT7
 		GLenum IFormats[] = { GL_RGBA8I, GL_RGBA8UI, GL_RGBA16I, GL_RGBA16UI, GL_RGBA32I, GL_RGBA32UI, GL_RGBA32F, GL_RG8I, GL_RG8UI, GL_RG16I, GL_RG16UI, GL_RG32I, GL_RG32UI, GL_RG32F, GL_R8I, GL_R8UI, GL_R16I, GL_R16UI, GL_R32I, GL_R32UI, GL_R32F, GL_R16F, 0,   GL_R32F, 0,     0,    0,    0,    0,    0,    0,    0 };
@@ -949,18 +949,17 @@ bool LWVideoDriver_OpenGL4_5::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *V
 		LWOpenGL4_5Texture *T = (LWOpenGL4_5Texture *)R.m_Resource;
 		LWOpenGL4_5Buffer *B = (LWOpenGL4_5Buffer *)R.m_Resource;
 		uint32_t TypeID = R.GetTypeID();
-		uint32_t VideoID = (uint32_t)(uintptr_t)R.m_VideoContext;
 		if (TypeID == LWPipeline::Texture) {
 			if (!T) continue;
-			glActiveTexture(GL_TEXTURE0 + VideoID);
+			glActiveTexture(GL_TEXTURE0 + R.m_StageBindings);
 			UpdateTexture(T);
 		} else if (TypeID == LWPipeline::Image) {
 			if (!T) continue;
-			if(Update) glBindImageTexture(VideoID, T->GetContext(), 0, false, 0, GL_READ_WRITE, IFormats[T->GetPackType()]);
+			if(Update) glBindImageTexture(R.m_StageBindings, T->GetContext(), 0, false, 0, GL_READ_WRITE, IFormats[T->GetPackType()]);
 		} else if (TypeID == LWPipeline::ImageBuffer) {
 			if(!B) continue;
 			LWVideoDriver::UpdateVideoBuffer(B);
-			if (Update) glBindBufferBase(GBTypes[B->GetType()], VideoID, B->GetContext());
+			if (Update) glBindBufferBase(GBTypes[B->GetType()], R.m_StageBindings, B->GetContext());
 		}
 	}
 
@@ -971,13 +970,12 @@ bool LWVideoDriver_OpenGL4_5::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *V
 		glBindBuffer(GL_ARRAY_BUFFER, VBuffer->GetContext());
 		for (uint32_t i = 0; i < Pipeline->GetInputCount(); i++) {
 			LWShaderInput &I = Pipeline->GetInput(i);
-			uint32_t VideoID = (uint32_t)(uintptr_t)I.m_VideoContext;
 			int32_t GBaseType = GIBaseType[I.m_Type];
 			int32_t GCompCnt = GIComponentCnt[I.m_Type];
 			if (GBaseType == GL_INT || GBaseType == GL_UNSIGNED_INT) {
-				glVertexAttribIPointer(VideoID, GCompCnt, GBaseType, VertexStride, (void*)(uintptr_t)I.m_Offset);
+				glVertexAttribIPointer(I.m_BindIndex, GCompCnt, GBaseType, VertexStride, (void*)(uintptr_t)I.m_Offset);
 			} else {
-				glVertexAttribPointer(VideoID, GCompCnt, GBaseType, false, VertexStride, (void*)(uintptr_t)I.m_Offset);
+				glVertexAttribPointer(I.m_BindIndex, GCompCnt, GBaseType, false, VertexStride, (void*)(uintptr_t)I.m_Offset);
 			}
 		}
 	}

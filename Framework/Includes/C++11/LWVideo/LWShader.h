@@ -37,7 +37,7 @@ struct LWShaderInput {
 	/*!< \brief default constructor. */
 	LWShaderInput() = default;
 
-	void *m_VideoContext = nullptr; /*!< \brief the underlying video context for the input.  This is mostly useful for openGL implementations.  */
+	uint32_t m_BindIndex = 0; /*!< \brief underlying bind location for the input. This is mostly useful for openGL implementations.  */
 	uint32_t m_NameHash = 0; /*!< \brief hashed name when looking up input. */
 	uint32_t m_Type = 0; /*!< \brief underlying input type. */
 	uint32_t m_Offset = 0; /*!< \brief offset in interleaved array for data. */
@@ -47,36 +47,88 @@ struct LWShaderInput {
 
 /*!< \brief shader resource/block's. */
 struct LWShaderResource {
-	enum {
-		TypeBits = 0xFF, /*!< \brief flag bits which represent the type of the resource/block. */
-		TypeBitOffset = 0x0, /*!< \brief bit offset to get just the type. */
-		LengthBits = 0xFFFF00, /*!< \brief Bits representing the size of the resource(not applicable with all resource types).*/
-		LengthBitOffset = 0x8, /*!< \brief bit offset to get just the length. */
+	static const uint32_t BindingBitCount = 5; /*!< \brief how many bits each stage has for binding's. */
+	LWBitField32(Type, 4, 0);
+	LWBitField32(Length, 16, TypeBitsOffset + 4);
+	LWBitField32(VertexBinding, BindingBitCount, 0);
+	LWBitField32(GeometryBinding, BindingBitCount, VertexBindingBitsOffset + BindingBitCount);
+	LWBitField32(PixelBinding, BindingBitCount, GeometryBindingBitsOffset + BindingBitCount);
+	LWBitField32(ComputeBinding, BindingBitCount, PixelBindingBitsOffset + BindingBitCount);
 
-		VertexStage = 0x10000000, /*!< \brief flag indicating the resource is apart of the vertex stage. */
-		GeometryStage = 0x20000000, /*!< \brief flag indicating the resource is apart of the geometry stage. */
-		PixelStage = 0x40000000, /*!< \brief flag indicating the resource is apart of the pixel stage. */
-		ComputeStage = 0x80000000 /*!< \brief flag indicating the resource is apart of the compute stage. */
-	};
+	static const uint32_t VertexStage = 0x10000000; /*!< \brief flag indicating the resource is apart of the vertex stage. */
+	static const uint32_t GeometryStage = 0x20000000; /*!< \brief flag indicating the resource is apart of the geometry stage. */
+	static const uint32_t PixelStage = 0x40000000; /*!< \brief flag indicating the resource is apart of the pixel stage. */
+	static const uint32_t ComputeStage = 0x80000000; /*!< \brief flag indicating the resource is apart of the compute stage. */
 
-	uint32_t m_NameHash = 0; /*!< \brief hashed version of the resource/block's name. */
 	void *m_Resource = nullptr; /*!< \brief actual resource object(LWTexture/LWVideoBuffer. */
-	void *m_VideoContext = nullptr; /*!< \brief underlying representation of the resource for the video driver.*/
+	uint32_t m_NameHash = 0; /*!< \brief hashed version of the resource/block's name. */
 	uint32_t m_Offset = 0; /*!< \brief offset of the resource if applicable. */
 	uint32_t m_Flag = 0; /*!< \brief flag which contains type, length, and staging information for the resource. */
+	uint32_t m_StageBindings = 0; /*!< \brief binding index for resource in the shader per stage. these values are used internally by the pipeline, and shouldn't be modified by the application. */
+
+	/*!< \brief set's the stage bind by the stageID(Vertex/Compute=0, Geometry=1, Pixel=2). automatically raises the relevant stage's flag. */
+	LWShaderResource &SetStageBinding(uint32_t StageID, uint32_t Idx);
+
+	/*!< \brief set's the stage bind index for the vertex stage. automatically raises the vertex stage's flag. */
+	LWShaderResource &SetVertexStageBinding(uint32_t Idx);
+
+	/*!< \brief set's the stage bind index for the compute stage. automatically raises the compute stage's flag. */
+	LWShaderResource &SetComputeStageBinding(uint32_t Idx);
+
+	/*!< \brief set's the stage bind index for the pixel stage. automatically raises the pixel stage's flag. */
+	LWShaderResource &SetPixelStageBinding(uint32_t Idx);
+
+	/*!< \brief set's the stage bind index for the geometry stage. automatically raises the geometry stage's flag. */
+	LWShaderResource &SetGeometryStageBinding(uint32_t Idx);
 
 	/*!< \brief returns the type id for the resource(possible type id's found in LWPipeline). */
-	uint32_t GetTypeID(void);
+	uint32_t GetTypeID(void) const;
 
 	/*!< \brief returns the size of the resource if applicable type. */
-	uint32_t GetLength(void);
+	uint32_t GetLength(void) const;
+
+	/*!< \brief returns the binding index for vertex stage. */
+	uint32_t GetVertexStageBinding(void) const;
+
+	/*!< \brief returns the binding index for the specified stageID(Vertex=0, Geometry=1, Pixel=2, Compute=3) */
+	uint32_t GetStageBinding(uint32_t StageID) const;
+
+	/*!< \brief returns the binding index for the compute stage. */
+	uint32_t GetComputeStageBinding(void) const;
+
+	/*!< \brief returns the binding index for pixel stage. */
+	uint32_t GetPixelStageBinding(void) const;
+
+	/*!< \brief returns the binding index for geometry stage. */
+	uint32_t GetGeometryStageBinding(void) const;
+
+	/*!< \brief returns true if the stageID's flag is raised. */
+	bool HasStage(uint32_t StageID) const;
+
+	/*!< \brief returns true if the vertex stage flag is raised. */
+	bool hasVertexStage(void) const;
+
+	/*!< \brief returns true if the compute stage flag is raised. */
+	bool hasComputeStage(void) const;
+
+	/*!< \brief returns true if the pixel stage flag is raised. */
+	bool hasPixelStage(void) const;
+
+	/*!< \brief returns true if the geometry stage flag is raised. */
+	bool hasGeometryStage(void) const;
 
 	/*!< \brief creates resource object. */
-	LWShaderResource(const LWUTF8Iterator &Name, uint32_t Flag, uint32_t Type, uint32_t Length);
+	LWShaderResource(const LWUTF8Iterator &Name, uint32_t Type, uint32_t Length);
 
 	/*!< \brief creates resource object. */
-	LWShaderResource(uint32_t NameHash, uint32_t Flag, uint32_t Type, uint32_t Length);
+	LWShaderResource(uint32_t NameHash, uint32_t Type, uint32_t Length);
+
+	/*!< \brief used internally to create a pipeline resource with the bound stage+stageBindIdx. raising the relevant stage's flag as well. */
+	LWShaderResource(uint32_t NameHash, uint32_t Type, uint32_t Length, uint32_t StageID, uint32_t StageBindIdx);
 	
+	/*!< \brief used intenally by opengl to create a pipeline resource with the stageBindIdx.  opengl does not utilize the individual stage bindings per shader, as such StageBindings is a global property of the entire program. */
+	LWShaderResource(uint32_t NameHash, uint32_t Type, uint32_t Length, uint32_t StageBindIdx); 
+
 	/*!< \brief default constructor. */
 	LWShaderResource() = default;
 };
@@ -86,8 +138,8 @@ class LWShader{
 public:
 	enum{
 		Vertex = 0, /*!< \brief shader is a vertex type. */
-		Pixel  = 1, /*!< \brief shader is a vertex type. */
-		Geometry = 2, /*!< \brief shader is a vertex type. */
+		Geometry = 1, /*!< \brief shader is a vertex type. */
+		Pixel = 2, /*!< \brief shader is a vertex type. */
 		Compute =  3, /*!< \brief shader is a vertex type. */
 		MaxInputs = 32, /*!< \brief max input map size for shader. */
 		MaxResources = 64, /*!< \brief max resource's mappable by a single stage. */

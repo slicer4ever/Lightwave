@@ -1,7 +1,6 @@
 #include "LWVideo/LWVideoDrivers/LWVideoDriver_OpenGL4_5.h"
 #include "LWPlatform/LWWindow.h"
 #include <iostream>
-#include <cassert>
 
 LWVideoDriver_OpenGL4_5 *LWVideoDriver_OpenGL4_5::MakeVideoDriver(LWWindow *Window, uint32_t Type) {
 	auto DebugOutput = [](GLenum Source, GLenum Type, GLuint ID, GLenum Severity, GLsizei Length, const char *Message, const void *UserDAta) {
@@ -21,7 +20,7 @@ LWVideoDriver_OpenGL4_5 *LWVideoDriver_OpenGL4_5::MakeVideoDriver(LWWindow *Wind
 		for (; TypeID < TypeCnt && TypeEnums[TypeID] != Type; TypeID++) {}
 		for (; SeverityID < SeverityCnt && SeverityEnums[SeverityID] != Severity; SeverityID++) {}
 		fmt::print("({},{},{},{}): '{}'\n", SourceNames[SourceID], TypeNames[TypeID], SeverityNames[SeverityID], ID, Message);
-		assert(TypeID != 0);
+		LWVerify(TypeID != 0);
 		return;
 	};
 

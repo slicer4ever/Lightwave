@@ -28,6 +28,11 @@ bool LWERayAABBIntersect(const LWVector3<Type> &RayStart, const LWVector3<Type> 
 	if (tmin > tmax) return false;
 	return true;
 }
+
+template<class Type>
+bool LWEPointInsideAABB(const LWVector3<Type> &MinBounds, const LWVector3<Type> &MaxBounds, const LWVector3<Type> &Pnt) {
+	return Pnt.x >= MinBounds.x && Pnt.x <= MaxBounds.x && Pnt.y >= MinBounds.y && Pnt.y <= MaxBounds.y && Pnt.z >= MinBounds.z && Pnt.z <= MaxBounds.z;
+}
 	
 template<class Type>
 bool LWESphereIntersect(const LWVector3<Type> &aCenterPnt, const LWVector3<Type> &bCenterPnt, Type aRadius, Type bRadius, LWVector3<Type> *IntersectNrm) {
@@ -125,9 +130,9 @@ bool LWEPlanePlanePlaneIntersect(const LWVector4<Type> &aPlane, const LWVector4<
 	LWVector3<Type> tPnt;
 	LWVector3<Type> tDir;
 	Type t;
-	if (!PlanePlaneIntersect(aPlane, bPlane, &tPnt, &tDir)) return false;
-	if (!RayPlaneIntersect(tPnt, tDir, cPlane, &t)) return false;
-	if (IntersectPoint) *IntersectPoint = tPnt - tDir * t;
+	if (!LWEPlanePlaneIntersect(aPlane, bPlane, &tPnt, &tDir)) return false;
+	if (!LWERayPlaneIntersect(tPnt, tDir, cPlane, &t)) return false;
+	if (IntersectPoint) *IntersectPoint = tPnt + tDir * t;
 	return true;
 }
 

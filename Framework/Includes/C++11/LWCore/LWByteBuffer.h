@@ -1649,7 +1649,7 @@ public:
 	int32_t Write(const LWSQuaternion<Type> &Value) {
 		typedef int32_t(*Func_T)(const LWSQuaternion<Type> &, int8_t *);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
-		uint32_t Len = sizeof(Type) * 4;
+		int32_t Len = sizeof(Type) * 4;
 		if (m_Position + Len > m_BufferSize) return Len;
 		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
 		m_BytesWritten += Len;

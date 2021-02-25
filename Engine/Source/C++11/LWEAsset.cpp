@@ -142,8 +142,8 @@ bool LWEAssetManager::XMLParseTexture(LWEXMLNode *N, LWEAssetManager *AM) {
 	const uint32_t MaxFlagIters = 64;
 	char SBuffer[1024 * 32];
 	LWUTF8Iterator FlagIterList[MaxFlagIters];
-	const uint32_t FlagValues[] = { LWTexture::MinNearestMipmapNearest, LWTexture::MinLinearMipmapNearest, LWTexture::MinNearestMipmapLinear, LWTexture::MinLinearMipmapLinear, LWTexture::MinNearest, LWTexture::MagNearest, LWTexture::WrapSClampToEdge, LWTexture::WrapTClampToEdge, LWTexture::WrapRClampToEdge, LWTexture::CompareNone, LWTexture::MinLinear, LWTexture::MagLinear, LWTexture::WrapSClampToBorder, LWTexture::WrapSMirroredRepeat, LWTexture::WrapSRepeat, LWTexture::WrapTClampToBorder, LWTexture::WrapTMirroredRepeat, LWTexture::WrapTRepeat, LWTexture::WrapRClampToBorder, LWTexture::WrapRMirroredRepeat, LWTexture::WrapRRepeat, LWTexture::RenderTarget, LWTexture::RenderBuffer };
-	const char8_t FlagNames[][32] = { "MinNearestMipmapNearest",          "MinLinearMipmapNearest",          "MinNearestMipmapLinear",          "MinLinearMipmapLinear",          "MinNearest",          "MagNearest",          "WrapSClampToEdge",          "WrapTClampToEdge",          "WrapRClampToEdge",          "CompareNone",          "MinLinear",          "MagLinear",          "WrapSClampToBorder",          "WrapSMirroredRepeat",          "WrapSRepeat",          "WrapTClampToBorder",          "WrapTMirroredRepeat",          "WrapTRepeat",          "WrapRClampToBorder",          "WrapRMirroredRepeat",          "WrapRRepeat",          "RenderTarget",          "RenderBuffer" };
+	const uint32_t FlagValues[] = { LWTexture::MinNearestMipmapNearest, LWTexture::MinLinearMipmapNearest, LWTexture::MinNearestMipmapLinear, LWTexture::MinLinearMipmapLinear, LWTexture::MinNearest, LWTexture::MagNearest, LWTexture::WrapSClampToEdge, LWTexture::WrapTClampToEdge, LWTexture::WrapRClampToEdge, LWTexture::CompareNone, LWTexture::MinLinear, LWTexture::MagLinear, LWTexture::WrapSClampToBorder, LWTexture::WrapSMirroredRepeat, LWTexture::WrapSRepeat, LWTexture::WrapTClampToBorder, LWTexture::WrapTMirroredRepeat, LWTexture::WrapTRepeat, LWTexture::WrapRClampToBorder, LWTexture::WrapRMirroredRepeat, LWTexture::WrapRRepeat, LWTexture::RenderTarget, LWTexture::RenderBuffer, LWTexture::Anisotropy_2x, LWTexture::Anisotropy_4x, LWTexture::Anisotropy_8x, LWTexture::Anisotropy_16x };
+	const char8_t FlagNames[][32] = { "MinNearestMipmapNearest",          "MinLinearMipmapNearest",          "MinNearestMipmapLinear",          "MinLinearMipmapLinear",          "MinNearest",          "MagNearest",          "WrapSClampToEdge",          "WrapTClampToEdge",          "WrapRClampToEdge",          "CompareNone",          "MinLinear",          "MagLinear",          "WrapSClampToBorder",          "WrapSMirroredRepeat",          "WrapSRepeat",          "WrapTClampToBorder",          "WrapTMirroredRepeat",          "WrapTRepeat",          "WrapRClampToBorder",          "WrapRMirroredRepeat",          "WrapRRepeat",          "RenderTarget",          "RenderBuffer",        "Anisotropy 2x",          "Anisotropy 4x",          "Anisotropy 8x",          "Anisotropy 16x" };
 	const uint32_t TotalFlags = sizeof(FlagValues) / sizeof(uint32_t);
 	LWVideoDriver *Driver = AM->GetDriver();
 	LWAllocator &Alloc = AM->GetAllocator();
@@ -407,8 +407,8 @@ bool LWEAssetManager::XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM) {
 
 bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 	const char *DriverNames[] = LWVIDEODRIVER_NAMES;
-	const char *TypeNames[] = { "Vertex", "Pixel", "Geometry", "Compute" };
-	const char *CompiledNames[] = { "lwcv", "lwcp", "lwcg", "lwcc" };
+	const char *TypeNames[] = { "Vertex", "Geometry", "Pixel", "Compute" };
+	const char *CompiledNames[] = { "lwcv", "lwcg", "lwcp", "lwcc" };
 	const uint32_t MaxFileBufferLen = 64 * 1024;
 	const uint32_t MaxBufferLen = 1024;
 	const uint32_t MaxModules = 5;
@@ -556,7 +556,7 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 		if (PathAttr && Localize->ParseLocalization(Buffer.m_Data, sizeof(Buffer.m_Data), Path)) Path = Buffer;
 		if (CompiledPathAttr && Localize->ParseLocalization(CBuffer.m_Data, sizeof(CBuffer.m_Data), CPath)) CPath = CBuffer;
 	}
-	uint32_t Type = TypeAttr->GetValue().CompareList("Vertex", "Pixel", "Geometry", "Compute");
+	uint32_t Type = TypeAttr->GetValue().CompareList("Vertex", "Geometry", "Pixel", "Compute");
 	if (Type == -1) {
 		fmt::print("Unknown type: '{}' for shader: '{}'\n", TypeAttr->m_Value, NameAttr->m_Value);
 		return false;
@@ -641,7 +641,7 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 }
 
 bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) {
-	const char *TypeNames[] = { "Vertex", "Pixel", "Geometry", "Compute" };
+	const char *TypeNames[] = { "Vertex", "Geometry", "Pixel", "Compute" };
 	const uint32_t MaxDefines = 32;
 	LWUTF8Iterator DefineIterList[MaxDefines];
 	LWShaderInput InputList[LWShader::MaxInputs];
@@ -719,7 +719,7 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 	auto ParseShader = [&DefineIterList, &MaxDefines, &ParseInputMap, &ParseResourceMap, &ParseBlockMap, &InputList, &InputCount, &ResourceList, &ResoruceCount, &BlockList, &BlockCount, &Driver, &Alloc](LWEXMLNode *N, const LWUTF8Iterator &Source, const LWUTF8Iterator &SourcePath, uint64_t SourcesModifiedTime, LWEAssetManager *AM) ->bool {
 		const uint32_t MaxBufferLength = 1024 * 64;//64KB.
 		const uint32_t MaxNameLen = 256;
-		const char *CompiledNames[] = { "lwcv", "lwcp", "lwcg", "lwcc" };
+		const char *CompiledNames[] = { "lwcv", "lwcg", "lwcp", "lwcc" };
 		const char *DriverNames[] = LWVIDEODRIVER_NAMES;
 		char CompiledBuffer[MaxBufferLength];
 		char ErrorBuffer[MaxBufferLength] = "";
@@ -745,7 +745,7 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 			DefineIterList[DefineCount++] = Attr->GetName();
 			DefineIterList[DefineCount++] = Attr->GetValue();
 		}
-		uint32_t Type = TypeAttr->GetValue().CompareList("Vertex", "Pixel", "Geometry", "Compute");
+		uint32_t Type = TypeAttr->GetValue().CompareList("Vertex", "Geometry", "Pixel", "Compute");
 		if (Type == -1) {
 			fmt::print("Unknown type: '{}' for shader: '{}'\n", TypeAttr->GetValue(), NameAttr->GetValue());
 			return false;

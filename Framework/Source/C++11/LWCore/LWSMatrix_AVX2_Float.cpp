@@ -447,6 +447,34 @@ LWSVector4<float> operator * (const LWSVector4<float>& Lhs, const LWSMatrix4<flo
 	return LWSVector4<float>(_mm256_extractf128_ps(r, 0));
 }
 
+LWSMatrix4<float> LWSMatrix4<float>::FromEuler(float Pitch, float Yaw, float Roll) {
+	float c1 = cosf(Yaw);
+	float c2 = cosf(Pitch);
+	float c3 = cosf(Roll);
+	float s1 = sinf(Yaw);
+	float s2 = sinf(Pitch);
+	float s3 = sinf(Roll);
+	float s1s2 = s1 * s2;
+	return LWSMatrix4<float>({ c1 * c2, s1 * s3 - c1 * s2 * c3, c1 * s2 * s3 + s1 * c3, 0.0 },
+		{ s2, c2 * c3, -c2 * s3, 0.0 },
+		{ -s1 * c2, s1s2 * c3 + c1 * s3, -s1s2 * s3 + c1 * c3, 0.0 },
+		{ 0.0, 0.0, 0.0, 1.0 });
+}
+
+LWSMatrix4<float> LWSMatrix4<float>::FromEuler(const LWVector3<float> &Euler) {
+	return FromEuler(Euler.x, Euler.y, Euler.z);
+}
+
+LWVector3<float> LWSMatrix4<float>::ToEuler(void) const {
+	const float e = std::numeric_limits<float>::epsilon();
+	if (m_Rows[1].x > 1.0f - e) {
+		return LWVector3<float>(LW_PI_2, atan2f(m_Rows[0].z, m_Rows[2].z), 0.0);
+	} else if (m_Rows[1].x < -1.0f + e) {
+		return LWVector3<float>(-LW_PI_2, atan2f(m_Rows[0].z, m_Rows[2].z), 0.0);
+	}
+	return LWVector3<float>(asinf(m_Rows[1].x), atan2f(-m_Rows[2].x, m_Rows[0].x), atan2f(-m_Rows[1].z, m_Rows[1].y));
+}
+
 LWSMatrix4<float> LWSMatrix4<float>::RotationX(float Theta) {
 	float S = sinf(Theta);
 	float C = cosf(Theta);

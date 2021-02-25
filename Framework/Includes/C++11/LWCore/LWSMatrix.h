@@ -363,6 +363,37 @@ struct alignas(LWSVector4<Type>[4]) LWSMatrix4 {
 	}
 	/*! \endcond */
 
+	/*!< \brief returns a matrix from specified euler angles */
+	static LWSMatrix4 FromEuler(Type Pitch, Type Yaw, Type Roll) {
+		Type c1 = (Type)cos(Yaw);
+		Type c2 = (Type)cos(Pitch);
+		Type c3 = (Type)cos(Roll);
+		Type s1 = (Type)sin(Yaw);
+		Type s2 = (Type)sin(Pitch);
+		Type s3 = (Type)sin(Roll);
+		Type s1s2 = s1 * s2;
+		return LWSMatrix4({ c1 * c2, s1 * s3 - c1 * s2 * c3, c1 * s2 * s3 + s1 * c3, (Type)0 },
+			{ s2, c2 * c3, -c2 * s3, (Type)0 },
+			{ -s1 * c2, s1s2 * c3 + c1 * s3, -s1s2 * s3 + c1 * c3, (Type)0 },
+			{ (Type)0, (Type)0, (Type)0, (Type)1 });
+	}
+
+	/*!< \brief returns a matrix from specified euler angles. */
+	static LWSMatrix4 FromEuler(const LWVector3<Type> &Euler) {
+		return FromEuler(Euler.x, Euler.y, Euler.z);
+	}
+
+	/*!< \brief returns euler representation of the matrix.  if the matrix is not an affine transform then this function will return undefined results. */
+	LWVector3<Type> ToEuler(void) const {
+		const Type e = std::numeric_limits<Type>::epsilon();
+		if (m_Rows[1].x > 1.0f - e) {
+			return LWVector3<Type>((Type)LW_PI_2, (Type)atan2(m_Rows[0].z, m_Rows[2].z), (Type)0);
+		} else if (m_Rows[1].x < -1.0f + e) {
+			return LWVector3<Type>((Type)-LW_PI_2, (Type)atan2(m_Rows[0].z, m_Rows[2].z), (Type)0);
+		}
+		return LWVector3<Type>((Type)asin(m_Rows[1].x), (Type)atan2(-m_Rows[2].x, m_Rows[0].x), (Type)atan2(-m_Rows[1].z, m_Rows[1].y));
+	}
+
 	/*! \brief returns a matrix rotated around the x axis.
 		\param Theta the angle to use.
 		*/

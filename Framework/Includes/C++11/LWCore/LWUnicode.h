@@ -4,9 +4,6 @@
 #include "LWCore/LWUnicodeIterator.h"
 #include "LWCore/LWUnicodeGraphemeIterator.h"
 #include "LWCore/LWAllocator.h"
-#include <cassert>
-
-
 
 /*!< \brief Unicode container which automatically increases size for new text. */
 template<class Type>
@@ -119,7 +116,7 @@ public:
 	LWUnicodeIterator<Type> Erase(const LWUnicodeIterator<Type> &Begin, const LWUnicodeIterator<Type> &End) {
 		const Type *bP = Begin();
 		const Type *eP = End();
-		assert(bP >= m_Buffer && bP <= m_Buffer + m_RawLength && eP >= m_Buffer && eP <= m_Buffer + m_RawLength);
+		LWVerify(bP >= m_Buffer && bP <= m_Buffer + m_RawLength && eP >= m_Buffer && eP <= m_Buffer + m_RawLength);
 		if (eP < bP) return Erase(End, Begin);
 		uint32_t bIndex = Begin.RawIndex();
 		uint32_t eIndex = End.RawIndex();
@@ -270,7 +267,7 @@ public:
 
 	/*!< \brief copy operator for LWUnicode. */
 	LWUnicode<Type> &operator=(const LWUnicode<Type> &O) {
-		assert(O.m_Buffer != nullptr);
+		LWVerify(O.m_Buffer != nullptr);
 		LWAllocator *Alloc = LWAllocator::GetAllocator(O.m_Buffer);
 		Type *oBuffer = m_Buffer;
 		Type *nBuffer = Alloc.Allocate<Type>(O.m_Capacity);
@@ -432,7 +429,7 @@ public:
 
 	/*!< \brief create's a copy of this Unicode object. */
 	LWUnicode(const LWUnicode<Type> &O) : m_Length(O.m_Length), m_RawLength(O.m_RawLength), m_Capacity(O.m_Capacity) {
-		assert(O.m_Buffer != nullptr);
+		LWVerify(O.m_Buffer != nullptr);
 		Type *oBuffer = m_Buffer;
 		LWAllocator *Alloc = LWAllocator::GetAllocator(O.m_Buffer);
 		m_Buffer = Alloc->Allocate<Type>(m_Capacity);
@@ -483,7 +480,7 @@ public:
 private:
 	/*!< \brief internal reserve that doesn't destroy old buffer, instead returning it, for certain functions to work correctly. */
 	Type *pReserve(uint32_t Length) {
-		assert(m_Buffer != nullptr);
+		LWVerify(m_Buffer != nullptr);
 		if (Length <= m_Capacity) return nullptr;
 		LWAllocator *Alloc = LWAllocator::GetAllocator(m_Buffer);
 		Type *oBuffer = m_Buffer;

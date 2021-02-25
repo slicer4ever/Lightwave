@@ -155,7 +155,7 @@ LWEJobQueue &LWEJobQueue::OutputJobTimings(void){
 	for (uint32_t i = 0; i < m_JobCount; i++) {
 		if (m_JobState[i].load() == (uint32_t)JobNull) continue;
 		uint64_t Average = m_Jobs[i].m_RunCount ? m_Jobs[i].m_ElapsedTime / m_Jobs[i].m_RunCount : 0;
-		fmt::print("Job {}: Avg: {}ms Total: {}ms Times rang: {}\n", i, LWTimer::ToMilliSecond(Average), LWTimer::ToMilliSecond(m_Jobs[i].m_ElapsedTime), m_Jobs[i].m_RunCount);
+		fmt::print("Job {}: Avg: {}ms Total: {}ms Times ran: {}\n", i, LWTimer::ToMilliSecond(Average), LWTimer::ToMilliSecond(m_Jobs[i].m_ElapsedTime), m_Jobs[i].m_RunCount);
 	}
 	return *this;
 }

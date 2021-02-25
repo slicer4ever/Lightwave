@@ -141,7 +141,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_HAS_EXCEPTIONS=0;WIN32_WINNT=0x601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../../../../../Includes/C++11/;../../../../../../Framework/Includes/C++11/;../../../Includes/C++11/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
@@ -151,7 +151,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../../../../Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Framework/Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Dependency/Binarys/$(Configuration)/$(PlatformTarget)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;LWNetwork.lib;LWEngine.lib;libfmt.lib;OpenGL32.lib;D3D11.lib;D3DCompiler.lib;dxguid.lib;SHcore.lib;libGLEW.lib;libFreetype.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;XInput.lib;libvpx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;LWNetwork.lib;LWEngine.lib;libfmt.lib;OpenGL32.lib;D3D11.lib;D3DCompiler.lib;dxguid.lib;SHcore.lib;libGLEW.lib;libFreetype.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;XInput9_1_0.lib;libvpx.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

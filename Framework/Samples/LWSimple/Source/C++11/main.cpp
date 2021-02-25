@@ -244,7 +244,7 @@ public:
 			return;
 		}
 		//uint32_t TargetDriver = LWVideoDriver::Vulkan | LWVideoDriver::DebugLayer;
-		uint32_t TargetDriver = LWVideoDriver::OpenGL2_1;
+		uint32_t TargetDriver = LWVideoDriver::DirectX11_1;// | LWVideoDriver::DebugLayer;
 		fmt::print("Window created: {} Arch: {} Platform: {}\n", m_Window->GetSize(), ArchNames[LWARCH_ID], PlatformNames[LWPLATFORM_ID]);
 		m_Driver = LWVideoDriver::MakeVideoDriver(m_Window, TargetDriver);
 		if (!m_Driver) {

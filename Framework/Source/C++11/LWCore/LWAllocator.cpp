@@ -9,6 +9,7 @@ struct alignas(16) LWAllocatorEnvironment{
 /*! \endcond */
 
 LWAllocator *LWAllocator::GetAllocator(void *Memory){
+	if (!Memory) return nullptr;
 	auto Env = GetEnvironment<LWAllocatorEnvironment>(Memory);
 	return Env->m_Allocator;
 }
@@ -32,12 +33,12 @@ void *LWAllocator::AllocateMemory(uint32_t Length){
 	LWAllocatorEnvironment *Env = (LWAllocatorEnvironment*)Memory;
 	Env->m_Allocator = this;
 	Env->m_Size = Length;
-	m_AllocatedBytes += (Length+sizeof(LWAllocatorEnvironment));
+	m_AllocatedBytes.fetch_add(Length + sizeof(LWAllocatorEnvironment));
 	return ((int8_t*)Memory) + sizeof(LWAllocatorEnvironment);
 }
 
 void *LWAllocator::DeallocateMemory(void *Memory){
 	LWAllocatorEnvironment *Env = (LWAllocatorEnvironment*)(((int8_t*)Memory) - sizeof(LWAllocatorEnvironment));
-	m_AllocatedBytes -= (Env->m_Size + sizeof(LWAllocatorEnvironment));
+	m_AllocatedBytes.fetch_sub(Env->m_Size + sizeof(LWAllocatorEnvironment));
 	return DeallocateBytes(Env);
 }

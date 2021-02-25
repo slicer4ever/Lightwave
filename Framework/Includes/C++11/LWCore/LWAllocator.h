@@ -2,6 +2,7 @@
 #define LWALLOCATOR_H
 #include <memory>
 #include <new>
+#include <atomic>
 #include "LWCore/LWTypes.h"
 
 /*! \defgroup LWAllocator LWAllocator
@@ -77,7 +78,7 @@ public:
 	*/
 	uint32_t GetAllocatedBytes(void);
 protected:
-	uint32_t m_AllocatedBytes = 0; /*!< \brief the total number of bytes still allocated, this value does include the meta data that is also allocated with LWAllocators. */
+	std::atomic<uint32_t> m_AllocatedBytes = 0; /*!< \brief the total number of bytes still allocated, this value does include the meta data that is also allocated with LWAllocators. */
 
 	/*!< \brief convenience function to get the environment for a piece of memory. */
 	template<class Type>
