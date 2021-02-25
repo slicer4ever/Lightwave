@@ -4,12 +4,16 @@
 #include <cassert>
 
 //Add libfmt support.
+#ifdef _MSC_VER
 #ifndef _HAS_EXCEPTIONS
 #define _HAS_EXCEPTIONS 0 //Because subsystem:Windows only supports 4096 characters, libfmt will throw an exception when such an issue is encountered, this ideally prevents it during release(and debug builds should be set to console mode, however if not then a debug build will assert).
 #endif
 #include "../../../../Dependency/libfmt/include/fmt/format.h"
 #include "../../../../Dependency/libfmt/include/fmt/chrono.h"
 #include "../../../../Dependency/libfmt/include/fmt/ostream.h"
+#else
+#include <libfmt/format.h>
+#endif
 
 /*!< \brief assert's in debug builds, but still keeps expression in non debug builds for simpler one-liners used by lightwave. */
 #ifndef NDEBUG
