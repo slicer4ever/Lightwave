@@ -107,8 +107,6 @@ LWSound &LWSound::Set3DPosition(const LWVector3f &Position) {
 	return *this;
 }
 
-
-
 LWSound &LWSound::Pause(void) {
 	m_AudioDriver->PushEvent(this, LWAudioDriver::Event_Stop);
 	return *this;
@@ -204,6 +202,6 @@ void *LWSound::GetUserData(void) {
 	return m_UserData;
 }
 
-LWSound::LWSound(LWAudioDriver *Driver, LWAudioStream *Stream,uint32_t Type, uint32_t Channel, uint32_t LoopCount, void *UserData) : m_Channel(Channel), m_AudioDriver(Driver), m_AudioStream(Stream), m_UserData(UserData), m_Flag(Type) {
+LWSound::LWSound(LWAudioDriver *Driver, LWAudioStream *Stream,uint32_t Type, uint32_t Channel, uint32_t LoopCount, void *UserData) : m_Channel(Channel), m_AudioDriver(Driver), m_AudioStream(Stream), m_UserData(UserData), m_Flag(Type|PositionChanged) {
 	m_TotalSamples = (uint64_t)(LoopCount + 1)*(uint64_t)m_AudioStream->GetSampleLength();
 }

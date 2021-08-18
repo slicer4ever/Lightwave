@@ -52,7 +52,7 @@ struct alignas(Type[4]) LWSQuaternion {
 			D = -D;
 			Res = -Res;
 		}
-		if (D < 1.0f - std::numeric_limits<Type>::epsilon()) {
+		if (D <= 1.0f - (Type)std::numeric_limits<float>::epsilon()) {
 			Type Theta = (Type)acos(D);
 
 			Type sT = (Type)sin(Theta);
@@ -85,20 +85,20 @@ struct alignas(Type[4]) LWSQuaternion {
 		Type sqz = z * z;
 		Type LenSq = sqx + sqy + sqz + sqw;
 		Type Test = x * y + z * w;
-		if (Test > 0.499*LenSq) return LWSVector4<Type>(LW_PI_2, (Type)2 * atan2(x, w), 0);
-		if (Test < -0.499*LenSq) return LWSVector4<Type>(-LW_PI_2, (Type)-2 * atan2(x, w), 0);
+
+		if (Test > 0.499*LenSq) return LWSVector4<Type>(LW_PI_2, (Type)2 * atan2(x, w), 0, 0);
+		if (Test < -0.499*LenSq) return LWSVector4<Type>(-LW_PI_2, (Type)-2 * atan2(x, w), 0, 0);
 
 		Type Yaw = (Type)atan2((Type)2 * y*w - (Type)2 * x*z, sqx - sqy - sqz + sqw);
 		Type Pitch = (Type)asin((Type)2 * Test / LenSq);
 		Type Roll = (Type)atan2((Type)2 * x*w - (Type)2 * y*z, -sqx + sqy - sqz + sqw);
 		return LWSVector4<Type>(Pitch, Yaw, Roll, (Type)0);
-
 	}
 
 	/*!< \brief normalizes the quaternion to unit length, returns the result without affecting this object. */
 	LWSQuaternion Normalize(void) const {
 		Type L = x * x + y * y + z * z + w * w;
-		if (L < std::numeric_limits<Type>::epsilon()) L = (Type)0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) L = (Type)0;
 		else L = (Type)(1 / sqrt(L));
 		return *this*L;
 	}
@@ -125,14 +125,14 @@ struct alignas(Type[4]) LWSQuaternion {
 
 	/*!< \brief returns the inverse of the quaternion. */
 	LWSQuaternion Inverse(void) const {
-		Type iLenSq = 1.0 / LengthSq();
+		Type iLenSq = (Type)(1.0 / LengthSq());
 		return LWSQuaternion(w, -x, -y, -z) * iLenSq;
 	}
 
 	LWSVector4<Type> RotatePoint(const LWSVector4<Type> Pnt) const {
 		LWSVector4<Type> u = LWSVector4<Type>(x, y, z, 0.0f);
-		float dA = u.Dot3(Pnt);
-		float dB = u.LengthSquared();
+		Type dA = u.Dot3(Pnt);
+		Type dB = u.LengthSquared();
 		LWSVector4<Type> r = LWSVector4<Type>((Type)2 * dA*u + (w*w - dB)*Pnt + 2 * w*u.Cross3(Pnt));
 		r = r * LWSVector4<Type>(1.0, 1.0, 1.0, 0.0) + Pnt * LWSVector4<Type>(0.0, 0.0, 0.0, 1.0);
 		return r;
@@ -147,7 +147,7 @@ struct alignas(Type[4]) LWSQuaternion {
 	}
 
 	bool operator == (const LWSQuaternion<Type> &Rhs) const {
-		const Type e = std::numeric_limits<Type>::epsilon();
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
 		return (Type)abs(x-Rhs.x)<=e && (Type)abs(y-Rhs.y)<=e && (Type)abs(z-Rhs.z)<=e && (Type)abs(w-Rhs.w)<=e;
 	}
 
@@ -242,10 +242,10 @@ struct alignas(Type[4]) LWSQuaternion {
 	LWSQuaternion(Type vw, Type vx, Type vy, Type vz) : w(vw), x(vx), y(vy), z(vz) {}
 
 	LWSQuaternion(const LWSMatrix4<Type> &Mat) {
-		LWVector4<Type> R0 = Mat.Rows[0].AsVec4();
-		LWVector4<Type> R1 = Mat.Rows[1].AsVec4();
-		LWVector4<Type> R2 = Mat.Rows[2].AsVec4();
-		LWVector4<Type> R3 = Mat.Rows[3].AsVec4();
+		LWVector4<Type> R0 = Mat.m_Rows[0].AsVec4();
+		LWVector4<Type> R1 = Mat.m_Rows[1].AsVec4();
+		LWVector4<Type> R2 = Mat.m_Rows[2].AsVec4();
+		LWVector4<Type> R3 = Mat.m_Rows[3].AsVec4();
 
 		Type tr = R0.x + R1.y + R2.z;
 		if (tr > (Type)0) {

@@ -3,13 +3,13 @@
 #include <LWCore/LWTypes.h>
 #include <LWVideo/LWTypes.h>
 #include <LWVideo/LWShader.h>
+#include <LWVideo/LWVideoDriver.h>
 
+struct LWPipelineInputStream;
 
-
-class LWPipeline {
+class LWPipeline : public LWVideoResource {
 public:
 	enum : uint64_t {
-
 		Unknown = 0, /*!< \brief Resource is not a known type. */
 		Texture, /*!< \brief Resource type is an Texture resource(Texture/Sampler object). */
 		TextureBuffer, /*!< \brief Resource type is a texture buffer resource(StructureBuffer object). */
@@ -198,17 +198,32 @@ public:
 	/*!< \brief changes the depth bias and sloped scaled bias. */
 	LWPipeline &SetDepthBias(bool Enabled, float Bias = 0.0f, float SlopedScaleBias = 0.0f);
 
+	/*!< \brief populates upto BufferCount Stream's with the interleaved vertex buffer array.
+		 \param InstanceStreams in order of appearance when a input divisor > 0, will pull from this instance stream.
+		 \return number of Stream's set.
+	*/
+	uint32_t MakeInterleavedInputStream(LWPipelineInputStream *StreamBuffer, const LWPipelineInputStream *InstanceStreams, LWVideoBuffer *InterleavedBuffer, uint32_t InterleaveStride, uint32_t BufferCount);
+
 	/*!< \brief returns true if the dirty flag is set. */
 	bool isDirty(void) const;
 
 	/*!< \brief clears the dirty flag. */
 	LWPipeline &ClearDirty(void);
 
+	/*!< \brief looks up all resources to find resource with the specified namehash, returns -1 if not found. */
+	uint32_t FindResource(uint32_t NameHash);
+
 	/*!< \brief looks up all resources to find resource with specified name, returns -1 if not found. */
 	uint32_t FindResource(const LWUTF8Iterator &Name);
 
+	/*!< \brief looks up all blocks to find block with the specified namehash, returns -1 if not found. */
+	uint32_t FindBlock(uint32_t NameHash);
+
 	/*!< \brief looks up all blocks to find a block with the specified name, returns -1 if not found. */
 	uint32_t FindBlock(const LWUTF8Iterator &Name);
+
+	/*!< \brief looks up all Inputs to find input with the specified namehash, returns -1 if not found. */
+	uint32_t FindInput(uint32_t NameHash);
 
 	/*!< \brief looks up all inputs to find a input with the specified name, returns -1 if not found. */
 	uint32_t FindInput(const LWUTF8Iterator &Name);

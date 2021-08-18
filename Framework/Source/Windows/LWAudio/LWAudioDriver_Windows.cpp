@@ -28,7 +28,7 @@ public:
 
 bool LWAudioDriver::PreUpdateSoundsPlatform(uint64_t ElapsedTime) {
 	if (!isUpdatingListenerPosition()) return true;
-	LWVector3f Up = m_ListenerMatrix.m_Rows[1].xyz();
+	LWVector3f Up = -m_ListenerMatrix.m_Rows[1].xyz();
 	LWVector3f Fwrd = m_ListenerMatrix.m_Rows[2].xyz();
 	LWVector3f Pos = m_ListenerMatrix.m_Rows[3].xyz();
 	m_Context.m_Listener.OrientFront = X3DAUDIO_VECTOR(Fwrd.x, Fwrd.y, Fwrd.z);

@@ -384,7 +384,7 @@ struct LWEGLTFMaterial {
 		DoubleSided = 0x4, //Flag indicating the material is double sided and front face culling should be disabled.
 
 		MetallicRoughness = 0x0, //Type is default metallic roughness material.
-		Unlit = 0x8, //Type is unlit material.
+		Unlit = 0x8, //Type is unlit material (Unlit Color texture+Color factor is placed in metallic roughness BaseColor/BaseColorFactor).
 		SpecularGlossyness = 0x10, //Type is specular glossyness material.
 		TypeBits = 0x18, //Bits to get the type of material.
 		TypeBitOffset = 0x4 //Bit offset to get the 0 indexed type.
@@ -408,7 +408,7 @@ struct LWEGLTFMaterial {
 	LWEGLTFMatMetallicRoughness m_MetallicRoughness;
 	LWEGLTFMatSpecularGlossyness m_SpecularGlossy;
 	LWEGLTFTextureInfo m_NormalMapTexture;
-	LWEGLTFTextureInfo m_OcclussionTexture;
+	LWEGLTFTextureInfo m_OcclusionTexture;
 	LWEGLTFTextureInfo m_EmissiveTexture;
 	LWVector4f m_EmissiveFactor = LWVector4f(0.0f, 0.0f, 0.0f, 1.0f);
 	float m_AlphaCutoff = 0.5f;

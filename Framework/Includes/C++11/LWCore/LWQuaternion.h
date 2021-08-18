@@ -55,7 +55,7 @@ struct LWQuaternion {
 			D = -D;
 			Res = -Res;
 		}
-		if (D < 1.0f - std::numeric_limits<Type>::epsilon()) {
+		if (D <= 1.0f - std::numeric_limits<Type>::epsilon()) {
 			Type Theta = (Type)acos(D);
 
 			Type sT = (Type)sin(Theta);
@@ -91,6 +91,7 @@ struct LWQuaternion {
 		Type sqz = z * z;
 		Type LenSq = sqx + sqy + sqz + sqw;
 		Type Test = x * y + z * w;
+
 		if (Test > 0.499*LenSq) return LWVector3<Type>(LW_PI_2, (Type)2 * atan2(x, w), 0);
 		if (Test < -0.499*LenSq) return LWVector3<Type>(-LW_PI_2, (Type)-2 * atan2(x, w), 0);
 		Type Yaw = (Type)atan2((Type)2 * y*w - (Type)2 * x*z, sqx - sqy - sqz + sqw);
@@ -103,7 +104,7 @@ struct LWQuaternion {
 	/*!< \brief normalizes the quaternion to unit length, returns the result without affecting this object. */
 	LWQuaternion Normalize(void) const {
 		Type L = x*x + y*y + z*z + w*w;
-		if (L < std::numeric_limits<Type>::epsilon()) L = (Type)0;
+		if (L <= std::numeric_limits<Type>::epsilon()) L = (Type)0;
 		else L = (Type)(1/sqrt(L));
 		return *this*L;
 	}

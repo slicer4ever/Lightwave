@@ -38,8 +38,6 @@ Scene *Scene::LoadGLTF(const LWUTF8Iterator &Path, LWVideoDriver *Driver, LWAllo
 		SN.m_ModelID = MapIDToListIndex(MeshList, Node->m_MeshID);
 		SN.m_ParentID = MapIDToListIndex(NodeList, Node->m_ParentID);
 		P.BuildNodeAnimation(SN.m_Animation, NodeID);
-
-
 		if (LightID != -1) { //Animation is not implemented for lights.
 			LWMatrix4f Transform = P.GetNodeWorldTransform(NodeID)*Node->m_TransformMatrix.Inverse();
 			LWVector3f pPos;

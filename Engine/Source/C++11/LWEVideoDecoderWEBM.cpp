@@ -79,7 +79,7 @@ uint32_t ParseEBMLString(LWByteStream &Stream, char *Buffer, uint32_t BufferLen,
 
 uint64_t ParseEBMLDate(LWByteStream &Stream, uint64_t DataSize) {
 	if (DataSize != 8) {
-		fmt::print("Error reading date.\n");
+		LWELogCritical<256>("reading date.");
 		return 0;
 	}
 	return Stream.Read<uint64_t>();
@@ -91,7 +91,7 @@ bool ParseEBMLLoop(LWByteStream &Stream, uint64_t &Length, std::function<bool(LW
 		uint32_t ID = ParseEBMLID(Stream, BytesRead);
 		uint64_t DataSize = ParseEBMLSize(Stream, BytesRead);
 		if (!ParseIDFunc(Stream, ID, DataSize)) {
-			fmt::print("Unknown ID encountered: {:#x}\n", ID);
+			LWELogCritical<256>("Unknown ID encountered: {:#x}", ID);
 			Stream.OffsetStream((uint32_t)DataSize);
 		}
 		Length -= (BytesRead + DataSize);

@@ -15,6 +15,7 @@ void LWProtocolManager::TerminateNetwork(void){
 }
 
 bool LWProtocolManager::PollSet(pollfd *SocketSet, uint32_t SetCnt, uint32_t Timeout) {
+	if (!SetCnt) return true;
 	uint32_t r = WSAPoll(SocketSet, SetCnt, Timeout);
 	if (r == SOCKET_ERROR) return false;
 	return true;

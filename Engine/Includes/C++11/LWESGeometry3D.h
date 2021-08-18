@@ -83,7 +83,7 @@ bool LWEPointInsideAABB(const LWSVector4<Type> &MinBounds, const LWSVector4<Type
 
 template<class Type>
 bool LWEAABBIntersect(const LWSVector4<Type> &aAABBMin, const LWSVector4<Type> &aAABBMax, const LWSVector4<Type> &bAABBMin, const LWSVector4<Type> &bAABBMax, LWSVector4<Type> *IntersectNrm) {
-	if (aAABBMin.Greater3(bAABBMax) || aAABBMax.Less3(bAABBMin)) return false;
+	if (aAABBMin.x > bAABBMax.x || aAABBMin.y > bAABBMax.y || aAABBMin.z > bAABBMax.z || aAABBMax.x < bAABBMin.x || aAABBMax.y < bAABBMin.y || aAABBMax.z < bAABBMin.z) return false;
 	if (IntersectNrm) {
 		LWSVector4<Type> Nrms[6] = { LWSVector4<Type>(-1, 0, 0, 0), LWSVector4<Type>(-1, 0, 0, 0), LWSVector4<Type>(0, -1, 0, 0), LWSVector4<Type>(0, -1, 0, 0), LWVector4<Type>(0, 0, -1, 0), LWVector4<Type>(0, 0, -1, 0) };
 		LWSVector4<Type> A = (aAABBMin - bAABBMax);
@@ -171,12 +171,12 @@ bool LWEConvexHullIntersect(const LWSVector4<Type> &aCenterPnt, const LWSVector4
 	for (uint32_t i = 0; i < aPlaneCnt; i++) {
 		Planes[i * 2] = aPlanes[i];
 		Planes[i * 2 + 1] = aPlanes[i] * LWSVector4<Type>(-1, -1, -1, 1);
-		OrigDis[i * 2] = OrigDis[i * 2 + 1] = aPlanes[i].w();
+		OrigDis[i * 2] = OrigDis[i * 2 + 1] = aPlanes[i].w;
 	}
 	for (uint32_t i = 0; i < bPlaneCnt; i++) {
 		Planes[APlaneCnt + i * 2] = bPlanes[i];
 		Planes[APlaneCnt + i * 2 + 1] = bPlanes[i] * LWSVector4<Type>(-1, -1, -1, 1);
-		OrigDis[APlaneCnt + i * 2] = OrigDis[APlaneCnt + i * 2 + 1] = bPlanes[i].w();
+		OrigDis[APlaneCnt + i * 2] = OrigDis[APlaneCnt + i * 2 + 1] = bPlanes[i].w;
 	}
 	for (uint32_t i = 0; i < APlaneCnt; i++) {
 		for (uint32_t n = APlaneCnt; n < APlaneCnt + BPlaneCnt; n++) {
@@ -187,7 +187,7 @@ bool LWEConvexHullIntersect(const LWSVector4<Type> &aCenterPnt, const LWSVector4
 		}
 	}
 	for (uint32_t i = 0; i < APlaneCnt + BPlaneCnt; i++) {
-		Type Dot = Planes[i].Dot3(Dir) - Planes[i].w();
+		Type Dot = Planes[i].Dot3(Dir) - Planes[i].w;
 		if (Dot < e) {
 			if (Dot > Lowest) {
 				Lowest = Dot;
@@ -294,14 +294,28 @@ bool LWESphereInFrustum(const LWSVector4<Type> &Position, Type Radius, const LWS
 	return m >= -Radius;
 }
 
-/*!< \brief returns true if the aabb is inside the frustum, this function turns the aabb into the largest sphere, which will produce some incorrect results. */
+/*!< \brief returns true if the aabb is inside the frustum. */
 template<class Type>
 bool LWEAABBInFrustum(const LWSVector4<Type> &AABBMin, const LWSVector4<Type> &AABBMax, const LWSVector4<Type> &FrustumPosition, const LWSVector4<Type> *Frustum) {
-	//SquareRoot3
-	const Type SR3 = (Type)1.732050807568877;
-	LWSVector4f hLen = (AABBMax - AABBMin) * 0.5f;
-	LWSVector4f Pos = AABBMin + hLen;
-	return LWESphereInFrustum(Pos, hLen.Max3() * SR3, FrustumPosition, Frustum);
+	LWSVector4<Type> Min = (AABBMin - FrustumPosition).AAAB(LWSVector4<Type>((Type)1));
+	LWSVector4<Type> Max = (AABBMax - FrustumPosition).AAAB(LWSVector4<Type>((Type)1));
+	LWSVector4<Type> Table[8] = { //LUT of all possible Min/Max mix's.
+		Min,
+		Min.AABB(Max),
+		Min.ABAB(Max),
+		Min.ABBB(Max),
+		Min.BAAB(Max),
+		Min.BABB(Max),
+		Min.BBAB(Max),
+		Max }; 
+
+	for (uint32_t i = 0; i < 6; i++) {
+		uint32_t LUTIdx = (Frustum[i].x > (Type)0) << 2 | (Frustum[i].y > (Type)0) << 1 | (Frustum[i].z > (Type)0);
+		LWSVector4<Type> P = Frustum[i];// *LWSVector4<Type>((Type)-1, (Type)-1, (Type)-1, (Type)1);
+		if (Frustum[i].Dot(Table[LUTIdx]) < (Type)0) return false; //Outside
+		if (Frustum[i].Dot(Table[(~LUTIdx) & 0x7]) <= (Type)0) return true; //Intersection
+	}
+	return true; //All inside.
 }
 
 /*!< \brief returns true if a cone is inside the frustum, the cone is defined as a point, direction that expands out at theta upto length size. */

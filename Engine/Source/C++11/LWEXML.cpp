@@ -1,6 +1,7 @@
 #include "LWEXML.h"
 #include <LWCore/LWAllocator.h>
 #include <LWPlatform/LWFileStream.h>
+#include <LWELogger.h>
 #include <iostream>
 #include <functional>
 #include <cstdarg>
@@ -160,12 +161,12 @@ bool LWEXML::ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterat
 			}else if(*C=='/') { //is termination node for our active node:
 				++C;
 				if (!ActiveNode) {
-					fmt::print("Line {}: Error found termination node with no active node.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)));
+					LWELogCritical<256>("Line {}:  found termination node with no active node.", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)));
 					return false;
 				}else {
 					if (!C.isSubString(ActiveNode->GetName())) {
 						LWUTF8Iterator E = C.NextTokens(u8"> ");
-						fmt::print("Line {}: Error found incorrect termination name, active: '{}' Discovered: '{}'\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)), ActiveNode->GetName(), LWUTF8Iterator(C, E));
+						LWELogCritical<256>("Line {}: Error found incorrect termination name, active: '{}' Discovered: '{}'", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)), ActiveNode->GetName(), LWUTF8Iterator(C, E));
 						return false;
 					}
 					C.AdvanceToken('>');
@@ -181,19 +182,19 @@ bool LWEXML::ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterat
 			ActiveNode = XML.GetInsertedNodeAfter(ActiveNode, ChildNode, Allocator);
 			ChildNode = nullptr;
 			if (!ActiveNode) {
-				fmt::print("Error exceeded number of XML nodes supported by this implementation.\n");
+				LWELogCritical<256>("exceeded number of XML nodes supported by this implementation.");
 				return false;
 			}
 			LWUTF8Iterator E = C.NextTokens("> ");
 			if (E.AtEnd()) {
-				fmt::print("Line {}: Error could not find closing > token.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)));
+				LWELogCritical<256>("Line {}: Error could not find closing > token.", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)));
 				return false;
 			}
 			ActiveNode->SetName(LWUTF8Iterator(C, E));
 			for(C = E.NextWord(true);;C.AdvanceWord(true)) {
 				if (*C == '/') {
 					if (!ActiveNode) {
-						fmt::print("Line {}: Error encountered second / before > token.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)));
+						LWELogCritical<256>("Line {}: Error encountered second / before > token.", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)));
 						return false;
 					}
 					ChildNode = ActiveNode;
@@ -212,18 +213,18 @@ bool LWEXML::ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterat
 						++C;
 						E = C.NextToken('\"', false);
 						if (E.AtEnd()) {
-							fmt::print("Line {}: Error did not find matching \" token.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)));
+							LWELogCritical<256>("Line {}: Error did not find matching \" token.", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)));
 							return false;
 						}
 						Attr.SetValue(LWUTF8Iterator(C, E));
 						C = E + 1;
 					} else {
-						fmt::print("Line {}: Error invalid token found: '{:c}'.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)), *C);
+						LWELogCritical<256>("Line {}: Error invalid token found: '{:c}'.", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)), *C);
 						return false;
 					}
 				}
 				if (!ActiveNode->PushAttribute(Attr)) {
-					fmt::print("Line {}: Node '{}' has exceeded the amount of attributes this implementation supports.\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)), ActiveNode->GetName());
+					LWELogCritical<256>("Line {}: Node '{}' has exceeded the amount of attributes this implementation supports.", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)), ActiveNode->GetName());
 				}
 			}
 			P = C+1;

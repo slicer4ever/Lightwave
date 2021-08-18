@@ -105,7 +105,10 @@ bool LWAudioDriver::Update(uint64_t lCurrentTime, LWWindow *Window) {
 			else if (Type == Event_ListenerChanged) m_Flag |= ListernerPositionChanged;
 			else fmt::print("Received unknown event for audio driver: '{}'\n", Type);
 		}
-		if (!Result) return false;
+		if (!Result) {
+			fmt::print("Failed to process event: {}\n", Type);
+			return false;
+		}
 		m_EventReadPosition++;
 	}
 

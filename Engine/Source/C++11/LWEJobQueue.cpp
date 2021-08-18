@@ -2,6 +2,7 @@
 #include <LWCore/LWTimer.h>
 #include <algorithm>
 #include <iostream>
+#include "LWELogger.h"
 
 LWEJob::LWEJob(std::function<void(LWEJob &, LWEJobThread &, LWEJobQueue &, uint64_t)> Func, void *UserData, uint64_t UpdateFrequency, uint32_t LockIDs, uint32_t UnlockIDs, uint32_t LockedOutIDs, uint32_t LockedInIDs, uint32_t LoopCount, uint32_t ThreadLimit) {
 	m_Func = Func;
@@ -155,7 +156,7 @@ LWEJobQueue &LWEJobQueue::OutputJobTimings(void){
 	for (uint32_t i = 0; i < m_JobCount; i++) {
 		if (m_JobState[i].load() == (uint32_t)JobNull) continue;
 		uint64_t Average = m_Jobs[i].m_RunCount ? m_Jobs[i].m_ElapsedTime / m_Jobs[i].m_RunCount : 0;
-		fmt::print("Job {}: Avg: {}ms Total: {}ms Times ran: {}\n", i, LWTimer::ToMilliSecond(Average), LWTimer::ToMilliSecond(m_Jobs[i].m_ElapsedTime), m_Jobs[i].m_RunCount);
+		LWELogEvent<256>("Job {}: Avg: {}ms Total: {}ms Times ran: {}", i, LWTimer::ToMilliSecond(Average), LWTimer::ToMilliSecond(m_Jobs[i].m_ElapsedTime), m_Jobs[i].m_RunCount);
 	}
 	return *this;
 }
@@ -163,7 +164,7 @@ LWEJobQueue &LWEJobQueue::OutputJobTimings(void){
 LWEJobQueue &LWEJobQueue::OutputThreadTimings(void) {
 	for (uint32_t i = 0; i < m_ThreadCount; i++) {
 		uint64_t Average = m_Threads[i].m_JobsRan ? m_Threads[i].m_TimeInJobs / m_Threads[i].m_JobsRan : 0;
-		fmt::print("JThread {}: Avg: {}ms Total: {}ms Jobs ran: {}\n", i, LWTimer::ToMilliSecond(Average), LWTimer::ToMilliSecond(m_Threads[i].m_TimeInJobs), m_Threads[i].m_JobsRan);
+		LWELogEvent<256>("JThread {}: Avg: {}ms Total: {}ms Jobs ran: {}", i, LWTimer::ToMilliSecond(Average), LWTimer::ToMilliSecond(m_Threads[i].m_TimeInJobs), m_Threads[i].m_JobsRan);
 	}
 	return *this;
 }

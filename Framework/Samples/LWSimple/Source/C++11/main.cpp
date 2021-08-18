@@ -244,7 +244,7 @@ public:
 			return;
 		}
 		//uint32_t TargetDriver = LWVideoDriver::Vulkan | LWVideoDriver::DebugLayer;
-		uint32_t TargetDriver = LWVideoDriver::DirectX11_1;// | LWVideoDriver::DebugLayer;
+		uint32_t TargetDriver = LWVideoDriver::OpenGL2_1;
 		fmt::print("Window created: {} Arch: {} Platform: {}\n", m_Window->GetSize(), ArchNames[LWARCH_ID], PlatformNames[LWPLATFORM_ID]);
 		m_Driver = LWVideoDriver::MakeVideoDriver(m_Window, TargetDriver);
 		if (!m_Driver) {
@@ -359,25 +359,24 @@ public:
 			return;
 		}
 
-		m_FontVertexShader = m_Driver->ParseShader(LWShader::Vertex, LWFont::GetVertexShaderSource(), Allocator, 0, nullptr, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
+		m_FontVertexShader = m_Driver->ParseShader(LWShader::Vertex, LWShaderSources[LWShaderFontVertex], Allocator, 0, nullptr, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
 		if (!m_FontVertexShader) {
 			SetFinished(LWUTF8Iterator::C_View<256>("Error creating Font vertex shader:\n{}\n", ErrorBuffer));
 			return;
 		}
 		m_FontVertexShader->SetInputMapList("Position", LWShaderInput::Vec4, 1, "Color", LWShaderInput::Vec4, 1, "TexCoord", LWShaderInput::Vec4, 1);
 
-		m_FontColorShader = m_Driver->ParseShader(LWShader::Pixel, LWFont::GetPixelColorShaderSource(), Allocator, 0, nullptr, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
+		m_FontColorShader = m_Driver->ParseShader(LWShader::Pixel, LWShaderSources[LWShaderFontColor], Allocator, 0, nullptr, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
 		if (!m_FontColorShader) {
 			SetFinished(LWUTF8Iterator::C_View<256>("Error creating Color pixel shader:\n{}\n", ErrorBuffer));
 			return;
 		}
 
-		m_FontMSDFShader = m_Driver->ParseShader(LWShader::Pixel, LWFont::GetPixelMSDFShaderSource(), Allocator, 0, nullptr, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
+		m_FontMSDFShader = m_Driver->ParseShader(LWShader::Pixel, LWShaderSources[LWShaderFontMSDF], Allocator, 0, nullptr, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
 		if (!m_FontMSDFShader) {
 			SetFinished(LWUTF8Iterator::C_View<256>("Error creating msdf pixel shader:\n{}\n", ErrorBuffer));
 			return;
 		}
-
 
 		m_FontColorPipeline = m_Driver->CreatePipeline(m_FontVertexShader, nullptr, m_FontColorShader, LWPipeline::BLENDING, 0, LWPipeline::CULL_CW, LWPipeline::SOLID, LWPipeline::BLEND_SRC_ALPHA, LWPipeline::BLEND_ONE_MINUS_SRC_ALPHA, Allocator);
 		m_FontMSDFPipeline = m_Driver->CreatePipeline(m_FontVertexShader, nullptr, m_FontMSDFShader, LWPipeline::BLENDING, 0, LWPipeline::CULL_CW, LWPipeline::SOLID, LWPipeline::BLEND_SRC_ALPHA, LWPipeline::BLEND_ONE_MINUS_SRC_ALPHA, Allocator);

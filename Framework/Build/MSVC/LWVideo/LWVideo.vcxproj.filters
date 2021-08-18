@@ -19,6 +19,9 @@
     <Filter Include="Source Files\LWVideoDrivers">
       <UniqueIdentifier>{532420f3-a784-480f-afe0-cb29e19fc48a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\LWShaders">
+      <UniqueIdentifier>{2e078853-f82e-4682-9cb4-7274a53fb382}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Includes\C++11\LWVideo\LWFont.h">
@@ -149,5 +152,16 @@
     <ClCompile Include="..\..\..\Source\Windows\LWVideo\LWVideoDrivers\LWVideoDriver_Vulkan_Windows.cpp">
       <Filter>Source Files\LWVideoDrivers</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\Includes\C++11\LWVideo\LWShaders\LWFontColor.lwps">
+      <Filter>Header Files\LWShaders</Filter>
+    </None>
+    <None Include="..\..\..\Includes\C++11\LWVideo\LWShaders\LWFontMSDF.lwps">
+      <Filter>Header Files\LWShaders</Filter>
+    </None>
+    <None Include="..\..\..\Includes\C++11\LWVideo\LWShaders\LWFontVertex.lwvs">
+      <Filter>Header Files\LWShaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

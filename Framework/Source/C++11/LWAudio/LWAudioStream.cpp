@@ -158,9 +158,9 @@ LWAudioStream *LWAudioStream::Create(char *Buffer, uint32_t BufferLen, uint32_t 
 			ov_clear(&Context->m_File);
 			LWAllocator::Destroy(Context);
 			LWAllocator::Destroy(Buffer);
-			Stream = Allocator.Create<LWAudioStream>(nullptr, RawBuffer, TotalSamples, (uint32_t)sizeof(uint16_t), 44100, LinearPCM, 2, FormatRaw);
+			Stream = Allocator.Create<LWAudioStream>(nullptr, RawBuffer, TotalSamples, (uint32_t)sizeof(uint16_t), 44100, LinearPCM, vi->channels, FormatRaw);
 		} else {
-			Stream = Allocator.Create<LWAudioStream>(Context, Buffer, TotalSamples, (uint32_t)sizeof(uint16_t), 44100, LinearPCM, 2, FormatVorbis);
+			Stream = Allocator.Create<LWAudioStream>(Context, Buffer, TotalSamples, (uint32_t)sizeof(uint16_t), 44100, LinearPCM, vi->channels, FormatVorbis);
 		}
 		return Stream;
         //return Allocator.Create<LWAudioStream>(Context, Buffer, TotalSamples, sizeof(uint16_t), 44100, LinearPCM, 2, FormatVorbis);
@@ -189,7 +189,7 @@ char *LWAudioStream::DecodeSamples(char *Buffer, uint32_t SamplePos, uint32_t Sa
 		while (o != (SampleLen*FrameSize)) {
 			int32_t Ret = (int32_t)ov_read(&Context->m_File, Buffer + o, (SampleLen*FrameSize) - o, 0, 2, 1, &cs);
 			if (Ret <= 0) {
-				fmt::print("Failed: {} | {}\n", Ret, o);
+				//fmt::print("Failed: {} | {}\n", Ret, o);
 				return Buffer;
 			}
 			o += (uint32_t)Ret;

@@ -73,6 +73,12 @@ LWFileStream &LWFileStream::Finished(void) {
 	return *this;
 }
 
+LWFileStream &LWFileStream::Flush(void) {
+	if (!m_FileObject) return *this;
+	fflush(m_FileObject);
+	return *this;
+}
+
 uint32_t LWFileStream::GetPosition(void) const {
 	return (uint32_t)ftell(m_FileObject);
 }

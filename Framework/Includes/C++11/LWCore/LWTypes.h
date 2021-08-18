@@ -30,6 +30,9 @@
 /*!< \brief helper function used to define 32 bit bit+bitsoffset of Name.  Name##Bits is the bit pattern representing the field, Name##BitsOffset represents the bit offset to the patten. */
 #define LWBitField32(Name, BitCount, BitOffset) LWBitField(static const uint32_t, Name, (BitCount), (BitOffset))
 
+/*!< \brief helper function used to define 16 bit bit+bitsoffset of Name.  Name##Bits is the bit pattern representing the field, Name##BitsOffset represents the bit offset to the patten. */
+#define LWBitField16(Name, BitCount, BitOffset) LWBitField(static const uint16_t, Name, (BitCount), (BitOffset))
+
 /*!< \brief helper function used to define 64 bit bit+bitsoffset of Name.  Name##Bits is the bit pattern representing the field, Name##BitsOffset represents the bit offset to the patten. */
 #define LWBitField64(Name, BitCount, BitOffset) LWBitField(static const uint64_t, Name, (BitCount), (BitOffset))
 

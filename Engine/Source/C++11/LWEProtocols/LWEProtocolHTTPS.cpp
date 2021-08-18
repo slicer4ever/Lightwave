@@ -27,5 +27,4 @@ uint32_t LWEProtocolHttps::Send(LWSocket &Socket, const char *Buffer, uint32_t L
 	return LWEProtocolTLS::Send(Socket, Buffer, Len);
 }
 
-
-LWEProtocolHttps::LWEProtocolHttps(uint32_t HttpsProtocolID, uint32_t TLSProtocolID, LWProtocolManager *ProtoManager, LWAllocator &Allocator, const LWUTF8Iterator &CertFile, const LWUTF8Iterator &KeyFile) : LWEProtocolTLS(TLSProtocolID, Allocator, CertFile, KeyFile), LWEProtocolHttp(HttpsProtocolID, ProtoManager) {}
+LWEProtocolHttps::LWEProtocolHttps(uint32_t HttpsProtocolID, uint32_t TLSProtocolID, LWAllocator &Allocator, const LWUTF8Iterator &CertFile, const LWUTF8Iterator &KeyFile) : LWEProtocolTLS(TLSProtocolID, Allocator, CertFile, KeyFile), LWEProtocolHttp(HttpsProtocolID) {}

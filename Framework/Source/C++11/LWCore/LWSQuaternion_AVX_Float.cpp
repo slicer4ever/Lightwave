@@ -190,19 +190,19 @@ LWSQuaternion<float> operator / (float Lhs, const LWSQuaternion<float> &Rhs) {
 	return _mm_div_ps(_mm_set_ps1(Lhs), Rhs.m_Data);
 }
 
-LWSQuaternion<float> LWSQuaternion<float>:: operator*(const LWSQuaternion<float>& Rhs) const {
+LWSQuaternion<float> LWSQuaternion<float>::operator*(const LWSQuaternion<float>& Rhs) const {
 	__m128 mwwww = _mm_permute_ps(m_Data, _MM_SHUFFLE(3, 3, 3, 3));
 	__m128 mxyzx = _mm_permute_ps(m_Data, _MM_SHUFFLE(0, 2, 1, 0));
 	__m128 myzxy = _mm_permute_ps(m_Data, _MM_SHUFFLE(1, 0, 2, 1));
 	__m128 mzxyz = _mm_permute_ps(m_Data, _MM_SHUFFLE(2, 1, 0, 2));
 	__m128 rwwwx = _mm_permute_ps(Rhs.m_Data, _MM_SHUFFLE(0, 3, 3, 3));
 	__m128 rzxyy = _mm_permute_ps(Rhs.m_Data, _MM_SHUFFLE(1, 1, 0, 2));
+	__m128 ryzxz = _mm_permute_ps(Rhs.m_Data, _MM_SHUFFLE(2, 0, 2, 1));
 
 	mxyzx = _mm_xor_ps(mxyzx, _mm_set_ps(-0.0f, 0.0f, 0.0f, 0.0f));
 	myzxy = _mm_xor_ps(myzxy, _mm_set_ps(-0.0f, 0.0f, 0.0f, 0.0f));
 	mzxyz = _mm_xor_ps(mzxyz, _mm_set_ps1(-0.0f));
 
-	__m128 ryzxz = _mm_permute_ps(Rhs.m_Data, _MM_SHUFFLE(2, 0, 2, 1));
 	__m128 r = _mm_mul_ps(mwwww, Rhs.m_Data);
 	r = _mm_add_ps(r, _mm_mul_ps(mxyzx, rwwwx));
 	r = _mm_add_ps(r, _mm_mul_ps(myzxy, rzxyy));

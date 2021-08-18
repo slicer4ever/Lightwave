@@ -173,6 +173,9 @@ public:
 	/*! \brief closes the internal file stream without destroying the the local filestream object. */
 	LWFileStream &Finished(void);
 
+	/*!< \brief forces any data in the buffer to be written to disk. */
+	LWFileStream &Flush(void);
+
 	/*! \brief returns the length of the file. */
 	uint32_t Length(void) const;
 

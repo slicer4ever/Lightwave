@@ -2,9 +2,10 @@
 #define LWTEXTURE_H
 #include "LWCore/LWTypes.h"
 #include "LWCore/LWVector.h"
+#include "LWVideo/LWTypes.h"
 
 /*!< \brief texture object. */
-class LWTexture{
+class LWTexture : public LWVideoResource {
 public:
 	enum{
 		MinNearest              = 0, /*!< \brief min filter is determined by nearest texels. */

@@ -5,6 +5,7 @@
 #include <LWCore/LWAllocator.h>
 #include <LWPlatform/LWFileStream.h>
 #include <iostream>
+#include "LWELogger.h"
 
 bool LWELocalization::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
 	char8_t Buffer[1024*16]; //max of 16kb.
@@ -23,7 +24,7 @@ bool LWELocalization::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
 			//Parse Unescape string as if it were a json string.
 			LWEJson::UnEscapeString(ValueAttr->GetValue(), Buffer, sizeof(Buffer));
 			if (!Local->PushString(NameAttr->GetValue(), Buffer, Idx)) {
-				fmt::print("Failed to insert string: '{}' into: {}\n", NameAttr->GetValue(), Idx);
+				LWELogCritical<256>("Failed to insert string: '{}' into: {}", NameAttr->GetValue(), Idx);
 			}
 		}
 		return;
@@ -31,21 +32,21 @@ bool LWELocalization::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
 
 	if (SrcAttr) {
 		if (!LWFileStream::OpenStream(Stream, SrcAttr->m_Value, LWFileStream::ReadMode | LWFileStream::BinaryMode, Alloc)) {
-			fmt::print("Failed to open: '{}'\n", SrcAttr->GetValue());
+			LWELogCritical<256>("Failed to open: '{}'", SrcAttr->GetValue());
 		} else {
 			Stream.ReadText(Buffer, sizeof(Buffer));
 			Stream.Finished();
 			LWEXML X;
 			X.PushParser("Localization", LWELocalization::XMLParser, Local);
 			if (!X.ParseBuffer(X, Alloc, Buffer, true)) {
-				fmt::print("Failed to parse: '{}'\n", SrcAttr->GetValue());
+				LWELogCritical<256>("Failed to parse: '{}'", SrcAttr->GetValue());
 			} else X.Process();
 		}
 	}
 	for (LWEXMLNode *C = Node->m_FirstChild; C; C = C->m_Next) {
 		uint32_t i = C->GetName().CompareList("String");
 		if (i == 0) ParseStringNode(C, Local);
-		else fmt::print("Unknown node: {}\n", C->GetName());
+		else LWELogCritical<256>("Unknown node: {}", C->GetName());
 	}
 	return true;
 }
@@ -97,18 +98,18 @@ bool LWELocalization::PushString(const LWUTF8Iterator &StringName, const LWUTF8I
 	uint32_t Hash = StringName.Hash();
 	auto Iter = m_StringMap[LocalizationID].find(Hash);
 	if (Iter != m_StringMap[LocalizationID].end()) {
-		fmt::print("Localization hash collision: '{}'\n", StringName);
+		LWELogCritical<256>("Localization hash collision: '{}'", StringName);
 		return false;
 	}
 	uint32_t Len = String.RawDistance(String.NextEnd());
 	char8_t *Mem = m_Allocator.Allocate<char8_t>(Len);
 	if (String.Copy(Mem, Len) != Len) {
-		fmt::print("Error copying string.\n");
+		LWELogCritical<256>("copying string.");
 		return false;
 	}
 	auto Res = m_StringMap[LocalizationID].emplace(Hash, Mem);
 	if (!Res.second) {
-		fmt::print("Error inserting: '{}'\n", StringName);
+		LWELogCritical<256>("inserting: '{}'", StringName);
 		LWAllocator::Destroy(Mem);
 	}
 	return Res.second;
@@ -118,7 +119,7 @@ LWUTF8Iterator LWELocalization::Find(const LWUTF8Iterator &StringName) {
 	uint32_t Hash = StringName.Hash();
 	auto Iter = m_StringMap[m_ActiveLocalization].find(Hash);
 	if (Iter == m_StringMap[m_ActiveLocalization].end()) {
-		fmt::print("Error string '{}' not found.\n", StringName);
+		LWELogCritical<256>("string '{}' not found.", StringName);
 		return LWUTF8Iterator();
 	}
 	return LWUTF8Iterator(Iter->second);
@@ -127,7 +128,7 @@ LWUTF8Iterator LWELocalization::Find(const LWUTF8Iterator &StringName) {
 LWUTF8Iterator LWELocalization::Find(uint32_t StringNameHash) {
 	auto Iter = m_StringMap[m_ActiveLocalization].find(StringNameHash);
 	if (Iter == m_StringMap[m_ActiveLocalization].end()) {
-		fmt::print("Error string hash '{:#x}' not found.\n", StringNameHash);
+		LWELogCritical<256>("string hash '{:#x}' not found.", StringNameHash);
 		return LWUTF8Iterator();
 	}
 	return LWUTF8Iterator(Iter->second);

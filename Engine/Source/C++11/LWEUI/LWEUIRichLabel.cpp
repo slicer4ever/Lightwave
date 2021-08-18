@@ -6,6 +6,7 @@
 #include "LWELocalization.h"
 #include "LWEAsset.h"
 #include "LWETypes.h"
+#include "LWELogger.h"
 #include <algorithm>
 #include <cstdarg>
 #include <iostream>
@@ -38,7 +39,7 @@ LWEUIRichLabel *LWEUIRichLabel::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIMan
 		LWUTF8Iterator Path = ParseComponentAttribute(Buffer, sizeof(Buffer), ValueSrcAttr->GetValue(), ActiveComponent, ActiveComponentNode);
 		if (Localize && Localize->ParseLocalization(SBuffer, sizeof(SBuffer), Path)) Path = LWUTF8Iterator(SBuffer);
 		if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::ReadMode, Allocator)) {
-			fmt::print("Error opening file: '{}'\n", Path);
+			LWELogCritical<256>("opening file: '{}'", Path);
 		} else {
 			Stream.ReadText(Buffer, sizeof(Buffer));
 			Label->SetText(Buffer);

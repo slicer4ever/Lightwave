@@ -103,11 +103,10 @@ LWShader *LWVideoDriver_DirectX11_1::CreateShader(uint32_t ShaderType, const LWU
 }
 
 LWShader *LWVideoDriver_DirectX11_1::CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledLen, LWAllocator &Allocator, char8_t *ErrorBuffer, uint32_t ErroBufferLen) {
-	LWDirectX11_1ShaderContext Context;
-	D3D11_INPUT_ELEMENT_DESC LayoutElements[32];
 	DXGI_FORMAT DXFormats[] = { DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT,  DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R32G32B32_UINT, DXGI_FORMAT_R32G32B32_SINT, DXGI_FORMAT_R32G32B32_FLOAT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT };
 	uint32_t ShdrFormats[] = { LWShaderInput::Int,  LWShaderInput::Int, LWShaderInput::Float, LWShaderInput::iVec2,  LWShaderInput::iVec2,  LWShaderInput::Vec2,    LWShaderInput::iVec3,     LWShaderInput::iVec3,     LWShaderInput::Vec3,       LWShaderInput::iVec4,        LWShaderInput::iVec4,        LWShaderInput::Vec4 };
-
+	LWDirectX11_1ShaderContext Context;
+	
 	bool Failed = true;
 	if (ShaderType == LWShader::Vertex) Failed = FAILED(m_Context.m_DXDevice->CreateVertexShader(CompiledCode, CompiledLen, nullptr, &Context.m_VertexShader));
 	else if (ShaderType == LWShader::Pixel) Failed = FAILED(m_Context.m_DXDevice->CreatePixelShader(CompiledCode, CompiledLen, nullptr, &Context.m_PixelShader));
@@ -121,21 +120,23 @@ LWShader *LWVideoDriver_DirectX11_1::CreateShaderCompiled(uint32_t ShaderType, c
 	D3D11_SHADER_DESC Desc;
 	Shdr->GetDesc(&Desc);
 	if (ShaderType == LWShader::Vertex) {
+		Context.m_VertexShaderCode = Allocator.Allocate<char>(CompiledLen);
+		Context.m_VertexShaderCodeLen = CompiledLen;
+		std::copy(CompiledCode, CompiledCode + CompiledLen, Context.m_VertexShaderCode);
+		
 		for (uint32_t i = 0; i < Desc.InputParameters; i++) {
-			D3D11_SIGNATURE_PARAMETER_DESC ParmDesc;
-			Shdr->GetInputParameterDesc(i, &ParmDesc);
-			uint32_t ParamOffset = (ParmDesc.Mask == 1 ? 0 : (ParmDesc.Mask <= 3 ? 1 : (ParmDesc.Mask <= 7 ? 2 : 3)));
-			uint32_t ParamIdx = ParmDesc.ComponentType == 0 ? 0 : ParmDesc.ComponentType - 1;
-			LayoutElements[i].SemanticName = ParmDesc.SemanticName;
-			LayoutElements[i].SemanticIndex = ParmDesc.SemanticIndex;
-			LayoutElements[i].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-			LayoutElements[i].InputSlot = 0;
-			LayoutElements[i].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-			LayoutElements[i].InstanceDataStepRate = 0;
-			LayoutElements[i].Format = DXFormats[ParamOffset * 3 + ParamIdx];
-			Context.m_InputList[i] = { LWUTF8Iterator((const char8_t*)ParmDesc.SemanticName).Hash(), ShdrFormats[ParamOffset * 3 + ParamIdx], 1 };
+			D3D11_SIGNATURE_PARAMETER_DESC ParamDesc;
+			Shdr->GetInputParameterDesc(i, &ParamDesc);
+			LWDirectX11_1ShaderInput &In = Context.m_InputList[i];
+			uint32_t ParamOffset = (ParamDesc.Mask == 1 ? 0 : (ParamDesc.Mask <= 3 ? 1 : (ParamDesc.Mask <= 7 ? 2 : 3)));
+			uint32_t ParamIdx = ParamDesc.ComponentType == 0 ? 0 : ParamDesc.ComponentType - 1;
+
+			LWUTF8I(ParamDesc.SemanticName).Copy(In.m_Name, sizeof(In.m_Name));
+			In.m_SemanticIndex = ParamDesc.SemanticIndex;
+			In.m_DXFormat = DXFormats[ParamOffset * 3 + ParamIdx];
+			In.m_Type = ShdrFormats[ParamOffset * 3 + ParamIdx];
 		}
-		m_Context.m_DXDevice->CreateInputLayout(LayoutElements, Desc.InputParameters, CompiledCode, CompiledLen, &Context.m_InputLayout);
+
 		Context.m_InputCount = Desc.InputParameters;
 	}
 
@@ -171,11 +172,13 @@ LWShader *LWVideoDriver_DirectX11_1::CreateShaderCompiled(uint32_t ShaderType, c
 }
 
 LWPipeline *LWVideoDriver_DirectX11_1::CreatePipeline(LWPipeline *Source, LWAllocator &Allocator) {
+	D3D11_INPUT_ELEMENT_DESC LayoutElements[LWShader::MaxInputs];
+	
 	LWDirectX11_1PipelineContext Context;
 	LWShaderResource ResourceList[LWShader::MaxResources];
 	LWShaderResource BlockList[LWShader::MaxBlocks];
 	LWShaderInput InputList[LWShader::MaxInputs];
-	LWShader *StageList[LWPipeline::StageCount] = { Source->GetShaderStage(0), Source->GetShaderStage(1), Source->GetShaderStage(2) };
+	LWShader *StageList[LWPipeline::StageCount] = { Source->GetShaderStage(0), Source->GetShaderStage(1), Source->GetShaderStage(2), Source->GetShaderStage(0) };
 	uint32_t ResourceCount = 0;
 	uint32_t BlockCount = 0;
 	uint32_t InputCount = 0;
@@ -207,16 +210,29 @@ LWPipeline *LWVideoDriver_DirectX11_1::CreatePipeline(LWPipeline *Source, LWAllo
 	}
 	if (StageList[LWPipeline::Vertex]) {
 		LWDirectX11_1ShaderContext &VContext = ((LWDirectX11_1Shader*)StageList[LWPipeline::Vertex])->GetContext();
+		//we use the vertex shader mapped instancing to calculate instance stepping, if the mapped instance doesn't exist, then instancing is defaulted to 0.
+		const LWShaderInput *InputMap = StageList[LWPipeline::Vertex]->GetInputMap();
+		uint32_t InputMapCnt = StageList[LWPipeline::Vertex]->GetInputCount();
 		for (uint32_t i = 0; i < VContext.m_InputCount; i++) {
-			LWDirectX11_1ShaderResource &In = VContext.m_InputList[i];
-			InputList[i] = LWShaderInput(In.m_Name, In.m_Type, In.m_Length);
+			LWDirectX11_1ShaderInput &vIn = VContext.m_InputList[i];
+			bool bIsInternal = LWUTF8I(vIn.m_Name).Compare("SV_", 3);
+			if (LWUTF8I(vIn.m_Name).Compare("SV_", 3)) {
+				LayoutElements[i] = { vIn.m_Name, vIn.m_SemanticIndex, vIn.m_DXFormat, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 };
+				continue;
+			}
+			if (vIn.m_SemanticIndex == 0) {
+				InputList[InputCount] = LWShaderInput(InputCount < InputMapCnt ? InputMap[InputCount].m_NameHash : LWUTF8I(vIn.m_Name).Hash(), vIn.m_Type, 0, InputCount < InputMapCnt ? InputMap[InputCount].GetInstanceFrequency() : 0);
+				InputCount++;
+			}
+			LWShaderInput &sIn = InputList[InputCount - 1];
+			LayoutElements[i] = { vIn.m_Name, vIn.m_SemanticIndex, vIn.m_DXFormat, InputCount-1, D3D11_APPEND_ALIGNED_ELEMENT, sIn.GetInstanceFrequency() ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA, sIn.GetInstanceFrequency() };
+			sIn.SetLength(sIn.GetLength() + 1);
 		}
-		InputCount = VContext.m_InputCount;
+		m_Context.m_DXDevice->CreateInputLayout(LayoutElements, VContext.m_InputCount, VContext.m_VertexShaderCode, VContext.m_VertexShaderCodeLen, &Context.m_InputLayout);
+		LWShader::GenerateInputOffsets(InputCount, InputList);
 		MergeStage(VContext, LWShader::Vertex, true);
 		Context.m_VertexShader = VContext.m_VertexShader;
-		Context.m_InputLayout = VContext.m_InputLayout;
 		Context.m_VertexShader->AddRef();
-		Context.m_InputLayout->AddRef();
 	}
 	if (StageList[LWPipeline::Geometry]) {
 		LWDirectX11_1ShaderContext &GContext = ((LWDirectX11_1Shader*)StageList[LWPipeline::Geometry])->GetContext();
@@ -249,8 +265,8 @@ LWPipeline *LWVideoDriver_DirectX11_1::CreatePipeline(LWShader **ShaderStages, u
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1D(uint32_t TextureState, uint32_t PackType, uint32_t Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
-	//PackTypes:                   RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                       Depth32,               Depth24Stencil8,          DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
-	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_D16_UNORM, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	//PackTypes:                   SRGBA,                            RGBA8,                      RGBA8S,                      RGBA16,                         RGBA16S,                       RGBA32,                        RGBA32S,                       RGBA32F,                        RG8,                    RG8S,                   RG16,                     RG16S,                    RG32,                    RG32S,                   RG32F,                    R8,                   R8S,                  R16,                   R16S,                  R32,                  R32S,                 R32F,                  Depth16,               Depth24,                       Depth32,               Depth24Stencil8,               BC1                    BC_SRGBA                    BC2                    BC2_SRGB                    BC3                    BC3_SRGB,                   BC4                    BC5                    BC6                    BC7                    BC7_SRGB
+	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
@@ -289,9 +305,9 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1D(uint32_t TextureState, uin
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2D(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
-	//PackTypes:                   RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                          Depth32,                  Depth24Stencil8,                   DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
-	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
-	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	//PackTypes:                     SRGBA,                            RGBA8,                      RGBA8S,                      RGBA16,                         RGBA16S,                       RGBA32,                        RGBA32S,                       RGBA32F,                        RG8,                    RG8S,                   RG16,                     RG16S,                    RG32,                    RG32S,                   RG32F,                    R8,                   R8S,                  R16,                   R16S,                  R32,                  R32S,                 R32F,                  Depth16,               Depth24,                           Depth32,               Depth24Stencil8,                   BC1                    BC_SRGBA                    BC2                    BC2_SRGB                    BC3                    BC3_SRGB,                   BC4                    BC5                    BC6                    BC7                    BC7_SRGB
+	const DXGI_FORMAT Formats[]  = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
+	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
@@ -327,8 +343,9 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2D(uint32_t TextureState, uin
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTexture3D(uint32_t TextureState, uint32_t PackType, const LWVector3i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
-	//PackTypes:                   RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                       Depth32,               Depth24Stencil8,          DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
-	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_D16_UNORM, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	//PackTypes:                     SRGBA,                            RGBA8,                      RGBA8S,                      RGBA16,                         RGBA16S,                       RGBA32,                        RGBA32S,                       RGBA32F,                        RG8,                    RG8S,                   RG16,                     RG16S,                    RG32,                    RG32S,                   RG32F,                    R8,                   R8S,                  R16,                   R16S,                  R32,                  R32S,                 R32F,                  Depth16,               Depth24,                           Depth32,               Depth24Stencil8,                   BC1                    BC_SRGBA                    BC2                    BC2_SRGB                    BC3                    BC3_SRGB,                   BC4                    BC5                    BC6                    BC7                    BC7_SRGB
+	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
+
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
@@ -364,9 +381,10 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture3D(uint32_t TextureState, uin
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeMap(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
-	//PackTypes:                   RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                       Depth32,               Depth24Stencil8,          DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
-	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
-	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	//PackTypes:                     SRGBA,                            RGBA8,                      RGBA8S,                      RGBA16,                         RGBA16S,                       RGBA32,                        RGBA32S,                       RGBA32F,                        RG8,                    RG8S,                   RG16,                     RG16S,                    RG32,                    RG32S,                   RG32F,                    R8,                   R8S,                  R16,                   R16S,                  R32,                  R32S,                 R32F,                  Depth16,               Depth24,                           Depth32,               Depth24Stencil8,                   BC1                    BC_SRGBA                    BC2                    BC2_SRGB                    BC3                    BC3_SRGB,                   BC4                    BC5                    BC6                    BC7                    BC7_SRGB
+	const DXGI_FORMAT Formats[]  = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
+	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
+
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
@@ -408,9 +426,10 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeMap(uint32_t TextureState
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DMS(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, LWAllocator &Allocator) {
-	//PackTypes:                   RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                          Depth32,                  Depth24Stencil8,                   DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
-	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
-	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	//PackTypes:                     SRGBA,                            RGBA8,                      RGBA8S,                      RGBA16,                         RGBA16S,                       RGBA32,                        RGBA32S,                       RGBA32F,                        RG8,                    RG8S,                   RG16,                     RG16S,                    RG32,                    RG32S,                   RG32F,                    R8,                   R8S,                  R16,                   R16S,                  R32,                  R32S,                 R32F,                  Depth16,               Depth24,                           Depth32,               Depth24Stencil8,                   BC1                    BC_SRGBA                    BC2                    BC2_SRGB                    BC3                    BC3_SRGB,                   BC4                    BC5                    BC6                    BC7                    BC7_SRGB
+	const DXGI_FORMAT Formats[]  = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
+	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
+	
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
@@ -423,17 +442,20 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DMS(uint32_t TextureState, u
 	bool Compressed = LWImage::CompressedType(PackType);
 	bool DepthTex = LWImage::DepthType(PackType);
 	bool RenderTarget = (TextureState & (LWTexture::RenderTarget | LWTexture::RenderBuffer));
-	uint32_t BindFlags = D3D11_BIND_SHADER_RESOURCE | ((RenderTarget) ? (DepthTex ? D3D11_BIND_DEPTH_STENCIL : D3D11_BIND_RENDER_TARGET) : 0u);
+	uint32_t BindFlags = ((DepthTex || Compressed) ? 0 : D3D11_BIND_SHADER_RESOURCE) | ((RenderTarget) ? (DepthTex ? D3D11_BIND_DEPTH_STENCIL : D3D11_BIND_RENDER_TARGET) : 0u);
 	D3D11_TEXTURE2D_DESC Desc = { (uint32_t)Size.x, (uint32_t)Size.y, 1u, 1u, Formats[PackType], {Samples, 0u}, D3D11_USAGE_DEFAULT, BindFlags, 0u, 0u };
 	D3D11_SHADER_RESOURCE_VIEW_DESC ViewDesc = { VFormats[PackType], D3D11_SRV_DIMENSION_TEXTURE2DMS, {0u} };
 	if (!CheckResult(m_Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, (ID3D11Texture2D**)&Context.m_Texture), "CreateTexture2D")) return nullptr;
-	if (!CheckResult(m_Context.m_DXDevice->CreateShaderResourceView(Context.m_Texture, &ViewDesc, &Context.m_View), "CreateShaderResourceView")) return nullptr;
+	if (!DepthTex && !Compressed) {
+		if (!CheckResult(m_Context.m_DXDevice->CreateShaderResourceView(Context.m_Texture, &ViewDesc, &Context.m_View), "CreateShaderResourceView")) return nullptr;
+	}
 	return Allocator.Create<LWDirectX11_1Texture>(Context, TextureState, PackType, Samples, LWVector3i(Size, 0), LWTexture::Texture2DMS);
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1DArray(uint32_t TextureState, uint32_t PackType, uint32_t Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
-	//PackTypes:                   RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                       Depth32,               Depth24Stencil8,          DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
-	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_D16_UNORM, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	//PackTypes:                     SRGBA,                            RGBA8,                      RGBA8S,                      RGBA16,                         RGBA16S,                       RGBA32,                        RGBA32S,                       RGBA32F,                        RG8,                    RG8S,                   RG16,                     RG16S,                    RG32,                    RG32S,                   RG32F,                    R8,                   R8S,                  R16,                   R16S,                  R32,                  R32S,                 R32F,                  Depth16,               Depth24,                           Depth32,               Depth24Stencil8,                   BC1                    BC_SRGBA                    BC2                    BC2_SRGB                    BC3                    BC3_SRGB,                   BC4                    BC5                    BC6                    BC7                    BC7_SRGB
+	const DXGI_FORMAT Formats[]  = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
+
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
@@ -476,9 +498,10 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1DArray(uint32_t TextureState
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
-	//PackTypes:                    RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                          Depth32,                  Depth24Stencil8,                   DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
-	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
-	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	//PackTypes:                     SRGBA,                            RGBA8,                      RGBA8S,                      RGBA16,                         RGBA16S,                       RGBA32,                        RGBA32S,                       RGBA32F,                        RG8,                    RG8S,                   RG16,                     RG16S,                    RG32,                    RG32S,                   RG32F,                    R8,                   R8S,                  R16,                   R16S,                  R32,                  R32S,                 R32F,                  Depth16,                  Depth24,                           Depth32,                  Depth24Stencil8,                   BC1                    BC_SRGBA                    BC2                    BC2_SRGB                    BC3                    BC3_SRGB,                   BC4                    BC5                    BC6                    BC7                    BC7_SRGB
+	const DXGI_FORMAT Formats[]  = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
+	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
+	
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
@@ -525,9 +548,9 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DArray(uint32_t TextureState
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
-	//PackTypes:                   RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                       Depth32,               Depth24Stencil8,          DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
-	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
-	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	//PackTypes:                     SRGBA,                            RGBA8,                      RGBA8S,                      RGBA16,                         RGBA16S,                       RGBA32,                        RGBA32S,                       RGBA32F,                        RG8,                    RG8S,                   RG16,                     RG16S,                    RG32,                    RG32S,                   RG32F,                    R8,                   R8S,                  R16,                   R16S,                  R32,                  R32S,                 R32F,                  Depth16,               Depth24,                           Depth32,               Depth24Stencil8,                   BC1                    BC_SRGBA                    BC2                    BC2_SRGB                    BC3                    BC3_SRGB,                   BC4                    BC5                    BC6                    BC7                    BC7_SRGB
+	const DXGI_FORMAT Formats[]  = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
+	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
@@ -571,9 +594,9 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeArray(uint32_t TextureSta
 }
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DMSArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, uint32_t Layers, LWAllocator &Allocator) {
-	//PackTypes:                   RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                          Depth32,                  Depth24Stencil8,                   DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
-	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
-	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	//PackTypes:                     SRGBA,                            RGBA8,                      RGBA8S,                      RGBA16,                         RGBA16S,                       RGBA32,                        RGBA32S,                       RGBA32F,                        RG8,                    RG8S,                   RG16,                     RG16S,                    RG32,                    RG32S,                   RG32F,                    R8,                   R8S,                  R16,                   R16S,                  R32,                  R32S,                 R32F,                  Depth16,               Depth24,                           Depth32,               Depth24Stencil8,                   BC1                    BC_SRGBA                    BC2                    BC2_SRGB                    BC3                    BC3_SRGB,                   BC4                    BC5                    BC6                    BC7                    BC7_SRGB
+	const DXGI_FORMAT Formats[]  = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
+	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
@@ -586,17 +609,19 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DMSArray(uint32_t TextureSta
 	bool Compressed = LWImage::CompressedType(PackType);
 	bool DepthTex = LWImage::DepthType(PackType);
 	bool RenderTarget = (TextureState & (LWTexture::RenderTarget | LWTexture::RenderBuffer));
-	uint32_t BindFlags = D3D11_BIND_SHADER_RESOURCE | ((RenderTarget) ? (DepthTex ? D3D11_BIND_DEPTH_STENCIL : D3D11_BIND_RENDER_TARGET) : 0u);
+	uint32_t BindFlags = ((DepthTex || Compressed) ? 0 : D3D11_BIND_SHADER_RESOURCE) | ((RenderTarget) ? (DepthTex ? D3D11_BIND_DEPTH_STENCIL : D3D11_BIND_RENDER_TARGET) : 0u);
 	D3D11_TEXTURE2D_DESC Desc = { (uint32_t)Size.x, (uint32_t)Size.y, 1u, Layers, Formats[PackType], {Samples, 0u}, D3D11_USAGE_DEFAULT, BindFlags, 0u, 0u };
 	D3D11_SHADER_RESOURCE_VIEW_DESC ViewDesc = { VFormats[PackType], D3D11_SRV_DIMENSION_TEXTURE2DMSARRAY, {0u, Layers} };
 	if (!CheckResult(m_Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, (ID3D11Texture2D**)&Context.m_Texture), "CreateTexture2D")) return nullptr;
-	if (!CheckResult(m_Context.m_DXDevice->CreateShaderResourceView(Context.m_Texture, &ViewDesc, &Context.m_View), "CreateShaderResourceView")) return nullptr;
+	if (!DepthTex && !Compressed) {
+		if (!CheckResult(m_Context.m_DXDevice->CreateShaderResourceView(Context.m_Texture, &ViewDesc, &Context.m_View), "CreateShaderResourceView")) return nullptr;
+	}
 	return Allocator.Create<LWDirectX11_1Texture>(Context, TextureState, PackType, Samples, LWVector3i(Size, Layers), LWTexture::Texture2DMSArray);
 }
 
 LWVideoBuffer *LWVideoDriver_DirectX11_1::CreateVideoBuffer(uint32_t Type, uint32_t UsageFlag, uint32_t TypeSize, uint32_t Length, LWAllocator &Allocator, const uint8_t *Buffer) {
-	uint32_t DBinds[] = { D3D11_BIND_VERTEX_BUFFER, D3D11_BIND_CONSTANT_BUFFER, D3D11_BIND_INDEX_BUFFER, D3D11_BIND_INDEX_BUFFER, D3D11_BIND_SHADER_RESOURCE };
-	uint32_t MiscFlags[] = { 0u, 0u, 0u, 0u, D3D11_RESOURCE_MISC_BUFFER_STRUCTURED };
+	uint32_t DBinds[] = { D3D11_BIND_VERTEX_BUFFER, D3D11_BIND_CONSTANT_BUFFER, D3D11_BIND_INDEX_BUFFER, D3D11_BIND_INDEX_BUFFER, D3D11_BIND_SHADER_RESOURCE, D3D11_BIND_INDEX_BUFFER };
+	uint32_t MiscFlags[] = { 0u, 0u, 0u, 0u, D3D11_RESOURCE_MISC_BUFFER_STRUCTURED, D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS };
 	uint32_t VideoID = 0;
 	uint32_t UsageID = (UsageFlag&LWVideoBuffer::UsageFlag);
 	uint32_t RawLength = TypeSize * Length;
@@ -772,7 +797,46 @@ bool LWVideoDriver_DirectX11_1::DownloadTexture1D(LWTexture *Texture, uint32_t M
 }
 
 bool LWVideoDriver_DirectX11_1::DownloadTexture2D(LWTexture *Texture, uint32_t MipmapLevel, uint8_t *Buffer) {
-	return false;
+	//Create staging texture and copy resource.
+	//PackTypes:                     SRGBA,                            RGBA8,                      RGBA8S,                      RGBA16,                         RGBA16S,                       RGBA32,                        RGBA32S,                       RGBA32F,                        RG8,                    RG8S,                   RG16,                     RG16S,                    RG32,                    RG32S,                   RG32F,                    R8,                   R8S,                  R16,                   R16S,                  R32,                  R32S,                 R32F,                  Depth16,               Depth24,                           Depth32,               Depth24Stencil8,                   BC1                    BC_SRGBA                    BC2                    BC2_SRGB                    BC3                    BC3_SRGB,                   BC4                    BC5                    BC6                    BC7                    BC7_SRGB
+	const DXGI_FORMAT Formats[]  = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_D16_UNORM, DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
+	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
+
+	LWDirectX11_1TextureContext &Con = ((LWDirectX11_1Texture*)Texture)->GetContext();
+	LWDirectX11_1TextureContext Context;
+	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
+		if (SUCCEEDED(Res)) return true;
+		fmt::print("DownloadTexture2D Error '{}': {:#x}\n", FuncName, Res);
+		if (Context.m_View) Context.m_View->Release();
+		if (Context.m_Texture) Context.m_Texture->Release();
+		return false;
+	};
+
+	uint32_t PackType = Texture->GetPackType();
+	bool Compressed = LWImage::CompressedType(PackType);
+	bool DepthTex = LWImage::DepthType(PackType);
+	LWVector2i Size = LWImage::MipmapSize2D(Texture->Get2DSize(), MipmapLevel);
+	uint32_t Bytes = LWImage::GetBitSize(PackType) / 8;
+	D3D11_TEXTURE2D_DESC Desc = { (uint32_t)Size.x, (uint32_t)Size.y,
+		0u, 1u, Formats[PackType], { 1u, 0u},
+		D3D11_USAGE_STAGING, 0u, D3D11_CPU_ACCESS_READ,	0u };
+	if (!CheckResult(m_Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, (ID3D11Texture2D**)&Context.m_Texture), "CreateTexture2D")) return nullptr;
+	D3D11_BOX Bx = { 0, 0, 0u, (uint32_t)Size.x, (uint32_t)Size.y, 1u };
+	uint32_t MipCnt = Texture->GetMipmapCount() + 1;
+	m_Context.m_DXDeviceContext->CopySubresourceRegion(Context.m_Texture, 0, 0, 0, 0, Con.m_Texture, MipmapLevel, &Bx);
+
+	D3D11_MAPPED_SUBRESOURCE MapRsc;
+	if (!CheckResult(m_Context.m_DXDeviceContext->Map(Context.m_Texture, 0, D3D11_MAP_READ, 0, &MapRsc), "Map")) return false;
+
+	uint32_t Stride = LWImage::GetStride(Size.x, PackType);
+	uint8_t *p = (uint8_t*)MapRsc.pData;
+	for (int32_t i = 0; i < Size.y; i++) {
+		uint8_t *Row = p + MapRsc.RowPitch * i;
+		std::copy(Row, Row + Stride, Buffer + Stride * i);
+	}
+	m_Context.m_DXDeviceContext->Unmap(Context.m_Texture, 0);
+	Context.m_Texture->Release();
+	return true;
 }
 
 bool LWVideoDriver_DirectX11_1::DownloadTexture3D(LWTexture *Texture, uint32_t MipmapLevel, uint8_t *Buffer) {
@@ -789,15 +853,15 @@ bool LWVideoDriver_DirectX11_1::DownloadTexture1DArray(LWTexture *Texture, uint3
 
 bool LWVideoDriver_DirectX11_1::DownloadTexture2DArray(LWTexture *Texture, uint32_t MipmapLevel, uint32_t Layer, uint8_t *Buffer) {
 	//Create staging texture and copy resource.
-	//PackTypes:                   RGBA8,                      RGBA8U,                     RGBA16,                         RGBA16U,                        RGBA32,                        RGBA32U,                       RGBA32F,                        RG8,                    RG8U,                   RG16,                     RG16U,                    RG32,                    RG32U,                   RG32F,                    R8,                   R8U,                  R16,                   R16U,                  R32,                  R32U,                 R32F,                  Depth16,               Depth24,                          Depth32,                  Depth24Stencil8,                   DXT1                   DXT2                   DXT3                   DXT4                   DXT5                   DXT6                   DXT7  
-	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
-	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	//PackTypes:                     SRGBA,                            RGBA8,                      RGBA8S,                      RGBA16,                         RGBA16S,                       RGBA32,                        RGBA32S,                       RGBA32F,                        RG8,                    RG8S,                   RG16,                     RG16S,                    RG32,                    RG32S,                   RG32F,                    R8,                   R8S,                  R16,                   R16S,                  R32,                  R32S,                 R32F,                  Depth16,               Depth24,                           Depth32,               Depth24Stencil8,                   BC1                    BC_SRGBA                    BC2                    BC2_SRGB                    BC3                    BC3_SRGB,                   BC4                    BC5                    BC6                    BC7                    BC7_SRGB
+	const DXGI_FORMAT Formats[]  = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_D16_UNORM, DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
+	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
 
 	LWDirectX11_1TextureContext &Con = ((LWDirectX11_1Texture*)Texture)->GetContext();
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
 		if (SUCCEEDED(Res)) return true;
-		fmt::print("CreateTexture2D Error '{}': {:#x}\n", FuncName, Res);
+		fmt::print("DownloadTexture2DArray Error '{}': {:#x}\n", FuncName, Res);
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -838,7 +902,8 @@ bool LWVideoDriver_DirectX11_1::DownloadVideoBuffer(LWVideoBuffer *VBuffer, uint
 	return false;
 }
 
-bool LWVideoDriver_DirectX11_1::UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const uint8_t *Buffer, uint32_t Length) {
+bool LWVideoDriver_DirectX11_1::UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const uint8_t *Buffer, uint32_t Length, uint32_t Offset) {
+	if (!Length) return true;
 	LWDirectX11_1Buffer *VB = (LWDirectX11_1Buffer*)VideoBuffer;
 	LWDirectX11_1BufferContext &Con = VB->GetContext();
 	ID3D11Buffer *Buf = Con.m_Buffer;
@@ -852,7 +917,32 @@ bool LWVideoDriver_DirectX11_1::UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, co
 		fmt::print("Error 'Map': {}\n", Res);
 		return false;
 	}
-	std::copy(Buffer, Buffer + Length, (uint8_t*)M.pData);
+	std::copy(Buffer, Buffer + Length, (uint8_t*)M.pData+Offset);
+	m_Context.m_DXDeviceContext->Unmap(Buf, 0);
+	return true;
+}
+
+void *LWVideoDriver_DirectX11_1::MapVideoBuffer(LWVideoBuffer *VideoBuffer, uint32_t Length, uint32_t Offset) {
+	LWDirectX11_1Buffer *VB = (LWDirectX11_1Buffer*)VideoBuffer;
+	LWDirectX11_1BufferContext &Con = VB->GetContext();
+	ID3D11Buffer *Buf = Con.m_Buffer;
+	uint32_t UsageID = VideoBuffer->GetFlag() & LWVideoBuffer::UsageFlag;
+	if (UsageID != LWVideoBuffer::WriteDiscardable && UsageID != LWVideoBuffer::WriteNoOverlap) return nullptr;
+	D3D11_MAP UpdateType = D3D11_MAP_WRITE_DISCARD;
+	if (UsageID == LWVideoBuffer::WriteNoOverlap) UpdateType = D3D11_MAP_WRITE_NO_OVERWRITE;
+	D3D11_MAPPED_SUBRESOURCE M;
+	HRESULT Res = m_Context.m_DXDeviceContext->Map(Buf, 0, UpdateType, 0, &M);
+	if (FAILED(Res)) {
+		fmt::print("Error 'Map': {}\n", Res);
+		return nullptr;
+	}
+	return (void*)((uint8_t*)M.pData + Offset);
+}
+
+bool LWVideoDriver_DirectX11_1::UnmapVideoBuffer(LWVideoBuffer *VideoBuffer) {
+	LWDirectX11_1Buffer *VB = (LWDirectX11_1Buffer*)VideoBuffer;
+	LWDirectX11_1BufferContext &Con = VB->GetContext();
+	ID3D11Buffer *Buf = Con.m_Buffer;
 	m_Context.m_DXDeviceContext->Unmap(Buf, 0);
 	return true;
 }
@@ -890,7 +980,7 @@ LWVideoDriver &LWVideoDriver_DirectX11_1::DestroyShader(LWShader *Shader) {
 	else if (ShaderType == LWShader::Geometry) ShaderContext.m_GeometryShader->Release();
 	else if (ShaderType == LWShader::Pixel) ShaderContext.m_PixelShader->Release();
 	else if (ShaderType == LWShader::Compute) ShaderContext.m_ComputeShader->Release();
-	if (ShaderContext.m_InputLayout) ShaderContext.m_InputLayout->Release();
+	LWAllocator::Destroy(ShaderContext.m_VertexShaderCode);
 	LWAllocator::Destroy(S);
 	return *this;
 }
@@ -902,7 +992,7 @@ LWVideoDriver &LWVideoDriver_DirectX11_1::DestroyTexture(LWTexture *Texture) {
 	for (auto &&Iter : Con.m_RenderTargetViewList) Iter.second->Release();
 	for (auto &&Iter : Con.m_DepthStencilViewList) Iter.second->Release();
 	for (auto &&Iter : Con.m_UnorderedViewList) Iter.second->Release();
-	Con.m_View->Release();
+	if(Con.m_View) Con.m_View->Release();
 	Con.m_Texture->Release();
 	LWAllocator::Destroy(Tex);
 	return *this;
@@ -969,7 +1059,7 @@ bool LWVideoDriver_DirectX11_1::SetRasterState(uint64_t Flags, float Bias, float
 		if (!doDepthBias) Bias = SlopedScaleBias = 0.0f;
 
 		D3D11_RASTERIZER_DESC1 RastDesc = { FillModes[FillMode], CullModes[CullMode],
-											true, (int32_t)(Depth24Scalar*Bias), 0.0f, SlopedScaleBias, true, false, true, false, 0 };
+											true, (int32_t)(Depth24Scalar*Bias), 0.0f, SlopedScaleBias, true, false, false, false, 0 };
 		D3D11_DEPTH_STENCIL_DESC DepthDesc = { (Flags&(LWPipeline::DEPTH_TEST)) != 0,
 												((Flags&(LWPipeline::No_Depth)) == 0 ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO),
 												CompFuncs[DepthCompareFunc], (Flags&LWPipeline::STENCIL_TEST) != 0,
@@ -1023,8 +1113,8 @@ bool LWVideoDriver_DirectX11_1::SetRasterState(uint64_t Flags, float Bias, float
 }
 
 
-bool LWVideoDriver_DirectX11_1::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *VertexBuffer, LWVideoBuffer *IndiceBuffer, uint32_t VerticeStride, uint32_t Offset) {
-	bool Update = LWVideoDriver::SetPipeline(Pipeline, VertexBuffer, IndiceBuffer, VerticeStride, Offset);
+bool LWVideoDriver_DirectX11_1::SetPipeline(LWPipeline *Pipeline, LWPipelineInputStream *InputStream, LWVideoBuffer *IndiceBuffer, LWVideoBuffer *IndirectBuffer) {
+	bool Update = LWVideoDriver::SetPipeline(Pipeline, InputStream, IndiceBuffer, IndirectBuffer);
 	ViewArray<ID3D11ShaderResourceView> VertexResourceViews;
 	ViewArray<ID3D11ShaderResourceView> GeomResourceViews;
 	ViewArray<ID3D11ShaderResourceView> PixelResourceViews;
@@ -1047,7 +1137,7 @@ bool LWVideoDriver_DirectX11_1::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer 
 
 	for (uint32_t i = 0; i < BlockCnt; i++) {
 		LWShaderResource &Block = Pipeline->GetBlock(i);
-		auto *VB = (LWDirectX11_1Buffer*)Block.m_Resource;
+		auto *VB = Block.m_Resource->As<LWDirectX11_1Buffer>();
 		ID3D11Buffer *Buf = nullptr;
 		uint32_t BufOffset = Block.m_Offset*16;
 		uint32_t BufLen = Block.GetLength() / 16;
@@ -1060,8 +1150,8 @@ bool LWVideoDriver_DirectX11_1::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer 
 	}
 	for (uint32_t i = 0; i < ResourceCnt; i++) {
 		LWShaderResource &Resrc = Pipeline->GetResource(i);
-		auto *T = (LWDirectX11_1Texture*)Resrc.m_Resource;
-		auto *B = (LWDirectX11_1Buffer*)Resrc.m_Resource;
+		auto *T = Resrc.m_Resource->As<LWDirectX11_1Texture>();
+		auto *B = Resrc.m_Resource->As<LWDirectX11_1Buffer>();
 		uint32_t TypeID = Resrc.GetTypeID();
 		ID3D11ShaderResourceView *SView = nullptr;
 		ID3D11UnorderedAccessView *UView = nullptr;
@@ -1089,16 +1179,29 @@ bool LWVideoDriver_DirectX11_1::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer 
 			else ViewArray<ID3D11ShaderResourceView>::SetLists(Resrc, SView, 0, 0, VertexResourceViews, GeomResourceViews, PixelResourceViews, ComputeResourceViews);
 		}
 	}
-	if (VertexBuffer) {
-		LWVideoDriver::UpdateVideoBuffer(VertexBuffer);
-		ID3D11Buffer *VBuffer = ((LWDirectX11_1Buffer*)VertexBuffer)->GetContext().m_Buffer;
-		uint32_t o = 0;
-		m_Context.m_DXDeviceContext->IASetVertexBuffers(0, 1, &VBuffer, &VerticeStride, &o);
+
+	if (InputStream) {
+		ID3D11Buffer *VBufferList[LWShader::MaxInputs];
+		uint32_t VStrideList[LWShader::MaxInputs];
+		uint32_t VOffsetList[LWShader::MaxInputs];
+		uint32_t InputCount = Pipeline->GetInputCount();
+		LWVideoBuffer *LastBuffer = nullptr;
+		for (uint32_t i = 0; i < InputCount; i++) {
+			LWVideoDriver::UpdateVideoBuffer(InputStream[i].m_Buffer);
+			VBufferList[i] = ((LWDirectX11_1Buffer*)InputStream[i].m_Buffer)->GetContext().m_Buffer;
+			VOffsetList[i] = InputStream[i].m_Offset;
+			VStrideList[i] = InputStream[i].m_Stride;
+		}
+		m_Context.m_DXDeviceContext->IASetVertexBuffers(0, InputCount, VBufferList, VStrideList, VOffsetList);
 	}
 	if (IndiceBuffer) {
 		LWVideoDriver::UpdateVideoBuffer(IndiceBuffer);
 		ID3D11Buffer *IBuffer = ((LWDirectX11_1Buffer*)IndiceBuffer)->GetContext().m_Buffer;
 		m_Context.m_DXDeviceContext->IASetIndexBuffer(IBuffer, IndiceBuffer->GetType() == LWVideoBuffer::Index16 ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT, 0);
+	}
+	if (IndirectBuffer) {
+		LWVideoDriver::UpdateVideoBuffer(IndirectBuffer);
+		ID3D11Buffer *IBuffer = ((LWDirectX11_1Buffer*)IndiceBuffer)->GetContext().m_Buffer;
 	}
 	if (!Update) return false;
 	m_Context.m_BoundComputeUnorderedCount = ComputeUAVViews.m_Count;
@@ -1192,11 +1295,11 @@ LWVideoDriver &LWVideoDriver_DirectX11_1::ClearStencil(uint8_t Stencil) {
 	return *this;
 }
 
-LWVideoDriver &LWVideoDriver_DirectX11_1::DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t Offset) {
+LWVideoDriver &LWVideoDriver_DirectX11_1::DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t Offset) {
 	//Points, LineStrip, Lines, TriangleStrip, Triangles
 	const uint32_t DDrawModes[] = { D3D11_PRIMITIVE_TOPOLOGY_POINTLIST, D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP, D3D11_PRIMITIVE_TOPOLOGY_LINELIST, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST };
 	SetFrameBuffer(m_ActiveFrameBuffer);
-	SetPipeline(Pipeline, InputBlock, IndexBuffer, VertexStride, Offset);
+	SetPipeline(Pipeline, InputStreams, IndexBuffer, nullptr);
 	m_Context.m_DXDeviceContext->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)DDrawModes[DrawMode]);	
 	if (IndexBuffer) {
 		m_Context.m_DXDeviceContext->DrawIndexed(Count, Offset, 0);
@@ -1204,22 +1307,42 @@ LWVideoDriver &LWVideoDriver_DirectX11_1::DrawBuffer(LWPipeline *Pipeline, int32
 	return *this;
 }
 
-LWVideoDriver &LWVideoDriver_DirectX11_1::DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t InstanceCount, uint32_t Offset) {
+LWVideoDriver &LWVideoDriver_DirectX11_1::DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t InstanceCount, uint32_t Offset) {
 	//Points, LineStrip, Lines, TriangleStrip, Triangles
 	uint32_t DDrawModes[] = { D3D11_PRIMITIVE_TOPOLOGY_POINTLIST, D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP, D3D11_PRIMITIVE_TOPOLOGY_LINELIST, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST };
 	
 	SetFrameBuffer(m_ActiveFrameBuffer);
-	SetPipeline(Pipeline, InputBlock, IndexBuffer, VertexStride, Offset);
+	SetPipeline(Pipeline, InputStreams, IndexBuffer, nullptr);
 	m_Context.m_DXDeviceContext->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)DDrawModes[DrawMode]);
 	if (IndexBuffer) {
-		m_Context.m_DXDeviceContext->DrawIndexedInstanced(Count, InstanceCount, Offset,  0, 0);
+		m_Context.m_DXDeviceContext->DrawIndexedInstanced(Count, InstanceCount, Offset, 0, 0);
 	} else m_Context.m_DXDeviceContext->DrawInstanced(Count, InstanceCount, Offset, 0);
+	return *this;
+}
+
+LWVideoDriver &LWVideoDriver_DirectX11_1::DrawIndirectBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, LWVideoBuffer *IndirectBuffer, uint32_t IndirectCount, uint32_t IndirectOffset) {
+	//Points, LineStrip, Lines, TriangleStrip, Triangles
+	uint32_t DDrawModes[] = { D3D11_PRIMITIVE_TOPOLOGY_POINTLIST, D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP, D3D11_PRIMITIVE_TOPOLOGY_LINELIST, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST };
+
+	SetFrameBuffer(m_ActiveFrameBuffer);
+	SetPipeline(Pipeline, InputStreams, IndexBuffer, nullptr);
+	m_Context.m_DXDeviceContext->IASetPrimitiveTopology((D3D11_PRIMITIVE_TOPOLOGY)DDrawModes[DrawMode]);
+	ID3D11Buffer *IBuffer = ((LWDirectX11_1Buffer*)IndirectBuffer)->GetContext().m_Buffer;
+	if (IndexBuffer) {
+		for (uint32_t i = IndirectOffset; i < IndirectOffset + IndirectCount; i++) {
+			m_Context.m_DXDeviceContext->DrawIndexedInstancedIndirect(IBuffer, sizeof(LWIndirectIndice) * i);
+		}
+	} else {
+		for (uint32_t i = IndirectOffset; i < IndirectOffset + IndirectCount; i++) {
+			m_Context.m_DXDeviceContext->DrawInstancedIndirect(IBuffer, sizeof(LWIndirectVertex) * i);
+		}
+	}
 	return *this;
 }
 
 LWVideoDriver &LWVideoDriver_DirectX11_1::Dispatch(LWPipeline *Pipeline, const LWVector3i &GroupDimension) {
 	SetFrameBuffer(m_ActiveFrameBuffer);
-	SetPipeline(Pipeline, nullptr, nullptr, 0, 0);
+	SetPipeline(Pipeline, nullptr, nullptr, nullptr);
 	m_Context.m_DXDeviceContext->Dispatch(GroupDimension.x, GroupDimension.y, GroupDimension.z);
 	return *this;
 }
@@ -1243,7 +1366,8 @@ uint32_t LWDirectX11_1TextureContext::MakeHash(uint32_t Layer, uint32_t Face, ui
 }
 
 ID3D11RenderTargetView *LWDirectX11_1TextureContext::GetRenderTargetView(uint32_t Layer, uint32_t Face, uint32_t MipmapLevel, LWTexture *Tex, LWDirectX11_1Context &DriverContext) {
-	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	//PackTypes:                     SRGBA,                            RGBA8,                      RGBA8S,                      RGBA16,                         RGBA16S,                       RGBA32,                        RGBA32S,                       RGBA32F,                        RG8,                    RG8S,                   RG16,                     RG16S,                    RG32,                    RG32S,                   RG32F,                    R8,                   R8S,                  R16,                   R16S,                  R32,                  R32S,                 R32F,                  Depth16,               Depth24,                           Depth32,               Depth24Stencil8,                   BC1                    BC_SRGBA                    BC2                    BC2_SRGB                    BC3                    BC3_SRGB,                   BC4                    BC5                    BC6                    BC7                    BC7_SRGB
+	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
 	uint32_t Hash = MakeHash(Layer, Face, MipmapLevel);
 	auto Iter = m_RenderTargetViewList.find(Hash);
 	if (Iter != m_RenderTargetViewList.end()) return Iter->second;
@@ -1298,8 +1422,9 @@ ID3D11RenderTargetView *LWDirectX11_1TextureContext::GetRenderTargetView(uint32_
 }
 
 ID3D11DepthStencilView *LWDirectX11_1TextureContext::GetDepthStencilView(uint32_t Layer, uint32_t Face, uint32_t MipmapLevel, LWTexture *Tex, LWDirectX11_1Context &DriverContext) {
+	//PackTypes:                     SRGBA,                            RGBA8,                      RGBA8S,                      RGBA16,                         RGBA16S,                       RGBA32,                        RGBA32S,                       RGBA32F,                        RG8,                    RG8S,                   RG16,                     RG16S,                    RG32,                    RG32S,                   RG32F,                    R8,                   R8S,                  R16,                   R16S,                  R32,                  R32S,                 R32F,                  Depth16,               Depth24,                           Depth32,               Depth24Stencil8,           BC1                    BC_SRGBA                    BC2                    BC2_SRGB                    BC3                    BC3_SRGB,                   BC4                    BC5                    BC6                    BC7                    BC7_SRGB
+	const DXGI_FORMAT Formats[]  = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_D16_UNORM, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
 
-	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_D16_UNORM,    DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_D32_FLOAT,    DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
 	uint32_t Hash = MakeHash(Layer, Face, MipmapLevel);
 	auto Iter = m_DepthStencilViewList.find(Hash);
 	if (Iter != m_DepthStencilViewList.end()) return Iter->second;
@@ -1339,7 +1464,7 @@ ID3D11DepthStencilView *LWDirectX11_1TextureContext::GetDepthStencilView(uint32_
 	} else return nullptr;
 	HRESULT Res = DriverContext.m_DXDevice->CreateDepthStencilView(m_Texture, &Desc, &View);
 	if (FAILED(Res)) {
-		fmt::print("Error 'CreateDepthStencilView': {:#x}", Res);
+		fmt::print("Error 'CreateDepthStencilView': {:#x}\n", Res);
 		return nullptr;
 	}
 	auto ResE = m_DepthStencilViewList.emplace(Hash, View);
@@ -1352,20 +1477,22 @@ ID3D11DepthStencilView *LWDirectX11_1TextureContext::GetDepthStencilView(uint32_
 }
 
 ID3D11UnorderedAccessView *LWDirectX11_1TextureContext::GetUnorderedAccessView(uint32_t Layer, uint32_t Face, uint32_t MipmapLevel, LWTexture *Tex, LWDirectX11_1Context &DriverContext) {
-	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R16G16B16A16_SNORM, DXGI_FORMAT_R16G16B16A16_UNORM, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_D16_UNORM,    DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_D32_FLOAT,    DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM };
+	//PackTypes:                    SRGBA,               RGBA8,                      RGBA8S,                      RGBA16,                         RGBA16S,                       RGBA32,                        RGBA32S,                       RGBA32F,                        RG8,                    RG8S,                   RG16,                     RG16S,                    RG32,                    RG32S,                   RG32F,                    R8,                   R8S,                  R16,                   R16S,                  R32,                  R32S,                 R32F,                  Depth16,             Depth24,             Depth32,             Depth24Stencil8,     BC1                  BC_SRGB              BC2                  BC2_SRGB             BC3                  BC3_SRGB,            BC4                  BC5                  BC6                  BC7                  BC7_SRGB
+	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN };
+
+	D3D11_UNORDERED_ACCESS_VIEW_DESC Desc;
 	uint32_t Hash = MakeHash(Layer, Face, MipmapLevel);
+	uint32_t PackType = Tex->GetPackType();
+	Desc.Format = Formats[PackType];
+	if (Desc.Format == DXGI_FORMAT_UNKNOWN) return nullptr;
+
 	auto Iter = m_UnorderedViewList.find(Hash);
 	if (Iter != m_UnorderedViewList.end()) return Iter->second;
-	uint32_t PackType = Tex->GetPackType();
 	uint32_t TexType = Tex->GetType();
 	LWVector3i Size = Tex->Get3DSize();
 	uint32_t Mipmaps = Tex->GetMipmapCount();
-	bool Compressed = LWImage::CompressedType(PackType);
-	bool DepthTex = LWImage::DepthType(PackType);
-	if (Compressed || DepthTex) return nullptr;
-	D3D11_UNORDERED_ACCESS_VIEW_DESC Desc;
+
 	ID3D11UnorderedAccessView *View = nullptr;
-	Desc.Format = Formats[Tex->GetPackType()];
 	if (TexType == LWTexture::Texture1D) {
 		Desc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE1D;
 		Desc.Texture1D = { MipmapLevel };
@@ -1393,6 +1520,7 @@ ID3D11UnorderedAccessView *LWDirectX11_1TextureContext::GetUnorderedAccessView(u
 	HRESULT Res = DriverContext.m_DXDevice->CreateUnorderedAccessView(m_Texture, &Desc, &View);
 	if (FAILED(Res)) {
 		fmt::print("Error 'CreateUnorderedAccessView': {:#x}\n", Res);
+		assert(false);
 		return nullptr;
 	}
 	auto ResE = m_UnorderedViewList.emplace(Hash, View);

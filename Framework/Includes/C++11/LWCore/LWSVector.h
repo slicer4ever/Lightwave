@@ -16,13 +16,13 @@ struct alignas(Type[4]) LWSVector4 {
 
 	/*!< \brief checks the sign of each component, and returns +1 for positive sign, and -1 for negative sign components. */
 	LWSVector4<Type> Sign(void) const {
-		return LWVector4<Type>(x < 0 ? -1 : 1, y < 0 ? -1 : 1, z < 0 ? -1 : 1, w < 0 ? -1 : 1);
+		return LWVector4<Type>((Type)(x < 0 ? -1 : 1), (Type)(y < 0 ? -1 : 1), (Type)(z < 0 ? -1 : 1), (Type)(w < 0 ? -1 : 1));
 	}
 
 	/*!< \brief normalizes the vec4. */
 	LWSVector4<Type> Normalize(void) const {
 		Type L = x * x + y * y + z * z + w * w;
-		if (L < std::numeric_limits<Type>::epsilon()) L = (Type)0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) L = (Type)0;
 		else L = (Type)1 / (Type)sqrt(L);
 		return LWSVector4<Type>(x*L, y*L, z*L, w*L);
 	}
@@ -30,7 +30,7 @@ struct alignas(Type[4]) LWSVector4 {
 	/*!< \brief normalizes as if it were a vec3 object, ignoring the w component. */
 	LWSVector4<Type> Normalize3(void) const {
 		Type L = x * x + y * y + z * z;
-		if (L < std::numeric_limits<Type>::epsilon()) L = (Type)0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) L = (Type)0;
 		else L = (Type)1 / (Type)sqrt(L);
 		return LWSVector4<Type>(x*L, y*L, z*L, w);
 	}
@@ -38,7 +38,7 @@ struct alignas(Type[4]) LWSVector4 {
 	/*!< \brief normalizes as if it were a vec2 object, ignoring the z and w component. */
 	LWSVector4<Type> Normalize2(void) const {
 		Type L = x * x + y * y;
-		if (L < std::numeric_limits<Type>::epsilon()) L = (Type)0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) L = (Type)0;
 		else L = (Type)1 / (Type)sqrt(L);
 		return LWSVector4<Type>(x*L, y*L, z, w);
 	}
@@ -143,21 +143,21 @@ struct alignas(Type[4]) LWSVector4 {
 	/*!< \brief return's the length of the vector. */
 	Type Length(void) const {
 		Type L = x * x + y * y + z * z + w * w;
-		if (L < std::numeric_limits<Type>::epsilon()) return (Type)0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) return (Type)0;
 		return (Type)sqrt(L);
 	}
 
 	/*!< \brief return's the length of the x, y, and z of the vector. */
 	Type Length3(void) const {
 		Type L = x * x + y * y + z * z;
-		if (L < std::numeric_limits<Type>::epsilon()) return (Type)0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) return (Type)0;
 		return (Type)sqrt(L);
 	}
 
 	/*!< \brief return's the length of the x, y of the vector. */
 	Type Length2(void) const {
 		Type L = x * x + y * y;
-		if (L < std::numeric_limits<Type>::epsilon()) return (Type)0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) return (Type)0;
 		return (Type)sqrt(L);
 	}
 
@@ -474,7 +474,8 @@ struct alignas(Type[4]) LWSVector4 {
 	}
 
 	bool operator == (const LWSVector4<Type> &Rhs) const {
-		return x == Rhs.x && y == Rhs.y && z == Rhs.z && w == Rhs.w;
+		constexpr Type e = (Type)std::numeric_limits<float>::epsilon();
+		return (Type)abs(x - Rhs.x) <= e && (Type)abs(y - Rhs.y) <= e && (Type)abs(z - Rhs.z) <= e && (Type)abs(w - Rhs.w) <= e;
 	}
 
 	bool operator != (const LWSVector4<Type> &Rhs) const {
@@ -572,7 +573,7 @@ struct alignas(Type[4]) LWSVector4 {
 
 	/*!< \brief returns yzw from A(this), and x from B. */
 	LWSVector4<Type> BAAA(const LWSVector4<Type> &B) const {
-		return { B.w, y, z, w };
+		return { B.x, y, z, w };
 	}
 
 	/*!< \brief returns yz from A(this), and xw from B. */
@@ -1632,7 +1633,7 @@ struct alignas(Type[4]) LWSVector4 {
 	}
 
 	LWSVector4<Type> wwww(void) const {
-		return LWSVector4<Type>(w, w, w, z);
+		return LWSVector4<Type>(w, w, w, w);
 	}
 
 	LWSVector4<Type> xxx(void) const {

@@ -58,11 +58,19 @@ struct LWEJObject {
 
 	LWUTF8Iterator GetValue(void) const;
 
-	int32_t AsInt(void);
+	int32_t AsInt(void) const;
 
-	float AsFloat(void);
+	uint32_t AsUInt(void) const;
 
-	bool AsBoolean(void);
+	int64_t AsInt64(void) const;
+
+	uint64_t AsUInt64(void) const;
+
+	float AsFloat(void) const;
+
+	double AsDouble(void) const;
+
+	bool AsBoolean(void) const;
 
 	LWVector2f AsVec2f(LWEJson &Js);
 

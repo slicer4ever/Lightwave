@@ -22,7 +22,7 @@ struct LWMatrix4 {
 
 	/*!< \brief returns the inverse of an transformation only matrix, if the matrix is more complex then this function will return incorrect results. */
 	LWMatrix4 TransformInverse(void) const {
-		const Type E = std::numeric_limits<Type>::epsilon();
+		const Type E = (Type)std::numeric_limits<float>::epsilon();
 		//Transpose matrix.
 		LWVector3<Type> A = LWVector3<Type>(m_Rows[0].x, m_Rows[1].x, m_Rows[2].x);
 		LWVector3<Type> B = LWVector3<Type>(m_Rows[0].y, m_Rows[1].y, m_Rows[2].y);
@@ -379,7 +379,7 @@ struct LWMatrix4 {
 
 	/*!< \brief returns euler representation of the matrix.  if the matrix is not an affine transform then this function will return undefined results. */
 	LWVector3<Type> ToEuler(void) const {
-		const Type e = std::numeric_limits<Type>::epsilon();
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
 		if (m_Rows[1].x > 1.0f - e) {
 			return LWVector3<Type>((Type)LW_PI_2, (Type)atan2(m_Rows[0].z, m_Rows[2].z), (Type)0);
 		} else if (m_Rows[1].x < -1.0f + e) {
@@ -720,7 +720,7 @@ struct LWMatrix3{
 	/*! \brief Returns an copied inverse of this matrix. */
 	LWMatrix3 Inverse(void) const{
 		Type D = Determinant();
-		if (abs(D) <= std::numeric_limits<Type>::epsilon()) return LWMatrix3();
+		if (abs(D) <= (Type)std::numeric_limits<float>::epsilon()) return LWMatrix3();
 		LWMatrix3 Result;
 		Result.m_Rows[0] = LWVector3<Type>(m_Rows[1].y*m_Rows[2].z - m_Rows[1].z*m_Rows[2].x, m_Rows[0].z*m_Rows[2].y - m_Rows[0].y*m_Rows[2].z, m_Rows[0].y*m_Rows[1].z - m_Rows[0].z*m_Rows[1].y)*D;
 		Result.m_Rows[1] = LWVector3<Type>(m_Rows[1].z*m_Rows[2].x - m_Rows[1].x*m_Rows[2].z, m_Rows[0].x*m_Rows[2].z - m_Rows[0].z*m_Rows[2].x, m_Rows[0].z*m_Rows[1].x - m_Rows[0].x*m_Rows[1].z)*D;
@@ -905,7 +905,7 @@ struct LWMatrix3{
 
 	/*!< \brief returns Euler representation of the matrix.  if the matrix is not an affine transform then this function will return undefined results. */
 	LWVector3<Type> ToEuler(void) const {
-		const Type e = std::numeric_limits<Type>::epsilon();
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
 		if (m_Rows[1].x > 1.0f - e) {
 			return LWVector3<Type>((Type)LW_PI_2, (Type)atan2(m_Rows[0].z, m_Rows[2].z), (Type)0);
 		} else if (m_Rows[1].x < -1.0f + e) {
@@ -1121,7 +1121,7 @@ struct LWMatrix2{
 	/*! \brief Returns an copied inverse of this matrix. */
 	LWMatrix2 Inverse(void) const{
 		Type D = Determinant();
-		if (abs(D) <= std::numeric_limits<Type>::epsilon()) return LWMatrix2();
+		if (abs(D) <= (Type)std::numeric_limits<float>::epsilon()) return LWMatrix2();
 		return LWMatrix2(LWVector2<Type>(m_Rows[1].y, m_Rows[0].y)*D, LWVector2<Type>(m_Rows[1].x, m_Rows[0].x)*D );
 	}
 

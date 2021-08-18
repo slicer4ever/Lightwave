@@ -59,8 +59,10 @@ bool LWProtocolManager::Poll(uint32_t Timeout) {
 			m_Sockets[i].Close();
 			m_Sockets[i] = std::move(m_Sockets[m_ActiveSocketCount - 1]);
 			m_SocketSet[i] = m_SocketSet[m_ActiveSocketCount - 1];
-			LWProtocol *NP = m_Protocols[m_Sockets[i].GetProtocolID()];
-			if (NP) NP->SocketChanged(m_Sockets[m_ActiveSocketCount - 1], m_Sockets[i], this);
+			if ((i+1)!=m_ActiveSocketCount) {
+				LWProtocol *NP = m_Protocols[m_Sockets[i].GetProtocolID()];
+				if (NP) NP->SocketChanged(m_Sockets[m_ActiveSocketCount - 1], m_Sockets[i], this);
+			}
 			i--;
 			m_ActiveSocketCount--;
 		}

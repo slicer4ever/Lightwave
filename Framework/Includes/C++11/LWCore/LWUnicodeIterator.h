@@ -9,6 +9,7 @@
 template<class Type>
 class LWUnicodeIterator {
 public:
+	static const uint32_t EmptyHash = LWCrypto::FNV1AHash;
 
 	/*!< \brief C_View is for giving to c api's a static heap null terminated copy of the iterator. */
 	template<std::size_t Len>
@@ -51,6 +52,23 @@ public:
 	template<uint32_t Len, typename ...Args>
 	static C_View<Len> Fmt(const Type *Fmt, Args ...Pack) {
 		return C_View<Len>(Fmt, Pack...);
+	}
+
+	/*!< \brief fmt's into Buffer, returning the length of bytes needed to hold the formatted string(-1 as null terminator is not included), automatically add's \0 if buffer is not null. */
+	template<typename ...Args>
+	static uint32_t Fmt_n(Type *Buffer, uint32_t BufferLen, const Type *Fmt, Args ...Pack) {
+		Type *BL = Buffer + std::min<uint32_t>(BufferLen - 1, BufferLen);
+		uint32_t Len = (uint32_t)fmt::format_to_n((char*)Buffer, BufferLen, Fmt, Pack...).size;
+		Type *B = std::min<Type*>(Buffer + Len, BL);
+		if (BufferLen) *B = '\0';
+		return Len;
+	}
+
+	/*!< \brief fmt's into buffer at offset if offset is not past the buffer len, this is a safe way to serialize data as this function will not write pass the buffer, and will place a \0 if buffer is not null. */
+	template<typename ...Args>
+	static uint32_t Fmt_ns(Type *Buffer, uint32_t BufferLen, uint32_t BufferOffset, const Type *Fmt, Args ...Pack) {
+		uint32_t Remain = BufferOffset >= BufferLen ? 0 : BufferLen - BufferOffset;
+		return Fmt_n(Buffer + BufferOffset, Remain, Fmt, Pack...);
 	}
 
 	/*!< \brief returns the number of units(Type's) required to occupy this codepoint. */
@@ -203,6 +221,40 @@ public:
 		for (; !Iter.AtEnd(); ++Iter) {
 			uint32_t r = LWUnicodeIterator<TargetType>::EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL - B), *Iter);
 			B = std::min<TargetType*>(B + r, BL);
+			o += r;
+		}
+		if (BufferSize) *B = '\0';
+		return o + 1;
+	}
+
+	/*!< \brief lower's characters and copy's result into Buffer, note that this function only encompasses the English A-Z = a-z, the full unicode case matching is not yet supported. */
+	uint32_t Lower(Type *Buffer, uint32_t BufferSize) const {
+		Type *B = Buffer;
+		Type *BL = B + std::min<uint32_t>(BufferSize, BufferSize - 1);
+		LWUnicodeIterator<Type> Iter = *this;
+		uint32_t o = 0;
+		for (; !Iter.AtEnd(); ++Iter) {
+			uint32_t CP = *Iter;
+			if (CP >= 'A' && CP <= 'Z') CP += 32;
+			uint32_t r = EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL - B), CP);
+			B = std::min<Type*>(B + r, BL);
+			o += r;
+		}
+		if (BufferSize) *B = '\0';
+		return o + 1;
+	}
+
+	/*!< \brief Upper's characters and copy's result into Buffer, note that this function only encompasses the English a-z = A-Z, the full unicode case matching is not yet supported. */
+	uint32_t Upper(Type *Buffer, uint32_t BufferSize) const {
+		Type *B = Buffer;
+		Type *BL = B + std::min<uint32_t>(BufferSize, BufferSize - 1);
+		LWUnicodeIterator<Type> Iter = *this;
+		uint32_t o = 0;
+		for (; !Iter.AtEnd(); ++Iter) {
+			uint32_t CP = *Iter;
+			if (CP >= 'a' && CP <= 'z') CP -= 32;
+			uint32_t r = EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL - B), CP);
+			B = std::min<Type*>(B + r, BL);
 			o += r;
 		}
 		if (BufferSize) *B = '\0';
@@ -965,7 +1017,7 @@ public:
 	
 	/*!< \brief compares to an array of list of comparable items, returning the index of that matching List item, or -1 if no match is found. */
 	template<class T>
-	uint32_t CompareLista(uint32_t Count, const T *List) {
+	uint32_t CompareLista(uint32_t Count, const T *List) const {
 		for (uint32_t i = 0; i < Count; i++)
 			if (Compare(List[i])) return i;
 		return -1;
@@ -1023,6 +1075,23 @@ public:
 	/*!< \brief returns the raw length remaining from position to Last. does not indicate actual number of characters the iterator has to end. */
 	uintptr_t RawRemaining(void) const {
 		return (uintptr_t)(m_Last - m_Position);
+	}
+
+	/*!< \brief returns the number of raw characters left of the string, either encountering a '\0' or last, whichever comes first. */
+	uintptr_t RawLength(void) const {
+		return (uintptr_t)RawDistance(NextEnd());
+	}
+
+	/*!< \brief returns the number of codepoint's left of the string, this function should not be used if calculating the size of a buffer to contain the string, instead use RawLength. */
+	uintptr_t Length(void) const {
+		return (uintptr_t)Distance(NextEnd());
+	}
+
+	/*!< \brief returns the remaining length from position to the c_str length(i.e: looking for only the '\0' character. does not include '\0' itself.) */
+	uintptr_t c_strLength(void) const {
+		const char *P = m_Position;
+		while (*P) ++P;
+		return (uintptr_t)(P-m_Position);
 	}
 
 	/*!< \brief constructs an iterator where position is at First, and Last is First+Length. applications should use create when possible unless it can be guaranteed the string being used is not malformed. */

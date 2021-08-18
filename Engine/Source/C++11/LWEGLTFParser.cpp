@@ -5,6 +5,7 @@
 #include <LWCore/LWByteBuffer.h>
 #include <LWCore/LWCrypto.h>
 #include <functional>
+#include "LWELogger.h"
 
 #pragma region LWEGLTFANIMTWEEN
 LWMatrix4f LWEGLTFAnimTween::GetFrame(float Time, bool Loop) {
@@ -42,12 +43,12 @@ bool LWEGLTFBuffer::ParseJSON(LWEGLTFBuffer &Buf, LWEJson &J, LWEJObject *Obj, L
 	const uint32_t SupportedEmbedFormats[SupportedEmbedCount] = { LWUTF8Iterator(u8"application/octet-stream;base64,").Hash() };
 	const uint32_t SupportedTextLengths[SupportedEmbedCount] = { 32 };
 	if (!JByteLength) {
-		fmt::print("Error no buffer bytelength found.\n");
+		LWELogCritical<256>("no buffer bytelength found.");
 		return false;
 	}
 	if (!JURI) {
 		if (!BinChunk) {
-			fmt::print("Error glb does not have a binary chunk.\n");
+			LWELogCritical<256>("glb does not have a binary chunk.");
 			return false;
 		}
 		Length = JByteLength->AsInt();
@@ -62,7 +63,7 @@ bool LWEGLTFBuffer::ParseJSON(LWEGLTFBuffer &Buf, LWEJson &J, LWEJObject *Obj, L
 				if (LWCrypto::HashFNV1A((uint8_t*)JURI->m_Value + 5, SupportedTextLengths[i]) == SupportedEmbedFormats[i]) break;
 			}
 			if (i >= SupportedEmbedCount) {
-				fmt::print("Error buffer has unsupported embed type: '{}'\n", JURI->GetValue());
+				LWELogCritical<256>("buffer has unsupported embed type: '{}'", JURI->GetValue());
 				return false;
 			}
 			char *Data = JURI->m_Value + 5 + SupportedTextLengths[i];
@@ -74,7 +75,7 @@ bool LWEGLTFBuffer::ParseJSON(LWEGLTFBuffer &Buf, LWEJson &J, LWEJObject *Obj, L
 			}
 		} else {
 			if (!LWFileStream::OpenStream(Stream, JURI->GetValue(), LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, &FileStream)) {
-				fmt::print("Error could not open buffer file: '{}'\n", JURI->GetValue());
+				LWELogCritical<256>("could not open buffer file: '{}'", JURI->GetValue());
 				return false;
 			}
 			Length = Stream.Length();
@@ -126,7 +127,7 @@ bool LWEGLTFBufferView::ParseJSON(LWEGLTFBufferView &BufView, LWEJson &J, LWEJOb
 	LWEJObject *JByteOffset = Obj->FindChild("byteOffset", J);
 	LWEJObject *JByteStride = Obj->FindChild("byteStride", J);
 	if (!JBuffer || !JByteLength) {
-		fmt::print("Error Bufferview does not have required fields.\n");
+		LWELogCritical<256>("Bufferview does not have required fields.");
 		return false;
 	}
 	BufView = LWEGLTFBufferView(JBuffer->AsInt(), JByteOffset ? JByteOffset->AsInt() : 0, JByteLength->AsInt(), JByteStride ? JByteStride->AsInt() : 0);
@@ -151,7 +152,7 @@ bool LWEGLTFAccessor::ParseJSON(LWEGLTFAccessor &Buf, LWEJson &J, LWEJObject *Ob
 	LWEJObject *JType = Obj->FindChild("type", J);
 
 	if (!JCount || !JComponentType || !JType) {
-		fmt::print("Error accessor data does not have required fields.\n");
+		LWELogCritical<256>("accessor data does not have required fields.");
 		return false;
 	}
 	uint32_t TypeHash = JType->GetValue().Hash();
@@ -173,7 +174,7 @@ bool LWEGLTFCameraOrtho::ParseJSON(LWEGLTFCameraOrtho &Ortho, LWEJson &J, LWEJOb
 	LWEJObject *JZFar = Obj->FindChild("zfar", J);
 	LWEJObject *JZNear = Obj->FindChild("znear", J);
 	if (!JXMag || !JYMag || !JZFar || !JZNear) {
-		fmt::print("Error ortho camera missing required parameters.\n");
+		LWELogCritical<256>("ortho camera missing required parameters.");
 		return false;
 	}
 	Ortho = LWEGLTFCameraOrtho(JXMag->AsFloat(), JYMag->AsFloat(), JZNear->AsFloat(), JZFar->AsFloat());
@@ -194,7 +195,7 @@ bool LWEGLTFCameraPerspective::ParseJSON(LWEGLTFCameraPerspective &Persp, LWEJso
 	LWEJObject *JZNear = Obj->FindChild("znear", J);
 	LWEJObject *JZFar = Obj->FindChild("zfar", J);
 	if (!JZNear || !JFOV) {
-		fmt::print("Error perspective camera missing required parameters.\n");
+		LWELogCritical<256>("perspective camera missing required parameters.");
 		return false;
 	}
 	Persp = LWEGLTFCameraPerspective(JFOV->AsFloat(), JZNear->AsFloat());
@@ -222,25 +223,25 @@ bool LWEGLTFCamera::ParseJSON(LWEGLTFCamera &Camera, LWEJson &J, LWEJObject *Obj
 	LWEJObject *JPerspectiveCam = Obj->FindChild("perspective", J);
 	LWEJObject *JOrthoCam = Obj->FindChild("orthographic", J);
 	if (!JType) {
-		fmt::print("Error camera does not have type parameter.\n");
+		LWELogCritical<256>("camera does not have type parameter.");
 		return false;
 	}
 	uint32_t TypeID = JType->GetValue().Hash();
 	Camera = LWEGLTFCamera(JName ? JName->GetValue() : LWUTF8Iterator(), TypeID);
 	if (TypeID == perspective){
 		if (!JPerspectiveCam) {
-			fmt::print("Error camera is perspective type with no perspective component.\n");
+			LWELogCritical<256>("camera is perspective type with no perspective component.");
 			return false;
 		}
 		if (!LWEGLTFCameraPerspective::ParseJSON(Camera.m_Perspective, J, JPerspectiveCam)) return false;
 	} else if (TypeID == orthographic) {
 		if (!JOrthoCam) {
-			fmt::print("Error camera is orthographic type with no orthographic component.\n");
+			LWELogCritical<256>("camera is orthographic type with no orthographic component.");
 			return false;
 		}
 		if (!LWEGLTFCameraOrtho::ParseJSON(Camera.m_Ortho, J, Obj)) return false;
 	} else {
-		fmt::print("Error camera type is unknown(or not supported): '{}' ({}).\n", JType->GetValue(), TypeID);
+		LWELogCritical<256>("camera type is unknown(or not supported): '{}' ({}).", JType->GetValue(), TypeID);
 		return false;
 	}
 	return true;
@@ -288,7 +289,7 @@ bool LWEGLTFPrimitive::ParseJSON(LWEGLTFPrimitive &Primitive, LWEJson &J, LWEJOb
 	LWEJObject *JIndices = Obj->FindChild("indices", J);
 	LWEJObject *JMaterial = Obj->FindChild("material", J);
 	if (!JAttributes) {
-		fmt::print("Error primitive does not have required fields.\n");
+		LWELogCritical<256>("primitive does not have required fields.");
 		return false;
 	}
 	uint32_t AttributeCnt = std::min<uint32_t>(MaxAttributes, JAttributes->m_Length);
@@ -314,7 +315,7 @@ bool LWEGLTFMesh::ParseJSON(LWEGLTFMesh &Mesh, LWEJson &J, LWEJObject *Obj) {
 	LWEJObject *JPrimitives = Obj->FindChild("primitives", J);
 	LWEJObject *JNames = Obj->FindChild("name", J);
 	if (!JPrimitives) {
-		fmt::print("Error mesh does not have a primitive list.\n");
+		LWELogCritical<256>("mesh does not have a primitive list.");
 		return false;
 	}
 	Mesh = LWEGLTFMesh(JNames ? JNames->m_Value : "", JPrimitives->m_Length);
@@ -505,7 +506,7 @@ bool LWEGLTFTextureInfo::ParseJSON(LWEGLTFTextureInfo &TexInfo, LWEJson &J, LWEJ
 	LWEJObject *JTexCoord = Obj->FindChild("texCoord", J);
 	LWEJObject *JExtensions = Obj->FindChild("extensions", J);
 	if (!JIndex) {
-		fmt::print("Error gltf texture info is missing required parametes 'index'\n");
+		LWELogCritical<256>("gltf texture info is missing required parameters 'index'");
 		return false;
 	}
 	TexInfo = LWEGLTFTextureInfo(JIndex->AsInt());
@@ -595,7 +596,7 @@ bool LWEGLTFMaterial::ParseJSON(LWEGLTFMaterial &Mat, LWEJson &J, LWEJObject *Ob
 		if (!LWEGLTFTextureInfo::ParseJSON(Mat.m_NormalMapTexture, J, JNormalTexture)) return false;
 	}
 	if (JOcclusionTexture) {
-		if (!LWEGLTFTextureInfo::ParseJSON(Mat.m_OcclussionTexture, J, JOcclusionTexture)) return false;
+		if (!LWEGLTFTextureInfo::ParseJSON(Mat.m_OcclusionTexture, J, JOcclusionTexture)) return false;
 	}
 	if (JEmissiveTexture) {
 		if (!LWEGLTFTextureInfo::ParseJSON(Mat.m_EmissiveTexture, J, JEmissiveTexture)) return false;
@@ -606,7 +607,7 @@ bool LWEGLTFMaterial::ParseJSON(LWEGLTFMaterial &Mat, LWEJson &J, LWEJObject *Ob
 		uint32_t Hash = JAlphaMode->GetValue().Hash();
 		for (; AlphaMode < AlphaModeCnt && Hash!=AlphaModeHashs[AlphaMode]; AlphaMode++) {}
 		if (AlphaMode >= AlphaModeCnt) {
-			fmt::print("Error unknown material alpha mode: '{}'\n", JAlphaMode->GetValue());
+			LWELogCritical<256>("unknown material alpha mode: '{}'", JAlphaMode->GetValue());
 			return false;
 		}
 		Mat.m_Flag |= (AlphaMode << AlphaBitOffset);
@@ -656,7 +657,7 @@ bool LWEGLTFLight::ParseJSON(LWEGLTFLight &L, LWEJson &J, LWEJObject *Obj) {
 	LWEJObject *JType = Obj->FindChild("type", J);
 	LWEJObject *JRange = Obj->FindChild("range", J);
 	if (!JType) {
-		fmt::print("Error light does not specify type.\n");
+		LWELogCritical<256>("light does not specify type.");
 		return false;
 	}
 	L = LWEGLTFLight(JName ? JName->GetValue() : LWUTF8Iterator(), JType->GetValue().Hash());
@@ -779,7 +780,7 @@ bool LWEGLTFSkin::ParseJSON(LWEGLTFSkin &Skin, LWEJson &J, LWEJObject *Obj) {
 	LWEJObject *JJoints = Obj->FindChild("joints", J);
 	LWEJObject *JSkeleton = Obj->FindChild("skeleton", J);
 	if (!JJoints) {
-		fmt::print("Error skin is missing required fields.\n");
+		LWELogCritical<256>("skin is missing required fields.");
 		return false;
 	}
 	Skin = LWEGLTFSkin(JName ? JName->GetValue() : LWUTF8Iterator(), JJoints->m_Length, JInverseBindMatrices ? JInverseBindMatrices->AsInt() : -1, JSkeleton ? JSkeleton->AsInt() : -1);
@@ -814,7 +815,7 @@ bool LWEGLTFAnimChannel::ParseJSON(LWEGLTFAnimChannel &Channel, LWEJson &J, LWEJ
 		LWEJObject *JOutput = Obj->FindChild("output", J);
 		LWEJObject *JInterpolation = Obj->FindChild("interpolation", J);
 		if (!JInput || !JOutput) {
-			fmt::print("Error Animation Sampler is missing required fields.\n");
+			LWELogCritical<256>("Animation Sampler is missing required fields.");
 			return false;
 		}
 		Channel.m_InputID = JInput->AsInt();
@@ -827,7 +828,7 @@ bool LWEGLTFAnimChannel::ParseJSON(LWEGLTFAnimChannel &Channel, LWEJson &J, LWEJ
 		LWEJObject *JNode = Obj->FindChild("node", J);
 		LWEJObject *JPath = Obj->FindChild("path", J);
 		if (!JPath) {
-			fmt::print("Error animation channel is missing required fields.\n");
+			LWELogCritical<256>("animation channel is missing required fields.");
 			return false;
 		}
 		Channel.m_Path = JPath->GetValue().Hash();
@@ -838,17 +839,17 @@ bool LWEGLTFAnimChannel::ParseJSON(LWEGLTFAnimChannel &Channel, LWEJson &J, LWEJ
 	LWEJObject *JSampler = Obj->FindChild("sampler", J);
 	LWEJObject *JTarget = Obj->FindChild("target", J);
 	if (!JSampler || !JTarget) {
-		fmt::print("Error animation channel is missing required fields.\n");
+		LWELogCritical<256>("animation channel is missing required fields.");
 		return false;
 	}
 	LWEJObject *JAnimSamplers = AnimObj->FindChild("samplers", J);
 	if (!JAnimSamplers) {
-		fmt::print("Error animation is missing required fields.\n");
+		LWELogCritical<256>("animation is missing required fields.");
 		return false;
 	}
 	LWEJObject *JASampler = J.GetElement(JSampler->AsInt(), JAnimSamplers);
 	if (!JASampler) {
-		fmt::print("Error animation sampler index is outside of bounds: {}\n", JSampler->AsInt());
+		LWELogCritical<256>("animation sampler index is outside of bounds: {}", JSampler->AsInt());
 		return false;
 	}
 
@@ -865,7 +866,7 @@ bool LWEGLTFAnimation::ParseJSON(LWEGLTFAnimation &Anim, LWEJson &J, LWEJObject 
 	LWEJObject *JName = Obj->FindChild("name", J);
 	LWEJObject *JChannels = Obj->FindChild("channels", J);
 	if (!JChannels) {
-		fmt::print("Error animation is missing required field.\n");
+		LWELogCritical<256>("animation is missing required field.");
 		return false;
 	}
 	Anim = LWEGLTFAnimation(JName ? JName->GetValue() : LWUTF8Iterator(), JChannels->m_Length);
@@ -933,7 +934,7 @@ bool LWEGLTFParser::LoadFileGLB(LWEGLTFParser &Parser, const LWUTF8Iterator &Pat
 
 	LWFileStream Stream;
 	if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator)) {
-		fmt::print("Error could not open glb file: '{}'\n", Path);
+		LWELogCritical<256>("could not open glb file: '{}'", Path);
 		return false;
 	}
 	uint32_t Len = Stream.Length();
@@ -945,11 +946,11 @@ bool LWEGLTFParser::LoadFileGLB(LWEGLTFParser &Parser, const LWUTF8Iterator &Pat
 	Header H;
 	ReadHeader(H, Buf);
 	if (H.m_Magic != MagicID) {
-		fmt::print("Error glb magic header incorrect: '{}'\n", Path);
+		LWELogCritical<256>("glb magic header incorrect: '{}'", Path);
 		return false;
 	}
 	if (H.m_Version != SupportedVersion) {
-		fmt::print("Error glb has version: {} While glb parser only supports version: {} for file: '{}'\n", H.m_Version, SupportedVersion, Path);
+		LWELogCritical<256>("glb has version: {} While glb parser only supports version: {} for file: '{}'", H.m_Version, SupportedVersion, Path);
 		return false;
 	}
 
@@ -959,7 +960,7 @@ bool LWEGLTFParser::LoadFileGLB(LWEGLTFParser &Parser, const LWUTF8Iterator &Pat
 	char *binChunkBuf = nullptr;
 	ReadChunk(jsonChunk, Buf);
 	if (jsonChunk.m_Type != ChunkJSON) {
-		fmt::print("Error glb is formatted incorrectly: '{}'\n", Path);
+		LWELogCritical<256>("glb is formatted incorrectly: '{}'", Path);
 		return false;
 	}
 	if ((Buf.GetPosition() + jsonChunk.m_Length) != Len) {
@@ -969,7 +970,7 @@ bool LWEGLTFParser::LoadFileGLB(LWEGLTFParser &Parser, const LWUTF8Iterator &Pat
 	}
 	LWEJson J(Allocator);
 	if (!LWEJson::Parse(J, Buffer + jsonChunk.m_Position)) {
-		fmt::print("Error parsing gltf: '{}'\n", Path);
+		LWELogCritical<256>("parsing gltf: '{}'", Path);
 		return false;
 	}
 	return ParseJSON(Parser, J, Stream, binChunkBuf, Allocator);
@@ -978,7 +979,7 @@ bool LWEGLTFParser::LoadFileGLB(LWEGLTFParser &Parser, const LWUTF8Iterator &Pat
 bool LWEGLTFParser::LoadFileGLTF(LWEGLTFParser &Parser, const LWUTF8Iterator &Path, LWAllocator &Allocator) {
 	LWFileStream Stream;
 	if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator)) {
-		fmt::print("Error could not open gltf file: '{}'\n", Path);
+		LWELogCritical<256>("could not open gltf file: '{}'", Path);
 		return false;
 	}
 	uint32_t Len = Stream.Length();
@@ -986,7 +987,7 @@ bool LWEGLTFParser::LoadFileGLTF(LWEGLTFParser &Parser, const LWUTF8Iterator &Pa
 	Stream.Read(Buffer, Len);
 	LWEJson J(Allocator);
 	if (!LWEJson::Parse(J, Buffer)) {
-		fmt::print("Error parsing gltf file: '{}'\n", Path);
+		LWELogCritical<256>("parsing gltf file: '{}'", Path);
 		LWAllocator::Destroy(Buffer);
 		return false;
 	}
@@ -1019,16 +1020,16 @@ bool LWEGLTFParser::ParseJSON(LWEGLTFParser &Parser, LWEJson &J, LWFileStream &S
 	Parser.SetDefaultScene(JScene ? JScene->AsInt() : -1);
 
 	if (!JMeshs) {
-		fmt::print("Error parsing glb '{}': No meshes structure found.\n", Stream.GetFilePath());
+		LWELogCritical<256>("parsing glb '{}': No meshes structure found.", Stream.GetFilePath());
 		return false;
 	}
 
 	if (!JNodes) {
-		fmt::print("Error parsing glb '{}': No nodes structure found.\n", Stream.GetFilePath());
+		LWELogCritical<256>("parsing glb '{}': No nodes structure found.", Stream.GetFilePath());
 		return false;
 	}
 	if (!JScenes) {
-		fmt::print("Error parsing glb '{}': No scenes structure found.\n", Stream.GetFilePath());
+		LWELogCritical<256>("parsing glb '{}': No scenes structure found.", Stream.GetFilePath());
 		return false;
 	}
 
@@ -1178,7 +1179,7 @@ LWEGLTFScene *LWEGLTFParser::BuildSceneOnlyList(uint32_t SceneID, std::vector<ui
 		EvaluateTexture(Mat->m_SpecularGlossy.m_DiffuseTexture.m_TextureIndex);
 		EvaluateTexture(Mat->m_SpecularGlossy.m_SpecularGlossyTexture.m_TextureIndex);
 		EvaluateTexture(Mat->m_NormalMapTexture.m_TextureIndex);
-		EvaluateTexture(Mat->m_OcclussionTexture.m_TextureIndex);
+		EvaluateTexture(Mat->m_OcclusionTexture.m_TextureIndex);
 		EvaluateTexture(Mat->m_EmissiveTexture.m_TextureIndex);
 		return true;
 	};
@@ -1294,7 +1295,7 @@ float LWEGLTFParser::BuildNodeAnimation(LWEGLTFAnimTween &Animation, uint32_t An
 LWMatrix4f LWEGLTFParser::GetNodeWorldTransform(uint32_t NodeID) {
 	LWEGLTFNode *N = GetNode(NodeID);
 	if (N->m_ParentID == -1) return N->m_TransformMatrix;
-	return GetNodeWorldTransform(N->m_ParentID)*N->m_TransformMatrix;
+	return N->m_TransformMatrix*GetNodeWorldTransform(N->m_ParentID);
 }
 
 bool LWEGLTFParser::LoadImage(LWImage &Image, uint32_t ImageID, LWAllocator &Allocator) {
@@ -1303,15 +1304,15 @@ bool LWEGLTFParser::LoadImage(LWImage &Image, uint32_t ImageID, LWAllocator &All
 	if (Img->m_BufferView != -1) {
 		LWEGLTFBufferView *BufView = GetBufferView(Img->m_BufferView);
 		LWEGLTFBuffer *Buf = GetBuffer(BufView->m_BufferID);
-		uint8_t *Data = Buf->m_Buffer + BufView->m_Offset;
-		if (Img->m_MimeType == LWEGLTFImage::MimeImagePng) return LWImage::LoadImagePNG(Image, Data, BufView->m_Length, Allocator);
-		else if (Img->m_MimeType == LWEGLTFImage::MimeImageDDS) return LWImage::LoadImageDDS(Image, Data, BufView->m_Length, Allocator);
-		fmt::print("Error unsupported mime type: {:#x}\n", Img->m_MimeType);
+		LWByteBuffer BB = LWByteBuffer((int8_t*)Buf->m_Buffer + BufView->m_Offset, BufView->m_Length, LWByteBuffer::BufferNotOwned);
+		if (Img->m_MimeType == LWEGLTFImage::MimeImagePng) return LWImage::LoadImagePNG(Image, BB, Allocator);
+		else if (Img->m_MimeType == LWEGLTFImage::MimeImageDDS) return LWImage::LoadImageDDS(Image, BB, Allocator);
+		LWELogCritical<256>("unsupported mime type: {:#x}", Img->m_MimeType);
 		return false;
 	}
 	if(*Img->m_URI){
 		if (!LWImage::LoadImage(Image, Img->m_URI, Allocator)) {
-			fmt::print("Error could not load image at: '{}'\n", Img->m_URI);
+			LWELogCritical<256>("could not load image at: '{}'", Img->m_URI);
 			return false;
 		}
 		return true;

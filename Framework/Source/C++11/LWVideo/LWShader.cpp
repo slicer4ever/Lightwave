@@ -3,9 +3,57 @@
 #include <cstdarg>
 
 //LWShaderInput:
-LWShaderInput::LWShaderInput(const LWUTF8Iterator &Name, uint32_t Type, uint32_t Length) : m_NameHash(Name.Hash()), m_Type(Type), m_Length(Length) {}
+LWShaderInput &LWShaderInput::SetType(uint32_t lType) {
+	m_Flag = LWBitFieldSet(Type, m_Flag, lType);
+	return *this;
+}
 
-LWShaderInput::LWShaderInput(uint32_t NameHash, uint32_t Type, uint32_t Length) : m_NameHash(NameHash), m_Type(Type), m_Length(Length) {}
+LWShaderInput &LWShaderInput::SetBindIndex(uint32_t lBindIndex) {
+	m_Flag = LWBitFieldSet(BindIndex, m_Flag, lBindIndex);
+	return *this;
+}
+
+LWShaderInput &LWShaderInput::SetOffset(uint32_t lOffset) {
+	assert((lOffset % 4) == 0);
+	lOffset /= 4;
+	m_Flag = LWBitFieldSet(Offset, m_Flag, lOffset);
+	return *this;
+}
+
+LWShaderInput &LWShaderInput::SetLength(uint32_t lLength) {
+	m_Flag = LWBitFieldSet(Length, m_Flag, lLength);
+	return *this;
+}
+
+LWShaderInput &LWShaderInput::SetInstanceFrequency(uint32_t lFrequency) {
+	m_Flag = LWBitFieldSet(InstanceFrequency, m_Flag, lFrequency);
+	return *this;
+}
+
+uint32_t LWShaderInput::GetType(void) const {
+	return LWBitFieldGet(Type, m_Flag);
+}
+
+uint32_t LWShaderInput::GetBindIndex(void) const {
+	return LWBitFieldGet(BindIndex, m_Flag);
+}
+
+uint32_t LWShaderInput::GetOffset(void) const {
+	return (uint32_t)LWBitFieldGet(Offset, m_Flag)*4;
+}
+
+uint32_t LWShaderInput::GetLength(void) const {
+	return LWBitFieldGet(Length, m_Flag);
+}
+
+uint32_t LWShaderInput::GetInstanceFrequency(void) const {
+	return LWBitFieldGet(InstanceFrequency, m_Flag);
+}
+
+
+LWShaderInput::LWShaderInput(const LWUTF8Iterator &Name, uint32_t Type, uint32_t Length, uint32_t InstanceFreq) : m_NameHash(Name.Hash()), m_Flag((Type<<TypeBitsOffset) | (Length<<LengthBitsOffset) | (InstanceFreq << InstanceFrequencyBitsOffset)) {}
+
+LWShaderInput::LWShaderInput(uint32_t NameHash, uint32_t Type, uint32_t Length, uint32_t InstanceFreq) : m_NameHash(NameHash), m_Flag((Type<<TypeBitsOffset) | (Length<<LengthBitsOffset) | (InstanceFreq << InstanceFrequencyBitsOffset)) {}
 
 //LWShaderResource:
 LWShaderResource &LWShaderResource::SetStageBinding(uint32_t StageID, uint32_t Idx) {
@@ -111,23 +159,23 @@ uint32_t LWShader::GenerateInputOffsets(uint32_t Count, LWShaderInput *InputMap)
 	const uint32_t TypeSizes[] = { 4,     4,    4,   8,      8,    12,   16,   8,     12,    16,    8,     12,    16,    16,    24,    32 };
 	uint32_t Offset = 0;
 	for (uint32_t i = 0; i < Count; i++) {
-		uint32_t Size = TypeSizes[InputMap[i].m_Type] * InputMap[i].m_Length;
+		uint32_t Size = TypeSizes[InputMap[i].GetType()] * InputMap[i].GetLength();
 		uint32_t Remain = (Offset % 16 == 0 ? 0 : 16 - (Offset % 16));
 		if (Size > Remain) Offset += Remain;
-		InputMap[i].m_Offset = Offset;
+		InputMap[i].SetOffset(Offset);
 		Offset += Size;
 	}
 	return Offset;
 }
 
-LWShader &LWShader::SetInputMap(uint32_t Count, LWShaderInput *InputMap) {
-	GenerateInputOffsets(Count, InputMap);
+LWShader &LWShader::SetInputMap(uint32_t Count, const LWShaderInput *InputMap) {
 	std::copy(InputMap, InputMap + Count, m_InputMap);
+	GenerateInputOffsets(Count, m_InputMap);
 	m_InputCount = Count;
 	return *this;
 }
 
-LWShader &LWShader::SetResourceMap(uint32_t Count, uint32_t *NameHashs) {
+LWShader &LWShader::SetResourceMap(uint32_t Count, const uint32_t *NameHashs) {
 	for (uint32_t i = 0; i < Count; i++) {
 		m_ResourceMap[i].m_NameHash = NameHashs[i];
 	}
@@ -135,7 +183,7 @@ LWShader &LWShader::SetResourceMap(uint32_t Count, uint32_t *NameHashs) {
 	return *this;
 }
 
-LWShader &LWShader::SetBlockMap(uint32_t Count, uint32_t *NameHashs) {
+LWShader &LWShader::SetBlockMap(uint32_t Count, const uint32_t *NameHashs) {
 	for (uint32_t i = 0; i < Count; i++) {
 		m_BlockMap[i].m_NameHash = NameHashs[i];
 	}
@@ -161,6 +209,39 @@ const LWShaderResource *LWShader::GetBlockMap(void) const {
 
 const LWShaderResource *LWShader::GetResourceMap(void) const {
 	return m_ResourceMap;
+}
+
+const LWShaderInput *LWShader::FindInputMap(const LWUTF8Iterator &Name) const {
+	return FindInputMap(Name.Hash());
+}
+
+const LWShaderInput *LWShader::FindInputMap(uint32_t NameHash) const {
+	for (uint32_t i = 0; i < m_InputCount; i++) {
+		if (m_InputMap[i].m_NameHash == NameHash) return &m_InputMap[i];
+	}
+	return nullptr;
+}
+
+const LWShaderResource *LWShader::FindResourceMap(const LWUTF8Iterator &Name) const {
+	return FindResourceMap(Name.Hash());
+}
+
+const LWShaderResource *LWShader::FindResourceMap(uint32_t NameHash) const {
+	for (uint32_t i = 0; i < m_ResourceCount; i++) {
+		if (m_ResourceMap[i].m_NameHash == NameHash) return &m_ResourceMap[i];
+	}
+	return nullptr;
+}
+
+const LWShaderResource *LWShader::FindBlockMap(const LWUTF8Iterator &Name) const {
+	return FindBlockMap(Name.Hash());
+}
+
+const LWShaderResource *LWShader::FindBlockMap(uint32_t NameHash) const {
+	for (uint32_t i = 0; i < m_BlockCount; i++) {
+		if (m_BlockMap[i].m_NameHash == NameHash) return &m_BlockMap[i];
+	}
+	return nullptr;
 }
 
 uint32_t LWShader::GetInputCount(void) const{

@@ -29,18 +29,17 @@ LWFile::LWFile(const LWUTF8Iterator &Name, uint64_t Size, uint32_t Flag) : m_Siz
 
 //LWDirectory:
 bool LWDirectory::CreateDir(const LWUTF8Iterator &DirectoryPath, const LWFileStream *ExistingStream) {
-	char8_t Buffer[256];
+	char8_t Buffer[1024];
 	uint32_t Len = 0;
 	if (!(Len = LWDirectory::ParsePath(DirectoryPath, Buffer, sizeof(Buffer), ExistingStream))) return false;
 	LWUTF8Iterator C = LWUTF8Iterator(Buffer, Len);
 	LWUTF8Iterator P = C;
-	for (; !C.AtEnd();) {
+	for (; !C.AtEnd();++C) {
 		if (*C == '/' || *C == '\\') {
 			if (P != C) {
 				if (!CreateDir(LWUTF8Iterator(P, C), true)) return false;
 			}
-			P = ++C;
-		} else ++C;
+		}
 	}
 	if (P != C) return CreateDir(LWUTF8Iterator(P, C), false);
 	return true;

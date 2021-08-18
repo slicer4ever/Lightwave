@@ -3,7 +3,7 @@
 #include "LWEProtocols/LWEProtocolTLS.h"
 #include "LWEProtocols/LWEProtocolHTTP.h"
 
-class LWEProtocolHttps : public LWEProtocolTLS, LWEProtocolHttp {
+class LWEProtocolHttps : public LWEProtocolTLS, public LWEProtocolHttp {
 public:
 
 	virtual LWProtocol &Read(LWSocket &Socket, LWProtocolManager *Manager);
@@ -16,7 +16,7 @@ public:
 
 	virtual uint32_t Send(LWSocket &Socket, const char *Buffer, uint32_t Len);
 
-	LWEProtocolHttps(uint32_t HttpsProtocolID, uint32_t TLSProtocolID, LWProtocolManager *Manager, LWAllocator &Allocator, const LWUTF8Iterator &CertFile, const LWUTF8Iterator &KeyFile);
+	LWEProtocolHttps(uint32_t HttpsProtocolID, uint32_t TLSProtocolID, LWAllocator &Allocator, const LWUTF8Iterator &CertFile = LWUTF8Iterator(), const LWUTF8Iterator &KeyFile = LWUTF8Iterator());
 protected:
 
 

@@ -4,6 +4,7 @@
 #include <botan/data_src.h>
 #include <LWCore/LWAllocator.h>
 #include <LWPlatform/LWFileStream.h>
+#include <LWELogger.h>
 #include <chrono>
 
 std::vector<std::string> LWETLSPolicy::allowed_key_exchange_methods(void) const {
@@ -61,7 +62,7 @@ bool LWETLS_CredentialsManager::LoadDefaultCertificateStores(void) {
 			m_CertStores.push_back(cs);
 		}
 	}catch (std::exception &e) {
-		fmt::print("{}\n", e.what());
+		LWELogCritical(e.what());
 		return false;
 	}
 	return true;
@@ -76,7 +77,7 @@ void LWETLSCallbacks::tls_emit_data(const uint8_t data[], size_t size) {
 	for (; o < Len;) {
 		int32_t r = (int32_t)m_Socket->Send((const char*)data + o, Len - o);
 		if (r <= 0) {
-			fmt::print("Error sending to: {}\n", LWProtocolManager::GetError());
+			LWELogCritical<256>("sending to: {}", LWProtocolManager::GetError());
 			m_Socket->MarkClosable();
 			return;
 		}
@@ -87,12 +88,11 @@ void LWETLSCallbacks::tls_emit_data(const uint8_t data[], size_t size) {
 
 void LWETLSCallbacks::tls_record_received(uint64_t seq_no, const uint8_t data[], size_t size) {
 	m_Protocol.ProcessTLSData(*m_Socket, (const char*)data, (uint32_t)size);
-
 	return;
 }
 
 void LWETLSCallbacks::tls_alert(Botan::TLS::Alert alert) {
-	fmt::print("TLS alert: {}\n", alert.type_string());
+	//LWELogCritical<256>("TLS alert: {}", alert.type_string());
 	return;
 }
 
@@ -146,8 +146,11 @@ LWETLSCallbacks::~LWETLSCallbacks() {
 LWProtocol &LWEProtocolTLS::Read(LWSocket &Socket, LWProtocolManager *Manager) {
 	char Buffer[1024 * 64];
 	int32_t r = Socket.Receive(Buffer, sizeof(Buffer));
+
+	char IPBuf[32];
+	LWSocket::MakeAddress(Socket.GetRemoteIP(), IPBuf, sizeof(IPBuf));
 	if (r <= 0) {
-		if (r == -1) fmt::print("Socket Error: {}\n", LWProtocolManager::GetError());
+		if (r == -1) LWELogCritical<256>("Socket Error: {}", LWProtocolManager::GetError());
 		Socket.MarkClosable();
 		return *this;
 	}
@@ -176,7 +179,7 @@ LWProtocol &LWEProtocolTLS::Read(LWSocket &Socket, LWProtocolManager *Manager) {
 }
 
 LWProtocol &LWEProtocolTLS::SocketChanged(LWSocket &Prev, LWSocket &New, LWProtocolManager *Manager) {
-	LWETLSCallbacks *CB = (LWETLSCallbacks*)Prev.GetProtocolData(m_ProtocolID);
+	LWETLSCallbacks *CB = (LWETLSCallbacks*)New.GetProtocolData(m_ProtocolID);
 	if (CB) CB->SetSocket(&New);
 	return *this;
 }
@@ -200,6 +203,7 @@ uint32_t LWEProtocolTLS::Send(LWSocket &Socket, const char *Buffer, uint32_t Len
 		TLSCli = m_Allocator.Create<Botan::TLS::Client>(*CB, *m_SessionManager, m_CredentialsManager, m_Policy, m_RNG, Botan::TLS::Server_Information(), Botan::TLS::Protocol_Version::latest_tls_version());
 		CB->SetClient(TLSCli);
 		Socket.SetProtocolData(m_ProtocolID, CB);
+
 	}
 	TLSCli = CB->GetClient();
 	TLSSrv = CB->GetServer();

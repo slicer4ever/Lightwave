@@ -87,15 +87,6 @@ public:
 	*/
 	static LWFont *LoadFontTTF(LWFileStream *Stream, LWVideoDriver *Driver, uint32_t emSize, uint32_t RangeCount, const uint32_t *FirstChar, const uint32_t *NbrChars, LWAllocator &Allocator);
 
-	/*! \brief returns the default vertex shader for rendering font, embedded into the code. */
-	static const char *GetVertexShaderSource(void);
-
-	/*!< \brief returns the default pixel shader for rendering font, embedded into the code. */
-	static const char *GetPixelColorShaderSource(void);
-
-	/*!< \brief returns the pixel shader for use with rendering multiple signed distance field font's, embedded into the code. */
-	static const char *GetPixelMSDFShaderSource(void);
-
 	/*!< \brief sets the texture for the font. */
 	LWFont &SetTexture(uint32_t TextureIndex, LWTexture *Tex);
 

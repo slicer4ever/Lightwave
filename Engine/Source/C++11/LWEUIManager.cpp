@@ -15,6 +15,7 @@
 #include "LWEUI/LWEUIRichLabel.h"
 #include "LWEUI/LWEUITreeList.h"
 #include "LWEGeometry2D.h"
+#include <LWELogger.h>
 #include <map>
 #include <cstdarg>
 #include <iostream>
@@ -491,225 +492,6 @@ LWEUIFrame::LWEUIFrame(LWMesh<LWVertexUI> *Mesh) : m_Mesh(Mesh), m_TextureCount(
 
 LWEUIFrame::LWEUIFrame() : m_Mesh(nullptr), m_TextureCount(0) {}
 
-const char8_t *LWEUIManager::GetVertexShaderSource(void) {
-	static const char8_t VertexSource[] = u8""\
-		"#module Vertex DirectX11_1\n"\
-		"cbuffer UIUniform{\n"\
-		"	float4x4 Matrix;\n"\
-		"};\n"\
-		"struct Vertex {\n"\
-		"	float4 Position : POSITION;\n"\
-		"	float4 Color : COLOR;\n"\
-		"	float4 TexCoord : TEXCOORD;\n"\
-		"};\n"\
-		"struct Pixel {\n"\
-		"	float4 Position : SV_POSITION;\n"\
-		"	float4 Color : COLOR0;\n"\
-		"	float4 TexCoord : TEXCOORD0;\n"\
-		"};\n"\
-		"Pixel main(Vertex In) {\n"\
-		"	Pixel O;\n"\
-		"	O.Position = mul(Matrix, In.Position);\n"\
-		"	O.Color = In.Color;\n"\
-		"	O.TexCoord = In.TexCoord;\n"\
-		"	return O;\n"\
-		"}\n"\
-		"#module Vertex OpenGL3_3 OpenGL4_5\n"\
-		"#version 330\n"\
-		"layout(std140) uniform UIUniform {\n"\
-		"	mat4 Matrix;\n"\
-		"};\n"\
-		"in vec4 Position | 0;\n"\
-		"in vec4 Color | 1;\n"\
-		"in vec4 TexCoord | 2;\n"\
-		"out vec4 pColor;\n"\
-		"out vec4 pTexCoord;\n"\
-		"void main(void) {\n"\
-		"	gl_Position = Matrix*Position;\n"\
-		"	pColor = Color;\n"\
-		"	pTexCoord = TexCoord;\n"\
-		"}\n"\
-		"#module Vertex OpenGL2_1\n"\
-		"attribute vec4 Position;\n"\
-		"attribute vec4 Color;\n"\
-		"attribute vec4 TexCoord;\n"\
-		"varying vec4 pColor;\n"\
-		"varying vec4 pTexCoord;\n"\
-		"#block UIUniform\n"\
-		"uniform mat4 Matrix;\n"\
-		"void main(void) {\n"\
-		"	gl_Position = Matrix*Position;\n"\
-		"	pColor = Color;\n"\
-		"	pTexCoord = TexCoord;\n"\
-		"}\n"\
-		"#module Vertex OpenGLES2\n"\
-		"attribute highp vec4 Position;\n"\
-		"attribute lowp vec4 Color;\n"\
-		"attribute lowp vec4 TexCoord;\n"\
-		"varying lowp vec4 pColor;\n"\
-		"varying lowp vec4 pTexCoord;\n"\
-		"#block UIUniform\n"\
-		"uniform highp mat4 Matrix;\n"\
-		"void main(void) {\n"\
-		"	gl_Position = Matrix*Position;\n"\
-		"	pColor = Color;\n"\
-		"	pTexCoord = TexCoord;\n"\
-		"}\n";
-	return VertexSource;
-}
-
-const char8_t *LWEUIManager::GetTextureShaderSource(void) {
-	static const char8_t TextureSource[] = u8""\
-		"#module Pixel DirectX11_1\n"\
-		"struct Pixel {\n"\
-		"	float4 Position : SV_POSITION;\n"\
-		"	float4 Color : COLOR0;\n"\
-		"	float4 TexCoord : TEXCOORD0;\n"\
-		"};\n"\
-		"Texture2D Tex;\n"\
-		"SamplerState TexSampler;\n"\
-		"float4 main(Pixel In) : SV_TARGET{\n"\
-		"	return In.Color*Tex.Sample(TexSampler, In.TexCoord.xy);\n"\
-		"}\n"\
-		"#module Pixel OpenGL3_3 OpenGL4_5\n"\
-		"#version 330\n"\
-		"uniform sampler2D Tex;\n"\
-		"in vec4 pColor;\n"\
-		"in vec4 pTexCoord;\n"\
-		"out vec4 p_Color;\n"\
-		"void main(void) {\n"\
-		"	p_Color = texture(Tex, pTexCoord.xy)*pColor;\n"\
-		"}\n"\
-		"#module Pixel OpenGL2_1\n"\
-		"uniform sampler2D Tex;\n"\
-		"varying vec4 pColor;\n"\
-		"varying vec4 pTexCoord;\n"\
-		"void main(void) {\n"\
-		"	gl_FragColor = texture2D(Tex, pTexCoord.xy)*pColor;\n"\
-		"}\n"\
-		"#module Pixel OpenGLES2\n"\
-		"uniform sampler2D Tex;\n"\
-		"varying lowp vec4 pColor;\n"\
-		"varying lowp vec4 pTexCoord;\n"\
-		"void main(void) {\n"\
-		"	gl_FragColor = texture2D(Tex, pTexCoord.xy)*pColor;\n"\
-		"}\n";
-		return TextureSource;
-}
-
-const char8_t *LWEUIManager::GetColorShaderSource(void) {
-	static const char ColorSource[] = u8""\
-		"#module Pixel DirectX11_1\n"\
-		"struct Pixel {\n"\
-		"	float4 Position : SV_POSITION;\n"\
-		"	float4 Color : COLOR0;\n"\
-		"	float4 TexCoord : TEXCOORD0;\n"\
-		"};\n"\
-		"float4 main(Pixel In) : SV_TARGET{\n"\
-		"	return In.Color;\n"\
-		"}\n"\
-		"#module Pixel OpenGL3_3 OpenGL4_5\n"\
-		"#version 330\n"\
-		"in vec4 pColor;\n"\
-		"in vec4 pTexCoord;\n"\
-		"out vec4 p_Color;\n"\
-		"void main(void) {\n"\
-		"	p_Color = pColor;\n"\
-		"}\n"\
-		"#module Pixel OpenGL2_1\n"\
-		"varying vec4 pColor;\n"\
-		"varying vec4 pTexCoord;\n"\
-		"void main(void) {\n"\
-		"	gl_FragColor = pColor;\n"\
-		"}\n"\
-		"#module Pixel OpenGLES2\n"\
-		"varying lowp vec4 pColor;\n"\
-		"varying lowp vec4 pTexCoord;\n"\
-		"void main(void) {\n"\
-		"	gl_FragColor = pColor;\n"\
-		"}\n";
-	return ColorSource;
-}
-
-const char8_t *LWEUIManager::GetYUVTextureShaderSource(void) {
-	static const char YUVSource[] = u8""\
-	"#module Pixel DirectX11_1\n"\
-	"	struct Pixel {\n"\
-	"	float4 Position : SV_POSITION;\n"\
-	"	float4 Color : COLOR0;\n"\
-	"	float4 TexCoordA : TEXCOORD0;\n"\
-	"	float4 TexCoordB : TEXCOORD1;\n"\
-	"};\n"\
-	"Texture2D Tex;\n"\
-	"SamplerState TexSampler;\n"\
-	"float4 DecodeYUV(float2 TexCoordY, float2 TexCoordU, float2 TexCoordV) {\n"\
-	"	float Y = Tex.Sample(TexSampler, TexCoordY).r;\n"\
-	"	float U = Tex.Sample(TexSampler, TexCoordU).r - 0.5f;\n"\
-	"	float V = Tex.Sample(TexSampler, TexCoordV).r - 0.5f;\n"\
-	"	float R = Y + 1.402f*V;\n"\
-	"	float G = Y - 0.344f*U - 0.714f*V;\n"\
-	"	float B = Y + 1.722f*U;\n"\
-	"	return float4(R, G, B, 1.0f);\n"\
-	"}\n"\
-	"float4 main(Pixel In) : SV_TARGET{\n"\
-	"	return DecodeYUV(In.TexCoordA.xy, In.TexCoordA.zw, In.TexCoordB.xy)*In.Color;\n"\
-	"}\n"\
-	"#module Pixel OpenGL3_3 OpenGL4_5\n"\
-	"#version 330\n"\
-	"in vec4 pColor;\n"\
-	"in vec4 pTexCoordA;\n"\
-	"in vec4 pTexCoordB;\n"\
-	"uniform sampler2D Tex;\n"\
-	"out vec4 p_Color | 0 | Output;\n"\
-	"vec4 DecodeYUV(vec2 TexCoordY, vec2 TexCoordU, vec2 TexCoordV) {\n"\
-	"	float Y = texture2D(Tex, TexCoordY).r;\n"\
-	"	float U = texture2D(Tex, TexCoordU).r - 0.5f;\n"\
-	"	float V = texture2D(Tex, TexCoordV).r - 0.5f;\n"\
-	"	float R = Y + 1.402f*V;\n"\
-	"	float G = Y - 0.344f*U - 0.714f*V;\n"\
-	"	float B = Y + 1.722f*U;\n"\
-	"	return vec4(R, G, B, 1.0f);\n"\
-	"}\n"\
-	"void main(void) {\n"\
-	"	p_Color = DecodeYUV(pTexCoordA.xy, pTexCoordA.zw, pTexCoordB.xy)*pColor;\n"\
-	"}\n"\
-	"#module Pixel OpenGL2_1\n"\
-	"varying vec4 pColor;\n"\
-	"varying vec4 pTexCoordA;\n"\
-	"varying vec4 pTexCoordB;\n"\
-	"uniform sampler2D Tex;\n"\
-	"vec4 DecodeYUV(vec2 TexCoordY, vec2 TexCoordU, vec2 TexCoordV) {\n"\
-	"	float Y = texture(Tex, TexCoordY).r;\n"\
-	"	float U = texture(Tex, TexCoordU).r - 0.5f;\n"\
-	"	float V = texture(Tex, TexCoordV).r - 0.5f;\n"\
-	"	float R = Y + 1.402f*V;\n"\
-	"	float G = Y - 0.344f*U - 0.714f*V;\n"\
-	"	float B = Y + 1.722f*U;\n"\
-	"	return vec4(R, G, B, 1.0f);\n"\
-	"}\n"\
-	"void main(void) {\n"\
-	"	gl_FragColor = DecodeYUV(pTexCoordA.xy, pTexCoordA.zw, pTexCoordB.xy)*pColor;\n"\
-	"}\n"\
-	"#module Pixel OpenGLES2\n"\
-	"varying lowp vec4 pColor;\n"\
-	"varying lowp vec4 pTexCoordA;\n"\
-	"varying lowp vec4 pTexCoordB;\n"\
-	"uniform sampler2D Tex;\n"\
-	"vec4 DecodeYUV(vec2 TexCoordY, vec2 TexCoordU, vec2 TexCoordV) {\n"\
-	"	float Y = texture(Tex, TexCoordY).r;\n"\
-	"	float U = texture(Tex, TexCoordU).r - 0.5f;\n"\
-	"	float V = texture(Tex, TexCoordV).r - 0.5f;\n"\
-	"	float R = Y + 1.402f*V;\n"\
-	"	float G = Y - 0.344f*U - 0.714f*V;\n"\
-	"	float B = Y + 1.722f*U;\n"\
-	"	return vec4(R, G, B, 1.0f);\n"\
-	"}\n"\
-	"void main(void) {\n"\
-	"	gl_FragColor = DecodeYUV(pTexCoordA.xy, pTexCoordA.zw, pTexCoordB.xy)*pColor;\n"\
-	"}\n";
-	return YUVSource;
-}
-
 bool LWEUIManager::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
 	std::map<uint32_t, LWEXMLNode*> StyleMap;
 	std::map<uint32_t, LWEXMLNode*> ComponentMap;
@@ -753,7 +535,7 @@ bool LWEUIManager::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
 		if (FillAttr) {
 			uint32_t FillType = FillAttr->GetValue().AdvanceWord(true).CompareLista(3, FillNames);
 			if (FillType == -1) {
-				fmt::print("Material has unknown fill type: '{}'\n", FillAttr->GetValue());
+				LWELogCritical<256>("Material has unknown fill type: '{}'", FillAttr->GetValue());
 			} else FillMode = FillValues[FillType];
 		}
 		if (TexAttr) Tex = Man->GetAssetManager()->GetAsset<LWTexture>(TexAttr->GetValue());
@@ -780,7 +562,7 @@ bool LWEUIManager::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
 		if (!StyleAttr) return;
 		auto Iter = StyleMap.find(StyleAttr->GetValue().Hash());
 		if (Iter == StyleMap.end()) {
-			fmt::print("Error: could not find stylemap with name: '{}'\n", StyleAttr->GetValue());
+			LWELogCritical<256>("could not find stylemap with name: '{}'", StyleAttr->GetValue());
 			return;
 		}
 		Node->RemoveAttribute(StyleAttr);
@@ -831,7 +613,7 @@ bool LWEUIManager::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
 			if(!SrcAttr) return;
 		}
 		if (!LWEXML::LoadFile(*X, Man->GetAllocator(), SrcAttr->m_Value, true, Parent, Node)) {
-			fmt::print("Error reading include file: '{}'\n", SrcAttr->GetValue());
+			LWELogCritical<256>("reading include file: '{}'", SrcAttr->GetValue());
 			return;
 		}
 		return;
@@ -900,7 +682,7 @@ LWEUIManager &LWEUIManager::Update(const LWVector2f &Position, const LWVector2f 
 		for (LWEUI *C = m_FirstUI; C; C = C->GetNext()) {
 			C->Update(*this, Scale, m_VisiblePosition, m_VisibleSize, true, lCurrentTime);
 		}
-		if (Keyboard) {
+		if (Keyboard && isTabNavigationEnabled()) {
 			LWEUI *N = m_FocusedUI;
 			if (Keyboard->ButtonPressed(LWKey::Tab)) {
 				if (Keyboard->ButtonDown(LWKey::LShift)) {
@@ -1001,6 +783,11 @@ LWEUIManager &LWEUIManager::SetNavigationMode(bool Enabled, bool GamepadEnabled,
 	return *this;
 }
 
+LWEUIManager &LWEUIManager::SetTabNavigation(bool bEnabled) {
+	m_Flag = (m_Flag & ~TabNavigation) | (bEnabled ? TabNavigation : 0);
+	return *this;
+}
+
 LWEUIManager &LWEUIManager::RemoveUI(LWEUI *UI, bool Destroy) {
 	LWEUI *PrevUI = nullptr;
 	LWEUI *Parent = UI->GetParent();
@@ -1062,6 +849,20 @@ bool LWEUIManager::DispatchEvent(const LWUTF8Iterator &DispatcheeName, uint32_t 
 	auto Iter = m_NameMap.find(DispatcheeName.Hash());
 	if (Iter == m_NameMap.end()) return false;
 	return DispatchEvent(Iter->second, EventCode);
+}
+
+bool LWEUIManager::RegisterXMLParseMethod(const LWUTF8Iterator &NodeName, LWEUIXMLParseCallback Callback) {
+	return m_XMLParseCallbackMap.emplace(NodeName.Hash(), Callback).second;
+};
+
+bool LWEUIManager::RegisterXMLParseMethod(uint32_t NodeNameHash, LWEUIXMLParseCallback Callback) {
+	return m_XMLParseCallbackMap.emplace(NodeNameHash, Callback).second;
+}
+
+LWEUI *LWEUIManager::DispatchXMLParser(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
+	auto Iter = m_XMLParseCallbackMap.find(Node->m_NameHash);
+	if (Iter == m_XMLParseCallbackMap.end()) return LWEUIComponent::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	return (*Iter).second(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 }
 
 LWEUIManager &LWEUIManager::SetFocused(LWEUI *UI) {
@@ -1154,7 +955,7 @@ bool LWEUIManager::HasNamedUI(const LWUTF8Iterator &Name) {
 LWEUI *LWEUIManager::GetNamedUI(const LWUTF8Iterator &Name) {
 	auto Iter = m_NameMap.find(Name.Hash());
 	if (Iter == m_NameMap.end()) {
-		fmt::print("Error could not find ui: '{}'\n", Name());
+		LWELogCritical<256>("could not find ui: '{}'", Name());
 	}
 	return Iter == m_NameMap.end() ? nullptr : Iter->second;
 }
@@ -1225,6 +1026,10 @@ bool LWEUIManager::isNavigationModeEnabled(void) const {
 	return m_Navigator.isEnabled();
 }
 
+bool LWEUIManager::isTabNavigationEnabled(void) const {
+	return (m_Flag & TabNavigation) != 0;
+}
+
 float LWEUIManager::GetScale(void) const {
 	return m_Scale;
 }
@@ -1233,7 +1038,15 @@ uint32_t LWEUIManager::GetScreenDPI(void) const{
 	return m_ScreenDPI;
 }
 
-LWEUIManager::LWEUIManager(LWWindow *Window, uint32_t ScreenDPI, LWAllocator &Allocator, LWELocalization *Localization, LWEAssetManager *AssetManager) : m_Window(Window), m_AssetManager(AssetManager), m_Allocator(Allocator), m_Localization(Localization), m_ScreenDPI(ScreenDPI) {}
+LWEUIManager::LWEUIManager(LWWindow *Window, uint32_t ScreenDPI, LWAllocator &Allocator, LWELocalization *Localization, LWEAssetManager *AssetManager) : m_Window(Window), m_AssetManager(AssetManager), m_Allocator(Allocator), m_Localization(Localization), m_ScreenDPI(ScreenDPI) {
+	m_XMLParseCallbackMap.emplace(LWUTF8I("Label").Hash(), LWEUILabel::XMLParse);
+	m_XMLParseCallbackMap.emplace(LWUTF8I("Button").Hash(), LWEUIButton::XMLParse);
+	m_XMLParseCallbackMap.emplace(LWUTF8I("Rect").Hash(), LWEUIRect::XMLParse);
+	m_XMLParseCallbackMap.emplace(LWUTF8I("TextInput").Hash(), LWEUITextInput::XMLParse);
+	m_XMLParseCallbackMap.emplace(LWUTF8I("ScrollBar").Hash(), LWEUIScrollBar::XMLParse);
+	m_XMLParseCallbackMap.emplace(LWUTF8I("ListBox").Hash(), LWEUIListBox::XMLParse);
+	m_XMLParseCallbackMap.emplace(LWUTF8I("TreeList").Hash(), LWEUITreeList::XMLParse);
+}
 
 LWEUIManager::~LWEUIManager() {
 	std::function<void(LWEUI *U)> RecursiveDestroy;

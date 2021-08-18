@@ -15,7 +15,9 @@ public:
 	/*!< \brief callback for when a socket is closed, allowing for any cleanup code to be committed. */
 	virtual LWProtocol &SocketClosed(LWSocket &Socket, LWProtocolManager *Manager);
 
-	/*!< \brief callback for when a socket changes position in the protocol manager's position, implement if underlying protocol data relys on the socket's pointer. */
+	/*!< \brief callback for when a socket changes position in the protocol manager's position, implement if underlying protocol data relys on the socket's pointer.
+		 \note Prev will have already been moved into new, as such any protocol data should be accessed from New instead of from Prev.
+	*/
 	virtual LWProtocol &SocketChanged(LWSocket &Prev, LWSocket &New, LWProtocolManager *Manager);
 private:
 

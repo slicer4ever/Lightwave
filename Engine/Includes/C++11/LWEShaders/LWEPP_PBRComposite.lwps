@@ -1,0 +1,28 @@
+R"(#module Pixel DirectX11_1
+
+struct Pixel {
+	float4 Position : SV_POSITION;
+	float4 TexCoord : TEXCOORD0;
+};
+
+Texture2D ColorTex;
+Texture2D EmissiveTex;
+SamplerState ColorSmp;
+SamplerState EmissiveSmp;
+float4 main(Pixel In) : SV_TARGET{
+	float4 TA = ColorTex.Sample(ColorSmp, In.TexCoord.xy);
+	float4 TB = EmissiveTex.Sample(EmissiveSmp, In.TexCoord.xy);
+	return (TA+TB) - (TA*TB);
+}
+#module Pixel OpenGL3_3 OpenGL4_5
+#version 330
+uniform sampler2D ColorTex;
+uniform sampler2D EmissiveTex;
+in vec4 pTexCoord;
+out vec4 oColor;
+void main(void) {
+	vec4 TA = texture(ColorTex, pTexCoord.xy);
+	vec4 TB = texture(EmissiveTex, pTexCoord.xy);
+	oColor = (TA+TB) - (TA*TB);
+	return;
+})",

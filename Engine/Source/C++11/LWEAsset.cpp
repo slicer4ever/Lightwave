@@ -11,10 +11,34 @@
 #include "LWEUIManager.h"
 #include "LWELocalization.h"
 #include "LWEXML.h"
+#include "LWELogger.h"
 #include <iostream>
 #include <cstdlib>
 
 #pragma region LWEAsset
+
+const char8_t *LWEShaderSources[LWEShaderCount] = {
+	LWShaderSources[LWShaderFontVertex],
+#include "LWEShaders/LWEUIVertex.lwvs"
+#include "LWEShaders/LWEPP_Vertex.lwvs"
+	LWShaderSources[LWShaderFontColor],
+	LWShaderSources[LWShaderFontMSDF],
+#include "LWEShaders/LWEUITexture.lwps"
+#include "LWEShaders/LWEUIColor.lwps"
+#include "LWEShaders/LWEUIYUVTexture.lwps"
+#include "LWEShaders/LWEPP_Texture.lwps"
+#include "LWEShaders/LWEPP_MSAverage.lwps"
+#include "LWEShaders/LWEStructures.lws"
+#include "LWEShaders/LWEUtilitys.lws"
+#include "LWEShaders/LWELightUtilitys.lws"
+#include "LWEShaders/LWEGausianBlurVertex.lwvs"
+#include "LWEShaders/LWEGausianBlurPixel.lwps"
+#include "LWEShaders/LWEDepthVertex.lwvs"
+#include "LWEShaders/LWEPBRVertex.lwvs"
+#include "LWEShaders/LWEPBRPixel.lwps"
+#include "LWEShaders/LWEPP_PBRComposite.lwps"
+};
+
 //LWEAsset
 void *LWEAsset::GetAsset(void) {
 	return m_Asset;
@@ -52,8 +76,10 @@ LWEAsset::LWEAsset() {}
 #pragma region LWEAssetManager
 bool LWEAssetManager::XMLParser(LWEXMLNode *N, void *UserData, LWEXML *XML) {
 	LWEAssetManager *AM = (LWEAssetManager*)UserData;
+	LWEXMLAttribute *CompiledShaderCacheAttr = N->FindAttribute("CompiledShaderCache");
+	if (CompiledShaderCacheAttr) AM->SetCompiledShaderCache(CompiledShaderCacheAttr->GetValue());
 	for (LWEXMLNode *C = XML->NextNode(nullptr, N); C; C = XML->NextNode(C, N, true)) {
-		uint32_t i = C->GetName().CompareList("Texture", "Font", "Shader", "Video", "AudioStream", "Pipeline", "VideoBuffer", "ShaderBuilder", "Reference");
+		uint32_t i = C->GetName().CompareList("Texture", "Font", "Shader", "Video", "AudioStream", "Pipeline", "VideoBuffer", "ShaderBuilder", "PipelineBuilder", "Reference");
 		bool Loaded = false;
 		if (i == LWEAsset::Texture) Loaded = XMLParseTexture(C, AM);
 		else if (i == LWEAsset::Font) Loaded = XMLParseFont(C, AM);
@@ -63,13 +89,15 @@ bool LWEAssetManager::XMLParser(LWEXMLNode *N, void *UserData, LWEXML *XML) {
 		else if (i == LWEAsset::Pipeline) Loaded = XMLParsePipeline(C, AM);
 		else if (i == LWEAsset::VideoBuffer) Loaded = XMLParseVideoBuffer(C, AM);
 		else if (i == 7) Loaded = XMLParseShaderBuilder(C, AM);
-		else if (i == 8) {
+		else if (i == 8) Loaded = XMLParsePipelineBuilder(C, AM);
+		else if (i == 9) {
 			LWEXMLAttribute *NameAttr = C->FindAttribute("Name");
 			LWEXMLAttribute *RefAttr = C->FindAttribute("Ref");
 			if (NameAttr && RefAttr) Loaded = AM->InsertAssetReference(NameAttr->GetValue(), RefAttr->GetValue());
 		}
 		if (!Loaded) {
-			fmt::print("Error unable to load asset: '{}'\n", C->m_Name);
+			LWEXMLAttribute *NameAttr = C->FindAttribute("Name");
+			LWELogCritical<256>("unable to load asset: '{}'", NameAttr ? NameAttr->GetValue() : C->m_Name);
 			//return true;
 		}
 	}
@@ -110,18 +138,18 @@ bool LWEAssetManager::XMLParseFont(LWEXMLNode *N, LWEAssetManager *AM) {
 	if (Localize && Localize->ParseLocalization(SBuffer, sizeof(SBuffer), Path)) Path = LWUTF8Iterator(SBuffer);
 	uint32_t ExtType = LWFileStream::IsExtensions(Path, "ttf", "fnt", "arfont");
 	if (!LWFileStream::OpenStream(FontFile, Path, LWFileStream::ReadMode | ((ExtType == 0 || ExtType==2) ? LWFileStream::BinaryMode : 0), Alloc)) {
-		fmt::print("Error opening font file: '{}'\n", Path);
+		LWELogCritical<256>("opening font file: '{}'", Path);
 		return false;
 	}
 	if (ExtType == 0) F = LWFont::LoadFontTTF(&FontFile, AM->GetDriver(), Size, GlyphCount, GFirstList, GLengthList, Alloc);
 	else if (ExtType == 1) F = LWFont::LoadFontFNT(&FontFile, AM->GetDriver(), Alloc);
 	else if (ExtType == 2) F = LWFont::LoadFontAR(&FontFile, AM->GetDriver(), Alloc);
 	if (!F) {
-		fmt::print("Error creating font file.\n");
+		LWELogCritical<256>("creating font file.");
 		return false;
 	}
 	if (!AM->InsertAsset(NameAttr->m_Value, F, LWEAsset::Font, Path)) {
-		fmt::print("Error inserting asset: '{}'\n", NameAttr->GetValue());
+		LWELogCritical<256>("inserting asset: '{}'", NameAttr->GetValue());
 		LWAllocator::Destroy(F);
 		return false;
 	}
@@ -152,12 +180,13 @@ bool LWEAssetManager::XMLParseTexture(LWEXMLNode *N, LWEAssetManager *AM) {
 	LWEXMLAttribute *PathAttr = N->FindAttribute("Path");
 	LWEXMLAttribute *NameAttr = N->FindAttribute("Name");
 	LWEXMLAttribute *StateAttr = N->FindAttribute("State");
+	LWEXMLAttribute *LinearAttr = N->FindAttribute("Linear");
 	if (!PathAttr || !NameAttr) return false;
 	LWUTF8Iterator Path = PathAttr->GetValue();
 	if (Localize && Localize->ParseLocalization(SBuffer, sizeof(SBuffer), Path)) Path = LWUTF8Iterator(SBuffer);
 	LWImage Image;
 	if (!LWImage::LoadImage(Image, Path, AM->GetAllocator())) {
-		fmt::print("Error loading image: '{}'\n", Path);
+		LWELogCritical<256>("loading image: '{}'", Path);
 		return false;
 	}
 	uint32_t TextureState = 0;
@@ -165,13 +194,14 @@ bool LWEAssetManager::XMLParseTexture(LWEXMLNode *N, LWEAssetManager *AM) {
 		uint32_t StateCnt = std::min<uint32_t>(StateAttr->GetValue().SplitToken(FlagIterList, MaxFlagIters, '|'), MaxFlagIters);
 		for (uint32_t i = 0; i < StateCnt; i++) {
 			uint32_t FlagID = FlagIterList[i].AdvanceWord(true).CompareLista(TotalFlags, FlagNames);
-			if (FlagID == -1) fmt::print("Encountered invalid flag: '{}' for '{}'\n", FlagIterList[i], NameAttr->GetValue());
+			if (FlagID == -1) LWELogCritical<256>("Encountered invalid flag: '{}' for '{}'", FlagIterList[i], NameAttr->GetValue());
 			else TextureState |= FlagValues[FlagID];
 		}
 	}
+	Image.SetSRGBA(LinearAttr == nullptr);
 	LWTexture *Tex = Driver->CreateTexture(TextureState, Image, Alloc);
 	if (!AM->InsertAsset(NameAttr->m_Value, Tex, LWEAsset::Texture, Path)) {
-		fmt::print("Error inserting asset: '{}'\n", NameAttr->GetValue());
+		LWELogCritical<256>("inserting asset: '{}'", NameAttr->GetValue());
 		Driver->DestroyTexture(Tex);
 		return false;
 	}
@@ -201,19 +231,19 @@ bool LWEAssetManager::XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM) {
 		LWEXMLAttribute *SlotAttr = N->FindAttribute("Slot");
 		LWEXMLAttribute *SlotNameAttr = N->FindAttribute("SlotName");
 		if (!NameAttr || (!SlotAttr && !SlotNameAttr)) {
-			fmt::print("Block '{}' does not have required parameters.\n", N->GetName());
+			LWELogCritical<256>("Block '{}' does not have required attributes(Name + (Slot or SlotName).", N->GetName());
 			return;
 		}
 		LWVideoBuffer *B = AM->GetAsset<LWVideoBuffer>(NameAttr->GetValue());
 		if (!B) {
-			fmt::print("Error block '{}' could not find buffer: '{}'\n", N->GetName(), NameAttr->GetValue());
+			LWELogCritical<256>("block '{}' could not find buffer: '{}'", N->GetName(), NameAttr->GetValue());
 			return;
 		}
 		uint32_t SlotIdx = -1;
 		if (SlotAttr) SlotIdx = atoi(SlotAttr->m_Value);
 		else if (SlotNameAttr) SlotIdx = P->FindBlock(SlotNameAttr->m_Value);
 		if (SlotIdx == -1) {
-			fmt::print("Error block '{}' slot '{}' not found.\n", N->GetName(), SlotAttr ? SlotAttr->GetValue() : SlotNameAttr->GetValue());
+			LWELogCritical<256>("block '{}' slot '{}' not found.", N->GetName(), SlotAttr ? SlotAttr->GetValue() : SlotNameAttr->GetValue());
 			return;
 		}
 		uint32_t Offset = OffsetAttr ? atoi(OffsetAttr->m_Value) : 0;
@@ -227,20 +257,20 @@ bool LWEAssetManager::XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM) {
 		LWEXMLAttribute *SlotAttr = N->FindAttribute("Slot");
 		LWEXMLAttribute *SlotNameAttr = N->FindAttribute("SlotName");
 		if (!NameAttr || (!SlotAttr && !SlotNameAttr)) {
-			fmt::print("Block '{}' does not have required parameters.\n", N->GetName());
+			LWELogCritical<256>("Block '{}' does not have required parameters.", N->GetName());
 			return;
 		}
 		LWVideoBuffer *B = AM->GetAsset<LWVideoBuffer>(NameAttr->m_Value);
 		LWTexture *T = AM->GetAsset<LWTexture>(NameAttr->m_Value);
 		if (!B && !T) {
-			fmt::print("Error block '{}' could not find buffer or texture: '{}'\n", N->GetName(), NameAttr->GetValue());
+			LWELogCritical<256>("block '{}' could not find buffer or texture: '{}'", N->GetName(), NameAttr->GetValue());
 			return;
 		}
 		uint32_t SlotIdx = -1;
 		if (SlotAttr) SlotIdx = atoi(SlotAttr->m_Value);
 		else if (SlotNameAttr) SlotIdx = P->FindResource(SlotNameAttr->m_Value);
 		if (SlotIdx == -1) {
-			fmt::print("Error block '{}' resource slot '{}' not found.\n", N->GetName(), SlotAttr ? SlotAttr->GetValue() : SlotNameAttr->GetValue());
+			LWELogCritical<256>("block '{}' resource slot '{}' not found.", N->GetName(), SlotAttr ? SlotAttr->GetValue() : SlotNameAttr->GetValue());
 			return;
 		}
 		uint32_t Offset = OffsetAttr ? atoi(OffsetAttr->m_Value) : 0;
@@ -272,11 +302,11 @@ bool LWEAssetManager::XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM) {
 	LWEXMLAttribute *DepthBiasAttr = N->FindAttribute("DepthBias");
 	LWEXMLAttribute *DepthSlopedBiasAttr = N->FindAttribute("DepthSlopedBias");
 	if (!NameAttr){
-		fmt::print("Error pipeline has no name attribute.\n");
+		LWELogCritical<256>("pipeline has no name attribute.");
 		return false;
 	}
 	if (!VertexAttr && !ComputeAttr) {
-		fmt::print("Pipeline '{}' must have either a vertex shader, or compute shader.\n", NameAttr->GetValue());
+		LWELogCritical<256>("Pipeline '{}' must have either a vertex shader, or compute shader.", NameAttr->GetValue());
 		return false;
 	}
 	uint64_t Flags = 0;
@@ -286,19 +316,19 @@ bool LWEAssetManager::XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM) {
 	LWShader *GS = GeometryAttr ? AM->GetAsset<LWShader>(GeometryAttr->GetValue()) : nullptr;
 	LWShader *CS = ComputeAttr ? AM->GetAsset<LWShader>(ComputeAttr->GetValue()) : nullptr;
 	if (VertexAttr && !VS) {
-		fmt::print("Could not find vertex shader: '{}'\n", VertexAttr->GetValue());
+		LWELogCritical<256>("{} Could not find vertex shader: '{}'", NameAttr->GetValue(), VertexAttr->GetValue());
 		return false;
 	}
 	if (PixelAttr && !PS) {
-		fmt::print("Could not find pixel shader: '{}'\n", PixelAttr->GetValue());
+		LWELogCritical<256>("{} Could not find pixel shader: '{}'", NameAttr->GetValue(), PixelAttr->GetValue());
 		return false;
 	}
 	if (GeometryAttr && !GS) {
-		fmt::print("Could not find geometry shader: '{}'\n", GeometryAttr->GetValue());
+		LWELogCritical<256>("{} Could not find geometry shader: '{}'", NameAttr->GetValue(), GeometryAttr->GetValue());
 		return false;
 	}
 	if (ComputeAttr && !CS) {
-		fmt::print("Could not find computer shader: '{}'\n", ComputeAttr->GetValue());
+		LWELogCritical<256>("{} Could not find computer shader: '{}'", NameAttr->GetValue(), ComputeAttr->GetValue());
 		return false;
 	}
 	if (FlagAttr) {
@@ -306,62 +336,62 @@ bool LWEAssetManager::XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM) {
 		for (uint32_t i = 0; i < FlagCnt; i++) {
 			uint32_t n = FlagIterList[i].AdvanceWord(true).CompareLista(FlagCount, FlagNames);
 			if (n == -1) {
-				fmt::print("Invalid flag encountered: {}: '{}' for: '{}'\n", i, FlagIterList[i], NameAttr->GetValue());
+				LWELogCritical<256>("Invalid flag encountered: {}: '{}' for: '{}'", i, FlagIterList[i], NameAttr->GetValue());
 			} else Flags |= FlagValues[n];
 		}
 	}
 	if (FillModeAttr) {
 		uint32_t n = FillModeAttr->GetValue().CompareLista(2, FillNames);
 		if (n == -1) {
-			fmt::print("Unknown fill mode: '{}'\n", FillModeAttr->GetValue());
+			LWELogCritical<256>("{}: Unknown fill mode: '{}'", NameAttr->GetValue(), FillModeAttr->GetValue());
 		} else Flags |= (FillValues[n] << LWPipeline::FILL_MODE_BITOFFSET);
 	}
 	if (CullModeAttr) {
 		uint32_t n = CullModeAttr->GetValue().CompareLista(3, CullNames);
 		if (n == -1) {
-			fmt::print("Unknown cull mode: '{}'\n", CullModeAttr->GetValue());
+			LWELogCritical<256>("{}: Unknown cull mode: '{}'", NameAttr->GetValue(), CullModeAttr->GetValue());
 		} else Flags |= (CullValues[n] << LWPipeline::CULL_BITOFFSET);
 	}
 	if (DepthCompareAttr) {
 		uint32_t n = DepthCompareAttr->GetValue().CompareLista(6, CompareNames);
 		if (n == -1) {
-			fmt::print("Unknown depth compare mode: '{}'\n", DepthCompareAttr->GetValue());
+			LWELogCritical<256>("{}: Unknown depth compare mode: '{}'", NameAttr->GetValue(), DepthCompareAttr->GetValue());
 		} else Flags |= (CompareValues[n] << LWPipeline::DEPTH_COMPARE_BITOFFSET);
 	}
 	if (SourceBlendModeAttr) {
 		uint32_t n = SourceBlendModeAttr->GetValue().CompareLista(10, BlendNames);
 		if (n == -1) {
-			fmt::print("Unknown source blend mode: '{}'\n", SourceBlendModeAttr->GetValue());
+			LWELogCritical<256>("{}: Unknown source blend mode: '{}'", NameAttr->GetValue(), SourceBlendModeAttr->GetValue());
 		} else Flags |= (BlendValues[n] << LWPipeline::BLEND_SRC_BITOFFSET);
 	}
 	if (DestBlendModeAttr) {
 		uint32_t n = DestBlendModeAttr->GetValue().CompareLista(10, BlendNames);
 		if (n == -1) {
-			fmt::print("Unknown dest blend mode: '{}'\n", DestBlendModeAttr->GetValue());
+			LWELogCritical<256>("{}: Unknown dest blend mode: '{}'", NameAttr->GetValue(), DestBlendModeAttr->GetValue());
 		} else Flags |= (BlendValues[n] << LWPipeline::BLEND_DST_BITOFFSET);
 	}
 	if (StencilCompareAttr) {
 		uint32_t n = StencilCompareAttr->GetValue().CompareLista(6, CompareNames);
 		if (n == -1) {
-			fmt::print("Unknown stencil compare mode: '{}'\n", StencilCompareAttr->GetValue());
+			LWELogCritical<256>("{}: Unknown stencil compare mode: '{}'", NameAttr->GetValue(), StencilCompareAttr->GetValue());
 		} else Flags |= (CompareValues[n] << LWPipeline::STENCIL_COMPARE_BITOFFSET);
 	}
 	if (StencilOpFailAttr) {
 		uint32_t n = StencilOpFailAttr->GetValue().CompareLista(8, StencilOpNames);
 		if (n == -1) {
-			fmt::print("Unknown stencil op fail: '{}'\n", StencilOpFailAttr->GetValue());
+			LWELogCritical<256>("{}: Unknown stencil op fail: '{}'", NameAttr->GetValue(), StencilOpFailAttr->GetValue());
 		} else Flags |= (StencilOpValues[n] << LWPipeline::STENCIL_OP_SFAIL_BITOFFSET);
 	}
 	if (StencilOpDFailAttr) {
 		uint32_t n = StencilOpDFailAttr->GetValue().CompareLista(8, StencilOpNames);
 		if (n == -1) {
-			fmt::print("Unknown stencil op depth fail: '{}'\n", StencilOpDFailAttr->GetValue());
+			LWELogCritical<256>("{}: Unknown stencil op depth fail: '{}'", NameAttr->GetValue(), StencilOpDFailAttr->GetValue());
 		} else Flags |= (StencilOpValues[n] << LWPipeline::STENCIL_OP_DFAIL_BITOFFSET);
 	}
 	if (StencilOpPassAttr) {
 		uint32_t n = StencilOpPassAttr->GetValue().CompareLista(8, StencilOpNames);
 		if (n == -1) {
-			fmt::print("Unknown stencil op pass: '{}'\n", StencilOpPassAttr->GetValue());
+			LWELogCritical<256>("{}: Unknown stencil op pass: '{}'", NameAttr->GetValue(), StencilOpPassAttr->GetValue());
 		} else Flags |= (StencilOpValues[n] << LWPipeline::STENCIL_OP_PASS_BITOFFSET);
 	}
 	if (StencilRefValueAttr) {
@@ -383,7 +413,7 @@ bool LWEAssetManager::XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM) {
 	if (VS) P = Driver->CreatePipeline(VS, GS, PS, Flags, Alloc);
 	else if (CS) P = Driver->CreatePipeline(CS, Alloc);
 	if (!P) {
-		fmt::print("Failed to create pipeline for: '{}'\n", NameAttr->GetValue());
+		LWELogCritical<256>("Failed to create pipeline for: '{}'", NameAttr->GetValue());
 		return false;
 	}
 	
@@ -393,14 +423,263 @@ bool LWEAssetManager::XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM) {
 		if (i == 0) ParseResourceBinding(C, P, AM);
 		else if (i == 1) ParseBlockBinding(C, P, AM);
 		else{
-			fmt::print("Error pipeline '{}' has unknown child node: '{}'\n", NameAttr->GetValue(), C->GetName());
+			LWELogCritical<256>("pipeline '{}' has unknown child node: '{}'", NameAttr->GetValue(), C->GetName());
 		}
 	}
 
 	if (!AM->InsertAsset(NameAttr->GetValue(), P, LWEAsset::Pipeline, "")) {
-		fmt::print("Error inserting asset: '{}'\n", NameAttr->GetValue());
+		LWELogCritical<256>("inserting asset: '{}'", NameAttr->GetValue());
 		Driver->DestroyPipeline(P);
 		return false;
+	}
+	return true;
+}
+
+bool LWEAssetManager::XMLParsePipelineBuilder(LWEXMLNode *N, LWEAssetManager *AM) {
+	LWVideoDriver *Driver = AM->GetDriver();
+	LWAllocator &Alloc = AM->GetAllocator();
+
+	auto ParseBlockBinding = [](LWEXMLNode *N, LWPipeline *P, LWEAssetManager *AM) {
+		LWEXMLAttribute *NameAttr = N->FindAttribute("Name");
+		LWEXMLAttribute *OffsetAttr = N->FindAttribute("Offset");
+		LWEXMLAttribute *SlotAttr = N->FindAttribute("Slot");
+		LWEXMLAttribute *SlotNameAttr = N->FindAttribute("SlotName");
+		if (!NameAttr || (!SlotAttr && !SlotNameAttr)) {
+			LWELogCritical<256>("Block '{}' does not have required parameters.", N->GetName());
+			return;
+		}
+		LWVideoBuffer *B = AM->GetAsset<LWVideoBuffer>(NameAttr->GetValue());
+		if (!B) {
+			LWELogCritical<256>("block '{}' could not find buffer: '{}'", N->GetName(), NameAttr->GetValue());
+			return;
+		}
+		uint32_t SlotIdx = -1;
+		if (SlotAttr) SlotIdx = atoi(SlotAttr->m_Value);
+		else if (SlotNameAttr) SlotIdx = P->FindBlock(SlotNameAttr->m_Value);
+		if (SlotIdx == -1) {
+			LWELogCritical<256>("block '{}' slot '{}' not found.", N->GetName(), SlotAttr ? SlotAttr->GetValue() : SlotNameAttr->GetValue());
+			return;
+		}
+		uint32_t Offset = OffsetAttr ? atoi(OffsetAttr->m_Value) : 0;
+		P->SetUniformBlock(SlotIdx, B, Offset);
+		return;
+	};
+
+	auto ParseResourceBinding = [](LWEXMLNode *N, LWPipeline *P, LWEAssetManager *AM) {
+		LWEXMLAttribute *NameAttr = N->FindAttribute("Name");
+		LWEXMLAttribute *OffsetAttr = N->FindAttribute("Offset");
+		LWEXMLAttribute *SlotAttr = N->FindAttribute("Slot");
+		LWEXMLAttribute *SlotNameAttr = N->FindAttribute("SlotName");
+		if (!NameAttr || (!SlotAttr && !SlotNameAttr)) {
+			LWELogCritical<256>("Block '{}' does not have required parameters.", N->GetName());
+			return;
+		}
+		LWVideoBuffer *B = AM->GetAsset<LWVideoBuffer>(NameAttr->m_Value);
+		LWTexture *T = AM->GetAsset<LWTexture>(NameAttr->m_Value);
+		if (!B && !T) {
+			LWELogCritical<256>("block '{}' could not find buffer or texture: '{}'", N->GetName(), NameAttr->GetValue());
+			return;
+		}
+		uint32_t SlotIdx = -1;
+		if (SlotAttr) SlotIdx = atoi(SlotAttr->m_Value);
+		else if (SlotNameAttr) SlotIdx = P->FindResource(SlotNameAttr->m_Value);
+		if (SlotIdx == -1) {
+			LWELogCritical<256>("block '{}' resource slot '{}' not found.", N->GetName(), SlotAttr ? SlotAttr->GetValue() : SlotNameAttr->GetValue());
+			return;
+		}
+		uint32_t Offset = OffsetAttr ? atoi(OffsetAttr->m_Value) : 0;
+		if (B) P->SetResource(SlotIdx, B, Offset);
+		else P->SetResource(SlotIdx, T);
+		return;
+	};
+
+	auto ParseRasterState = [](LWEXMLNode *N, uint64_t DefaultFlags, float &DepthBias, float &DepthSlopeBias) -> uint64_t {
+		const uint32_t MaxFlagIters = 64;
+		const char8_t *FlagNames[] = { "DepthTest", "Blending", "NoDepth", "NoColorR", "NoColorG", "NoColorB", "NoColorA", "NoColor", "ClipPlane0", "ClipPlane1", "ClipPlane2", "StencilTest", "DepthBias" };
+		const uint64_t FlagValues[] = { LWPipeline::DEPTH_TEST, LWPipeline::BLENDING, LWPipeline::No_Depth, LWPipeline::No_ColorR, LWPipeline::No_ColorG, LWPipeline::No_ColorB, LWPipeline::No_ColorA, LWPipeline::No_Color, LWPipeline::CLIPPLANE0, LWPipeline::CLIPPLANE1, LWPipeline::CLIPPLANE2, LWPipeline::STENCIL_TEST, LWPipeline::DEPTH_BIAS };
+		const char8_t *FillNames[] = { "Solid", "Wireframe" };
+		const uint64_t FillValues[] = { LWPipeline::SOLID, LWPipeline::WIREFRAME };
+		const char8_t *CullNames[] = { "None", "CCW", "CW" };
+		const uint64_t CullValues[] = { LWPipeline::CULL_NONE, LWPipeline::CULL_CCW, LWPipeline::CULL_CW };
+		const char8_t *BlendNames[] = { "Zero", "One", "SrcColor", "DstColor", "SrcAlpha", "DstAlpha", "OneMinusSrcColor", "OneMinusDstColor", "OneMinusSrcAlpha", "OneMinusDstAlpha" };
+		const uint64_t BlendValues[] = { LWPipeline::BLEND_ZERO, LWPipeline::BLEND_ONE, LWPipeline::BLEND_SRC_COLOR, LWPipeline::BLEND_DST_COLOR, LWPipeline::BLEND_SRC_ALPHA, LWPipeline::BLEND_DST_ALPHA, LWPipeline::BLEND_ONE_MINUS_SRC_COLOR, LWPipeline::BLEND_ONE_MINUS_DST_COLOR, LWPipeline::BLEND_ONE_MINUS_SRC_ALPHA, LWPipeline::BLEND_ONE_MINUS_DST_ALPHA };
+		const char8_t *CompareNames[] = { "Always", "Never", "Less", "Greater", "LessEqual", "GreaterEqual" };
+		const uint64_t CompareValues[] = { LWPipeline::ALWAYS, LWPipeline::NEVER, LWPipeline::LESS, LWPipeline::GREATER, LWPipeline::LESS_EQL, LWPipeline::GREATER_EQL };
+		const char8_t *StencilOpNames[] = { "Keep", "Zero", "Replace", "Increase", "Decrease", "IncreaseWrap", "DecreaseWrap", "Invert" };
+		const uint64_t StencilOpValues[] = { LWPipeline::STENCIL_OP_KEEP, LWPipeline::STENCIL_OP_ZERO, LWPipeline::STENCIL_OP_REPLACE, LWPipeline::STENCIL_OP_INCR, LWPipeline::STENCIL_OP_DECR, LWPipeline::STENCIL_OP_INCR_WRAP, LWPipeline::STENCIL_OP_DECR_WRAP, LWPipeline::STENCIL_OP_INVERT };
+		const uint32_t FlagCount = sizeof(FlagValues) / sizeof(uint64_t);
+		LWUTF8Iterator FlagIterList[MaxFlagIters];
+
+		LWEXMLAttribute *FlagAttr = N->FindAttribute("Flags");
+		LWEXMLAttribute *FillModeAttr = N->FindAttribute("FillMode");
+		LWEXMLAttribute *CullModeAttr = N->FindAttribute("CullMode");
+		LWEXMLAttribute *DepthCompareAttr = N->FindAttribute("DepthCompare");
+		LWEXMLAttribute *SourceBlendModeAttr = N->FindAttribute("SourceBlendMode");
+		LWEXMLAttribute *DestBlendModeAttr = N->FindAttribute("DestBlendMode");
+		LWEXMLAttribute *StencilCompareAttr = N->FindAttribute("StencilCompare");
+		LWEXMLAttribute *StencilRefValueAttr = N->FindAttribute("StencilValue");
+		LWEXMLAttribute *StencilReadMaskValueAttr = N->FindAttribute("StencilReadMask");
+		LWEXMLAttribute *StencilWriteMaskValueAttr = N->FindAttribute("StencilWriteMask");
+		LWEXMLAttribute *StencilOpFailAttr = N->FindAttribute("StencilOpFail");
+		LWEXMLAttribute *StencilOpDFailAttr = N->FindAttribute("StencilOpDepthFail");
+		LWEXMLAttribute *StencilOpPassAttr = N->FindAttribute("StencilOpPass");
+		LWEXMLAttribute *DepthBiasAttr = N->FindAttribute("DepthBias");
+		LWEXMLAttribute *DepthSlopedBiasAttr = N->FindAttribute("DepthSlopedBias");
+
+
+		if (FlagAttr) {
+			uint32_t FlagCnt = std::min<uint32_t>(FlagAttr->GetValue().SplitToken(FlagIterList, MaxFlagIters, '|'), MaxFlagIters);
+			for (uint32_t i = 0; i < FlagCnt; i++) {
+				uint32_t n = FlagIterList[i].AdvanceWord(true).CompareLista(FlagCount, FlagNames);
+				if (n == -1) {
+					LWELogCritical<256>("Invalid flag encountered: {}: '{}' for: PipelineBuilder", i, FlagIterList[i]);
+				} else DefaultFlags |= FlagValues[n];
+			}
+		}
+		if (FillModeAttr) {
+			uint32_t n = FillModeAttr->GetValue().CompareLista(2, FillNames);
+			if (n == -1) {
+				LWELogCritical<256>("PipelineBuilder: Unknown fill mode: '{}'", FillModeAttr->GetValue());
+			} else DefaultFlags = (DefaultFlags&~LWPipeline::FILL_MODE_BITS) | (FillValues[n] << LWPipeline::FILL_MODE_BITOFFSET);
+		}
+		if (CullModeAttr) {
+			uint32_t n = CullModeAttr->GetValue().CompareLista(3, CullNames);
+			if (n == -1) {
+				LWELogCritical<256>("PipelineBuilder: Unknown cull mode: '{}'", CullModeAttr->GetValue());
+			} else DefaultFlags = (DefaultFlags&~LWPipeline::CULL_BITS) | (CullValues[n] << LWPipeline::CULL_BITOFFSET);
+		}
+		if (DepthCompareAttr) {
+			uint32_t n = DepthCompareAttr->GetValue().CompareLista(6, CompareNames);
+			if (n == -1) {
+				LWELogCritical<256>("PipelineBuilder: Unknown depth compare mode: '{}'", DepthCompareAttr->GetValue());
+			} else DefaultFlags = (DefaultFlags&~LWPipeline::DEPTH_COMPARE_BITS) | (CompareValues[n] << LWPipeline::DEPTH_COMPARE_BITOFFSET);
+		}
+		if (SourceBlendModeAttr) {
+			uint32_t n = SourceBlendModeAttr->GetValue().CompareLista(10, BlendNames);
+			if (n == -1) {
+				LWELogCritical<256>("PipelineBuilder: Unknown source blend mode: '{}'", SourceBlendModeAttr->GetValue());
+			} else DefaultFlags = (DefaultFlags&~LWPipeline::BLEND_SRC_BITS) | (BlendValues[n] << LWPipeline::BLEND_SRC_BITOFFSET);
+		}
+		if (DestBlendModeAttr) {
+			uint32_t n = DestBlendModeAttr->GetValue().CompareLista(10, BlendNames);
+			if (n == -1) {
+				LWELogCritical<256>("PipelineBuilder: Unknown dest blend mode: '{}'", DestBlendModeAttr->GetValue());
+			} else DefaultFlags = (DefaultFlags&~LWPipeline::BLEND_DST_BITS) | (BlendValues[n] << LWPipeline::BLEND_DST_BITOFFSET);
+		}
+		if (StencilCompareAttr) {
+			uint32_t n = StencilCompareAttr->GetValue().CompareLista(6, CompareNames);
+			if (n == -1) {
+				LWELogCritical<256>("PipelineBuilder: Unknown stencil compare mode: '{}'", StencilCompareAttr->GetValue());
+			} else DefaultFlags = (DefaultFlags&~LWPipeline::STENCIL_COMPARE_BITS) | (CompareValues[n] << LWPipeline::STENCIL_COMPARE_BITOFFSET);
+		}
+		if (StencilOpFailAttr) {
+			uint32_t n = StencilOpFailAttr->GetValue().CompareLista(8, StencilOpNames);
+			if (n == -1) {
+				LWELogCritical<256>("PipelineBuilder: Unknown stencil op fail: '{}'", StencilOpFailAttr->GetValue());
+			} else DefaultFlags = (DefaultFlags&~LWPipeline::STENCIL_OP_SFAIL_BITS) | (StencilOpValues[n] << LWPipeline::STENCIL_OP_SFAIL_BITOFFSET);
+		}
+		if (StencilOpDFailAttr) {
+			uint32_t n = StencilOpDFailAttr->GetValue().CompareLista(8, StencilOpNames);
+			if (n == -1) {
+				LWELogCritical<256>("PipelineBuilder: Unknown stencil op depth fail: '{}'", StencilOpDFailAttr->GetValue());
+			} else DefaultFlags = (DefaultFlags &~LWPipeline::STENCIL_OP_DFAIL_BITS) | (StencilOpValues[n] << LWPipeline::STENCIL_OP_DFAIL_BITOFFSET);
+		}
+		if (StencilOpPassAttr) {
+			uint32_t n = StencilOpPassAttr->GetValue().CompareLista(8, StencilOpNames);
+			if (n == -1) {
+				LWELogCritical<256>("PipelineBuilder: Unknown stencil op pass: '{}'", StencilOpPassAttr->GetValue());
+			} else DefaultFlags = (DefaultFlags&~LWPipeline::STENCIL_OP_PASS_BITS) | (StencilOpValues[n] << LWPipeline::STENCIL_OP_PASS_BITOFFSET);
+		}
+		if (StencilRefValueAttr) {
+			uint64_t Value = (uint64_t)atoi(StencilRefValueAttr->m_Value);
+			Value = std::max<uint64_t>(Value, 255);
+			DefaultFlags = (DefaultFlags&~LWPipeline::STENCIL_REF_VALUE_BITS) | (Value << LWPipeline::STENCIL_REF_VALUE_BITOFFSET);
+		}
+		if (StencilReadMaskValueAttr) {
+			uint64_t Value = (uint64_t)atoi(StencilReadMaskValueAttr->m_Value);
+			Value = std::max<uint64_t>(Value, 255);
+			DefaultFlags = (DefaultFlags & ~LWPipeline::STENCIL_READMASK_BITS) | (Value << LWPipeline::STENCIL_READMASK_BITOFFSET);
+		}
+		if (StencilWriteMaskValueAttr) {
+			uint64_t Value = (uint64_t)atoi(StencilWriteMaskValueAttr->m_Value);
+			Value = std::max<uint64_t>(Value, 255);
+			DefaultFlags = (DefaultFlags & ~LWPipeline::STENCIL_WRITEMASK_BITS) | (Value << LWPipeline::STENCIL_WRITEMASK_BITOFFSET);
+		}
+		if (DepthBiasAttr) DepthBias = (float)atof(DepthBiasAttr->GetValue().c_str());
+		if (DepthSlopedBiasAttr) DepthSlopeBias = (float)atof(DepthSlopedBiasAttr->GetValue().c_str());
+		return DefaultFlags;
+	};
+
+	auto ParsePipeline = [&Driver, &Alloc, &ParseRasterState, &ParseBlockBinding, &ParseResourceBinding](LWEXMLNode *N, LWEAssetManager *AM, uint64_t DefaultFlags,float DepthBias, float DepthSlopeBias, LWEXMLNode *BlockNode, LWEXMLNode *ResourceNode)->bool {
+		LWEXMLAttribute *NameAttr = N->FindAttribute("Name");
+		LWEXMLAttribute *VertexAttr = N->FindAttribute("Vertex");
+		LWEXMLAttribute *ComputeAttr = N->FindAttribute("Compute");
+		LWEXMLAttribute *GeometryAttr = N->FindAttribute("Geometry");
+		LWEXMLAttribute *PixelAttr = N->FindAttribute("Pixel");
+		if (!NameAttr) {
+			LWELogCritical<256>("Pipeline missing 'Name' Attribute.");
+			return false;
+		}	
+		LWShader *VS = VertexAttr ? AM->GetAsset<LWShader>(VertexAttr->GetValue()) : nullptr;
+		LWShader *PS = PixelAttr ? AM->GetAsset<LWShader>(PixelAttr->GetValue()) : nullptr;
+		LWShader *GS = GeometryAttr ? AM->GetAsset<LWShader>(GeometryAttr->GetValue()) : nullptr;
+		LWShader *CS = ComputeAttr ? AM->GetAsset<LWShader>(ComputeAttr->GetValue()) : nullptr;
+		if (VertexAttr && !VS) {
+			LWELogCritical<256>("{} Could not find vertex shader: '{}'", NameAttr->GetValue(), VertexAttr->GetValue());
+			return false;
+		}
+		if (PixelAttr && !PS) {
+			LWELogCritical<256>("{} Could not find pixel shader: '{}'", NameAttr->GetValue(), PixelAttr->GetValue());
+			return false;
+		}
+		if (GeometryAttr && !GS) {
+			LWELogCritical<256>("{} Could not find geometry shader: '{}'", NameAttr->GetValue(), GeometryAttr->GetValue());
+			return false;
+		}
+		if (ComputeAttr && !CS) {
+			LWELogCritical<256>("{} Could not find computer shader: '{}'", NameAttr->GetValue(), ComputeAttr->GetValue());
+			return false;
+		}
+		DefaultFlags = ParseRasterState(N, DefaultFlags, DepthBias, DepthSlopeBias);
+
+		LWPipeline *P = nullptr;
+		if (VS) P = Driver->CreatePipeline(VS, GS, PS, DefaultFlags, Alloc);
+		else if (CS) P = Driver->CreatePipeline(CS, Alloc);
+		if (!P) {
+			LWELogCritical<256>("Failed to create pipeline for: '{}'", NameAttr->GetValue());
+			return false;
+		}
+		if (BlockNode) ParseBlockBinding(BlockNode, P, AM);
+		if (ResourceNode) ParseResourceBinding(ResourceNode, P, AM);
+		P->SetDepthBias((DefaultFlags & LWPipeline::DEPTH_BIAS), DepthBias, DepthSlopeBias);
+		for (LWEXMLNode *C = N->m_FirstChild; C; C = C->m_Next) {
+			uint32_t i = C->GetName().CompareList("Resource", "Block");
+			if (i == 0) ParseBlockBinding(C, P, AM);
+			else if (i == 1) ParseResourceBinding(C, P, AM);
+		}
+
+		if (!AM->InsertAsset(NameAttr->GetValue(), P, LWEAsset::Pipeline, "")) {
+			LWELogCritical<256>("inserting asset: {}", NameAttr->GetValue());
+			Driver->DestroyPipeline(P);
+			return false;
+		}
+		return true;
+	};
+
+	float DefDepthBias = 0.0f;
+	float DefDepthSlopeBias = 0.0f;
+	uint64_t DefaultRaster = ParseRasterState(N, 0, DefDepthBias, DefDepthSlopeBias);
+
+	LWEXMLNode *BlockNode = nullptr;
+	LWEXMLNode *ResourceNode = nullptr;
+	for (LWEXMLNode *C = N->m_FirstChild; C; C = C->m_Next) {
+		uint32_t i = C->GetName().CompareList("Pipeline", "Resource", "Block");
+		if (i == 0) ParsePipeline(C, AM, DefaultRaster, DefDepthBias, DefDepthSlopeBias, BlockNode, ResourceNode);
+		else if (i == 1) BlockNode = C;
+		else if (i == 2) ResourceNode = C;
+		else {
+			LWELogCritical<256>("PipelineBuilder has unknown child node: '{}'", C->GetName());
+		}		
 	}
 	return true;
 }
@@ -409,7 +688,7 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 	const char *DriverNames[] = LWVIDEODRIVER_NAMES;
 	const char *TypeNames[] = { "Vertex", "Geometry", "Pixel", "Compute" };
 	const char *CompiledNames[] = { "lwcv", "lwcg", "lwcp", "lwcc" };
-	const uint32_t MaxFileBufferLen = 64 * 1024;
+	const uint32_t MaxFileBufferLen = 256 * 1024;
 	const uint32_t MaxBufferLen = 1024;
 	const uint32_t MaxModules = 5;
 	const uint32_t MaxNameLen = 32;
@@ -431,30 +710,31 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 	uint32_t DriverID = Driver->GetDriverID();
 	LWAllocator &Allocator = AM->GetAllocator();
 	LWShader *Res = nullptr;
-
+	
 	auto ParseInputMap = [](LWEXMLNode *N, LWShader *S, LWEAssetManager *AM) {
 		//                                                       Float,      Int,        UInt,       Double,     Vec2,       Vec3,       Vec4,       uVec2,      uVec3,      uVec4,      iVec2,      iVec3,      iVec4,      dVec2,      dVec3,      dVec4
 		const uint32_t TypeNameHashs[LWShaderInput::Count] = { 0x4c816225, 0xf87415fe, 0xe939eb21, 0x8e464c28, 0x2c3c5815, 0x2b3c5682, 0x263c4ea3, 0x1a199b30, 0x1b199cc3, 0x2019a4a2, 0x5d3f3cc4, 0x5e3f3e57, 0x5b3f399e, 0xbfb0ee5f, 0xbeb0eccc, 0xbdb0eb39 };
 		LWShaderInput Inputs[LWShader::MaxInputs];
 		uint32_t InputCount = 0;
 		for (uint32_t i = 0; i < N->m_AttributeCount; i++) {
-			char8_t TypeBuffer[256]="";
 			LWEXMLAttribute &A = N->m_Attributes[i];
+			LWUTF8Iterator TypeIter = A.GetValue();
+			LWUTF8Iterator BracketIter = TypeIter.NextToken('[');
+			LWUTF8Iterator InstanceFreqIter = TypeIter.NextToken(':');
+
 			uint32_t NameHash = A.GetName().Hash();
-			uint32_t Length = 1;
-			sscanf(A.m_Value, "%[^[][%d]", TypeBuffer, &Length);
-			uint32_t TypeHash = LWUTF8Iterator(TypeBuffer).Hash();
+			uint32_t Length = BracketIter.AtEnd()?1:atoi(BracketIter.c_str()+1);
+			uint32_t InstanceFreq = InstanceFreqIter.AtEnd() ? 0 : atoi(InstanceFreqIter.c_str() + 1);
+			TypeIter = LWUTF8Iterator(TypeIter, BracketIter.AtEnd() ? InstanceFreqIter : BracketIter);
+			
+			uint32_t TypeHash = TypeIter.Hash();
 			uint32_t T = 0;
 			for (; T < LWShaderInput::Count && TypeNameHashs[T] != TypeHash; T++) {}
 			if (T >= LWShaderInput::Count) {
-				fmt::print("Error unknown type: '{}' for input: '{}'\n", A.GetValue(), A.GetName());
+				LWELogCritical<256>("unknown type: '{}' for input: '{}'", A.GetValue(), A.GetName());
 				continue;
 			}
-			if (Length > 1) {
-				for (uint32_t n = 0; n < Length; n++) Inputs[InputCount++] = LWShaderInput(LWUTF8Iterator::C_View<256>("{}[{}]", A.GetName(), n), T, 1);
-			} else {
-				Inputs[InputCount++] = LWShaderInput(A.m_Name, T, Length);
-			}
+			Inputs[InputCount++] = LWShaderInput(A.m_Name, T, Length, InstanceFreq);
 		}
 		S->SetInputMap(InputCount, Inputs);
 	};
@@ -479,24 +759,33 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 		return;
 	};
 
-	std::function<LWUTF8Iterator(const LWUTF8Iterator &, uint32_t &, uint64_t &, LWAllocator &, LWFileStream *)> ParseSourceFunc;
+	std::function<LWUTF8Iterator(const LWUTF8Iterator &, uint32_t &, LWAllocator &, LWFileStream *)> ParseSourceFunc;
 
-	auto ParsePath = [&ParseSourceFunc](const LWUTF8Iterator &Path, uint32_t &Length, uint64_t &ModifiedTime, LWAllocator &Allocator, LWFileStream *ExistingStream)->LWUTF8Iterator {
+	auto ParsePath = [&ParseSourceFunc](const LWUTF8Iterator &Path, uint32_t &Length, LWAllocator &Allocator, LWFileStream *ExistingStream)->LWUTF8Iterator {
+		uint32_t n = Path.CompareLista(LWEShaderCount, LWEShaderNames);
+		char8_t *Buffer = nullptr;
 		LWFileStream Stream;
-		if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, ExistingStream)) {
-			fmt::print("Error opening file: '{}'\n", Path);
-			return LWUTF8Iterator();
+		if (n != -1) {
+			Length = (uint32_t)strlen(LWEShaderSources[n]) + 1;
+			Buffer = Allocator.Allocate<char8_t>(Length);
+			std::copy(LWEShaderSources[n], LWEShaderSources[n] + Length, Buffer);
+		} else {
+			if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, ExistingStream)) {
+				LWELogCritical<256>("opening file: '{}'", Path);
+				return nullptr;
+			}
+			Length = Stream.Length() + 1;
+			Buffer = Allocator.Allocate<char8_t>(Length);
+			if (Stream.ReadText(Buffer, Length) != Length) {
+				LWELogCritical<256>("Did not read entire buffer.");
+			}
 		}
-		ModifiedTime = std::max<uint64_t>(ModifiedTime, Stream.GetModifiedTime());
-		Length = Stream.Length()+1;
-		char8_t *Buffer = Allocator.Allocate<char8_t>(Length);
-		Stream.ReadText(Buffer, Length);
-		LWUTF8Iterator Res = ParseSourceFunc(Buffer, Length, ModifiedTime, Allocator, &Stream);
+		LWUTF8Iterator Res = ParseSourceFunc(Buffer, Length, Allocator, n == -1 ? &Stream : ExistingStream);
 		if (Res() != Buffer) LWAllocator::Destroy(Buffer);
 		return Res;
 	};
 
-	auto ParseSource = [&ParsePath](const LWUTF8Iterator &Source, uint32_t &Length, uint64_t &ModifiedTime, LWAllocator &Allocator, LWFileStream *ExistingStream)->LWUTF8Iterator {
+	auto ParseSource = [&ParsePath](const LWUTF8Iterator &Source, uint32_t &Length, LWAllocator &Allocator, LWFileStream *ExistingStream)->LWUTF8Iterator {
 		LWUTF8Iterator P = Source;
 		LWUTF8Iterator C = Source;
 		for(;!C.AtEnd();++C) {
@@ -510,7 +799,7 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 					if(CloseToken.AtEnd()) continue;
 					LWUTF8Iterator Path = LWUTF8Iterator(OpenToken + 1, CloseToken);
 					uint32_t Len = 0;
-					LWUTF8Iterator SubSource = ParsePath(Path, Len, ModifiedTime, Allocator, ExistingStream);
+					LWUTF8Iterator SubSource = ParsePath(Path, Len, Allocator, ExistingStream);
 					if(!SubSource.isInitialized()) continue;
 					uint32_t NewLen = (Len + Length - C.RawDistance(--N)) - 1; //-1 because both Len, and Length include a null character.
 					char8_t *Buf = Allocator.Allocate<char8_t>(NewLen);
@@ -518,7 +807,7 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 					o += SubSource.Copy(Buf + o, NewLen - o) - 1;
 					o += N.Copy(Buf + o, NewLen - o);
 					if (o != NewLen) {
-						fmt::print("Something went wrong copying, Expected: {} Got: {}\n", NewLen, o);
+						LWELogCritical<256>("Something went wrong copying, Expected: {} Got: {}", NewLen, o);
 					}
 					LWAllocator::Destroy(SubSource());
 					if (P != Source) LWAllocator::Destroy(P());
@@ -534,97 +823,77 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 
 	LWEXMLAttribute *TypeAttr = N->FindAttribute("Type");
 	LWEXMLAttribute *PathAttr = N->FindAttribute("Path");
-	LWEXMLAttribute *CompiledPathAttr = N->FindAttribute("CompiledPath");
+	LWEXMLAttribute *InputTypeAttr = N->FindAttribute("InputType");
+	LWEXMLAttribute *ForceCompile = N->FindAttribute("ForceCompile");
 	LWEXMLAttribute *NameAttr = N->FindAttribute("Name");
-	LWEXMLAttribute *AutoCompileAttr = N->FindAttribute("AutoCompile");
 	LWELocalization *Localize = AM->GetLocalization();
-	if ((!PathAttr && !CompiledPathAttr) || !TypeAttr || !NameAttr) {
-		fmt::print("Shader Parser missing required parameters.\n");
+	if (!TypeAttr || !NameAttr) {
+		LWELogCritical<256>("Shader Parser missing required parameters.");
 		return false;
 	}
 
 	for (uint32_t i = 0; i < N->m_AttributeCount && DefineCount<MaxDefines; i++) {
 		LWEXMLAttribute *Attr = &N->m_Attributes[i];
-		if(Attr==TypeAttr || Attr==PathAttr || Attr==CompiledPathAttr || Attr==NameAttr || Attr==AutoCompileAttr) continue;
+		if(Attr==TypeAttr || Attr==PathAttr || Attr==NameAttr || Attr==ForceCompile || Attr==InputTypeAttr) continue;
 		DefineIterList[DefineCount++] = Attr->GetName();
 		DefineIterList[DefineCount++] = Attr->GetValue();
 	}
-
+	LWUTF8Iterator CompileCache = AM->GetCompiledShaderCache();
 	LWUTF8Iterator Path = PathAttr ? PathAttr->GetValue() : LWUTF8Iterator();
-	LWUTF8Iterator CPath = CompiledPathAttr ? CompiledPathAttr->GetValue() : LWUTF8Iterator();
 	if (Localize) {
 		if (PathAttr && Localize->ParseLocalization(Buffer.m_Data, sizeof(Buffer.m_Data), Path)) Path = Buffer;
-		if (CompiledPathAttr && Localize->ParseLocalization(CBuffer.m_Data, sizeof(CBuffer.m_Data), CPath)) CPath = CBuffer;
 	}
 	uint32_t Type = TypeAttr->GetValue().CompareList("Vertex", "Geometry", "Pixel", "Compute");
 	if (Type == -1) {
-		fmt::print("Unknown type: '{}' for shader: '{}'\n", TypeAttr->m_Value, NameAttr->m_Value);
+		LWELogCritical<256>("Unknown type: '{}' for shader: '{}'", TypeAttr->m_Value, NameAttr->m_Value);
 		return false;
 	}
-	if (CompiledPathAttr) {
-		CBuffer = LWUTF8Iterator::C_View<MaxBufferLen>("{}.{}{}", CPath, CompiledNames[Type], DriverNames[DriverID]);
-		CPath = CBuffer;
-	}
-	uint32_t n = Path.CompareList("FontVertex", "FontColor", "FontMSDF", "UIVertex", "UITexture", "UIColor", "UIYUVTexture");
-	LWUTF8Iterator Source;
-	LWUTF8Iterator DelSource;
-	uint64_t ModifiedTime = 0;
-
-	if (n == -1) {
+	auto CPath = LWUTF8I::Fmt<MaxPathLen>("{}/{}.{}{}", CompileCache, NameAttr->GetValue(), CompiledNames[Type], DriverNames[DriverID]);
+	if (!CompileCache.AtEnd() && !ForceCompile) {
 		LWFileStream CStream;
-		//Open both streams and if Path source is newer than the compiled path, then recompile the source.
-		if (CompiledPathAttr) {
-			if (!LWFileStream::OpenStream(CStream, CPath, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator)) {
-				if (!PathAttr) {
-					fmt::print("Could not open compiled shader at: '{}' for: '{}'\n", CPath, NameAttr->GetValue());
-					return false;
-				}
-				CompiledPathAttr = nullptr;
+		if (!LWFileStream::OpenStream(CStream, CPath, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator)) {
+			if (!PathAttr) {
+				LWELogCritical<256>("Could not open compiled shader at: '{}' for: '{}'", CPath, NameAttr->GetValue());
+				return false;
 			}
-		}
-		if(PathAttr) {
-			uint32_t Len = 0;
-			Source = DelSource = ParsePath(Path, Len, ModifiedTime, Allocator, nullptr);
-			if (Source.isInitialized()) {
-				if (ModifiedTime > CStream.GetModifiedTime()) CompiledPathAttr = nullptr; //Source is newer than compiled.
-			}
-		}
-		if (CompiledPathAttr) {
-			AssetPath = CPath;
+			CompiledLen = 0;
+		} else {
 			CompiledLen = CStream.Read(CompiledBuffer, sizeof(CompiledBuffer));
 			Res = Driver->CreateShaderCompiled(Type, CompiledBuffer, CompiledLen, Allocator, ErrorBuffer, sizeof(ErrorBuffer));
-		} else if (PathAttr) {
-			AssetPath = Path;
-			if (AutoCompileAttr) {
-				CompiledLen = sizeof(CompiledBuffer);
-				Res = Driver->ParseShader(Type, Source, Allocator, DefineCount, DefineIterList, CompiledBuffer, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
-				if (CompiledLen && CPath.isInitialized()) {
-					CStream.Finished();
-					if (LWFileStream::OpenStream(CStream, CBuffer, LWFileStream::WriteMode | LWFileStream::BinaryMode, Allocator)) {
-						CStream.Write(CompiledBuffer, CompiledLen);
-						CStream.Finished();
-					}
-				}
-			} else Res = Driver->ParseShader(Type, Source, Allocator, DefineCount, DefineIterList, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
-		}else {
-			fmt::print("No valid path for shader: '{}'\n", NameAttr->GetValue());
+			if (!Res) {
+				LWELogCritical<512>("Pre-compiled shader failed for: '{}' Error: '{}', falling back to full compilation.", NameAttr->GetValue(), ErrorBuffer);
+				CompiledLen = 0;
+			}
+		}
+	}
+	AssetPath = Path;
+	if(!CompiledLen && PathAttr){
+		uint32_t Len = 0;
+		LWUTF8Iterator Source = ParsePath(Path, Len, Allocator, nullptr);
+		CompiledLen = sizeof(CompiledBuffer);
+		Res = Driver->ParseShader(Type, Source, Allocator, DefineCount, DefineIterList, CompiledBuffer, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
+		if (CompiledLen > sizeof(CompiledBuffer)) {
+			LWELogCritical<256>("Compiled buffer is not large enough for shader: '{}'", NameAttr->GetValue());
+		}else if(Res && !CompileCache.AtEnd()) {
+			LWFileStream CStream;
+			if (LWFileStream::OpenStream(CStream, CPath, LWFileStream::WriteMode | LWFileStream::BinaryMode, Allocator)) {
+				CStream.Write(CompiledBuffer, CompiledLen);
+			} else LWELogWarn<256>("Could not open '{}' for caching shader.", CPath);
+		}
+		LWAllocator::Destroy(Source());
+	}
+	if (!Res) {
+		LWELogCritical<256>("creating shader '{}': {}", NameAttr->GetValue(), ErrorBuffer);
+		return false;
+	}
+	if (InputTypeAttr) {
+		uint32_t InputType = InputTypeAttr->GetValue().CompareLista(LWEShaderInputCount, LWEShaderInputNames);
+		if (InputType == -1) {
+			LWELogCritical<256>("'{}' Shader has unknown input type: '{}'", NameAttr->GetValue(), InputTypeAttr->GetValue());
+			Driver->DestroyShader(Res);
 			return false;
 		}
-	} else {
-		AssetPath = Path;
-		if (n == 0) Res = Driver->ParseShader(Type, LWFont::GetVertexShaderSource(), Allocator, DefineCount, DefineIterList, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
-		else if (n == 1) Res = Driver->ParseShader(Type, LWFont::GetPixelColorShaderSource(), Allocator, DefineCount, DefineIterList, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
-		else if (n == 2) Res = Driver->ParseShader(Type, LWFont::GetPixelMSDFShaderSource(), Allocator, DefineCount, DefineIterList, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
-		else if (n == 3) Res = Driver->ParseShader(Type, LWEUIManager::GetVertexShaderSource(), Allocator, DefineCount, DefineIterList, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
-		else if (n == 4) Res = Driver->ParseShader(Type, LWEUIManager::GetTextureShaderSource(), Allocator, DefineCount, DefineIterList, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
-		else if (n == 5) Res = Driver->ParseShader(Type, LWEUIManager::GetColorShaderSource(), Allocator, DefineCount, DefineIterList, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
-		else if (n == 6) Res = Driver->ParseShader(Type, LWEUIManager::GetYUVTextureShaderSource(), Allocator, DefineCount, DefineIterList, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
-		if (Res) Res->SetInputMapList("Position", LWShaderInput::Vec4, 1, "Color", LWShaderInput::Vec4, 1, "TexCoord", LWShaderInput::Vec4, 1);
-	}
-	LWAllocator::Destroy(DelSource());
-	if (!Res) {
-		fmt::print("Error creating shader '{}': {}\n", NameAttr->GetValue(), ErrorBuffer);
-		return false;
+		Res->SetInputMap(LWEShaderInputMapCount[InputType], LWEShaderInputMapping[InputType]);
 	}
 	for (LWEXMLNode *C = N->m_FirstChild; C; C = C->m_Next) {
 		uint32_t i = C->GetName().CompareList("InputMap", "ResourceMap", "BlockMap");
@@ -633,7 +902,7 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 		else if (i == 2) ParseBlockMap(C, Res, AM);
 	}
 	if (!AM->InsertAsset(NameAttr->m_Value, Res, LWEAsset::Shader, AssetPath)) {
-		fmt::print("Error inserting asset: '{}'\n", NameAttr->GetValue());
+		LWELogCritical<256>("inserting asset: '{}'", NameAttr->GetValue());
 		Driver->DestroyShader(Res);
 		return false;
 	}
@@ -655,47 +924,33 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 
 	LWEXMLAttribute *PathAttr = N->FindAttribute("Path");
 	if (!PathAttr) {
-		fmt::print("Error '{}': no Path attribute specified.\n", N->GetName());
+		LWELogCritical<256>("'{}': no Path attribute specified.", N->GetName());
 		return false;
 	}
-
-	auto BuildDefaultInputMap = [](uint32_t Cnt, LWShaderInput *InputList, ...)->uint32_t{
-		va_list lst;
-		va_start(lst, InputList);
-		for (uint32_t i = 0; i < Cnt; i++) {
-			const char *Name = va_arg(lst, const char*);
-			uint32_t Type = va_arg(lst, uint32_t);
-			uint32_t Length = va_arg(lst, uint32_t);
-			InputList[i] = LWShaderInput(Name, Type, Length);
-		}
-		va_end(lst);
-		return Cnt;
-	};
 
 	auto ParseInputMap = [](LWEXMLNode *N, LWShaderInput *InputList, LWEAssetManager *AM)->uint32_t {
 		//                                                       Float,      Int,        UInt,       Double,     Vec2,       Vec3,       Vec4,       uVec2,      uVec3,      uVec4,      iVec2,      iVec3,      iVec4,      dVec2,      dVec3,      dVec4
 		const uint32_t TypeNameHashs[LWShaderInput::Count] = { 0x4c816225, 0xf87415fe, 0xe939eb21, 0x8e464c28, 0x2c3c5815, 0x2b3c5682, 0x263c4ea3, 0x1a199b30, 0x1b199cc3, 0x2019a4a2, 0x5d3f3cc4, 0x5e3f3e57, 0x5b3f399e, 0xbfb0ee5f, 0xbeb0eccc, 0xbdb0eb39 };
 		uint32_t Cnt = 0;
 		for (uint32_t i = 0; i < N->m_AttributeCount; i++) {
-			char8_t TypeBuffer[256];
 			LWEXMLAttribute &A = N->m_Attributes[i];
+			LWUTF8Iterator TypeIter = A.GetValue();
+			LWUTF8Iterator BracketIter = TypeIter.NextToken('[');
+			LWUTF8Iterator InstanceFreqIter = TypeIter.NextToken(':');
+
 			uint32_t NameHash = A.GetName().Hash();
-			uint32_t Length = 1;
-			sscanf(A.m_Value, "%[^[][%d]", TypeBuffer, &Length);
-			uint32_t TypeHash = LWUTF8Iterator(TypeBuffer).Hash();
+			uint32_t Length = BracketIter.AtEnd() ? 1 : atoi(BracketIter.c_str() + 1);
+			uint32_t InstanceFreq = InstanceFreqIter.AtEnd() ? 0 : atoi(InstanceFreqIter.c_str() + 1);
+
+			TypeIter = LWUTF8Iterator(TypeIter, BracketIter.AtEnd() ? InstanceFreqIter : BracketIter);
+			uint32_t TypeHash = TypeIter.Hash();
 			uint32_t T = 0;
 			for (; T < LWShaderInput::Count && TypeNameHashs[T] != TypeHash; T++) {}
 			if (T >= LWShaderInput::Count) {
-				fmt::print("Error unknown type '{}' for input: '{}'\n", A.GetValue(), A.GetName());
+				LWELogCritical<256>("unknown type '{}' for input: '{}'", A.GetValue(), A.GetName());
 				continue;
 			}
-			if (Length > 1) {
-				for (uint32_t n = 0; n < Length; n++) {
-					InputList[Cnt++] = LWShaderInput(LWUTF8Iterator::C_View<256>("{}[{}]", A.m_Name, n), T, 1);
-				}
-			} else {
-				InputList[Cnt++] = LWShaderInput(A.GetName(), T, Length);
-			}
+			InputList[Cnt++] = LWShaderInput(A.GetName(), T, Length, InstanceFreq);
 		}
 		return Cnt;
 	};
@@ -716,9 +971,10 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 		return Count;
 	};
 
-	auto ParseShader = [&DefineIterList, &MaxDefines, &ParseInputMap, &ParseResourceMap, &ParseBlockMap, &InputList, &InputCount, &ResourceList, &ResoruceCount, &BlockList, &BlockCount, &Driver, &Alloc](LWEXMLNode *N, const LWUTF8Iterator &Source, const LWUTF8Iterator &SourcePath, uint64_t SourcesModifiedTime, LWEAssetManager *AM) ->bool {
-		const uint32_t MaxBufferLength = 1024 * 64;//64KB.
+	auto ParseShader = [&DefineIterList, &MaxDefines, &ParseInputMap, &ParseResourceMap, &ParseBlockMap, &InputList, &InputCount, &ResourceList, &ResoruceCount, &BlockList, &BlockCount, &Driver, &Alloc](LWEXMLNode *N, const LWUTF8Iterator &Source, const LWUTF8Iterator &SourcePath, LWEAssetManager *AM) ->bool {
+		const uint32_t MaxBufferLength = 1024 * 256;//256KB.
 		const uint32_t MaxNameLen = 256;
+		const uint32_t MaxPathLen = 256;
 		const char *CompiledNames[] = { "lwcv", "lwcg", "lwcp", "lwcc" };
 		const char *DriverNames[] = LWVIDEODRIVER_NAMES;
 		char CompiledBuffer[MaxBufferLength];
@@ -728,61 +984,71 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 		LWShaderInput SInputList[LWShader::MaxInputs];
 		uint32_t SResourceList[LWShader::MaxResources];
 		uint32_t SBlockList[LWShader::MaxBlocks];
+
 		LWEXMLAttribute *TypeAttr = N->FindAttribute("Type");
-		LWEXMLAttribute *CompiledPathAttr = N->FindAttribute("CompiledPath");
+		LWEXMLAttribute *InputTypeAttr = N->FindAttribute("InputType");
+		LWEXMLAttribute *ForceCompile = N->FindAttribute("ForceCompile");
 		LWEXMLAttribute *NameAttr = N->FindAttribute("Name");
-		LWEXMLAttribute *AutoCompileAttr = N->FindAttribute("AutoCompile");
 		LWELocalization *Localize = AM->GetLocalization();
 		uint32_t DefineCount = 0;
 		uint32_t CompiledLen = 0;
 		if (!TypeAttr || !NameAttr) {
-			fmt::print("Shader is missing required parameters.\n");
+			LWELogCritical<256>("Shader is missing required parameters.");
 			return false;
 		}
 		for (uint32_t i = 0; i < N->m_AttributeCount; i++) {
 			LWEXMLAttribute *Attr = &N->m_Attributes[i];
-			if (Attr == TypeAttr || Attr == CompiledPathAttr || Attr == NameAttr || Attr == AutoCompileAttr) continue;
+			if (Attr == TypeAttr || Attr == InputTypeAttr  || Attr == NameAttr || Attr == ForceCompile) continue;
 			DefineIterList[DefineCount++] = Attr->GetName();
 			DefineIterList[DefineCount++] = Attr->GetValue();
 		}
 		uint32_t Type = TypeAttr->GetValue().CompareList("Vertex", "Geometry", "Pixel", "Compute");
 		if (Type == -1) {
-			fmt::print("Unknown type: '{}' for shader: '{}'\n", TypeAttr->GetValue(), NameAttr->GetValue());
+			LWELogCritical<256>("Unknown type: '{}' for shader: '{}'", TypeAttr->GetValue(), NameAttr->GetValue());
 			return false;
-		}
-		
-		if (CompiledPathAttr && SourcesModifiedTime) {
-			CBuffer = LWUTF8I::Fmt<MaxNameLen>("{}.{}{}", CompiledPathAttr->GetValue(), CompiledNames[Type], DriverNames[AM->GetDriver()->GetDriverID()]);
-			LWFileStream Stream;
-			if (LWFileStream::OpenStream(Stream, CBuffer, LWFileStream::ReadMode | LWFileStream::BinaryMode, Alloc)) {
-				if (Stream.GetModifiedTime() > SourcesModifiedTime) {
-					CompiledLen = Stream.Read(CompiledBuffer, sizeof(CompiledBuffer));
+		}		
+		LWUTF8Iterator CompileCache = AM->GetCompiledShaderCache();
+		LWShader *Res = nullptr;
+		auto CPath = LWUTF8I::Fmt<MaxPathLen>("{}/{}.{}{}", CompileCache, NameAttr->GetValue(), CompiledNames[Type], DriverNames[Driver->GetDriverID()]);
+		if (!CompileCache.AtEnd() && !ForceCompile) {
+			LWFileStream CStream;
+			if (!LWFileStream::OpenStream(CStream, CPath, LWFileStream::ReadMode | LWFileStream::BinaryMode, Alloc)) {
+				CompiledLen = 0;
+			} else {
+				CompiledLen = CStream.Read(CompiledBuffer, sizeof(CompiledBuffer));
+				Res = Driver->CreateShaderCompiled(Type, CompiledBuffer, CompiledLen, Alloc, ErrorBuffer, sizeof(ErrorBuffer));
+				if (!Res) {
+					LWELogCritical<512>("Pre-compiled shader failed for: '{}' Error: '{}', falling back to full compilation.", NameAttr->GetValue(), ErrorBuffer);
+					CompiledLen = 0;
 				}
 			}
 		}
-		LWShader *Res = nullptr;
-		if (CompiledLen) {
-			AssetPath = CBuffer;
-			Res = Driver->CreateShaderCompiled(Type, CompiledBuffer, CompiledLen, AM->GetAllocator(), ErrorBuffer, sizeof(ErrorBuffer));
-		} else {
-			if(AutoCompileAttr && CompiledPathAttr && SourcesModifiedTime){
-				CompiledLen = sizeof(CompiledBuffer);
-				Res = Driver->ParseShader(Type, Source, Alloc, DefineCount, DefineIterList, CompiledBuffer, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
-				if (Res) {
-					LWFileStream Stream;
-					if (!LWFileStream::OpenStream(Stream, CBuffer, LWFileStream::WriteMode | LWFileStream::BinaryMode, AM->GetAllocator())) {
-						fmt::print("Error can't open file for writing: '{}'\n", CBuffer);
-					} else {
-						Stream.Write(CompiledBuffer, CompiledLen);
-					}
-				}
-			} else Res = Driver->ParseShader(Type, Source, AM->GetAllocator(), DefineCount, DefineIterList, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
+		if (!CompiledLen) {
+			uint32_t Len = 0;
+			CompiledLen = sizeof(CompiledBuffer);
+			Res = Driver->ParseShader(Type, Source, Alloc, DefineCount, DefineIterList, CompiledBuffer, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
+			if (CompiledLen > sizeof(CompiledBuffer)) {
+				LWELogCritical<256>("Compiled buffer is not large enough for shader: '{}'", NameAttr->GetValue());
+			}else if (Res && !CompileCache.AtEnd()) {
+				LWFileStream CStream;
+				if (LWFileStream::OpenStream(CStream, CPath, LWFileStream::WriteMode | LWFileStream::BinaryMode, Alloc)) {
+					CStream.Write(CompiledBuffer, CompiledLen);
+				} else LWELogCritical<256>("Could not open '{}' for caching shader.", CPath);
+			}
 		}
 		if (!Res) {
-			fmt::print("Error compiling shader '{}':\n{}\n", NameAttr->GetValue(), ErrorBuffer);
+			LWELogCritical<256>("compiling shader '{}':\n{}", NameAttr->GetValue(), ErrorBuffer);
 			return false;
 		}
-		Res->SetInputMap(InputCount, InputList);
+		if (InputTypeAttr) {
+			uint32_t InputType = InputTypeAttr->GetValue().CompareLista(LWEShaderInputCount, LWEShaderInputNames);
+			if (InputType == -1) {
+				LWELogCritical<256>("'{}' Shader has unknown input type: '{}'", NameAttr->GetValue(), InputTypeAttr->GetValue());
+				Driver->DestroyShader(Res);
+				return false;
+			}
+			Res->SetInputMap(LWEShaderInputMapCount[InputType], LWEShaderInputMapping[InputType]);
+		}else Res->SetInputMap(InputCount, InputList);
 		Res->SetBlockMap(BlockCount, BlockList);
 		Res->SetResourceMap(ResoruceCount, ResourceList);
 		for (LWEXMLNode *C = N->m_FirstChild; C; C = C->m_Next) {
@@ -799,33 +1065,40 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 			}
 		}
 		if (!AM->InsertAsset(NameAttr->m_Value, Res, LWEAsset::Shader, AssetPath)) {
-			fmt::print("Error inserting asset: '{}'\n", NameAttr->GetValue());
+			LWELogCritical<256>("inserting asset: '{}'", NameAttr->GetValue());
 			Driver->DestroyShader(Res);
 			return false;
 		}
 		return true;
 	};
 	
-	std::function<LWUTF8Iterator(const LWUTF8Iterator &, uint32_t &, uint64_t &, LWFileStream *)> ParseSourceFunc;
+	std::function<LWUTF8Iterator(const LWUTF8Iterator &, uint32_t &, LWFileStream *)> ParseSourceFunc;
 
-	auto ParsePath = [&ParseSourceFunc, &Alloc](const LWUTF8Iterator &Path, uint32_t &Length, uint64_t &ModifiedTime, LWFileStream *ExistingStream)->LWUTF8Iterator {
+	auto ParsePath = [&ParseSourceFunc, &Alloc](const LWUTF8Iterator &Path, uint32_t &Length, LWFileStream *ExistingStream)->LWUTF8Iterator {
+		uint32_t n = Path.CompareLista(LWEShaderCount, LWEShaderNames);
+		char8_t *Buffer = nullptr;
 		LWFileStream Stream;
-		if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::ReadMode | LWFileStream::BinaryMode, Alloc, ExistingStream)) {
-			fmt::print("Error opening file: '{}'\n", Path);
-			return nullptr;
+		if (n != -1) {
+			Length = (uint32_t)strlen(LWEShaderSources[n]) + 1;
+			Buffer = Alloc.Allocate<char8_t>(Length);
+			std::copy(LWEShaderSources[n], LWEShaderSources[n] + Length, Buffer);
+		} else {
+			if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::ReadMode | LWFileStream::BinaryMode, Alloc, ExistingStream)) {
+				LWELogCritical<256>("opening file: '{}'", Path);
+				return nullptr;
+			}
+			Length = Stream.Length() + 1;
+			Buffer = Alloc.Allocate<char8_t>(Length);
+			if (Stream.ReadText(Buffer, Length) != Length) {
+				LWELogCritical<256>("Did not read entire buffer.");
+			}
 		}
-		ModifiedTime = std::max<uint64_t>(ModifiedTime, Stream.GetModifiedTime());
-		Length = Stream.Length()+1;
-		char8_t *Buffer = Alloc.Allocate<char8_t>(Length);
-		if (Stream.ReadText(Buffer, Length) != Length) {
-			fmt::print("Did not read entire buffer.\n");
-		}
-		LWUTF8Iterator Res = ParseSourceFunc(Buffer, Length, ModifiedTime, &Stream);
+		LWUTF8Iterator Res = ParseSourceFunc(Buffer, Length, n==-1?&Stream:ExistingStream);
 		if (Res() != Buffer) LWAllocator::Destroy(Buffer);
 		return Res;
 	};
 
-	auto ParseSource = [&ParsePath, &Alloc](const LWUTF8Iterator &Source, uint32_t &Length, uint64_t &ModifiedTime, LWFileStream *ExistingStream)->LWUTF8Iterator {
+	auto ParseSource = [&ParsePath, &Alloc](const LWUTF8Iterator &Source, uint32_t &Length, LWFileStream *ExistingStream)->LWUTF8Iterator {
 		LWUTF8Iterator P = Source;
 		LWUTF8Iterator C = Source;
 		for(; !C.AtEnd(); ++C) {
@@ -839,7 +1112,7 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 					if (CloseToken.AtEnd()) continue;
 					LWUTF8Iterator Path = LWUTF8Iterator(OpenToken + 1, CloseToken);
 					uint32_t Len = 0;
-					LWUTF8Iterator SubSource = ParsePath(Path, Len, ModifiedTime, ExistingStream);
+					LWUTF8Iterator SubSource = ParsePath(Path, Len, ExistingStream);
 					if (!SubSource.isInitialized()) continue;
 					uint32_t NewLen = (Len + Length - (C.RawDistance(--N) + 1)); //-1 because Len, +Length both sizes account for a null character.
 					char8_t *Buf = Alloc.Allocate<char8_t>(NewLen);
@@ -847,7 +1120,7 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 					o += SubSource.Copy(Buf + o, NewLen - o) - 1;
 					o += N.Copy(Buf + o, NewLen - o);
 					if (o != NewLen) {
-						fmt::print("Something went wrong copying, Expected: {} Got: {}\n", NewLen, o);
+						LWELogCritical<256>("Something went wrong copying, Expected: {} Got: {}", NewLen, o);
 					}
 					LWAllocator::Destroy(SubSource());
 					if (P != Source) LWAllocator::Destroy(P());
@@ -861,31 +1134,18 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 	};
 	ParseSourceFunc = ParseSource;
 
-	uint64_t ModifiedTime = 0;
-	LWUTF8Iterator Source, DelSource;
-	uint32_t n = PathAttr->GetValue().CompareList("FontVertex", "FontColor", "FontMSDF", "UIVertex", "UITexture", "UIColor", "UIYUVTexture");
-	if (n == -1) {
-		uint32_t Len = 0;
-		Source = DelSource = ParsePath(PathAttr->GetValue(), Len, ModifiedTime, nullptr);
-		if (!Source.isInitialized()) return false;
-	} else {
-		if (n == 0) Source = LWFont::GetVertexShaderSource();
-		else if (n == 1) Source = LWFont::GetPixelColorShaderSource();
-		else if (n == 2) Source = LWFont::GetPixelMSDFShaderSource();
-		else if (n == 3) Source = LWEUIManager::GetVertexShaderSource();
-		else if (n == 4) Source = LWEUIManager::GetTextureShaderSource();
-		else if (n == 5) Source = LWEUIManager::GetColorShaderSource();
-		else if (n == 6) Source = LWEUIManager::GetYUVTextureShaderSource();
-		InputCount = BuildDefaultInputMap(3, InputList, "Position", LWShaderInput::Vec4, 1, "Color", LWShaderInput::Vec4, 1, "TexCoord", LWShaderInput::Vec4, 1);
-	}
+	uint32_t Len = 0;
+	LWUTF8Iterator Source = ParsePath(PathAttr->GetValue(), Len, nullptr);
+	if (!Source.isInitialized()) return false;
+
 	for (LWEXMLNode *C = N->m_FirstChild; C; C = C->m_Next) {
 		uint32_t i = C->GetName().CompareList("Shader", "InputMap", "ResourceMap", "BlockMap");
-		if (i == 0) ParseShader(C, Source, PathAttr->GetValue(), ModifiedTime, AM);
+		if (i == 0) ParseShader(C, Source, PathAttr->GetValue(), AM);
 		else if (i == 1) InputCount = ParseInputMap(C, InputList, AM);
 		else if (i == 2) ResoruceCount = ParseResourceMap(C, ResourceList, AM);
 		else if (i == 3) BlockCount = ParseBlockMap(C, BlockList, AM);
 	}
-	LWAllocator::Destroy(DelSource());
+	LWAllocator::Destroy(Source());
 	return true;
 }
 
@@ -907,37 +1167,37 @@ bool LWEAssetManager::XMLParseVideoBuffer(LWEXMLNode *N, LWEAssetManager *AM) {
 	uint32_t Longest = 0;
 	uint32_t UsageFlags = 0;
 	if (!NameAttr || !TypeAttr || !UsageFlagsAttr || !TypeSizeAttr || !LengthAttr) {
-		fmt::print("Error making video buffer: Missing required parameters.\n");
+		LWELogCritical<256>("making video buffer: Missing required Attribute(Name, Type, Usage, TypeSize, Length).");
 		return false;
 	}
-	uint32_t TypeID = TypeAttr->GetValue().CompareList("Vertex", "Uniform", "Index16", "Index32", "ImageBuffer");
+	uint32_t TypeID = TypeAttr->GetValue().CompareList("Vertex", "Uniform", "Index16", "Index32", "ImageBuffer", "Indirect");
 	if (TypeID == -1) {
-		fmt::print("Error video buffer '{}' has unknown type: '{}'\n", NameAttr->GetValue(), TypeAttr->GetValue());
+		LWELogCritical<256>("video buffer '{}' has unknown type: '{}'", NameAttr->GetValue(), TypeAttr->GetValue());
 		return false;
 	}
 	uint32_t Length = atoi(LengthAttr->m_Value);
 	uint32_t TypeSize = atoi(TypeSizeAttr->m_Value);
 	if (PaddedAttr) TypeSize = Driver->GetUniformBlockPaddedSize(TypeSize);
 	if (!Length) {
-		fmt::print("Error video buffer '{}' has 0 length.\n", NameAttr->GetValue());
+		LWELogCritical<256>("video buffer '{}' has 0 length.", NameAttr->GetValue());
 		return false;
 	}
 	if (!TypeSize) {
-		fmt::print("Error video buffer '{}' has 0 type size.\n", NameAttr->GetValue());
+		LWELogCritical<256>("video buffer '{}' has 0 type size.", NameAttr->GetValue());
 		return false;
 	}
 	uint32_t UsageSplitCnt = std::min<uint32_t>(UsageFlagsAttr->GetValue().SplitToken(UsageIterList, MaxSplitLength, '|'), MaxSplitLength);
 	for (uint32_t i = 0; i < UsageSplitCnt; i++) {
 		uint32_t n = UsageIterList[i].AdvanceWord(true).CompareList("PersistentMapped", "Static", "WriteDiscardable", "WriteNoOverlap", "Readable", "GPUResource", "LocalCopy");
 		if (n == -1) {
-			fmt::print("Unknown usage flag: '{}'\n", UsageIterList[i]);
+			LWELogCritical<256>("Unknown usage flag: '{}'", UsageIterList[i]);
 		} else UsageFlags |= UsageFlagList[n];
 	}
 	uint8_t *Data = nullptr;
 	if (DataPathAttr) {
 		LWFileStream Stream;
 		if (!LWFileStream::OpenStream(Stream, DataPathAttr->GetValue(), LWFileStream::ReadMode | LWFileStream::BinaryMode, Alloc)) {
-			fmt::print("Error cannot open file: '{}'\n", DataPathAttr->GetValue());
+			LWELogCritical<256>("cannot open file: '{}'", DataPathAttr->GetValue());
 		} else {
 			Data = Alloc.Allocate<uint8_t>(Stream.Length());
 			Stream.Read(Data, Stream.Length());
@@ -947,11 +1207,11 @@ bool LWEAssetManager::XMLParseVideoBuffer(LWEXMLNode *N, LWEAssetManager *AM) {
 	LWVideoBuffer *Res = Driver->CreateVideoBuffer(TypeID, UsageFlags, TypeSize, Length, Alloc, Data);
 	LWAllocator::Destroy(Data);
 	if (!Res) {
-		fmt::print("Error creating video buffer: '{}'\n", NameAttr->GetValue());
+		LWELogCritical<256>("creating video buffer: '{}'", NameAttr->GetValue());
 		return false;
 	}
 	if (!AM->InsertAsset(NameAttr->m_Value, Res, LWEAsset::VideoBuffer, "")) {
-		fmt::print("Error inserting video buffer: '{}'\n", NameAttr->GetValue());
+		LWELogCritical<256>("inserting video buffer: '{}'", NameAttr->GetValue());
 		Driver->DestroyVideoBuffer(Res);
 		return false;
 	}
@@ -970,14 +1230,14 @@ bool LWEAssetManager::XMLParseAudioStream(LWEXMLNode *N, LWEAssetManager *AM) {
 	uint32_t Flag = 0;
 	
 	const uint32_t FlagValues[] = { LWAudioStream::Decompressed };
-	const char FlagNames[][32] = { "Decompressed" };
+	const char8_t FlagNames[][32] = { "Decompressed" };
 	const uint32_t FlagsCount = sizeof(FlagValues) / sizeof(uint32_t);
 	if (FlagAttr) {
 		uint32_t FlagIterCnt = std::min<uint32_t>(FlagAttr->GetValue().SplitToken(FlagIterList, MaxIterList, '|'), MaxIterList);
 		for (uint32_t i = 0; i < FlagIterCnt; i++) {
 			uint32_t n = FlagIterList[i].AdvanceWord(true).CompareLista(FlagsCount, FlagNames);
 			if (n == -1) {
-				fmt::print("Unknown flag: '{}'\n", FlagIterList[i]);
+				LWELogCritical<256>("Unknown flag: '{}'", FlagIterList[i]);
 			} else Flag |= FlagValues[i];
 		}
 	}
@@ -986,11 +1246,11 @@ bool LWEAssetManager::XMLParseAudioStream(LWEXMLNode *N, LWEAssetManager *AM) {
 
 	LWAudioStream *Stream = LWAudioStream::Create(Path, Flag, AM->GetAllocator());
 	if (!Stream) {
-		fmt::print("Audiostream: '{}' Could not be found at: '{}'\n", NameAttr->GetValue(), Path);
+		LWELogCritical<256>("Audiostream: '{}' Could not be found at: '{}'", NameAttr->GetValue(), Path);
 		return false;
 	}
 	if (!AM->InsertAsset(NameAttr->m_Value, Stream, LWEAsset::AudioStream, Path)) {
-		fmt::print("Name collision with audio stream: '{}'\n", NameAttr->GetValue());
+		LWELogCritical<256>("Name collision with audio stream: '{}'", NameAttr->GetValue());
 		LWAllocator::Destroy(Stream);
 	}
 	return true;
@@ -1012,7 +1272,7 @@ bool LWEAssetManager::XMLParseVideo(LWEXMLNode *N, LWEAssetManager *AM) {
 	float PlaybackSpeed = 1.0f;
 
 	const uint32_t FlagValues[] = { LWEVideoPlayer::Playing };
-	const char FlagNames[][32] = { "Playing" };
+	const char8_t FlagNames[][32] = { "Playing" };
 	const uint32_t FlagCount = sizeof(FlagValues) / sizeof(uint32_t);
 
 	if (FlagAttr) {
@@ -1020,7 +1280,7 @@ bool LWEAssetManager::XMLParseVideo(LWEXMLNode *N, LWEAssetManager *AM) {
 		for(uint32_t i=0;i<FlagCnt;i++){
 			uint32_t n = FlagIterList[i].AdvanceWord(true).CompareLista(FlagCount, FlagNames);
 			if(n==-1){
-				fmt::print("Encountered invalid flag: '{}' for '{}'\n", FlagIterList[i], NameAttr->GetValue());
+				LWELogCritical<256>("Encountered invalid flag: '{}' for '{}'", FlagIterList[i], NameAttr->GetValue());
 			} else {
 				Flag |= FlagValues[i];
 			}
@@ -1032,12 +1292,12 @@ bool LWEAssetManager::XMLParseVideo(LWEXMLNode *N, LWEAssetManager *AM) {
 	if (Localize && Localize->ParseLocalization(SBuffer, sizeof(SBuffer), Path)) Path = SBuffer;
 	LWEVideoPlayer *Video = AM->GetAllocator().Create<LWEVideoPlayer>();
 	if (!LWEVideoPlayer::OpenVideo(*Video, AM->GetDriver(), Path, (Flag&LWEVideoPlayer::Playing) != 0, LoopCount, nullptr, nullptr, PlaybackSpeed, AM->GetAllocator())) {
-		fmt::print("Video: '{}' Could not be found at: '{}'\n", NameAttr->GetValue(), Path);
+		LWELogCritical<256>("Video: '{}' Could not be found at: '{}'", NameAttr->GetValue(), Path);
 		LWAllocator::Destroy(Video);
 		return false;
 	}
 	if (!AM->InsertAsset(NameAttr->m_Value, Video, LWEAsset::Video, Path)) {
-		fmt::print("Name collision with audio stream: '{}'\n", NameAttr->GetValue());
+		LWELogCritical<256>("Name collision with audio stream: '{}'", NameAttr->GetValue());
 		LWAllocator::Destroy(Video);
 		return false;
 	}
@@ -1047,10 +1307,15 @@ bool LWEAssetManager::XMLParseVideo(LWEXMLNode *N, LWEAssetManager *AM) {
 LWEAsset *LWEAssetManager::GetAsset(const LWUTF8Iterator &Name) {
 	auto Iter = m_AssetMap.find(Name.Hash());
 	if (Iter == m_AssetMap.end()) {
-		fmt::print("Error: Could not find asset '{}'\n", Name);
+		LWELogCritical<256>("Could not find asset '{}'", Name);
 		return nullptr;
 	}
 	return Iter->second;
+}
+
+LWEAssetManager &LWEAssetManager::SetCompiledShaderCache(const LWUTF8Iterator &Path) {
+	Path.Copy(m_CompiledShaderCache, sizeof(m_CompiledShaderCache));
+	return *this;
 }
 
 bool LWEAssetManager::InsertAsset(const LWUTF8Iterator &Name, const LWEAsset &A) {
@@ -1067,7 +1332,7 @@ bool LWEAssetManager::InsertAsset(const LWUTF8Iterator &Name, const LWEAsset &A)
 	m_AssetPools[Pool][PoolIdx] = A;
 	auto Ret = m_AssetMap.emplace(Name.Hash(), &m_AssetPools[Pool][PoolIdx]);
 	if (!Ret.second) {
-		fmt::print("Error Asset name collision: '{}'.\n", Name);
+		LWELogCritical<256>("Asset name collision: '{}'.", Name);
 	} else m_AssetCount++;
 	return Ret.second;
 }
@@ -1079,11 +1344,15 @@ bool LWEAssetManager::InsertAsset(const LWUTF8Iterator &Name, void *Asset, uint3
 bool LWEAssetManager::InsertAssetReference(const LWUTF8Iterator &Name, const LWUTF8Iterator &RefName) {
 	LWEAsset *A = GetAsset(RefName);
 	if (!A) {
-		fmt::print("Error: Could not find asset: '{}' to make reference: '{}'\n", RefName, Name);
+		LWELogCritical<256>("Could not find asset: '{}' to make reference: '{}'", RefName, Name);
 		return false;
 	}
 	auto Ret = m_AssetMap.emplace(Name.Hash(), A);
 	return Ret.second;
+}
+
+bool LWEAssetManager::HasAsset(const LWUTF8Iterator &Name) {
+	return m_AssetMap.find(Name.Hash()) != m_AssetMap.end();
 }
 
 LWVideoDriver *LWEAssetManager::GetDriver(void) {
@@ -1096,6 +1365,10 @@ LWELocalization *LWEAssetManager::GetLocalization(void) {
 
 LWAllocator &LWEAssetManager::GetAllocator(void) {
 	return m_Allocator;
+}
+
+LWUTF8Iterator LWEAssetManager::GetCompiledShaderCache(void) {
+	return LWUTF8Iterator(m_CompiledShaderCache);
 }
 
 LWEAsset *LWEAssetManager::GetAsset(uint32_t i){

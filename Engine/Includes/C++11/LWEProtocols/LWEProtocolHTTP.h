@@ -8,13 +8,40 @@
 
 struct LWEHttpRequest;
 
-typedef std::function<void(LWEHttpRequest&, const LWUTF8Iterator &Response)> LWEHttpResponseCallback;
+typedef std::function<void(LWEHttpRequest&, const LWUTF8Iterator &)> LWEHttpResponseCallback;
+
+/*!< \brief convient structure for holding cognito credentials from AWS service's. */
+struct LWEAWSCredentials {
+	char8_t m_AccessKey[64] = {};
+	char8_t m_SecretKey[64] = {};
+	char8_t m_SessionToken[2048] = {};
+	float m_TimeToLive; //Time till expiration and credentials need to be renewed. (aws credentials sent with Expiration date in seconds since epoch, this should be subtracted from current epoch and converted to seconds to get TTL value)  This value can be trimmed down slightly so that renewal happens before credentials actually run out.
+
+	LWEAWSCredentials(const LWUTF8Iterator &AccessKey, const LWUTF8Iterator &SecretKey, const LWUTF8Iterator &SessionToken, float TimeToLive = std::numeric_limits<float>::max());
+
+	LWEAWSCredentials() = default;
+};
+
+struct LWEHttpRequestHeader {
+	//Can't point directly to data as copying a request will then break this data.
+	uint32_t m_NameOffset = 0;//Offset into Header to get name position.
+	uint32_t m_ValueOffset = 0;
+	uint32_t m_NameLength = 0; //Includes terminal.
+	uint32_t m_ValueLength = 0;
+	uint32_t m_NameHash = LWCrypto::FNV1AHash;
+
+	LWEHttpRequestHeader(uint32_t NameOffset, uint32_t NameLength, uint32_t ValueOffset, uint32_t ValueLength, uint32_t NameHash);
+
+	LWEHttpRequestHeader() = default;
+};
 
 struct LWEHttpRequest {
 	static const uint32_t BodyMaxLength = 1024 * 256; //256kb default.
-	static const uint32_t HeadersMaxLength = 128;
+	static const uint32_t ValueMaxLength = 256;
+	static const uint32_t PathMaxLength = 1024;
+	static const uint32_t MaxHeaderItems = 32;
+	static const uint32_t MaxHeaderLength = 1024 * 8; //8kb of header data.
 	enum {
-
 		GET = 0x0,
 		POST = 0x1,
 		METHODBITS = 0x1,
@@ -49,6 +76,7 @@ struct LWEHttpRequest {
 
 		HeadersRead = 0x100,
 		ResponseReady = 0x200,
+		GenerateDate = 0x400, //Flag passed in to creation to generate the date.
 
 		Continue = 100,
 		SwitchingProtocols = 101,
@@ -59,24 +87,23 @@ struct LWEHttpRequest {
 		NotFound = 404,
 		InternalServerError = 500,
 		NotImplemented = 501,
-		BadGateway = 502
+		BadGateway = 502,
+		DomainNotFound = 10000
 	};
 
 	char8_t m_Body[BodyMaxLength]="";
-	char8_t m_Host[HeadersMaxLength]="";
-	char8_t m_Path[HeadersMaxLength]="";
-	char8_t m_Origin[HeadersMaxLength]="";
-	char8_t m_Authorization[HeadersMaxLength]="";
-	char8_t m_ContentType[HeadersMaxLength]="";
-	char8_t m_TransferEncoding[HeadersMaxLength]="";
-	char8_t m_SecWebSockKey[HeadersMaxLength]="";
-	char8_t m_SecWebSockProto[HeadersMaxLength]="";
+	char8_t m_Path[PathMaxLength] = "/";
+	char8_t m_Header[MaxHeaderLength]="";
+	LWEHttpRequestHeader m_HeaderTable[MaxHeaderItems];
+	
 	LWSocket *m_Socket = nullptr;
 	void *m_UserData = nullptr;
-	std::function<void(LWEHttpRequest &, const LWUTF8Iterator &)> m_Callback = nullptr;
+	LWEHttpResponseCallback m_Callback = nullptr;
 	uint32_t m_ContentLength = 0;
 	uint32_t m_ChunkLength = 0;
 	uint32_t m_WebSockVersion = 0;
+	uint32_t m_HeaderCount = 0;
+	uint32_t m_HeaderOffset = 0; //Offset into HeaderData to store more data.
 	uint32_t m_Status = 0;
 	uint32_t m_Flag = 0;
 	uint16_t m_Port = 0;
@@ -85,46 +112,44 @@ struct LWEHttpRequest {
 
 	static uint32_t GZipDecompress(const char8_t *In, uint32_t InLen, char8_t *Buffer, uint32_t BufferLen);
 
+	//Generates an HTTP standard date header and writes it into buffer of current time.
+	static uint32_t MakeHTTPDate(char8_t *Buffer, uint32_t BufferLen);
+
+	//Generates an AMZ formatted date in utc time, IncludeSubTime will format with HHMMSS as well.
+	static uint32_t MakeAMZDate(char8_t *Buffer, uint32_t BufferLen, bool IncludeSubTime);
+
 	uint32_t Serialize(char8_t *Buffer, uint32_t BufferLen, const LWUTF8Iterator &UserAgent);
 
-	bool Deserialize(const char8_t *Buffer, uint32_t Len);
+	bool Deserialize(const char8_t *Buffer, uint32_t Len, bool Verbose = false);
 
 	LWEHttpRequest &SetURI(const LWUTF8Iterator &URI);
 
-	LWEHttpRequest &SetHost(const LWUTF8Iterator &Host);
+	//Note HeaderName will be lowered before insertion, their is also no check if header duplicates occur.
+	bool PushHeader(const LWUTF8Iterator &HeaderName, const LWUTF8Iterator &HeaderValue);
+
+	/* \brief Will generate AWS4 signature for this request, this function should be called after the body and all other headers have been added, this function adds the header Authorization and x-amz-date headers.
+	   \note this function inspects the host address to extract the region, and service being targeted, if neither are present false will be returned. if SessionToken is not empty, it will be added as x-amz
+	   
+	   */
+	bool GenerateAWS4Auth(const LWUTF8Iterator &AccessKeyID, const LWUTF8Iterator &SecretKey, const LWUTF8Iterator &SessionToken = LWUTF8Iterator());
+
+	/*!< \brief convience function for interacting with aws api-gateway services, automatically fills in the accesskey, secretkey, and session token. */
+	bool GenerateAWS4Auth(const LWEAWSCredentials &Credentials);
 
 	LWEHttpRequest &SetPath(const LWUTF8Iterator &Path);
 
-	LWEHttpRequest &SetOrigin(const LWUTF8Iterator &Origin);
-
-	LWEHttpRequest &SetWebSockKey(const LWUTF8Iterator &Key);
-
-	LWEHttpRequest &SetWebSockProto(const LWUTF8Iterator &Protocols);
-
-	LWEHttpRequest &SetAuthorization(const LWUTF8Iterator &Auth);
-
-	LWEHttpRequest &SetContentType(const LWUTF8Iterator &ContentType);
-
 	LWEHttpRequest &SetBody(const LWUTF8Iterator &Body);
+
+	//Same as GetHeader, but with more convenient interface.  HeaderName should be all lower-case.
+	LWUTF8Iterator operator[](const LWUTF8Iterator &HeaderName) const;
 
 	LWUTF8Iterator GetBody(void) const;
 
-	LWUTF8Iterator GetHost(void) const;
-
+	//Search's the header table for the specified header, note HeaderName should be all lower case. returns the value of that header.
+	LWUTF8Iterator GetHeader(const LWUTF8Iterator &HeaderName) const;
+	
 	LWUTF8Iterator GetPath(void) const;
-
-	LWUTF8Iterator GetOrigin(void) const;
-
-	LWUTF8Iterator GetAuthorization(void) const;
-
-	LWUTF8Iterator GetContentType(void) const;
-
-	LWUTF8Iterator GetTransferEncoding(void) const;
-
-	LWUTF8Iterator GetSecWebSockKey(void) const;
-
-	LWUTF8Iterator GetSecWebSockProto(void) const;
-
+	
 	LWEHttpRequest &SetCallback(LWEHttpResponseCallback Callback);
 
 	LWEHttpRequest &SetMethod(uint32_t Method);
@@ -153,12 +178,15 @@ struct LWEHttpRequest {
 
 	bool isResponseReady(void) const;
 
-	template<class T, class Y>
-	LWEHttpRequest &SetMethodCallback(T Inst, Y Method) {
-		return SetCallback(std::bind(&Method, Inst, std::placeholders::_1, std::placeholders::_2));
+	template<class Type, class CB>
+	LWEHttpRequest &SetMethodCallback(CB Method, Type Obj) {
+		return SetCallback(std::bind(Method, Obj, std::placeholders::_1, std::placeholders::_2));
 	}
 
-	LWEHttpRequest(const LWUTF8Iterator &URI, uint32_t Flag);
+	LWEHttpRequest(const LWUTF8Iterator &URI, uint32_t Flag, void *UserData = nullptr, LWEHttpResponseCallback Callback = nullptr);
+
+	template<class Type, class CB>
+	LWEHttpRequest(const LWUTF8Iterator &URI, uint32_t Flag, void *UserData, CB Method, Type Obj) : LWEHttpRequest(URI, Flag, UserData, std::bind(Method, Obj, std::placeholders::_1, std::placeholders::_2)) {}
 
 	LWEHttpRequest() = default;
 };
@@ -177,11 +205,10 @@ public:
 
 	bool ProcessRead(LWSocket &Socket, const char *Buffer, uint32_t Len);
 
+	//Process Request will automatically create sockets for requests which do not have an associated socket.
 	LWEProtocolHttp &ProcessRequests(uint32_t ProtocolID, LWProtocolManager &Manager);
 
 	LWEProtocolHttp &SetProtocolID(uint32_t ProtocolID);
-
-	LWEProtocolHttp &SetProtocolManager(LWProtocolManager *Manager);
 
 	bool PushRequest(LWEHttpRequest &Request);
 
@@ -195,13 +222,12 @@ public:
 
 	LWEProtocolHttp &SetServerString(const LWUTF8Iterator &Server);
 
-	LWEProtocolHttp(uint32_t ProtocolID, LWProtocolManager *Manager);
+	LWEProtocolHttp(uint32_t ProtocolID);
 
 	LWEProtocolHttp() = default;
 protected:
-	char8_t m_Agent[LWEHttpRequest::HeadersMaxLength]="";
-	char8_t m_Server[LWEHttpRequest::HeadersMaxLength]="";
-	LWProtocolManager *m_Manager = nullptr;
+	char8_t m_Agent[LWEHttpRequest::ValueMaxLength]="";
+	char8_t m_Server[LWEHttpRequest::ValueMaxLength]="";
 	LWConcurrentFIFO<LWEHttpRequest, RequestBufferSize> m_Pool;
 	LWConcurrentFIFO<LWEHttpRequest, RequestBufferSize> m_OutRequests;
 	LWConcurrentFIFO<LWEHttpRequest, RequestBufferSize> m_InRequests;

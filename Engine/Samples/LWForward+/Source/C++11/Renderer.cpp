@@ -292,7 +292,7 @@ Renderer &Renderer::RenderList(lFrame &F, uint32_t ListIdx, LWWindow *Window) {
 		for (uint32_t n = 0; n < Inst.m_PrimitiveCount; n++) {
 			InstancePrimitive &Prim = Inst.m_PrimitiveList[n];
 			LWPipeline *Pipeline = PreparePipeline(F, isPointView, isShadowView, Inst.m_HasSkin, i>=List.m_TransparentCnt, ListIdx, InstanceID, Prim.m_MaterialID);
-			if (isPointView) m_Driver->DrawInstancedMesh(Pipeline, LWVideoDriver::Triangle, Prim.m_Mesh, 6);
+			if (isPointView) m_Driver->DrawInstancedMesh(Pipeline, LWVideoDriver::Triangle, Prim.m_Mesh, nullptr, 6);
 			else m_Driver->DrawMesh(Pipeline, LWVideoDriver::Triangle, Prim.m_Mesh);
 		}
 	}

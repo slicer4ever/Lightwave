@@ -1034,6 +1034,7 @@ LWUTF8Iterator LWEUITextInput::GetDefaultText(void) const {
 LWEUITextInput::LWEUITextInput(const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : LWEUI(Position, Size, Flag) {
 	*m_DefaultText = '\0';
 	*m_AllowedCharacters = '\0';
+	Clear();
 }
 
 LWEUITextInput::~LWEUITextInput() {}

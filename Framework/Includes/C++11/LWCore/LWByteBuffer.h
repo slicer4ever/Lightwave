@@ -268,6 +268,69 @@ public:
 	*/
 	static double MakeLittle(double Value);
 
+	/*!< \brief calculates how many bytes the Value is to occupy with variant encoding. (int16_t, int32_t, int64_t, uint16_t, uint32_t, uint64_t supported)
+		 \return total bytes needed to store the number.
+	*/
+	static int32_t VariantLength(uint16_t Value);
+
+	/*!< \overload int32_t LWByteBuffer::VariantLength(int16_t) */
+	static int32_t VariantLength(int16_t Value);
+
+	/*!< \overload int32_t LWByteBuffer::VariantLength(uint32_t) */
+	static int32_t VariantLength(uint32_t Value);
+
+	/*!< \overload int32_t LWByteBuffer::VariantLength(int32_t) */
+	static int32_t VariantLength(int32_t Value);
+	
+	/*!< \overload int32_t LWByteBuffer::VariantLength(uint64_t) */
+	static int32_t VariantLength(uint64_t Value);
+	
+	/*!< \overload int32_t LWByteBuffer::VariantLength(int64_t) */
+	static int32_t VariantLength(int64_t Value);
+
+	/*!< \brief calculates how many bytes the Value is to occupy with zig-zag signed variant encoding(as described by google protobuf encoding schemes, for int types.) */
+	static int32_t SVariantLength(int16_t Value);
+
+	/*!< \overload int32_t LWByteBuffer::SVariantLength(int32_t) */
+	static int32_t SVariantLength(int32_t Value);
+
+	/*!< \overload int32_t LWByteBuffer::SVariantLength(int64_t) */
+	static int32_t SVariantLength(int64_t Value);
+
+	/*!< \brief Writes into Buffer a variant encoding of Value.
+	*	 \param MinBytes minimum number of bytes to write, will fill the bytes with 0x80 when reading back, allows for certain optimization when writing sizes.
+		 \return the total bytes needed to store the number.
+		 \note If buffer is not null, then it is expected to be large enough to store the variant value.
+	*/
+	static int32_t WriteVariant(uint16_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
+	/*!< \overload int32_t LWByteBuffer::WriteVariant(int16_t, int8_t *, uint32_t) */
+	static int32_t WriteVariant(int16_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
+	/*!< \overload int32_t LWByteBuffer::WriteVariant(uint32_t, int8_t *, uint32_t) */
+	static int32_t WriteVariant(uint32_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
+	/*!< \overload int32_t LWByteBuffer::WriteVariant(int32_t, int8_t *, uint32_t) */
+	static int32_t WriteVariant(int32_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
+	/*!< \overload int32_t LWByteBuffer::WriteVariant(int64_t, int8_t *, uint32_t) */
+	static int32_t WriteVariant(int64_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
+	/*!< \overload int32_t LWByteBuffer::WriteVariant(uint64_t, int8_t *, uint32_t) */
+	static int32_t WriteVariant(uint64_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
+	/*!< \brief writes into buffer a zig-zag signed variant encoding of Value
+	*	 \return the total bytes needed to store the number.
+	*	 \param MinBytes minimum number of bytes to write, will fill the bytes with 0x80 when reading back, allows for certain optimization when writing sizes.
+	*    \note If buffer is not null, then it is expected to be large enough to store the signed variant. */
+	static int32_t WriteSVariant(int16_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
+	/*!< \overload int32_t LWByteBuffer::WriteSVariant(int32_t, int8_t*, uint32_t) */
+	static int32_t WriteSVariant(int32_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
+	/*!< \overload int32_t LWByteBuffer::WriteSVariant(int64_t, int8_t*, uint32_t) */
+	static int32_t WriteSVariant(int64_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
 	/*! \brief writes the value of the pointer itself into the buffer for later.
 		Warning this function is only here for convenience, you should have a strong understanding of pointers before using!
 		\param Value the pointer to be written.
@@ -1042,6 +1105,40 @@ public:
 		va_end(lst);
 		return Result;
 	}
+	
+	/*!< \brief reads back a variant encoded value and stores the value in Out if not null.
+	*	 \return the number of bytes read from buffer.
+	*/
+	static int32_t ReadVariant(uint16_t *Out, const int8_t *Buffer);
+
+	/*!< \overload int32_t ReadVariant(int16_t *, const int8_t *) */
+	static int32_t ReadVariant(int16_t *Out, const int8_t *Buffer);
+
+	/*!< \overload int32_t ReadVariant(uint32_t *, const int8_t *) */
+	static int32_t ReadVariant(uint32_t *Out, const int8_t *Buffer);
+
+	/*!< \overload int32_t ReadVariant(int32_t *, const int8_t *) */
+	static int32_t ReadVariant(int32_t *Out, const int8_t *Buffer);
+
+	/*!< \overload int32_t ReadVariant(uint64_t *, const int8_t *) */
+	static int32_t ReadVariant(uint64_t *Out, const int8_t *Buffer);
+
+	/*!< \overload int32_t ReadVariant(int64_t *, const int8_t *) */
+	static int32_t ReadVariant(int64_t *Out, const int8_t *Buffer);
+
+	/*!< \brief read's 64 bit value from buffer.  This is the main read function, which is called by all other read variants which exist for convience factor. */
+	static int32_t ReadVariant(uint64_t &Out, const int8_t *Buffer);
+
+	/*!< \brief reads back a zig-zag signed variant encoded value and stores the value in Out if not null.
+	*	 \return the number of bytes read from buffer.
+	*/
+	static int32_t ReadSVariant(int16_t *Out, const int8_t *Buffer);
+
+	/*!< \overload int32_t ReadSVariant(int32_t *, const int8_t *) */
+	static int32_t ReadSVariant(int32_t *Out, const int8_t *Buffer);
+
+	/*!< \overload int32_t ReadSVariant(int64_t *, const int8_t *) */
+	static int32_t ReadSVariant(int64_t *Out, const int8_t *Buffer);
 
 	/*! \brief Reads back a pointer from the buffer.
 		\param Out the value to write out to.
@@ -1629,10 +1726,32 @@ public:
 	*/
 	int32_t WritePointer(void *Value);
 
+	/*!< \brief returns Len for bytes potentially written(to stay inlign with all other Write methods),  write's into Buffer the pointed to space if available, otherwise write's null if the space was not available internally.*/
+	int32_t WriteStorage(int32_t Len, int8_t *&Buffer);
+
+	/*!< \brief write's a variant int to the buffer, variant's are endian agnostic. */
+	template<class Type>
+	int32_t WriteVariant(Type Value, int32_t MinBytes = 0) {
+		int32_t Len = std::max<uint32_t>(VariantLength(Value), MinBytes);
+		if (m_Position + Len > m_BufferSize) return Len;
+		m_Position += WriteVariant(Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr, MinBytes);
+		m_BytesWritten += Len;
+		return Len;
+	}
+
+	/*!< \brief write's a signed variant zig-zag encoded int into buffer. */ 
+	template<class Type>
+	int32_t WriteSVariant(Type Value, int32_t MinBytes = 0) {
+		int32_t Len = std::max<uint32_t>(SVariantLength(Value), MinBytes);
+		if (m_Position + Len > m_BufferSize) return Len;
+		m_Position += WriteSVariant(Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr, MinBytes);
+		m_BytesWritten += Len;
+		return Len;
+	}
+
 	/*! \brief writes a value of type into the internal buffer.
 		\return the number of bytes written.
 	*/
-
 	template<class Type>
 	int32_t Write(const Type Value){
 		typedef int32_t (*Func_T)(const Type, int8_t *);
@@ -1870,6 +1989,50 @@ public:
 		int32_t Result = WriteLst<Type>(Len, lst);
 		va_end(lst);
 		return Result;
+	}
+
+	/*!< \brief read's a variant encoded int from the internal buffer. 
+		 \return the value of the object of type.
+	*/
+	template<class Type>
+	Type ReadVariant(void) {
+		Type Value = Type();
+		if (m_Position >= m_BufferSize) return Value;
+		m_Position += ReadVariant(&Value, m_ReadBuffer + m_Position);
+		return Value;
+	}
+
+	/*!< \brief read's a variant encoded int from the internal buffer at position.
+	*	 \return the value of the object of type.
+	*/
+	template<class Type>
+	Type ReadVariant(int32_t Position) {
+		Type Value = Type();
+		if (Position >= m_BufferSize) return Value;
+		ReadVariant(&Value, m_ReadBuffer + Position);
+		return Value;
+	}
+
+	/*!< \brief read's a signed variant zig-zag encoded int from the internal buffer.
+		 \return the value of the object of type.
+	*/
+	template<class Type>
+	Type ReadSVariant(void) {
+		Type Value = Type();
+		if (m_Position >= m_BufferSize) return Value;
+		m_Position += ReadSVariant(&Value, m_ReadBuffer + m_Position);
+		return Value;
+	}
+
+	/*!< \brief read's a signed variant encoded zig-zag int from the internal buffer at position.
+	*	 \return the value of the object of type.
+	*/
+	template<class Type>
+	Type ReadSVariant(int32_t Position) {
+		Type Value = Type();
+		if (Position >= m_BufferSize) return Value;
+		ReadSVariant(&Value, m_ReadBuffer + Position);
+		return Value;
 	}
 
 	/*! \brief reads a variable of type from the internal buffer.
@@ -2448,6 +2611,9 @@ public:
 		\param Flag the flags for the buffer to use.
 	*/
 	LWByteBuffer(const int8_t *ReadBuffer, uint32_t BufferSize, uint8_t Flag = 0);
+
+	/*!< \brief default constructor for buffer's, can be used for calculating write size's, but no data will be written. */
+	LWByteBuffer() = default;
 
 	/*! \brief Deconstruct that cleans up write buffer if the BufferNotOwned flag wasn't set. */
 	~LWByteBuffer();
@@ -3113,7 +3279,6 @@ inline int32_t LWByteBuffer::WriteNetwork<double>(int8_t *Buffer, uint32_t Len, 
 	if (Buffer) for (uint32_t i = 0; i < Len; i++) *(((int64_t*)Buffer) + i) = MakeNetwork(va_arg(lst, double));
 	return sizeof(double)*Len;
 }
-
 
 template<>
 inline int32_t LWByteBuffer::ReadNetwork<float>(float *Out, const int8_t *Buffer){

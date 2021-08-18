@@ -169,6 +169,7 @@ LWWindow &LWWindow::SetPosition(const LWVector2i &Position){
 	RECT wRect; //Window rect.
 	GetClientRect(m_Context.m_WND, &cRect);
 	GetWindowRect(m_Context.m_WND, &wRect);
+
 	MoveWindow(m_Context.m_WND, wRect.left + (Position.x - m_Position.x), wRect.top + (Position.y - m_Position.y) , m_Size.x + (wRect.right - wRect.left) - cRect.right, m_Size.y + (wRect.bottom - wRect.top) - cRect.bottom, false);
 	
 	m_Position = Position;
@@ -322,8 +323,11 @@ bool LWWindow::ProcessWindowMessage(uint32_t Message, void *MessageParam, uint64
 		RECT wRect;
 		GetClientRect(m_Context.m_WND, &cRect);
 		GetWindowRect(m_Context.m_WND, &wRect);
+		int32_t BorderSize = ((wRect.right - wRect.left) - (cRect.right)) / 2;
+		int32_t TitleSize = (wRect.bottom - wRect.top) - cRect.bottom - BorderSize;
 		LWVector2i NewSize = LWVector2i(cRect.right, cRect.bottom);
-		LWVector2i NewPos = LWVector2i(wRect.left, wRect.top);
+		LWVector2i NewPos = LWVector2i(wRect.left + BorderSize, wRect.top + TitleSize);
+
 		if (m_Size != NewSize) m_Flag |= SizeChanged;
 		if (m_Position != NewPos) m_Flag |= PosChanged;
 		m_Size = NewSize;

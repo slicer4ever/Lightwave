@@ -27,21 +27,53 @@ struct LWShaderInput {
 		dVec4, /*!< \brief type is 4 double's. */
 		Count /*!< \brief total count list for inputs. */
 	};
+	LWBitField32(Type, 4, 0); // \brief bits of flag for the type. */
+	LWBitField32(BindIndex, 4, TypeBitsOffset+4); // \brief bits of flag for BindIndex(which means max of 16 bindable inputs at the moment.)
+	LWBitField32(Offset, 8, BindIndexBitsOffset+4); // \brief bits of flag for offset*4 in the interleaved array.
+	LWBitField32(Length, 8, OffsetBitsOffset+8); // \brief bits of flag for the number of elements in the interleaved array.
+	LWBitField32(InstanceFrequency, 8, LengthBitsOffset+8); // \brief bits of flag for the Instance frequency(how frequently to change per-instance) (if InstanceFrequency is not 0, then this data is expected to come from an external source).
+
+	/*!< \brief set's the flag bits for the underlying type of the input. */
+	LWShaderInput &SetType(uint32_t lType);
+
+	/*!< \brief set's the flag bits for the underlying BindIndex of the input. */
+	LWShaderInput &SetBindIndex(uint32_t lBindIndex);
+
+	/*!< \brief set's the flag bits for the underlying Offset of the input(offset must be a multiple of 4). */
+	LWShaderInput &SetOffset(uint32_t lOffset);
+
+	/*!< \brief set's the flag bits for the underlying length of the input. */
+	LWShaderInput &SetLength(uint32_t lLength);
+
+	/*!< \brief set's frequency the input changes per-instance, 0 means each vertex, 1 each instance, 2 every-2 instances, etc. */
+	LWShaderInput &SetInstanceFrequency(uint32_t lFrequency);
+
+	/*!< \brief returns the type of the input. */
+	uint32_t GetType(void) const;
+
+	/*!< \brief returns the bind index of the input. */
+	uint32_t GetBindIndex(void) const;
+
+	/*!< \brief returns the offset of the input(this offset will be multiplied by 4 to get the correct byte offset). */
+	uint32_t GetOffset(void) const;
+
+	/*!< \brief returns the length of the input. */
+	uint32_t GetLength(void) const;
+
+	/*!< \brief returns the instance frequency for the input. */
+	uint32_t GetInstanceFrequency(void) const;
 
 	/*!< \brief input for vertex shaders, creates namehash from name. offset will be automatically generated when created. */
-	LWShaderInput(const LWUTF8Iterator &Name, uint32_t Type, uint32_t Length);
+	LWShaderInput(const LWUTF8Iterator &Name, uint32_t Type, uint32_t Length, uint32_t InstanceFreq = 0);
 
 	/*!< \brief input for vertex shaders.  offset will be automatically generated when created. */
-	LWShaderInput(uint32_t NameHash, uint32_t Type, uint32_t Length);
+	LWShaderInput(uint32_t NameHash, uint32_t Type, uint32_t Length, uint32_t InstanceFreq = 0);
 
 	/*!< \brief default constructor. */
 	LWShaderInput() = default;
 
-	uint32_t m_BindIndex = 0; /*!< \brief underlying bind location for the input. This is mostly useful for openGL implementations.  */
-	uint32_t m_NameHash = 0; /*!< \brief hashed name when looking up input. */
-	uint32_t m_Type = 0; /*!< \brief underlying input type. */
-	uint32_t m_Offset = 0; /*!< \brief offset in interleaved array for data. */
-	uint32_t m_Length = 1; /*!< \brief the length of the interleaved of data. */
+	uint32_t m_NameHash = LWUTF8I::EmptyHash; /*!< \brief hashed name when looking up input. */
+	uint32_t m_Flag = (1<<LengthBitsOffset); /*!< \brief flag of type, bind index, and instance divisor. */
 
 };
 
@@ -60,7 +92,7 @@ struct LWShaderResource {
 	static const uint32_t PixelStage = 0x40000000; /*!< \brief flag indicating the resource is apart of the pixel stage. */
 	static const uint32_t ComputeStage = 0x80000000; /*!< \brief flag indicating the resource is apart of the compute stage. */
 
-	void *m_Resource = nullptr; /*!< \brief actual resource object(LWTexture/LWVideoBuffer. */
+	LWVideoResource *m_Resource = nullptr; /*!< \brief actual resource object(LWTexture/LWVideoBuffer. */
 	uint32_t m_NameHash = 0; /*!< \brief hashed version of the resource/block's name. */
 	uint32_t m_Offset = 0; /*!< \brief offset of the resource if applicable. */
 	uint32_t m_Flag = 0; /*!< \brief flag which contains type, length, and staging information for the resource. */
@@ -134,7 +166,7 @@ struct LWShaderResource {
 };
 
 /*!< \brief LWShader is the compiled shader object which is used to create pipelines. */
-class LWShader{
+class LWShader : public LWVideoResource {
 public:
 	enum{
 		Vertex = 0, /*!< \brief shader is a vertex type. */
@@ -170,7 +202,7 @@ public:
 	/*!< \brief the input map for vertex shader's, this map is user defined, as Lightwave is built around interleaved vertex formats being the norm, this means when certain graphics api's(such as openGL) optimize out unused attributes, this can create problems with how data is passed to the shader, so a user defined format needs to be correctly setup, but will be ignored with api's that don't strip out any input data(such as DirectX). 
 		 \note this must be specified before any pipeline uses the shader object, otherwise the pipeline will have incorrect offset's.
 	*/
-	LWShader &SetInputMap(uint32_t Count, LWShaderInput *InputMap);
+	LWShader &SetInputMap(uint32_t Count, const LWShaderInput *InputMap);
 
 	/*!< \brief base tempalte varitable for resource map list. */
 	template<uint32_t N=0>
@@ -190,7 +222,7 @@ public:
 	}
 
 	/*!< \brief the resource map for the shader.  This map is user defined, and is used for ordering pipeline resource to bind to specific slots, shader stages that share the same name are bound to the same slot, slot order is based on shader stage order(i.e: vertex shader slots first->geometry stage->pixel stage). */
-	LWShader &SetResourceMap(uint32_t Count, uint32_t *NameHashs);
+	LWShader &SetResourceMap(uint32_t Count, const uint32_t *NameHashs);
 
 	/*!< \brief base block map list for variatic template. */
 	template<uint32_t N=0>
@@ -210,7 +242,7 @@ public:
 	}
 
 	/*!< \brief The block map for the shader. This map is user defined, and is used for ordering pipeline blocks to bind to specific slots, shader stages that share the same name are bound to the same slot, slot order is based on shader stage order(i.e: vertex shader slots first->geometry stage->pixel stage). */
-	LWShader &SetBlockMap(uint32_t Count, uint32_t *NameHashs);
+	LWShader &SetBlockMap(uint32_t Count, const uint32_t *NameHashs);
 
 	/*!< \brief returns the shader type. */
 	uint32_t GetShaderType(void) const;
@@ -223,6 +255,24 @@ public:
 
 	/*!< \brief returns the underlying user defined block map table. */
 	const LWShaderResource *GetBlockMap(void) const;
+
+	/*!< \brief search's input map list for the specified name.  returns null if not found. */
+	const LWShaderInput *FindInputMap(const LWUTF8Iterator &Name) const;
+
+	/*!< \brief search's input map list for the specified name.  returns null if not found. */
+	const LWShaderInput *FindInputMap(uint32_t NameHash) const;
+
+	/*!< \brief search's the resource map list for the specified name.  returns null if not found. */
+	const LWShaderResource *FindResourceMap(const LWUTF8Iterator &Name) const;
+
+	/*!< \brief search's the resource map list for the specified namehash.  returns null if not found. */
+	const LWShaderResource *FindResourceMap(uint32_t NameHash) const;
+
+	/*!< \brief search's the block map list for the specified name block.  returns null if not found. */
+	const LWShaderResource *FindBlockMap(const LWUTF8Iterator &Name) const;
+
+	/*!< \brief search's the block map list for the specified namehash block. returns null if not found. */
+	const LWShaderResource *FindBlockMap(uint32_t NameHash) const;
 
 	/*!< \brief returns the number of user defined input's. */
 	uint32_t GetInputCount(void) const;

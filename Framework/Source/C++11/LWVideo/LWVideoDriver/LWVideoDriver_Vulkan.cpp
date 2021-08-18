@@ -157,6 +157,10 @@ bool LWVideoDriver_Vulkan::UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const u
 	return false;
 }
 
+bool LWVideoDriver_Vulkan::UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const uint8_t *Buffer, uint32_t TypeSize, uint32_t Stride, uint32_t Count, uint32_t Offset) {
+	return false;
+}
+
 bool LWVideoDriver_Vulkan::DownloadTexture1D(LWTexture *Texture, uint32_t MipmapLevel, uint8_t *Buffer) {
 	return false;
 }
@@ -209,11 +213,11 @@ LWVideoDriver &LWVideoDriver_Vulkan::DestroyFrameBuffer(LWFrameBuffer *FrameBuff
 	return *this;
 }
 
-LWVideoDriver &LWVideoDriver_Vulkan::DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t Offset) {
+LWVideoDriver &LWVideoDriver_Vulkan::DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t Offset) {
 	return *this;
 }
 
-LWVideoDriver &LWVideoDriver_Vulkan::DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t InstanceCount, uint32_t Offset) {
+LWVideoDriver &LWVideoDriver_Vulkan::DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t InstanceCount, uint32_t Offset) {
 	return *this;
 }
 

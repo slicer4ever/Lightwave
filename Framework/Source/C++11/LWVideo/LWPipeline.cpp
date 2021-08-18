@@ -1,11 +1,13 @@
 #include "LWVideo/LWPipeline.h"
 #include "LWCore/LWUnicode.h"
 #include "LWCore/LWCrypto.h"
+#include "LWVideo/LWVideoDriver.h"
 #include <cstdarg>
 
 
 LWPipeline &LWPipeline::SetUniformBlock(uint32_t i, LWVideoBuffer *Buffer, uint32_t Offset) {
 	LWShaderResource &B = m_BlockList[m_BlockMap[i]];
+	if (B.m_Resource == Buffer && B.m_Offset == Offset) return *this;
 	B.m_Resource = Buffer;
 	B.m_Offset = Offset;
 	m_Flag |= Dirty;
@@ -15,11 +17,12 @@ LWPipeline &LWPipeline::SetUniformBlock(uint32_t i, LWVideoBuffer *Buffer, uint3
 LWPipeline &LWPipeline::SetUniformBlock(const LWUTF8Iterator &Name, LWVideoBuffer *Buffer, uint32_t Offset) {
 	uint32_t i = FindBlock(Name);
 	if (i == -1) return *this;
-	return SetUniformBlock(Name, Buffer, Offset);
+	return SetUniformBlock(i, Buffer, Offset);
 }
 
 LWPipeline &LWPipeline::SetResource(uint32_t i, LWVideoBuffer *Buffer, uint32_t Offset) {
 	LWShaderResource &R = m_ResourceList[m_ResourceMap[i]];
+	if (R.m_Resource == Buffer && R.m_Offset == Offset) return *this;
 	R.m_Resource = Buffer;
 	R.m_Offset = Offset;
 	m_Flag |= Dirty;
@@ -28,6 +31,7 @@ LWPipeline &LWPipeline::SetResource(uint32_t i, LWVideoBuffer *Buffer, uint32_t 
 
 LWPipeline &LWPipeline::SetResource(uint32_t i, LWTexture *Texture) {
 	LWShaderResource &R = m_ResourceList[m_ResourceMap[i]];
+	if (R.m_Resource == Texture) return *this;
 	R.m_Resource = Texture;
 	m_Flag |= Dirty;
 	return *this;
@@ -112,6 +116,17 @@ LWPipeline &LWPipeline::SetDepthBias(bool Enabled, float Bias, float SlopedScale
 	return *this;
 }
 
+uint32_t LWPipeline::MakeInterleavedInputStream(LWPipelineInputStream *StreamBuffer, const LWPipelineInputStream *InstanceStream, LWVideoBuffer *InterleavedBuffer, uint32_t InterleaveStride, uint32_t BufferCount) {
+	uint32_t c = std::min<uint32_t>(BufferCount, m_InputCount);
+	uint32_t n = 0;
+	for (uint32_t i = 0; i < c; i++) {
+		LWShaderInput &In = m_InputList[i];
+		if (In.GetInstanceFrequency() == 0) StreamBuffer[i] = { InterleavedBuffer, In.GetOffset(), InterleaveStride };
+		else StreamBuffer[i] = InstanceStream[n++];
+	}
+	return c;
+}
+
 LWPipeline &LWPipeline::SetVertexShader(LWShader *Shader) {
 	if (m_ShaderStages[Vertex] == Shader) return *this;
 	m_ShaderStages[Vertex] = Shader;
@@ -155,29 +170,37 @@ LWPipeline &LWPipeline::ClearDirty(void){
 	return *this;
 }
 
-uint32_t LWPipeline::FindResource(const LWUTF8Iterator &Name) {
-	uint32_t Hash = LWCrypto::HashFNV1A(Name);
+uint32_t LWPipeline::FindResource(uint32_t NameHash) {
 	for (uint32_t i = 0; i < m_ResourceCount; i++) {
-		if (Hash == m_ResourceList[m_ResourceMap[i]].m_NameHash) return i;
+		if (NameHash == m_ResourceList[m_ResourceMap[i]].m_NameHash) return i;
+	}
+	return -1;
+}
+
+uint32_t LWPipeline::FindResource(const LWUTF8Iterator &Name) {
+	return FindResource(Name.Hash());
+}
+
+uint32_t LWPipeline::FindBlock(uint32_t NameHash) {
+	for (uint32_t i = 0; i < m_BlockCount; i++) {
+		if (NameHash == m_BlockList[m_BlockMap[i]].m_NameHash) return i;
 	}
 	return -1;
 }
 
 uint32_t LWPipeline::FindBlock(const LWUTF8Iterator &Name) {
-	uint32_t Hash = LWCrypto::HashFNV1A(Name);
-	for (uint32_t i = 0; i < m_BlockCount; i++) {
-		if (Hash == m_BlockList[m_BlockMap[i]].m_NameHash) return i;
+	return FindBlock(Name.Hash());
+}
+
+uint32_t LWPipeline::FindInput(uint32_t NameHash) {
+	for (uint32_t i = 0; i < m_InputCount; i++) {
+		if (NameHash == m_InputList[i].m_NameHash) return i;
 	}
 	return -1;
 }
 
-
 uint32_t LWPipeline::FindInput(const LWUTF8Iterator &Name) {
-	uint32_t Hash = LWCrypto::HashFNV1A(Name);
-	for (uint32_t i = 0; i < m_InputCount; i++) {
-		if (Hash == m_InputList[i].m_NameHash) return i;
-	}
-	return -1;
+	return FindInput(Name.Hash());
 }
 
 LWPipeline &LWPipeline::BuildMappings(void) {
@@ -221,11 +244,20 @@ LWPipeline &LWPipeline::BuildMappings(void) {
 			const LWShaderInput *VInputs = VS->GetInputMap();
 			if (!VICount) LWShader::GenerateInputOffsets(m_InputCount, m_InputList);
 			else {
-				for (uint32_t i = 0; i < m_InputCount; i++) {
-					for (uint32_t n = 0; n < VICount; n++) {
+				//re-order input list(and add any missing input's) to match our mapping:
+				for (uint32_t n = 0; n < VICount; n++) {
+					bool Found = false;
+					for (uint32_t i = 0; i < m_InputCount; i++) {
 						if (m_InputList[i].m_NameHash != VInputs[n].m_NameHash) continue;
-						m_InputList[i].m_Offset = VInputs[n].m_Offset;
+						std::swap(m_InputList[n], m_InputList[i]);
+						m_InputList[n].m_Flag = (m_InputList[n].m_Flag & ~(LWShaderInput::OffsetBits | LWShaderInput::InstanceFrequencyBits)) | (VInputs[n].m_Flag & (LWShaderInput::OffsetBits | LWShaderInput::InstanceFrequencyBits));
+						Found = true;
 						break;
+					}
+					if (!Found) {
+						fmt::print("Input map attribute not found: {:#x}(if an attribute was should not have stripped, check for any misspelling errors in defining input map).\n", VInputs[n].m_NameHash);
+						m_InputList[m_InputCount++] = LWShaderInput(VInputs[n].m_NameHash, VInputs[n].GetType(), 0, VInputs[n].GetInstanceFrequency());
+						std::swap(m_InputList[n], m_InputList[m_InputCount - 1]);
 					}
 				}
 			}
@@ -264,7 +296,6 @@ LWPipeline &LWPipeline::ClonePipeline(LWPipeline *Pipe) {
 	m_InputCount = Pipe->GetInputCount();
 	m_BlockCount = Pipe->GetBlockCount();
 	m_ResourceCount = Pipe->GetResourceCount();
-	
 	std::copy(InputList, InputList + m_InputCount, m_InputList);
 	for (uint32_t i = 0; i < m_BlockCount; i++) {
 		m_BlockList[i].m_NameHash = BlockList[i].m_NameHash;

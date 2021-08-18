@@ -135,18 +135,31 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Includes\C++11\LWEAsset.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWECamera.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEGeometry2D.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEGeometry3D.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEGLTFParser.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEJobQueue.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEJson.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWELocalization.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWELogger.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWEMesh.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolHTTP.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolHTTPS.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolTLS.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolWebSocket.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolWebSocketSecure.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderer.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderFrame.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderPass.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEGausianBlurPass.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEGeometryPass.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEPPPass.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEShadowMapPass.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEUIPass.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderTypes.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWESGeometry3D.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWESVG.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWETween.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWETypes.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEUIManager.h" />
@@ -168,15 +181,28 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\C++11\LWEAsset.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWECamera.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEGLTFParser.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEJobQueue.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEJson.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWELocalization.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolHttp.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWELogger.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWEMesh.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolHTTP.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolHTTPS.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolTLS.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolWebSocket.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolWebSocketSecure.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderer.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderFrame.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderPass.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEGausianBlurPass.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEGeometryPass.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEPPPass.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEShadowMapPass.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEUIPass.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderTypes.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWESVG.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEUIManager.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUI.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIRichLabel.cpp" />
@@ -197,6 +223,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Source\C++11\LWEVideoPlayer.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEXML.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\Includes\C++11\LWEShaders\LWEUIColor.lwps" />
+    <None Include="..\..\..\Includes\C++11\LWEShaders\LWEUITexture.lwps" />
+    <None Include="..\..\..\Includes\C++11\LWEShaders\LWEUIVertex.lwvs" />
+    <None Include="..\..\..\Includes\C++11\LWEShaders\LWEYUVTexture.lwps" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

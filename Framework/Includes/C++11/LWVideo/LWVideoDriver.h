@@ -15,6 +15,28 @@
 /*! \addtogroup LWVideo
 	@{
 */
+
+static const uint32_t LWShaderCount = 3;
+static const uint32_t LWShaderFontVertex = 0;
+static const uint32_t LWShaderFontColor = 1;
+static const uint32_t LWShaderFontMSDF = 2;
+static const char8_t *LWShaderSources[LWShaderCount] = {
+#include "LWShaders/LWFontVertex.lwvs"
+#include "LWShaders/LWFontColor.lwps"
+#include "LWShaders/LWFontMSDF.lwps"
+};
+
+/*!< \brief input stream for each attribute of a pipeline, InputStream order is expected to be in the order of mapped inputs. */
+struct LWPipelineInputStream {
+	LWVideoBuffer *m_Buffer = nullptr; //Buffer to use for the attribute.
+	uint32_t m_Offset = 0; //Offset into buffer to start reading attribute from.
+	uint32_t m_Stride = 0; //Stride to next attribute(0 stride means tight packing).
+
+	LWPipelineInputStream(LWVideoBuffer *Buffer, uint32_t Offset = 0, uint32_t Stride = 0);
+
+	LWPipelineInputStream() = default;
+};
+
 /*! \brief Video driver class that provides a set of universal api's for accessing the graphics device and graphical operations, regardless of OpenGL or DirectX underlying context. the lower api's such as OpenGL2.1/OpenGL3.2/OpenGLES2.0 do not support every feature that this api supports, calling such unsupported functions will result in nothing happening, if you require a feature not supported by those api's then you must be sure to remove those api's as options when requesting a video driver in MakeVideoDriver.
 */
 
@@ -111,20 +133,72 @@ public:
 		 \param Count the number of vertices(not polygons) to draw.
 		 \param VertexStride the stride between each vertex in the input block.
 		 \param Offset the vertices to offset from when drawing.
+		 \note this function expects InputBlock to be interleaved data, as such this is purely a helper function which generates the ShaderInputStream to be passed to the other DrawBuffer method.
 	*/
-	virtual LWVideoDriver &DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t Offset = 0);
+	LWVideoDriver &DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t Offset = 0);
+
+	/*!< \brief draws a mesh buffer with the associated inputs.
+		 \param Pipeline updates and set's the active pipeline to be used for drawing.
+		 \param DrawMode the rasterization mode for drawing.
+		 \param InputStreams the stream of input data.
+		 \param IndexBuffer the Index buffer used for the input data(pass null if no index buffer is to be used).
+		 \param Count the number of vertices(not polygons) to draw.
+		 \param VertexStride the stride between each vertex in the input block.
+		 \param Offset the vertices to offset from when drawing.
+	*/
+	virtual LWVideoDriver &DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t Offset = 0);
 
 	/*!< \brief draws an instanced mesh buffer with the associated inputs.
 		 \param Pipeline the pipeline to be used for drawing.
 		 \param DrawMode the rasterization mode for drawing.
-		 \param InputBlock the vertex input data.
+		 \param InputBlock interleaved vertex data used to generate the actual inputstreams to pass to the InputStreams version of this method.
+		 \param InputStreams the stream of input data.
+		 \param IndexBuffer the Index buffer used for the input data(pass null if no index buffer is to be used).
+		 \param Count the number of vertices(not polygons) to draw.
+		 \param VertexStride the stride between each vertex in the input block.
+		 \param Offset the vertices to offset from when drawing.
+		 \param InstanceCount the total number of instances to be used for drawing.
+		 \note this function expects InputBlock to be interleaved data, as such this is purely a helper function which generates the ShaderInputStream to be passed to the other DrawBuffer method.
+	*/
+	LWVideoDriver &DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWPipelineInputStream *InstanceStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t InstanceCount = 0, uint32_t Offset = 0);
+
+	/*!< \brief draws an instanced mesh buffer with the associated inputs.
+		 \param Pipeline the pipeline to be used for drawing.
+		 \param DrawMode the rasterization mode for drawing.
+		 \param InputStreams the stream of input data.
 		 \param IndexBuffer the Index buffer used for the input data(pass null if no index buffer is to be used).
 		 \param Count the number of vertices(not polygons) to draw.
 		 \param VertexStride the stride between each vertex in the input block.
 		 \param Offset the vertices to offset from when drawing.
 		 \param InstanceCount the total number of instances to be used for drawing.
 	*/
-	virtual LWVideoDriver &DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t InstanceCount = 0, uint32_t Offset = 0);
+	virtual LWVideoDriver &DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t InstanceCount = 0, uint32_t Offset = 0);
+
+	/*!< \brief draws a series of instanced mesh buffer's as described by the indirect buffer(see LWIndirectIndice if drawing with an indexBuffer, or LWIndirectVertex if drawing without). with the associated input streams.
+		 \param Pipeline the pipeline to be used for drawing.
+		 \param DrawMode the rasterization mode for drawing.
+		 \param InputBlock the interleaved buffer of input data.
+		 \param InstanceStreams streams for instance array'd data, InstanceStreams should be in the same format as declared in the vertex shader's input map.
+		 \param IndexBuffer the Index buffer used for the input data(pass null if no index buffer is to be used).
+		 \param IndirectBuffer the buffer that will feed draw commands from.
+		 \param IndirectCount the number indirect draw commands to consume.
+		 \param VertexStride the stride between each vertex in the input block.
+		 \param IndirectOffset offset of indirect draw commands to skip.
+		 \note this function expects InputBlock to be interleaved data, as such this is purely a helper function which generates the ShaderInputStream to be passed to the other DrawBuffer method.
+	*/
+	LWVideoDriver &DrawIndirectBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWPipelineInputStream *InstanceStreams, LWVideoBuffer *IndexBuffer, LWVideoBuffer *IndirectBuffer, uint32_t IndirectCount, uint32_t VertexStride, uint32_t IndirectOffset = 0);
+
+	/*!< \brief draws a series of instanced mesh buffer's as described by the indirect buffer(see LWIndirectIndice if drawing with an indexBuffer, or LWIndirectVertex if drawing without). with the associated input streams.
+		 \param Pipeline the pipeline to be used for drawing.
+		 \param DrawMode the rasterization mode for drawing.
+		 \param InputStreams the buffers of input data.
+		 \param IndexBuffer the Index buffer used for the input data(pass null if no index buffer is to be used).
+		 \param IndirectBuffer the buffer that will feed draw commands from.
+		 \param IndirectCount the number indirect draw commands to consume.
+		 \param VertexStride the stride between each vertex in the input block.
+		 \param IndirectOffset offset of indirect draw commands to skip.
+	*/
+	virtual LWVideoDriver &DrawIndirectBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InpustStreams, LWVideoBuffer *IndexBuffer, LWVideoBuffer *IndirectBuffer, uint32_t IndirectCount, uint32_t IndirectOffset = 0);
 
 	/*!< \brief dispatchs a compute shader.
 		 \param Pipeline the pipeline with the compute shader to dispatch for.
@@ -136,13 +210,13 @@ public:
 	LWVideoDriver &DrawMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh);
 
 	/*!< \brief draws an instanced mesh with the associated mesh. */
-	LWVideoDriver &DrawInstancedMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh, uint32_t InstanceCount);
+	LWVideoDriver &DrawInstancedMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh, LWPipelineInputStream *InstanceStreams, uint32_t InstanceCount);
 
 	/*!< \brief draws a partial mesh with the associated mesh. */
 	LWVideoDriver &DrawMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh, uint32_t Count, uint32_t Offset = 0);
 
 	/*!< \brief draws an instanced mesh with the associated mesh. */
-	LWVideoDriver &DrawInstancedMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh, uint32_t Count, uint32_t InstanceCount, uint32_t Offset = 0);
+	LWVideoDriver &DrawInstancedMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh, LWPipelineInputStream *InstanceStreams, uint32_t Count, uint32_t InstanceCount, uint32_t Offset = 0);
 
 	/*!< \brief updates the mesh, without having to render it. */
 	LWVideoDriver &UpdateMesh(LWBaseMesh *Mesh);
@@ -157,12 +231,11 @@ public:
 
 	/*!< \brief setss and updates the active pipeline for rendering, this function is more for internal conveniences and shouldn't ever have to be called by the application as the Draw commands all require a bound pipeline as well.  returns true when the pipeline settings are changed. 
 		 \param Pipeline the pipeline object to make active.
-		 \param Vertices the bound vertice input for the pipeline.
+		 \param InputStreamBuffers the stream of buffer's to use for each input attribute, expected number of streams is to be the same as the order of inputs.
 		 \param Indices the bound indices for the pipeline.
-		 \param stride for the vertices, Lightwave expects data to be interleaved in a single struct.
-		 \param Offset if indices is not null then this is the offset into the indice buffer, otherwise it is the offset into the vertices buffer.
+		 \param IndirectBuffer if drawing with InstancedIndirect, this method specify's what commands are consumed.
 	*/
-	virtual bool SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *Vertices, LWVideoBuffer *Indices, uint32_t VerticeStride, uint32_t Offset);
+	virtual bool SetPipeline(LWPipeline *Pipeline, LWPipelineInputStream *InputStreamBuffers, LWVideoBuffer *Indices, LWVideoBuffer *IndirectBuffer);
 
 	/*!< \brief set's and updates the active raster state for rendering, this function is more for internal conveniences and shouldn't ever have to be called by the application as the Draw commands all require the bounded pipeline and will override the raster settings with the pipeline settings. */
 	virtual bool SetRasterState(uint64_t Flags, float Bias, float SlopedScaleBias);
@@ -205,6 +278,7 @@ public:
 		 \param GeomShader optional geometry shader to be used by the pipeline.
 		 \param PixelShader optional pixel shader which is used by the pipeline, not including the pixelshader will still have the depth buffer be written to for shadowmapping.
 		 \param Flags the raster flags for the pipeline.
+		 \note If using instanced vertex shader's, the instance stepping needs to be declared in the input map of the shader, and must be in the same order as declared in the shader to work correctly in d3d context's.  once the pipeline is created the instance stepping rate cannot be modified.
 	*/
 	LWPipeline *CreatePipeline(LWShader *VertexShader, LWShader *GeomShader, LWShader *PixelShader, uint64_t Flags, LWAllocator &Allocator);
 
@@ -512,9 +586,36 @@ public:
 		 \param VideoBuffer the video buffer to be updated.
 		 \param Buffer the buffer to use to update the video buffer.
 		 \param Length the number of bytes to be updated.
-		 \note because lightwave prefers a deferred context for rendering, partial buffer updates are not possible with the renderer's available.
+		 \param Offset offset into the buffer to write data to, note that for non-zero offset the VideoBuffer usage must be WriteDiscardNoOverlap, otherwise data from 0-Offset will become invalid.
 	*/
-	virtual bool UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const uint8_t *Buffer, uint32_t Length);
+	virtual bool UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const uint8_t *Buffer, uint32_t Length, uint32_t Offset=0);
+
+	/*!< \brief updates the video buffer with the supplied buffer.  independent of the internal local buffer.
+	*	 \param VideoBuffer the video buffer to be updated.
+	*	 \param Buffer the buffer to use to update the video buffer.
+	*	 \param Count the number of Type object's to be uploaded.
+	*	 \param Offset offset in bytes. */
+	template<class Type>
+	bool UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const Type *Buffer, uint32_t Count, uint32_t Offset = 0) {
+		return UpdateVideoBuffer(VideoBuffer, (const uint8_t*)Buffer, sizeof(Type) * Count, Offset);
+	}
+
+	/*!< \brief map's the specified video buffer and returns a pointer to the mapped data, using the UsageFlag specified for that video buffer.
+	*	 \param Length the length of region of the video buffer to be mapped, if 0 then the entire video buffer - Offset will be mapped, note that WriteDiscardNoOverlap must be set for non-0 length.
+	*	 \param Offset the offset of the region of the video buffer to be mapped, if non-zero then WriteDiscardNoOverlap must be set.
+	*	 \note null means failure happened when mapping the video buffer. */
+	virtual void *MapVideoBuffer(LWVideoBuffer *VideoBuffer, uint32_t Length = 0, uint32_t Offset = 0);
+
+	/*<! \brief map's the specified video buffer and returns it as Type.
+	*	 \param Count the number of type to map, 0 means entire buffer.
+	*	 \param Offset, offset in bytes. */
+	template<class Type>
+	Type *MapVideoBuffer(LWVideoBuffer *VideoBuffer, uint32_t Count = 0, uint32_t Offset = 0) {
+		return (Type*)MapVideoBuffer(VideoBuffer, sizeof(Type) * Count, Offset);
+	}
+
+	/*!< \brief unmap's the specified video buffer, returning true if succesfully unmapped. */
+	virtual bool UnmapVideoBuffer(LWVideoBuffer *VideoBuffer);
 
 	/*!< \brief Downloads the entire 1D texture into client side memory.
 		 \param Texture the texture object to download.

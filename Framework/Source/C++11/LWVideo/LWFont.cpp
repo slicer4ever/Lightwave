@@ -413,13 +413,14 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 	for (uint32_t i = 0; i < Header.m_ImageCount; i++) {
 		ARImageHeader &I = Images[i];
 		LWImage TexImg;
+		LWByteBuffer Buf = LWByteBuffer(I.m_Data, I.m_DataLength, LWByteBuffer::BufferNotOwned);
 		if (I.m_Encoding == ImageEncoding_PNG) {
-			if (!LWImage::LoadImagePNG(TexImg, (const uint8_t*)I.m_Data, I.m_DataLength, Allocator)) {
+			if (!LWImage::LoadImagePNG(TexImg, Buf, Allocator)) {
 				fmt::print("Error loading font png image.\n");
 				continue;
 			}
 		} else if (I.m_Encoding == ImageEncoding_TGA) {
-			if (!LWImage::LoadImageTGA(TexImg, (const uint8_t*)I.m_Data, I.m_DataLength, Allocator)) {
+			if (!LWImage::LoadImageTGA(TexImg, Buf, Allocator)) {
 				fmt::print("Error loading font tga image.\n");
 				continue;
 			}
@@ -427,6 +428,8 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 			fmt::print("Font contains image that is not supported.\n");
 			continue;
 		}
+		//Need to check if not color type font:
+		TexImg.SetSRGBA(false);
 		LWTexture *Tex = Driver->CreateTexture(LWTexture::MinLinear | LWTexture::MagLinear, TexImg, Allocator);
 		if (!Tex) {
 			fmt::print("Failed to create texture for font.\n");
@@ -683,7 +686,7 @@ LWFont *LWFont::LoadFontTTF(LWFileStream *Stream, LWVideoDriver *Driver, uint32_
 		}
 	}
 	//BuildTransformTable(DTexels, Texels, PackSize*TextureWidth, TextureWidth, TextureHeight, 4);
-	LWTexture *Tex = Driver->CreateTexture2D(LWTexture::MinLinear|LWTexture::MagLinear, LWImage::RGBA8, LWVector2i(TextureWidth, TextureHeight), &Texels, 0, Allocator);
+	LWTexture *Tex = Driver->CreateTexture2D(LWTexture::MinLinear|LWTexture::MagLinear, LWImage::SRGBA, LWVector2i(TextureWidth, TextureHeight), &Texels, 0, Allocator);
 
 	if (Tex) F->SetTexture(0, Tex);
 
@@ -698,189 +701,6 @@ LWFont *LWFont::LoadFontTTF(LWFileStream *Stream, LWVideoDriver *Driver, uint32_
 	}
 
 	return F;
-}
-
-const char *LWFont::GetVertexShaderSource(void) {
-	static const char FontSource[] = ""\
-		"#module Vertex DirectX11_1\n"\
-		"cbuffer UIUniform{\n"\
-		"	float4x4 Matrix;\n"\
-		"};\n"\
-		"struct Vertex {\n"\
-		"	float4 Position : POSITION;\n"\
-		"	float4 Color : COLOR;\n"\
-		"	float4 TexCoord : TEXCOORD;\n"\
-		"};\n"\
-		"struct Pixel {\n"\
-		"	float4 Position : SV_POSITION;\n"\
-		"	float4 Color : COLOR0;\n"\
-		"	float4 TexCoord : TEXCOORD0;\n"\
-		"};\n"\
-		"Pixel main(Vertex In) {\n"\
-		"	Pixel O;\n"\
-		"	O.Position = mul(Matrix, In.Position);\n"\
-		"	O.Color = In.Color;\n"\
-		"	O.TexCoord = In.TexCoord;\n"\
-		"	return O;\n"\
-		"}\n"\
-		"#module Vertex OpenGL3_3 OpenGL4_5\n"\
-		"#version 330\n"\
-		"layout(std140) uniform UIUniform {\n"\
-		"	mat4 Matrix;\n"\
-		"};\n"\
-		"in vec4 Position;\n"\
-		"in vec4 Color;\n"\
-		"in vec4 TexCoord;\n"\
-		"out vec4 pColor;\n"\
-		"out vec4 pTexCoord;\n"\
-		"void main(void) {\n"\
-		"	gl_Position = Matrix*Position;\n"\
-		"	pColor = Color;\n"\
-		"	pTexCoord = TexCoord;\n"\
-		"}\n"\
-		"#module Vertex OpenGL2_1\n"\
-		"struct UIData{\n"\
-		"	mat4 Matrix;\n"\
-		"};\n"\
-		"attribute vec4 Position;\n"\
-		"attribute vec4 Color;\n"\
-		"attribute vec4 TexCoord;\n"\
-		"varying vec4 pColor;\n"\
-		"varying vec4 pTexCoord;\n"\
-		"uniform UIData UIUniform;\n"\
-		"void main(void) {\n"\
-		"	gl_Position = UIUniform.Matrix*Position;\n"\
-		"	pColor = Color;\n"\
-		"	pTexCoord = TexCoord;\n"\
-		"}\n"\
-		"#module Vertex OpenGLES2\n"\
-		"struct UIData{\n"\
-		"	mat4 Matrix;\n"\
-		"};\n"\
-		"attribute highp vec4 Position;\n"\
-		"attribute lowp vec4 Color;\n"\
-		"attribute lowp vec4 TexCoord;\n"\
-		"varying lowp vec4 pColor;\n"\
-		"varying lowp vec4 pTexCoord;\n"\
-		"uniform UIData UIUniform;\n"\
-		"void main(void) {\n"\
-		"	gl_Position = UIUniform.Matrix*Position;\n"\
-		"	pColor = Color;\n"\
-		"	pTexCoord = TexCoord;\n"\
-		"}\n";
-	return FontSource;
-}
-
-const char *LWFont::GetPixelColorShaderSource(void) {
-	static const char FontSource[] = ""\
-		"#module Pixel DirectX11_1\n"\
-		"struct Pixel {\n"\
-		"	float4 Position : SV_POSITION;\n"\
-		"	float4 Color : COLOR0;\n"\
-		"	float4 TexCoord : TEXCOORD0;\n"\
-		"};\n"\
-		"Texture2D FontTex;\n"\
-		"SamplerState FontTexSampler;\n"\
-		"float4 main(Pixel In) : SV_TARGET{\n"\
-		"	return In.Color*FontTex.Sample(FontTexSampler, In.TexCoord.xy);\n"\
-		"}\n"\
-		"#module Pixel OpenGL3_3 OpenGL4_5\n"\
-		"#version 330\n"\
-		"uniform sampler2D FontTex;\n"\
-		"in vec4 pColor;\n"\
-		"in vec4 pTexCoord;\n"\
-		"out vec4 p_Color;\n"\
-		"void main(void) {\n"\
-		"	p_Color = texture(FontTex, pTexCoord.xy)*pColor;\n"\
-		"}\n"\
-		"#module Pixel OpenGL2_1\n"\
-		"uniform sampler2D FontTex;\n"\
-		"varying vec4 pColor;\n"\
-		"varying vec4 pTexCoord;\n"\
-		"void main(void) {\n"\
-		"	gl_FragColor = texture2D(FontTex, pTexCoord.xy)*pColor;\n"\
-		"}\n"\
-		"#module Pixel OpenGLES2\n"\
-		"uniform sampler2D FontTex;\n"\
-		"varying lowp vec4 pColor;\n"\
-		"varying lowp vec4 pTexCoord;\n"\
-		"void main(void) {\n"\
-		"	gl_FragColor = texture2D(FontTex, pTexCoord.xy)*pColor;\n"\
-		"}\n";
-	return FontSource;
-
-}
-
-const char *LWFont::GetPixelMSDFShaderSource(void) {
-	static const char FontSource[] = ""\
-		"#module Pixel DirectX11_1\n"\
-		"struct Pixel {\n"\
-		"	float4 Position : SV_POSITION;\n"\
-		"	float4 Color : COLOR0;\n"\
-		"	float4 TexCoord : TEXCOORD0;\n"\
-		"};\n"\
-		"Texture2D FontTex;\n"\
-		"SamplerState FontTexSampler;\n"\
-		"float Median(float r, float g, float b){\n"\
-		"	return max(min(r, g), min(max(r, g), b));\n"\
-		"}\n"\
-		"float4 main(Pixel In) : SV_TARGET{\n"\
-		"	float2 mUnit = In.TexCoord.zw;\n"\
-		"	float4 Sample = FontTex.Sample(FontTexSampler, In.TexCoord.xy);\n"\
-		"	float sigDist = Median(Sample.r, Sample.g, Sample.b)-0.5f;\n"\
-		"	sigDist *= dot(mUnit, 0.5f/fwidth(In.TexCoord.xy));\n"\
-		"	float a = clamp(sigDist+0.5f, 0.0f, 1.0f);\n"\
-		"	return In.Color*float4(1.0f, 1.0f, 1.0f, a);\n"\
-		"}\n"\
-		"#module Pixel OpenGL3_3 OpenGL4_5\n"\
-		"#version 330\n"\
-		"uniform sampler2D FontTex;\n"\
-		"in vec4 pColor;\n"\
-		"in vec4 pTexCoord;\n"\
-		"out vec4 oColor;\n"\
-		"float Median(float r, float g, float b){\n"\
-		"	return max(min(r, g), min(max(r, g), b));\n"\
-		"}\n"\
-		"void main(void) {\n"\
-		"	vec2 mUnit = pTexCoord.zw;\n"\
-		"	vec4 Sample = texture(FontTex, pTexCoord.xy);\n"\
-		"	float sigDist = Median(Sample.r, Sample.g, Sample.b)-0.5f;\n"\
-		"	sigDist *= dot(mUnit, 0.5f/fwidth(pTexCoord.xy));\n"\
-		"	float a = clamp(sigDist+0.5f, 0.0f, 1.0f);\n"\
-		"	oColor = pColor*vec4(1.0f, 1.0f, 1.0f, a);\n"\
-		"}\n"\
-		"#module Pixel OpenGL2_1\n"\
-		"uniform sampler2D FontTex;\n"\
-		"varying vec4 pColor;\n"\
-		"varying vec4 pTexCoord;\n"\
-		"float Median(float r, float g, float b){\n"\
-		"	return max(min(r, g), min(max(r, g), b));\n"\
-		"}\n"\
-		"void main(void) {\n"\
-		"	vec2 mUnit = pTexCoord.zw;\n"\
-		"	vec4 Sample = texture2D(FontTex, pTexCoord.xy);\n"\
-		"	float sigDist = Median(Sample.r, Sample.g, Sample.b)-0.5f;\n"\
-		"	sigDist *= dot(mUnit, 0.5f/fwidth(pTexCoord.xy));\n"\
-		"	float a = clamp(sigDist+0.5, 0.0, 1.0);\n"\
-		"	gl_FragColor = pColor*vec4(1.0, 1.0, 1.0, a);\n"\
-		"}\n"\
-		"#module Pixel OpenGLES2\n"\
-		"uniform sampler2D FontTex;\n"\
-		"varying lowp vec4 pColor;\n"\
-		"varying lowp vec4 pTexCoord;\n"\
-		"float Median(float r, float g, float b){\n"\
-		"	return max(min(r, g), min(max(r, g), b));\n"\
-		"}\n"\
-		"void main(void) {\n"\
-		"	vec2 mUnit = pTexCoord.zw;\n"\
-		"	vec4 Sample = texture2D(FontTex, pTexCoord.xy);\n"\
-		"	float sigDist = Median(Sample.r, Sample.g, Sample.b)-0.5;\n"\
-		"	sigDist *= dot(mUnit, 0.5/fwidth(pTexCoord.xy));\n"\
-		"	float a = clamp(sigDist+0.5, 0.0, 1.0);\n"\
-		"	gl_FragColor = pColor*vec4(1.0, 1.0, 1.0, a);\n"\
-		"}\n";
-	return FontSource;
-
 }
 
 LWFont &LWFont::SetTexture(uint32_t TextureIndex, LWTexture *Tex) {

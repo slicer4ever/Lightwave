@@ -20,8 +20,8 @@ uint32_t LWSocket::MakeIP(const LWUTF8Iterator &Address) {
 	return (A << 24) | (B << 16) | (C << 8) | D;
 }
 
-bool LWSocket::MakeAddress(uint32_t Address, char *Buffer, uint32_t BufferLen){
-	return snprintf(Buffer, BufferLen, "%d.%d.%d.%d", ((Address >> 24) & 0xFF), ((Address >> 16) & 0xFF), ((Address >> 8) & 0xFF), (Address & 0xFF))==4;
+bool LWSocket::MakeAddress(uint32_t Address, char8_t *Buffer, uint32_t BufferLen){
+	return snprintf(Buffer, BufferLen, "%d.%d.%d.%d", ((Address >> 24) & 0xFF), ((Address >> 16) & 0xFF), ((Address >> 8) & 0xFF), (Address & 0xFF))>0;
 }
 
 uint32_t LWSocket::LookUpAddress(uint32_t Address, uint32_t *IPBuffer, uint32_t IPBufferLen, char *Addresses, uint32_t AddressLen){
@@ -105,10 +105,7 @@ void LWSocket::SplitURI(const LWUTF8Iterator &URI, uint16_t &Port, LWUTF8Iterato
 		}
 	}
 	if (!Domain.isInitialized()) Domain = LWUTF8Iterator(P, T);
-	if (*T == '/' || *T == '\\') {
-		T.Advance();
-		Path = LWUTF8Iterator(T.GetPosition(), URI.GetLast());
-	}
+	if (*T == '/' || *T == '\\') Path = LWUTF8Iterator(T.GetPosition(), URI.GetLast());
 
 	if (!Port) { //Decode protocol to port.
 		Port = DefaultPort;
@@ -380,7 +377,7 @@ uint32_t LWSocket::CreateSocket(LWSocket &Socket, uint32_t Flag, uint32_t Protoc
 }
 
 uint32_t LWSocket::CreateSocket(LWSocket &Socket, uint32_t RemoteIP, uint16_t RemotePort, uint32_t Flag, uint32_t ProtocolID){
-	return CreateSocket(Socket, RemoteIP, RemotePort, 0, (Flag|LWSocket::Tcp)&~LWSocket::Udp, ProtocolID);
+	return CreateSocket(Socket, RemoteIP, RemotePort, 0, Flag, ProtocolID);
 }
 
 uint32_t LWSocket::CreateSocket(LWSocket &Socket, const LWUTF8Iterator &Address, uint16_t RemotePort, uint32_t Flag, uint32_t ProtocolID){
@@ -404,15 +401,17 @@ bool LWSocket::Accept(LWSocket &Result) const{
 LWSocket &LWSocket::operator = (LWSocket &&Other){
 	m_UserData = Other.m_UserData;
 	std::copy(Other.m_ProtocolData, Other.m_ProtocolData + MaxProtocols, m_ProtocolData);
+	std::fill(Other.m_ProtocolData, Other.m_ProtocolData + MaxProtocols, nullptr);
 	m_SocketID = Other.m_SocketID;
 	m_ProtocolID = Other.m_ProtocolID;
+	m_SentBytes = Other.m_SentBytes;
+	m_RecvBytes = Other.m_RecvBytes;
 	m_LocalIP = Other.m_LocalIP;
 	m_RemoteIP = Other.m_RemoteIP;
 	m_Flag = Other.m_Flag;
 	m_RemotePort = Other.m_RemotePort;
 	m_LocalPort = Other.m_LocalPort;
 	Other.m_UserData = nullptr;
-	memset(Other.m_ProtocolData, 0, sizeof(void*)*MaxProtocols);
 	Other.m_SocketID = 0;
 	return *this;
 }
@@ -458,6 +457,14 @@ uint32_t LWSocket::GetFlag(void) const{
 	return m_Flag;
 }
 
+uint32_t LWSocket::GetSentBytes(void) const {
+	return m_SentBytes;
+}
+
+uint32_t LWSocket::GetRecvBytes(void) const {
+	return m_RecvBytes;
+}
+
 void *LWSocket::GetUserData(void) const{
 	return m_UserData;
 }
@@ -471,13 +478,13 @@ LWSocket::LWSocket() : m_UserData(nullptr), m_SocketID(0), m_Flag(0) {
 }
 
 
-LWSocket::LWSocket(LWSocket &&Other) : m_UserData(Other.m_UserData), m_SocketID(Other.m_SocketID), m_ProtocolID(Other.m_ProtocolID), m_LocalIP(Other.m_LocalIP), m_RemoteIP(Other.m_RemoteIP), m_Flag(Other.m_Flag), m_RemotePort(Other.m_RemotePort), m_LocalPort(Other.m_LocalPort){
+LWSocket::LWSocket(LWSocket &&Other) : m_UserData(Other.m_UserData), m_SocketID(Other.m_SocketID), m_ProtocolID(Other.m_ProtocolID), m_SentBytes(Other.m_SentBytes), m_RecvBytes(Other.m_RecvBytes), m_LocalIP(Other.m_LocalIP), m_RemoteIP(Other.m_RemoteIP), m_Flag(Other.m_Flag), m_RemotePort(Other.m_RemotePort), m_LocalPort(Other.m_LocalPort){
 	std::copy(Other.m_ProtocolData, Other.m_ProtocolData + MaxProtocols, m_ProtocolData);
+	std::fill(Other.m_ProtocolData, Other.m_ProtocolData + MaxProtocols, nullptr);
 	Other.m_UserData = nullptr;
-	memset(Other.m_ProtocolData, 0, sizeof(void*)*MaxProtocols);
 	Other.m_SocketID = 0;
 }
 
 LWSocket::LWSocket(uint32_t SocketID, uint32_t ProtocolID, uint32_t LocalIP, uint16_t LocalPort, uint32_t RemoteIP, uint16_t RemotePort, uint32_t Flag) : m_UserData(nullptr), m_SocketID(SocketID), m_ProtocolID(ProtocolID), m_LocalIP(LocalIP), m_RemoteIP(RemoteIP), m_Flag(Flag), m_RemotePort(RemotePort), m_LocalPort(LocalPort) {
-	memset(m_ProtocolData, 0, sizeof(void*)*MaxProtocols);
+	std::fill(m_ProtocolData, m_ProtocolData + MaxProtocols, nullptr);
 }

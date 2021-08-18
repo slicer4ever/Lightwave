@@ -81,7 +81,7 @@ public:
 		 \param IPBufferLen the number of ip addresses that can be written to the ip buffer.
 		 \param Addresses buffer to receive all addresses associated with the host, each address is seperated by a \0 character, the end of the addresses is marked with a zero length address.
 		 \param AddressLen the length of the address buffer.
-		 \return 0xFFFFFFFF on failure, otherwise number of ip's are returned.
+		 \return 0xFFFFFFFF on failure, otherwopise number of ip's are returned.
 	*/
 	static uint32_t LookUpAddress(const LWUTF8Iterator &Address, uint32_t *IPBuffer, uint32_t IPBufferLen, char8_t *Addresses, uint32_t AddressLen);
  
@@ -203,22 +203,22 @@ public:
 	/*!< \brief receives an amount of data upto the bufferlen.
 		 \return the amount of data written to buffer.
 	*/
-	uint32_t Receive(char *Buffer, uint32_t BufferLen) const;
+	uint32_t Receive(char *Buffer, uint32_t BufferLen);
 
 	/*!< \brief receives an amount of data upto the bufferlen, and also returns the senders ip and port to return data to.
 		 \return the amount of data written to buffer, or 0xFFFFFFFF if the connection has been closed from the other end.
 	*/
-	uint32_t Receive(char *Buffer, uint32_t BufferLen, uint32_t *RemoteIP, uint16_t *RemotePort) const;
+	uint32_t Receive(char *Buffer, uint32_t BufferLen, uint32_t *RemoteIP, uint16_t *RemotePort);
 
 	/*!< \brief sends an amount of data to the remote device, may not send all data in one step, so be sure to check the amount sent.
 		 \return the amount of data sent, or 0xFFFFFFFF if the connection has been closed from the other end..
 	*/
-	uint32_t Send(const char *Buffer, uint32_t BufferLen) const;
+	uint32_t Send(const char *Buffer, uint32_t BufferLen);
 
 	/*!< \brief sends an amount of data to a specified remote device, may not send all data in one step, so be sure to check the amount sent.
 		 \return the amount of data sent.
 	*/
-	uint32_t Send(char *Buffer, uint32_t BufferLen, uint32_t RemoteIP, uint16_t RemotePort) const;
+	uint32_t Send(char *Buffer, uint32_t BufferLen, uint32_t RemoteIP, uint16_t RemotePort);
 
 	/*!< \brief move operator. */
 	LWSocket &operator = (LWSocket &&Other);
@@ -256,6 +256,12 @@ public:
 	/*!< \brief returns the flags associated with the socket. */
 	uint32_t GetFlag(void) const;
 
+	/*!< \brief returns the number of bytes which the socket has sent over it's life time. */
+	uint32_t GetSentBytes(void) const;
+
+	/*!< \brief returns the number of bytes which the socket has recevied over it's life time. */
+	uint32_t GetRecvBytes(void) const;
+
 	/*!< \brief returns the user data associated with the socket. */
 	void *GetUserData(void) const;
 
@@ -279,6 +285,8 @@ private:
 	void *m_ProtocolData[MaxProtocols];
 	uint32_t m_SocketID = 0;
 	uint32_t m_ProtocolID = 0;
+	uint32_t m_SentBytes = 0;
+	uint32_t m_RecvBytes = 0;
 	uint32_t m_LocalIP = 0;
 	uint32_t m_RemoteIP = 0;
 	uint32_t m_Flag = 0;

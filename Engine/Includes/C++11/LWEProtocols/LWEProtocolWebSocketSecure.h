@@ -4,7 +4,7 @@
 #include "LWEProtocols/LWEProtocolWebSocket.h"
 #include <LWCore/LWTypes.h>
 
-class LWEProtocolWebSocketSecure : public LWEProtocolTLS, LWEProtocolWebSocket {
+class LWEProtocolWebSocketSecure : public LWEProtocolTLS, public LWEProtocolWebSocket {
 public:
 	enum {
 		PacketBufferSize = 64

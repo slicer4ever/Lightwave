@@ -12,6 +12,7 @@
 #include "LWEAsset.h"
 #include <iostream>
 #include <algorithm>
+#include "LWELogger.h"
 
 LWVector4f LWEUI::EvaluatePerPixelAttr(const LWUTF8Iterator &Value) {
 	LWVector4f Val = LWVector4f(0.0f);
@@ -85,21 +86,10 @@ LWEUI *LWEUI::XMLParseSubNodes(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIMa
 	if (StyleAttr) {
 		LWUTF8Iterator StyleName = ParseComponentAttribute(Buffer, sizeof(Buffer), StyleAttr->GetValue(), ActiveComponent, ActiveComponentNode);
 		auto Iter = StyleMap.find(StyleName.Hash());
-		if (Iter == StyleMap.end()) fmt::print("Error could not find style with name: '{}' | '{}'\n", StyleName, StyleAttr->GetValue());
+		if (Iter == StyleMap.end()) LWELogCritical<256>("could not find style with name: '{}' | '{}'", StyleName, StyleAttr->GetValue());
 		else Style = Iter->second;
 	}
-	uint32_t i = Node->GetName().CompareList("Label", "Button", "Rect", "TextInput", "ScrollBar", "ListBox", "RichLabel", "TreeList");
-	LWEUI *U = nullptr;
-
-	if (i == 0) U = LWEUILabel::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (i == 1) U = LWEUIButton::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (i == 2) U = LWEUIRect::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (i == 3) U = LWEUITextInput::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (i == 4) U = LWEUIScrollBar::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (i == 5) U = LWEUIListBox::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (i == 6) U = LWEUIRichLabel::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else if (i == 7) U = LWEUITreeList::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	else U = LWEUIComponent::XMLParse(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
+	LWEUI *U = Manager->DispatchXMLParser(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 	if (!U) return nullptr;
 	Manager->InsertUIAfter(U, UI, UI?UI->GetLastChild():Manager->GetLastUI());
 	return U;
@@ -133,7 +123,7 @@ bool LWEUI::XMLParse(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Man
 		for (uint32_t i = 0; i < FlagCnt; i++) {
 			uint32_t n = FlagIterList[i].AdvanceWord(true).CompareLista(TotalFlagCount, FlagNames);
 			if (n == -1) {
-				fmt::print("Unknown flag found: {} '{}' for: '{}'\n", i, FlagIterList[i], (NameAttr ? NameAttr->GetValue() : Node->GetName()));
+				LWELogCritical<256>("Unknown flag found: {} '{}' for: '{}'", i, FlagIterList[i], (NameAttr ? NameAttr->GetValue() : Node->GetName()));
 			} else Flag ^= FlagValues[n];
 		}
 	}
@@ -145,7 +135,7 @@ bool LWEUI::XMLParse(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Man
 				Name = NameBuffer;
 			}
 			if (!Manager->InsertNamedUI(Name, UI)) {
-				fmt::print("Conflict detected: {}\n", Name);
+				LWELogCritical<256>("Name Conflict detected: {}", Name);
 			}
 		}
 	}

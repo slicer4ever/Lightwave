@@ -321,6 +321,10 @@ bool LWVideoDriver_OpenGLES2::UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, cons
 	return true;
 }
 
+bool LWVideoDriver_OpenGLES2::UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const uint8_t *Buffer, uint32_t TypeSize, uint32_t Stride, uint32_t Count, uint32_t Offset) {
+	return false;
+}
+
 bool LWVideoDriver_OpenGLES2::DownloadTexture1D(LWTexture *Texture, uint32_t MipmapLevel, uint8_t *Buffer) {
 	return false;
 }

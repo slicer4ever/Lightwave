@@ -28,7 +28,7 @@ struct LWVector4{
 	/*! \brief returns a copy of the normalized vector4. */
 	LWVector4<Type> Normalize(void) const{
 		Type L = x*x + y*y + z*z + w*w;
-		if (L <= std::numeric_limits<Type>::epsilon()) L = 0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) L = 0;
 		else L = (Type)1 / (Type)sqrt(L);
 		return LWVector4<Type>(x*L, y*L, z*L, w*L);
 	}
@@ -58,6 +58,11 @@ struct LWVector4{
 		return std::max<Type>(std::max<Type>(std::max<Type>(x, y), z), w);
 	}
 
+	/*!< \brief returns the sum of all components of the vec4. */
+	Type Sum(void) const {
+		return x + y + z + w;
+	}
+
 	/*!< \brief returns the max of each component between this vector4 and A vector4 */
 	LWVector4<Type> Max(const LWVector4<Type> &A) const {
 		return LWVector4<Type>(std::max<Type>(x, A.x), std::max<Type>(y, A.y), std::max<Type>(z, A.z), std::max<Type>(w, A.w));
@@ -68,7 +73,7 @@ struct LWVector4{
 	*/
 	Type Length(void) const{
 		Type L = x*x + y*y + z*z + w*w;
-		if (L <= std::numeric_limits<Type>::epsilon()) return 0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) return 0;
 		return (Type)sqrt(L);
 	}
 
@@ -250,7 +255,7 @@ struct LWVector4{
 	}
 
 	bool operator == (const LWVector4<Type> &Rhs) const{
-		const Type e = std::numeric_limits<Type>::epsilon();
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
 		return (Type)abs(x - Rhs.x) <= e && (Type)abs(y - Rhs.y) <= e && (Type)abs(z - Rhs.z) <= e && (Type)abs(w - Rhs.w) <= e;
 	}
 
@@ -309,6 +314,76 @@ struct LWVector4{
 
 	friend LWVector4<Type> operator / (Type Lhs, const LWVector4<Type> &Rhs){
 		return LWVector4<Type>(Lhs / Rhs.x, Lhs / Rhs.y, Lhs / Rhs.z, Lhs / Rhs.w);
+	}
+
+	/*!< \brief returns xyz from A, and w from B. */
+	LWVector4<Type> AAAB(const LWVector4<Type> &B) const {
+		return { x, y, z, B.w };
+	}
+
+	/*!< \brief returns xyw from A(this), and z from B. */
+	LWVector4<Type> AABA(const LWVector4<Type> &B) const {
+		return { x, y, B.z, w };
+	}
+
+	/*!< \brief returns xy from A(this), and zw from B. */
+	LWVector4<Type> AABB(const LWVector4<Type> &B) const {
+		return { x, y, B.z, B.w };
+	}
+
+	/*!< \brief returns xzw from A(this), and y from B. */
+	LWVector4<Type> ABAA(const LWVector4<Type> &B) const {
+		return { x, B.y, z, w };
+	}
+
+	/*!< \brief returns xz from A(this), and yw from B. */
+	LWVector4<Type> ABAB(const LWVector4<Type> &B) const {
+		return { x, B.y, z, B.w };
+	}
+
+	/*!< \brief returns xw from A(this), and yz from B. */
+	LWVector4<Type> ABBA(const LWVector4<Type> &B) const {
+		return { x, B.y, B.z, w };
+	}
+
+	/*!< \brief returns x from A(this), and yzw from B. */
+	LWVector4<Type> ABBB(const LWVector4<Type> &B) const {
+		return { x, B.y, B.z, B.w };
+	}
+
+	/*!< \brief returns yzw from A(this), and x from B. */
+	LWVector4<Type> BAAA(const LWVector4<Type> &B) const {
+		return { B.x, y, z, w };
+	}
+
+	/*!< \brief returns yz from A(this), and xw from B. */
+	LWVector4<Type> BAAB(const LWVector4<Type> &B) const {
+		return { B.x, y, z, B.w };
+	}
+
+	/*!< \brief returns yw from A(this), and xz from B. */
+	LWVector4<Type> BABA(const LWVector4<Type> &B) const {
+		return { B.x, y, B.z, w };
+	}
+
+	/*!< \brief returns y from A(this), and xzw from B. */
+	LWVector4<Type> BABB(const LWVector4<Type> &B) const {
+		return { B.x, y, B.z, B.w };
+	}
+
+	/*!< \brief returns zw from A(this), and xy from B. */
+	LWVector4<Type> BBAA(const LWVector4<Type> &B) const {
+		return { B.x, B.y, z, w };
+	}
+
+	/*!< \brief returns z from A(this), and xyw from B. */
+	LWVector4<Type> BBAB(const LWVector4<Type> &B) const {
+		return { B.x, B.y, z, B.w };
+	}
+
+	/*!< \brief returns w from A(this), and xyz from B. */
+	LWVector4<Type> BBBA(const LWVector4<Type> &B) const {
+		return { B.x, B.y, B.z, w };
 	}
 
 	LWVector4<Type> xxxx(void) const {
@@ -1716,7 +1791,7 @@ struct LWVector3{
 	/*! \brief returns a copy of the normalized vector3. */
 	LWVector3<Type> Normalize(void) const{
 		Type L = x*x + y*y + z*z;
-		if (L <= std::numeric_limits<Type>::epsilon()) L = 0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) L = 0;
 		else L = (Type)1 / sqrt(L);
 		return LWVector3<Type>(x*L, y*L, z*L);
 	}
@@ -1744,6 +1819,11 @@ struct LWVector3{
 	/*!< \brief returns the max of each component between this vector3 and A vector3 */
 	LWVector3<Type> Max(const LWVector3<Type> &A) const {
 		return LWVector3<Type>(std::max<Type>(x, A.x), std::max<Type>(y, A.y), std::max<Type>(z, A.z));
+	}
+
+	/*!< \brief returns the sum of all components of the vec3. */
+	Type Sum(void) const {
+		return x + y + z;
 	}
 
 	/*!< \brief projects Pnt onto this vector and returns the projected result. */
@@ -1775,7 +1855,7 @@ struct LWVector3{
 	*/
 	Type Length(void) const{
 		Type L = x*x + y*y + z*z;
-		if (L <= std::numeric_limits<Type>::epsilon()) return 0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) return 0;
 		return (Type)sqrt(L);
 	}
 
@@ -1948,7 +2028,7 @@ struct LWVector3{
 	}
 
 	bool operator == (const LWVector3<Type> &Rhs) const{
-		const Type e = std::numeric_limits<Type>::epsilon();
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
 		return (Type)abs(x - Rhs.x) <= e && (Type)abs(y - Rhs.y) <= e && (Type)abs(z - Rhs.z) <= e;
 	}
 
@@ -2201,7 +2281,7 @@ struct LWVector2{
 	/*! \brief returns a copy of the normalized vector3. */
 	LWVector2<Type> Normalize(void) const{
 		Type L = x*x + y*y;
-		if (L <= std::numeric_limits<Type>::epsilon()) L = 0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) L = 0;
 		else L = (Type)1 / sqrt(L);
 		return LWVector2<Type>(x*L, y*L);
 	}
@@ -2229,6 +2309,11 @@ struct LWVector2{
 	/*!< \brief returns the max of each component between this vector2 and A vector2. */
 	LWVector2<Type> Max(const LWVector2<Type> &A) const {
 		return LWVector2<Type>(std::max<Type>(x, A.x), std::max<Type>(y, A.y));
+	}
+
+	/*!< \brief returns the sum of all components of the vec2. */
+	Type Sum(void) const {
+		return x + y;
 	}
 
 	/*! \brief returns the absolute value of each component. */
@@ -2287,7 +2372,7 @@ struct LWVector2{
 	*/
 	Type Length(void) const{
 		Type L = x*x + y*y;
-		if (L <= std::numeric_limits<Type>::epsilon()) return 0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) return 0;
 		return (Type)sqrt(L);
 	}
 
@@ -2511,5 +2596,6 @@ struct LWVector2{
 
 	LWVector2(Type f = 0) : x(f), y(f){}
 };
+
 /*! @} */
 #endif

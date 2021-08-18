@@ -146,7 +146,7 @@ LWSMatrix4<float> LWSMatrix4<float>::Inverse(void) const {
 	__m128 DyyyCy = _mm_blend_ps(Dyyyy, Cyyyy, 0x8);
 	__m128 CxxBxx = _mm_blend_ps(Cxxxx, Bxxxx, 0xC);
 	__m128 DxxxCx = _mm_blend_ps(Dxxxx, Cxxxx, 0x8);
-
+	
 	__m128 A2323_A2323_A1323_A1223 = _mm_sub_ps(_mm_mul_ps(Czzyy, Dwwwz), _mm_mul_ps(Cwwwz, Dzzyy));
 	__m128 A1323_A0323_A0323_A0223 = _mm_sub_ps(_mm_mul_ps(Cyxxx, Dwwwz), _mm_mul_ps(Cwwwz, Dyxxx));
 	__m128 A1223_A0223_A0123_A0123 = _mm_sub_ps(_mm_mul_ps(Cyxxx, Dzzyy), _mm_mul_ps(Czzyy, Dyxxx));
@@ -157,7 +157,7 @@ LWSMatrix4<float> LWSMatrix4<float>::Inverse(void) const {
 	__m128 A0323_A0323_A0313_A0312 = _mm_sub_ps(_mm_mul_ps(CxxBxx, DwwwCw), _mm_mul_ps(CwwBww, DxxxCx));
 	__m128 A0223_A0223_A0213_A0212 = _mm_sub_ps(_mm_mul_ps(CxxBxx, DzzzCz), _mm_mul_ps(CzzBzz, DxxxCx));
 	__m128 A0123_A0123_A0113_A0112 = _mm_sub_ps(_mm_mul_ps(CxxBxx, DyyyCy), _mm_mul_ps(CyyByy, DxxxCx));
-
+	
 	__m128 NegA = _mm_set_ps(0.0f, -0.0f, 0.0f, -0.0f);
 	__m128 NegB = _mm_set_ps(-0.0f, 0.0f, -0.0f, 0.0f);
 
@@ -171,15 +171,15 @@ LWSMatrix4<float> LWSMatrix4<float>::Inverse(void) const {
 	__m128 Det = _mm_xor_ps(_mm_mul_ps(_mm_add_ps(_mm_sub_ps(PtA, PtB), Ptc), A), NegA);
 	Det = _mm_hadd_ps(Det, Det);
 	Det = _mm_hadd_ps(Det, Det);
+	//std::cout << "Det: " << LWSVector4<float>(Det) << std::endl;
 	__m128 rDet = _mm_div_ps(One, Det);
 	rDet = _mm_blendv_ps(rDet, Zero, _mm_cmple_ps(_mm_andnot_ps(_mm_set_ps1(-0.0f), Det), e));
-
-
 
 	__m128 ByAyyy = _mm_blend_ps(Byyyy, Ayyyy, 0xE);
 	__m128 BzAzzz = _mm_blend_ps(Bzzzz, Azzzz, 0xE);
 	__m128 BwAwww = _mm_blend_ps(Bwwww, Awwww, 0xE);
 	__m128 BxAxxx = _mm_blend_ps(Bxxxx, Axxxx, 0xE);
+
 	A = _mm_mul_ps(rDet, _mm_xor_ps(NegA, _mm_add_ps(_mm_sub_ps(_mm_mul_ps(ByAyyy, A2323_A2323_A2313_A2312), _mm_mul_ps(BzAzzz, A1323_A1323_A1313_A1312)), _mm_mul_ps(BwAwww, A1223_A1223_A1213_A1212))));
 	//A = (ByAyyy * A2323_A2323_A2313_A2312 - BzAzzz * A1323_A1323_A1313_A1312 + BwAwww * A1223_A1223_A1213_A1212) * MulA * Det;
 	B = _mm_mul_ps(rDet, _mm_xor_ps(NegB, _mm_add_ps(_mm_sub_ps(_mm_mul_ps(BxAxxx, A2323_A2323_A2313_A2312), _mm_mul_ps(BzAzzz, A0323_A0323_A0313_A0312)), _mm_mul_ps(BwAwww, A0223_A0223_A0213_A0212))));

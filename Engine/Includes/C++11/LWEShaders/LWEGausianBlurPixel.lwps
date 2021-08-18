@@ -1,0 +1,43 @@
+R"(#module Pixel OpenGL4_5 OpenGL3_3
+#version 440
+#define GLOBALDATA
+#include "Structures"
+#module Pixel DirectX11_1
+static const uint KernelSize = 5;
+
+struct Pixel {
+	float4 Position : SV_POSITION;
+	float2 UVCoords[KernelSize] : TEXCOORD0;
+};
+
+Texture2D BlurTex;
+SamplerState BlurSmp;
+float4 main(Pixel In) : SV_TARGET{
+	LWEPassData PD = PassData[PassID];
+	float4 Factor = PD.SubPassData[SubPassID];
+	float4 Color;
+	float Scalar = (1.0f + (SinTime+1.0f)*0.25f);
+	Color  = BlurTex.Sample(BlurSmp, In.UVCoords[0])*Factor.x * Scalar;
+	Color += BlurTex.Sample(BlurSmp, In.UVCoords[1])*Factor.y * Scalar;
+	Color += BlurTex.Sample(BlurSmp, In.UVCoords[2])*Factor.z * Scalar;
+	Color += BlurTex.Sample(BlurSmp, In.UVCoords[3])*Factor.y * Scalar;
+	Color += BlurTex.Sample(BlurSmp, In.UVCoords[4])*Factor.x * Scalar;
+	return Color;
+}
+#module Pixel OpenGL3_3 OpenGL4_5
+const uint KernelSize = 5;
+
+in vec2 pUVCoords[KernelSize];
+uniform sampler2D BlurTex;
+out vec4 oColor;
+void main(void){
+	LWEPassData PD = PassData[PassID];
+	vec4 Factor = PD.SubPassData[SubPassID];
+	float Scalar = (1.0f + (SinTime+1.0f)*0.25f);
+	oColor  = texture(BlurTex, pUVCoords[0])*Factor.x * Scalar;
+	oColor += texture(BlurTex, pUVCoords[1])*Factor.y * Scalar;
+	oColor += texture(BlurTex, pUVCoords[2])*Factor.z * Scalar;
+	oColor += texture(BlurTex, pUVCoords[3])*Factor.y * Scalar;
+	oColor += texture(BlurTex, pUVCoords[4])*Factor.x * Scalar;
+	return;
+})",

@@ -1,0 +1,393 @@
+R"(#module Pixel OpenGL4_5 OpenGL3_3
+#version 440
+#define MODELDATA
+#define PBRPIXELDATA
+#define LIGHTDATA
+#define GLOBALDATA
+#define PASSDATA
+#define SAMPLEFUNCS
+#define PBRLIGHTFUNCS
+#define NOTRANSFORM
+#include "Structures"
+#include "Utilitys"
+#include "LightUtilitys"
+#module Pixel DirectX11_1
+
+static const uint PBRNormalTexID = 0;
+static const uint PBROcclussionTexID = 1;
+static const uint PBREmissiveTexID = 2;
+static const uint PBREmissiveFactorID = 2;
+
+Texture2D PBRNormalTex;
+Texture2D PBROcclussionTex;
+Texture2D PBREmissiveTex;
+
+SamplerState PBRNormalSmp;
+SamplerState PBROcclussionSmp;
+SamplerState PBREmissiveSmp;
+
+struct oPixel {
+	float4 Color : SV_TARGET0;
+	float4 Emissive : SV_TARGET1;
+};
+
+#ifdef PBRUNLIT
+static const uint PBRUnlitTexID = 3;
+static const uint PBRUnlitColorID = 0;
+Texture2D PBRColorTex;
+SamplerState PBRColorSmp;
+
+struct PBRMaterial{
+	float4 Diffuse;
+};
+
+PBRMaterial PrepareMaterial(Pixel p, LWEModelS Material, float3 Normal, float3 View, inout float Alpha){
+	PBRMaterial R;
+	R.Diffuse =  Material.MaterialData[PBRUnlitColorID];
+	R.Diffuse *= SampleIf(PBRColorTex, PBRColorSmp, PBRUnlitTexID, Material.HasTextureFlag, p.TexCoords[PBRUnlitTexID]);
+	Alpha = Alpha * R.Diffuse.a;
+	return R;
+}
+
+void FinalizeMaterial(LWEModelS Material, PBRMaterial PBRMat, inout oPixel Result) {
+	Result.Color = PBRMat.Diffuse;
+}
+
+#elif PBRMETALLICROUGHNESS
+static const uint PBRMRAlbedoTexID = 3;
+static const uint PBRMRTexID = 4;
+static const uint PBRMRAlbedoID = 0;
+static const uint PBRMRFactorID = 1;
+
+Texture2D PBRAlbedoTex;
+Texture2D PBRMRTex;
+SamplerState PBRAlbedoSmp;
+SamplerState PBRMRSmp;
+
+struct PBRMaterial{
+	float4 Diffuse;
+	float4 Reflect0;
+	float4 Reflect90;
+	float pRoughness;
+	float aRoughness;
+};
+
+PBRMaterial PrepareMaterial(Pixel p, LWEModelS Material, float3 Normal, float3 View, inout float Alpha) {
+	const float4 F0 = float4(0.04f, 0.04f, 0.04f, 0.04f);
+	const float4 black = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	
+	float4 Albedo = Material.MaterialData[PBRMRAlbedoID] * SampleIf(PBRAlbedoTex, PBRAlbedoSmp, PBRMRAlbedoTexID, Material.HasTextureFlag, p.TexCoords[PBRMRAlbedoTexID]);
+	float4 MRSmp = SampleIf(PBRMRTex, PBRMRSmp, PBRMRTexID, Material.HasTextureFlag, p.TexCoords[PBRMRTexID]);
+	float Metallic = Material.MaterialData[PBRMRFactorID].x*MRSmp.b;
+	float Roughness = Material.MaterialData[PBRMRFactorID].y*MRSmp.g;
+	
+	PBRMaterial R;
+	float A = Roughness*Roughness;
+	R.pRoughness = Roughness;
+	R.aRoughness = A*A;
+	R.Diffuse = lerp(Albedo*(1.0f-F0), black, Metallic);
+	R.Reflect0 = lerp(F0, Albedo, Metallic);
+	float Reflection = saturate(max(max(R.Reflect0.r, R.Reflect0.g), R.Reflect0.b)*50.0f);
+	R.Reflect90 = float4(Reflection, Reflection, Reflection, Reflection);
+	Alpha = Alpha*Albedo.a;
+	return R;
+}
+
+
+float4 ProcessLight(LWELightS L, LWEPBRLightResult LR, PBRMaterial Mat){
+	const float pi = 3.1415926535897932384626433832795f;
+	float A2 = Mat.aRoughness;
+	float4 F = Mat.Reflect0 + (Mat.Reflect90-Mat.Reflect0)*pow(saturate(1.0f-LR.VdotH), 5.0f);
+	
+    float GGXV = LR.NdotL*sqrt(LR.NdotV * LR.NdotV * (1.0 - A2) +A2);
+    float GGXL = LR.NdotV*sqrt(LR.NdotL * LR.NdotL * (1.0 - A2) +A2);
+	float G = max(GGXV+GGXL, 0.0f);
+	if(G>0.0f) G = 0.5f/G;
+	float K = (LR.NdotH*A2-LR.NdotH)*LR.NdotH+1.0f;
+	float D = A2/(pi*K*K);
+	float4 fSpecular = F*G*D;
+	float4 fDiffuse = (1.0f-F)*(Mat.Diffuse/pi);
+	return float4(L.Color.xyz, 1.0f) * L.Color.w * LR.Att*LR.NdotL*(fSpecular+fDiffuse);
+}
+
+void FinalizeMaterial(LWEModelS Material, PBRMaterial PBRMat, inout oPixel Result) {
+	return;
+}
+
+
+#elif PBRSPECULARGLOSSINESS
+static const uint PBRSGDiffuseTexID = 3;
+static const uint PBRSGSpecularTexID = 4;
+static const uint PBRSGDiffuseID = 0;
+static const uint PBRSGSpecularID = 1;
+
+Texture2D PBRSGDiffuseTex;
+Texture2D PBRSGSpecularTex;
+SamplerState PBRSGDiffuseSmp;
+SamplerState PBRSGSpecularSmp;
+
+struct PBRMaterial{
+	float4 Diffuse;
+	float4 Reflect0;
+	float4 Reflect90;
+	float pRoughness;
+	float aRoughness;
+};
+
+PBRMaterial PrepareMaterial(Pixel p, LWEModelS Material, float3 Normal, float3 View, inout float Alpha) {
+	float4 Diff = Material.MaterialData[PBRSGDiffuseID] * SampleIf(PBRSGDiffuseTex, PBRSGDiffuseSmp, PBRSGDiffuseTexID, Material.HasTextureFlag, p.TexCoords[PBRSGDiffuseID]);
+	float4 Spec = Material.MaterialData[PBRSGSpecularID] * SampleIf(PBRSGSpecularTex, PBRSGSpecularSmp, PBRSGSpecularTexID, Material.HasTextureFlag, p.TexCoords[PBRSGSpecularID]);
+	
+	PBRMaterial R;
+	float Roughness = (1.0f-Spec.w);
+	float Metallic = max(max(Spec.r, Spec.g), Spec.b);
+	float Reflectance = saturate(Metallic*50.0f);
+	float A = Roughness*Roughness;
+	R.pRoughness = Roughness;
+	R.aRoughness = A*A;
+	R.Diffuse = Diff*(1.0f-Metallic);
+	
+	R.Reflect0 = Spec;
+	R.Reflect90 = float4(Reflectance, Reflectance, Reflectance, Reflectance);
+	Alpha = Alpha*Diff.a;
+	return R;
+}
+
+
+float4 ProcessLight(LWELightS L, LWEPBRLightResult LR, PBRMaterial Mat){
+	const float pi = 3.1415926535897932384626433832795f;
+	float A2 = Mat.aRoughness;
+	float4 F = Mat.Reflect0 + (Mat.Reflect90-Mat.Reflect0)*pow(saturate(1.0f-LR.VdotH), 5.0f);
+	
+    float GGXV = LR.NdotL*sqrt(LR.NdotV * LR.NdotV * (1.0 - A2) +A2);
+    float GGXL = LR.NdotV*sqrt(LR.NdotL * LR.NdotL * (1.0 - A2) +A2);
+	float G = max(GGXV+GGXL, 0.0f);
+	if(G>0.0f) G = 0.5f/G;
+	float K = (LR.NdotH*A2-LR.NdotH)*LR.NdotH+1.0f;
+	float D = A2/(pi*K*K);
+	float4 fSpecular = F*G*D;
+	float4 fDiffuse = (1.0f-F)*(Mat.Diffuse/pi);
+	return float4(L.Color.xyz, 1.0f) * L.Color.w * LR.Att*LR.NdotL*(fSpecular+fDiffuse);
+}
+
+void FinalizeMaterial(LWEModelS Material, PBRMaterial PBRMat, inout oPixel Result) {
+	return;
+}
+#endif
+
+
+oPixel main(in Pixel p) {
+	LWEGeometryBucketData GeomBucket = GetGeometryBucket();
+	LWEModelS ModelData = LWEModel[p.ModelIndex];
+	oPixel Result;
+	float3 nViewDir = normalize((MatrixPosition(GeomBucket.ViewTransform) - p.WPosition).xyz);
+	Result.Emissive = ModelData.MaterialData[PBREmissiveFactorID] * SampleIf(PBREmissiveTex, PBREmissiveSmp, PBREmissiveTexID, ModelData.HasTextureFlag, p.TexCoords[PBREmissiveTexID]);
+	Result.Color = Result.Emissive;
+	float AOcclusion = SampleIf(PBROcclussionTex, PBROcclussionSmp, PBROcclussionTexID, ModelData.HasTextureFlag, p.TexCoords[PBROcclussionTexID]).r;
+	float Alpha = p.Transparency;
+	float3 SurfaceNormal = normalize(p.TBN[2]);
+	float3 Normal = SampleIf(PBRNormalTex, PBRNormalSmp, PBRNormalTexID, ModelData.HasTextureFlag, p.TexCoords[PBRNormalTexID], float4(0.5f, 0.5f, 1.0f, 0.5f)).xyz*2.0f-1.0f;
+	Normal = normalize(mul(Normal, p.TBN));
+	
+	PBRMaterial PMat = PrepareMaterial(p, ModelData, Normal, nViewDir, Alpha);
+	if(Alpha<0.01f) discard;
+#ifndef PBRUNLIT
+	[loop][fastopt]
+	for(uint i=0;i<LightCount;i++){
+		LWELightS L = LWELights[i];
+		LWEPBRLightResult R = doLighting(L, AOcclusion, p.WPosition.xyz, SurfaceNormal, Normal, nViewDir);
+#ifdef SHADOWMAP
+		doShadows(L, p.SPosition, R.SNdotL, R.Att);
+#endif
+		Result.Color += ProcessLight(L, R, PMat);
+	}
+#endif
+	FinalizeMaterial(ModelData, PMat, Result);
+	Result.Emissive = Result.Emissive*float4(1.0f, 1.0f, 1.0f, Alpha);
+	Result.Color = Result.Color*float4(1.0f, 1.0f, 1.0f, Alpha);
+	return Result;
+}
+
+#module Pixel OpenGL4_5 OpenGL3_3
+const uint PBRNormalTexID = 0;
+const uint PBROcclussionTexID = 1;
+const uint PBREmissiveTexID = 2;
+const uint PBREmissiveFactorID = 2;
+
+in Pixel p;
+flat in int ModelIndex;
+out vec4 oColor;
+out vec4 oEmissive;
+
+uniform sampler2D PBRNormalTex;
+uniform sampler2D PBROcclussionTex;
+uniform sampler2D PBREmissiveTex;
+
+#ifdef PBRUNLIT
+const uint PBRUnlitTexID = 3;
+const uint PBRUnlitColorID = 0;
+uniform sampler2D PBRColorTex;
+
+struct PBRMaterial {
+	vec4 Diffuse;
+};
+
+PBRMaterial PrepareMaterial(LWEModelS Material, vec3 Normal, vec3 View, inout float Alpha){
+	PBRMaterial R;
+	R.Diffuse =  Material.MaterialData[PBRUnlitColorID];
+	R.Diffuse *= SampleIf(PBRColorTex, PBRUnlitTexID, Material.HasTextureFlag, p.TexCoords[PBRUnlitTexID]);
+	Alpha = Alpha * R.Diffuse.a;
+	return R;
+}	
+
+void FinalizeMaterial(LWEModelS Material, PBRMaterial PBRMat) {
+	oColor = PBRMat.Diffuse;
+}
+
+
+#elif PBRMETALLICROUGHNESS
+
+const uint PBRMRAlbedoTexID = 3;
+const uint PBRMRTexID = 4;
+const uint PBRMRAlbedoID = 0;
+const uint PBRMRFactorID = 1;
+
+uniform sampler2D PBRAlbedoTex;
+uniform sampler2D PBRMRTex;
+
+struct PBRMaterial{
+	vec4 Diffuse;
+	vec4 Reflect0;
+	vec4 Reflect90;
+	float pRoughness;
+	float aRoughness;
+};
+
+PBRMaterial PrepareMaterial(LWEModelS Material, vec3 Normal, vec3 View, inout float Alpha) {
+	const vec4 F0 = vec4(0.04f, 0.04f, 0.04f, 0.04f);
+	const vec4 black = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	
+	vec4 Albedo = Material.MaterialData[PBRMRAlbedoID] * SampleIf(PBRAlbedoTex, PBRMRAlbedoTexID, Material.HasTextureFlag, p.TexCoords[PBRMRAlbedoTexID]);
+	vec4 MRSmp = SampleIf(PBRMRTex, PBRMRTexID, Material.HasTextureFlag, p.TexCoords[PBRMRTexID]);
+	float Metallic = Material.MaterialData[PBRMRFactorID].x*MRSmp.b;
+	float Roughness = Material.MaterialData[PBRMRFactorID].y*MRSmp.g;
+	
+	PBRMaterial R;
+	float A = Roughness*Roughness;
+	R.pRoughness = Roughness;
+	R.aRoughness = A*A;
+	R.Diffuse = mix(Albedo*(1.0f-F0), black, Metallic);
+	R.Reflect0 = mix(F0, Albedo, Metallic);
+	float Reflection = clamp(max(max(R.Reflect0.r, R.Reflect0.g), R.Reflect0.b)*50.0f, 0.0f, 1.0f);
+	R.Reflect90 = vec4(Reflection, Reflection, Reflection, Reflection);
+	Alpha = Alpha*Albedo.a;
+	return R;
+}
+
+vec4 ProcessLight(LWELightS L, LWEPBRLightResult LR, PBRMaterial Mat){
+	const float pi = 3.1415926535897932384626433832795f;
+	float A2 = Mat.aRoughness;
+	vec4 F = Mat.Reflect0 + (Mat.Reflect90-Mat.Reflect0)*pow(clamp(1.0f-LR.VdotH, 0.0f, 1.0f), 5.0f);
+	
+    float GGXV = LR.NdotL*sqrt(LR.NdotV * LR.NdotV * (1.0 - A2) +A2);
+    float GGXL = LR.NdotV*sqrt(LR.NdotL * LR.NdotL * (1.0 - A2) +A2);
+	float G = max(GGXV+GGXL, 0.0f);
+	if(G>0.0f) G = 0.5f/G;
+	float K = (LR.NdotH*A2-LR.NdotH)*LR.NdotH+1.0f;
+	float D = A2/(pi*K*K);
+	vec4 fSpecular = F*G*D;
+	vec4 fDiffuse = (1.0f-F)*(Mat.Diffuse/pi);
+	return vec4(L.Color.xyz, 1.0f) * L.Color.w * LR.Att*LR.NdotL*(fSpecular+fDiffuse);
+}
+
+void FinalizeMaterial(LWEModelS Material, PBRMaterial PBRMat) {
+	return;
+}
+
+#elif PBRSPECULARGLOSSINESS
+const uint PBRSGDiffuseTexID = 3;
+const uint PBRSGSpecularTexID = 4;
+const uint PBRSGDiffuseID = 0;
+const uint PBRSGSpecularID = 1;
+
+uniform sampler2D PBRSGDiffuseTex;
+uniform sampler2D PBRSGSpecularTex;
+
+struct PBRMaterial{
+	vec4 Diffuse;
+	vec4 Reflect0;
+	vec4 Reflect90;
+	float pRoughness;
+	float aRoughness;
+};
+
+PBRMaterial PrepareMaterial(LWEModelS Material, vec3 Normal, vec3 View, inout float Alpha) {
+	vec4 Diff = Material.MaterialData[PBRSGDiffuseID] * SampleIf(PBRSGDiffuseTex, PBRSGDiffuseTexID, Material.HasTextureFlag, p.TexCoords[PBRSGDiffuseID]);
+	vec4 Spec = Material.MaterialData[PBRSGSpecularID] * SampleIf(PBRSGSpecularTex, PBRSGSpecularTexID, Material.HasTextureFlag, p.TexCoords[PBRSGSpecularID]);
+	
+	PBRMaterial R;
+	float Roughness = (1.0f-Spec.w);
+	float Metallic = max(max(Spec.r, Spec.g), Spec.b);
+	float Reflectance = clamp(Metallic*50.0f, 0.0f, 1.0f);
+	float A = Roughness*Roughness;
+	R.pRoughness = Roughness;
+	R.aRoughness = A*A;
+	R.Diffuse = Diff*(1.0f-Metallic);
+	
+	R.Reflect0 = Spec;
+	R.Reflect90 = vec4(Reflectance, Reflectance, Reflectance, Reflectance);
+	Alpha = Alpha*Diff.a;
+	return R;
+}
+
+vec4 ProcessLight(LWELightS L, LWEPBRLightResult LR, PBRMaterial Mat){
+	const float pi = 3.1415926535897932384626433832795f;
+	float A2 = Mat.aRoughness;
+	vec4 F = Mat.Reflect0 + (Mat.Reflect90-Mat.Reflect0)*pow(clamp(1.0f-LR.VdotH, 0.0f, 1.0f), 5.0f);
+	
+    float GGXV = LR.NdotL*sqrt(LR.NdotV * LR.NdotV * (1.0 - A2) +A2);
+    float GGXL = LR.NdotV*sqrt(LR.NdotL * LR.NdotL * (1.0 - A2) +A2);
+	float G = max(GGXV+GGXL, 0.0f);
+	if(G>0.0f) G = 0.5f/G;
+	float K = (LR.NdotH*A2-LR.NdotH)*LR.NdotH+1.0f;
+	float D = A2/(pi*K*K);
+	vec4 fSpecular = F*G*D;
+	vec4 fDiffuse = (1.0f-F)*(Mat.Diffuse/pi);
+	return vec4(L.Color.xyz, 1.0f) * L.Color.w * LR.Att*LR.NdotL*(fSpecular+fDiffuse);
+}
+
+void FinalizeMaterial(LWEModelS Material, PBRMaterial PBRMat) {
+	return;
+}
+#endif
+
+void main(void) {
+	LWEGeometryBucketData GeomBucket = GetGeometryBucket();
+	LWEModelS ModelData = LWEModelD[ModelIndex];
+
+	vec3 nViewDir = normalize((MatrixPosition(GeomBucket.ViewTransform) - p.WPosition).xyz);
+	oEmissive = ModelData.MaterialData[PBREmissiveFactorID] * SampleIf(PBREmissiveTex, PBREmissiveTexID, ModelData.HasTextureFlag, p.TexCoords[PBREmissiveTexID]);
+	oColor = oEmissive;
+	float Alpha = p.Transparency;
+	float AOcclusion = SampleIf(PBROcclussionTex, PBROcclussionTexID, ModelData.HasTextureFlag, p.TexCoords[PBROcclussionTexID]).r;
+	vec3 SurfaceNormal = normalize(p.TBN[2]);
+	vec3 Normal = SampleIf(PBRNormalTex, PBRNormalTexID, ModelData.HasTextureFlag, p.TexCoords[PBRNormalTexID], vec4(0.5f, 0.5f, 1.0f, 0.5f)).xyz*2.0f-1.0f;
+	Normal = normalize(p.TBN*Normal);
+	
+	PBRMaterial PMat = PrepareMaterial(ModelData, Normal, nViewDir, Alpha);
+	if(Alpha<0.01f) discard;
+#ifndef PBRUNLIT
+	for(uint i=0;i<LightCount;i++){
+		LWELightS L = LWELightsD[i];
+		LWEPBRLightResult R = doLighting(L, AOcclusion, p.WPosition.xyz, SurfaceNormal, Normal, nViewDir);
+#ifdef SHADOWMAP
+		doShadows(L, p.SPosition, R.SNdotL, R.Att);
+#endif
+		oColor += ProcessLight(L, R, PMat);
+	}
+#endif
+	FinalizeMaterial(ModelData, PMat);
+	oEmissive = oEmissive*vec4(1.0f, 1.0f, 1.0f, Alpha);
+	oColor = oColor*vec4(1.0f, 1.0f, 1.0f, Alpha);
+	return;
+})",

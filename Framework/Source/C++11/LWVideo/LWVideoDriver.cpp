@@ -19,6 +19,10 @@
 #include <algorithm>
 #include <cstdarg>
 
+//LWPipelineInputStream:
+LWPipelineInputStream::LWPipelineInputStream(LWVideoBuffer *Buffer, uint32_t Offset, uint32_t Stride) : m_Buffer(Buffer), m_Offset(Offset), m_Stride(Stride) {}
+
+//LWVideoDriver:
 uint32_t LWVideoDriver::FindModule(const LWUTF8Iterator &ShaderCode, const LWUTF8Iterator &Environment, const LWUTF8Iterator &ModuleName, uint32_t DefinedCount, const LWUTF8Iterator *DefinedList, char8_t *ModuleBuffer, uint32_t ModuleBufferLen) {
 	const uint32_t MaxDefineTable = 256;
 	const uint32_t MaxModules = 256;
@@ -298,8 +302,9 @@ bool LWVideoDriver::UpdatePipelineStages(LWPipeline *Pipeline) {
 		InternalPipeline->BuildMappings();
 		m_PipelineMap.emplace(PipelineHash, InternalPipeline);
 	} else InternalPipeline = Res->second;
+	
 	ClonePipeline(Pipeline, InternalPipeline);
-	Pipeline->SetFlag(Flag&~LWPipeline::DirtyStages);
+	Pipeline->SetFlag((Flag&~LWPipeline::DirtyStages) | LWPipeline::Dirty);
 	return true;
 }
 
@@ -314,7 +319,7 @@ bool LWVideoDriver::SetFrameBuffer(LWFrameBuffer *Buffer, bool ChangeViewport) {
 	return true;
 }
 
-bool LWVideoDriver::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *Vertices, LWVideoBuffer *Indices, uint32_t VerticeStride, uint32_t Offset){
+bool LWVideoDriver::SetPipeline(LWPipeline *Pipeline, LWPipelineInputStream *InputStreamBuffers, LWVideoBuffer *Indices, LWVideoBuffer *IndirectBuffer){
 	bool Dirty = Pipeline->isDirty();
 	uint64_t Flag = Pipeline->GetFlag();
 	Dirty = UpdatePipelineStages(Pipeline) || Dirty;
@@ -422,14 +427,32 @@ bool LWVideoDriver::UpdateTextureCubeArray(LWTexture *Texture, uint32_t MipmapLe
 	return UpdateTextureCubeArray(Texture, MipmapLevel, Layer, Face, Texels, LWVector2i(), LWImage::MipmapSize2D(Texture->Get2DSize(), MipmapLevel));
 }
 
+LWVideoDriver &LWVideoDriver::DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t Offset) {
+	LWPipelineInputStream InputStreams[LWShader::MaxInputs];
+	Pipeline->MakeInterleavedInputStream(InputStreams, nullptr, InputBlock, VertexStride, LWShader::MaxInputs);
+	return DrawBuffer(Pipeline, DrawMode, InputStreams, IndexBuffer, Count, Offset);
+}
+
+LWVideoDriver &LWVideoDriver::DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWPipelineInputStream *InstanceStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t InstanceCount, uint32_t Offset) {
+	LWPipelineInputStream InputStreams[LWShader::MaxInputs];
+	Pipeline->MakeInterleavedInputStream(InputStreams, InstanceStreams, InputBlock, VertexStride, LWShader::MaxInputs);
+	return DrawInstancedBuffer(Pipeline, DrawMode, InputStreams, IndexBuffer, Count, InstanceCount, Offset);
+}
+
+LWVideoDriver &LWVideoDriver::DrawIndirectBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWPipelineInputStream *InstanceStreams, LWVideoBuffer *IndexBuffer, LWVideoBuffer *IndirectBuffer, uint32_t IndirectCount, uint32_t VertexStride, uint32_t IndirectOffset) {
+	LWPipelineInputStream InputStreams[LWShader::MaxInputs];
+	Pipeline->MakeInterleavedInputStream(InputStreams, InstanceStreams, InputBlock, VertexStride, LWShader::MaxInputs);
+	return DrawIndirectBuffer(Pipeline, DrawMode, InputStreams, IndexBuffer, IndirectBuffer, IndirectCount, IndirectOffset);
+}
+
 LWVideoDriver &LWVideoDriver::DrawMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh){
 	Mesh->ClearFinished();
 	return DrawBuffer(Pipeline, DrawMode, Mesh->GetVertexBuffer(), Mesh->GetIndiceBuffer(), Mesh->GetRenderCount(), Mesh->GetTypeSize());
 }
 
-LWVideoDriver &LWVideoDriver::DrawInstancedMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh, uint32_t InstanceCount) {
+LWVideoDriver &LWVideoDriver::DrawInstancedMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh, LWPipelineInputStream *InstanceStreams, uint32_t InstanceCount) {
 	Mesh->ClearFinished();
-	return DrawInstancedBuffer(Pipeline, DrawMode, Mesh->GetVertexBuffer(), Mesh->GetIndiceBuffer(), Mesh->GetRenderCount(), Mesh->GetTypeSize(), InstanceCount, 0);
+	return DrawInstancedBuffer(Pipeline, DrawMode, Mesh->GetVertexBuffer(), InstanceStreams, Mesh->GetIndiceBuffer(), Mesh->GetRenderCount(), Mesh->GetTypeSize(), InstanceCount, 0);
 }
 
 LWVideoDriver &LWVideoDriver::DrawMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh, uint32_t Count, uint32_t Offset){
@@ -437,9 +460,9 @@ LWVideoDriver &LWVideoDriver::DrawMesh(LWPipeline *Pipeline, int32_t DrawMode, L
 	return DrawBuffer(Pipeline, DrawMode, Mesh->GetVertexBuffer(), Mesh->GetIndiceBuffer(), Count, Mesh->GetTypeSize(), Offset);
 }
 
-LWVideoDriver &LWVideoDriver::DrawInstancedMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh, uint32_t Count, uint32_t InstanceCount, uint32_t Offset) {
+LWVideoDriver &LWVideoDriver::DrawInstancedMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh, LWPipelineInputStream *InstanceStreams, uint32_t Count, uint32_t InstanceCount, uint32_t Offset) {
 	Mesh->ClearFinished();
-	return DrawInstancedBuffer(Pipeline, DrawMode, Mesh->GetVertexBuffer(), Mesh->GetIndiceBuffer(), Count, Mesh->GetTypeSize(), InstanceCount, Offset);
+	return DrawInstancedBuffer(Pipeline, DrawMode, Mesh->GetVertexBuffer(), InstanceStreams, Mesh->GetIndiceBuffer(), Count, Mesh->GetTypeSize(), InstanceCount, Offset);
 }
 
 LWVideoDriver &LWVideoDriver::UpdateMesh(LWBaseMesh *Mesh){
@@ -451,7 +474,7 @@ LWVideoDriver &LWVideoDriver::UpdateMesh(LWBaseMesh *Mesh){
 	return *this;
 }
 
-bool LWVideoDriver::UpdateVideoBuffer(LWVideoBuffer *Buffer){
+bool LWVideoDriver::UpdateVideoBuffer(LWVideoBuffer *Buffer) {
 	bool Dirty = Buffer->isDirty();
 	if (!Dirty) return Dirty;
 	bool Res = UpdateVideoBuffer(Buffer, Buffer->GetLocalBuffer(), Buffer->GetEditLength());
@@ -556,11 +579,15 @@ LWVideoDriver &LWVideoDriver::Present(uint32_t SwapInterval) {
 	return *this;
 }
 
-LWVideoDriver &LWVideoDriver::DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t Offset) {
+LWVideoDriver &LWVideoDriver::DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t Offset) {
 	return *this;
 }
 
-LWVideoDriver &LWVideoDriver::DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t InstanceCount, uint32_t Offset) {
+LWVideoDriver &LWVideoDriver::DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t InstanceCount, uint32_t Offset) {
+	return *this;
+}
+
+LWVideoDriver &LWVideoDriver::DrawIndirectBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InpustStreams, LWVideoBuffer *IndexBuffer, LWVideoBuffer *IndirectBuffer, uint32_t IndirectCount, uint32_t IndirectOffset) {
 	return *this;
 }
 
@@ -656,7 +683,15 @@ bool LWVideoDriver::UpdateTextureCubeArray(LWTexture *Texture, uint32_t MipmapLe
 	return false;
 }
 
-bool LWVideoDriver::UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const uint8_t *Buffer, uint32_t Length) {
+bool LWVideoDriver::UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const uint8_t *Buffer, uint32_t Length, uint32_t Offset) {
+	return false;
+}
+
+void *LWVideoDriver::MapVideoBuffer(LWVideoBuffer *VideoBuffer, uint32_t Length, uint32_t Offset) {
+	return nullptr;
+}
+
+bool LWVideoDriver::UnmapVideoBuffer(LWVideoBuffer *VideoBuffer) {
 	return false;
 }
 

@@ -1,0 +1,29 @@
+R"(#module Pixel DirectX11_1
+struct Pixel {
+	float4 Position : SV_POSITION;
+	float4 Color : COLOR0;
+	float4 TexCoord : TEXCOORD0;
+};
+float4 main(Pixel In) : SV_TARGET{
+	return In.Color;
+}
+#module Pixel OpenGL3_3 OpenGL4_5
+#version 330
+in vec4 pColor;
+in vec4 pTexCoord;
+out vec4 p_Color;
+void main(void) {
+	p_Color = pColor;
+}
+#module Pixel OpenGL2_1
+varying vec4 pColor;
+varying vec4 pTexCoord;
+void main(void) {
+	gl_FragColor = pColor;
+}
+#module Pixel OpenGLES2
+varying lowp vec4 pColor;
+varying lowp vec4 pTexCoord;
+void main(void) {
+	gl_FragColor = pColor;
+})",

@@ -2,13 +2,27 @@
 #include <LWNetwork/LWProtocolManager.h>
 #include <LWNetwork/LWSocket.h>
 #include <LWEJson.h>
+#include <LWELogger.h>
 #include <cstring>
 #include <cstdarg>
 #include <algorithm>
 #include <iostream>
 #include <zlib.h>
+#include <ctime>
 #include <functional>
 
+//LWEAWSCredentials
+LWEAWSCredentials::LWEAWSCredentials(const LWUTF8Iterator &AccessKey, const LWUTF8Iterator &SecretKey, const LWUTF8Iterator &SessionToken, float TimeToLive) : m_TimeToLive(TimeToLive) {
+	LWVerify(AccessKey.Copy(m_AccessKey, sizeof(m_AccessKey)) <= sizeof(m_AccessKey));
+	LWVerify(SecretKey.Copy(m_SecretKey, sizeof(m_SecretKey)) <= sizeof(m_SecretKey));
+	LWVerify(SessionToken.Copy(m_SessionToken, sizeof(m_SessionToken)) <= sizeof(m_SessionToken));
+}
+
+//LWEHttpRequestHeader:
+LWEHttpRequestHeader::LWEHttpRequestHeader(uint32_t NameOffset, uint32_t NameLength, uint32_t ValueOffset, uint32_t ValueLength, uint32_t NameHash) : m_NameOffset(NameOffset), m_ValueOffset(ValueOffset), m_NameLength(NameLength), m_ValueLength(ValueLength), m_NameHash(NameHash){}
+
+
+//LWEHttpRequest:
 uint32_t LWEHttpRequest::MakeJSONQueryString(LWEJson &Json, char *Buffer, uint32_t BufferLen) {
 	const uint32_t TBufferLen = 64 * 1024;
 	char TempBuffer[TBufferLen];
@@ -20,16 +34,27 @@ uint32_t LWEHttpRequest::MakeJSONQueryString(LWEJson &Json, char *Buffer, uint32
 		LWEJObject *JO = Json.GetElement(i, nullptr);
 		if (JO->m_Type == LWEJObject::Array || JO->m_Type == LWEJObject::Object) continue;
 
-		if (First) o += snprintf(TempBuffer + o, TBufferLen - o, "%s=%s", JO->m_Name, JO->m_Value);
-		else o += snprintf(TempBuffer + o, TBufferLen - o, "&%s=%s", JO->m_Name, JO->m_Value);
+		if (First) o += LWUTF8I::Fmt_ns(TempBuffer, TBufferLen, o, "{}={}", JO->m_Name, JO->m_Value);
+		else o += LWUTF8I::Fmt_ns(TempBuffer, TBufferLen, o, "&{}={}", JO->m_Name, JO->m_Value);
 		First = false;
-
 	}
 	return LWEJson::EscapeString(TempBuffer, Buffer, BufferLen);
 }
 
+uint32_t LWEHttpRequest::MakeHTTPDate(char8_t *Buffer, uint32_t BufferLen) {
+	time_t now = time(0);
+	struct tm mtime = *gmtime(&now);
+	return (uint32_t)strftime((char*)Buffer, BufferLen, "%a, %d %b %Y %H:%M:%S %Z", &mtime);
+}
+
+uint32_t LWEHttpRequest::MakeAMZDate(char8_t *Buffer, uint32_t BufferLen, bool IncludeSubTime) {
+	time_t now = time(0);
+	struct tm gtime = *gmtime(&now);
+	if (IncludeSubTime) return (uint32_t)strftime((char*)Buffer, BufferLen, "%Y%m%dT%H%M%SZ", &gtime);
+	return (uint32_t)strftime((char*)Buffer, BufferLen, "%Y%m%d", &gtime);
+}
+
 uint32_t LWEHttpRequest::Serialize(char8_t *Buffer, uint32_t BufferLen, const LWUTF8Iterator &UserAgent) {
-	//std::cout << "Serializing!" << std::endl;
 	char8_t Methods[][32] = { "GET", "POST" };
 	char8_t Caches[][32] = { "no-cache" };
 	char8_t Connections[][32] = { "close", "keep-alive",  "upgrade", "Keep-alive, upgrade" };
@@ -55,44 +80,35 @@ uint32_t LWEHttpRequest::Serialize(char8_t *Buffer, uint32_t BufferLen, const LW
 		else if (m_Status == InternalServerError) lStatus = "Internal Server Error";
 		else if (m_Status == NotImplemented) lStatus = "Not Implemented";
 		else if (m_Status == BadGateway) lStatus = "Bad Gateway";
-		o += snprintf((char*)Buffer + o, BufferLen - o, "HTTP/1.1 %d %s\r\n", m_Status, lStatus);
+		o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "HTTP/1.1 {} {}\r\n", m_Status, lStatus);
+	}else o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "{} {} HTTP/1.1\r\n", Methods[m_Flag&METHODBITS], m_Path);
+
+	for (uint32_t i = 0; i < m_HeaderCount; i++) {
+		LWEHttpRequestHeader &H = m_HeaderTable[i];
+		o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "{}: {}\r\n", m_Header + H.m_NameOffset, m_Header + H.m_ValueOffset);
 	}
-	else o += snprintf((char*)Buffer + o, BufferLen - o, "%s %s HTTP/1.1\r\n", Methods[m_Flag&METHODBITS], m_Path);
-	if (*m_Host && !IsResponse) o += snprintf((char*)Buffer + o, BufferLen - o, "Host: %s\r\n", m_Host);
-	if (*m_Origin && !IsResponse) o += snprintf((char*)Buffer + o, BufferLen - o, "Origin: %s\r\n", m_Origin);
-	if (*m_ContentType) {
-		if (IsResponse) o += snprintf((char*)Buffer + o, BufferLen - o, "Content-Type: %s\r\n", m_ContentType);
-		else o += snprintf((char*)Buffer + o, BufferLen - o, "Accept: %s\r\n", m_ContentType);
-	}
-	if (*m_Authorization) o += snprintf((char*)Buffer + o, BufferLen - o, "Authorization: %s\r\n", m_Authorization);
-	if (m_ContentLength) o += snprintf((char*)Buffer + o, BufferLen - o, "Content-Length: %d\r\n", m_ContentLength);
+	if (m_ContentLength) o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "Content-Length: {}\r\n", m_ContentLength);
 	if (!UserAgent.AtEnd()) {
-		if (IsResponse) o += snprintf((char*)Buffer + o, BufferLen - o, "Server: %s\r\n", (const char*)UserAgent());
-		else o += snprintf((char*)Buffer + o, BufferLen - o, "User-Agent: %s\r\n", (const char*)UserAgent());
+		if (IsResponse) o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "Server: {}\r\n", UserAgent);
+		else o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "User-Agent: {}\r\n", UserAgent);
 	}
-	if (*m_SecWebSockKey) {
-		if (IsResponse) o += snprintf((char*)Buffer + o, BufferLen - o, "Sec-WebSocket-Accept: %s\r\n", m_SecWebSockKey);
-		else o += snprintf((char*)Buffer + o, BufferLen - o, "Sec-WebSocket-Key: %s\r\n", m_SecWebSockKey);
-		o += snprintf((char*)Buffer + o, BufferLen - o, "Sec-WebSocket-Extensions: \r\n");
-	}
-	if (*m_SecWebSockProto) o += snprintf((char*)Buffer + o, BufferLen - o, "Sec-WebSocket-Protocol: %s\r\n", m_SecWebSockProto);
-	if (m_WebSockVersion && !IsResponse) o += snprintf((char*)Buffer + o, BufferLen - o, "Sec-WebSocket-Version: %d\r\n", m_WebSockVersion);
-	if (*Encodings[EncodeBits]) o += snprintf((char*)Buffer + o, BufferLen - o, "Transfer-Encoding: %s\r\n", Encodings[EncodeBits]);
-	if (*Upgrades[UpgradeBits]) o += snprintf((char*)Buffer + o, BufferLen - o, "Upgrade: %s\r\n", Upgrades[UpgradeBits]);
-	o += snprintf((char*)Buffer + o, BufferLen - o, "Connection: %s\r\n", Connections[ConnectionBits]);
-	o += snprintf((char*)Buffer + o, BufferLen - o, "Cache-Control: %s\r\n", Caches[CacheBits]);
+	if (m_WebSockVersion && !IsResponse) o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "Sec-WebSocket-Version: {}\r\n", m_WebSockVersion);
+	if (*Encodings[EncodeBits]) o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "Transfer-Encoding: {}\r\n", Encodings[EncodeBits]);
+	if (*Upgrades[UpgradeBits]) o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "Upgrade: {}\r\n", Upgrades[UpgradeBits]);
+	o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "Connection: {}\r\n", Connections[ConnectionBits]);
+	o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "Cache-Control: {}\r\n", Caches[CacheBits]);
+	
 	if (ContentEncodeBits != ContentEncodeIdentity) {
-		o += snprintf((char*)Buffer + o, BufferLen - o, "Content-Encoding: %s\r\n", ContentEncodings[ContentEncodeBits]);
+		o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "Content-Encoding: {}\r\n", ContentEncodings[ContentEncodeBits]);
 	}
 
-	o += snprintf((char*)Buffer + o, BufferLen - o, "\r\n");
+	o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "\r\n");
 	if (*m_Body) {
 		if (m_Flag&EncodeChunked) {
 			if (!m_ContentLength) m_ContentLength = (uint32_t)strlen(m_Body);
-			o += snprintf((char*)Buffer + o, BufferLen - o, "%x\r\n%s\r\n", m_ContentLength, m_Body);
-		}
-		else {
-			o += snprintf((char*)Buffer + o, BufferLen - o, "%s", m_Body);
+			o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "{:x}\r\n{}\r\n", m_ContentLength, m_Body);
+		}else {
+			o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "{}", m_Body);
 		}
 	}
 	return o;
@@ -107,7 +123,7 @@ uint32_t LWEHttpRequest::GZipDecompress(const char8_t *In, uint32_t InLen, char8
 	Stream.zalloc = Z_NULL;
 	Stream.zfree = Z_NULL;
 	if (inflateInit2(&Stream, 31) != Z_OK) {
-		fmt::print("Failed to start inflate.\n");
+		LWELogCritical<256>("Failed to start inflate.");
 		return 0;
 	}
 	uint32_t o = 0;
@@ -121,17 +137,17 @@ uint32_t LWEHttpRequest::GZipDecompress(const char8_t *In, uint32_t InLen, char8
 		int32_t r = inflate(&Stream, Z_SYNC_FLUSH);
 		if (r == Z_OK || r == Z_STREAM_END) o = (uint32_t)Stream.total_out;
 		if (r != Z_OK) {
-			if (Stream.msg) fmt::print("GZip Error: {}\n", Stream.msg);
+			if (Stream.msg) LWELogCritical<256>("GZip Error: {}", Stream.msg);
 			Finished = true;
 		}
 	}
 	if (inflateEnd(&Stream) != Z_OK) {
-		fmt::print("GZip error: 'inflateEnd'\n");
+		LWELogCritical<256>("GZip error: 'inflateEnd'");
 	}
 	return o;
 }
 
-bool LWEHttpRequest::Deserialize(const char8_t *Buffer, uint32_t Len) {
+bool LWEHttpRequest::Deserialize(const char8_t *Buffer, uint32_t Len, bool Verbose) {
 	char8_t Methods[][32] = { "GET", "POST" };
 	char8_t NameBuffer[1024];
 	char8_t ResultBuffer[1024];
@@ -184,9 +200,9 @@ bool LWEHttpRequest::Deserialize(const char8_t *Buffer, uint32_t Len) {
 		return true;
 	}
 
-	sscanf(Buffer + o, "HTTP/1.1 %d %127[^\r]\n%n", &m_Status, m_Path, &k);
+	sscanf(Buffer + o, "HTTP/1.1 %d %255[^\r]\n%n", &m_Status, m_Path, &k);
 	if (k == 0) {
-		sscanf(Buffer + o, "%255s %127s HTTP/1.1\r\n%n", NameBuffer, m_Path, &k);
+		sscanf(Buffer + o, "%255s %255s HTTP/1.1\r\n%n", NameBuffer, m_Path, &k);
 		if (k == 0) return false;
 		IsResponse = false;
 	}
@@ -199,11 +215,11 @@ bool LWEHttpRequest::Deserialize(const char8_t *Buffer, uint32_t Len) {
 			}
 		}
 		if (i == MethodCnt) {
-			fmt::print("Unknown method: '{}'\n", NameBuffer);
+			if(Verbose) LWELogCritical<256>("Unknown method: '{}'", NameBuffer);
 			return false;
 		}
-	}
-	*m_Host = *m_ContentType = *m_Authorization = *m_Path = *m_TransferEncoding = *m_Origin = *m_SecWebSockKey = *m_SecWebSockProto = '\0';
+	};
+	m_HeaderCount = 0;
 	m_Flag |= ConnectionKeepAlive;
 	while (Buffer[o] && o < Len) {
 		if (Buffer[o] == '\r' || Buffer[o] == '\n') {
@@ -216,39 +232,43 @@ bool LWEHttpRequest::Deserialize(const char8_t *Buffer, uint32_t Len) {
 		sscanf(Buffer + o, "%1023[^:]: %1023[^\r]%n", NameBuffer, ResultBuffer, &k);
 		if (k == 0) return false;
 		o += k + 2;
-		if (!_stricmp(NameBuffer, "Host")) strlcpy(m_Host, ResultBuffer, sizeof(m_Host));
-		else if (!_stricmp(NameBuffer, "Content-Type")) strlcpy(m_ContentType, ResultBuffer, sizeof(m_ContentType));
-		else if (!_stricmp(NameBuffer, "Accept")) strlcpy(m_ContentType, ResultBuffer, sizeof(m_ContentType));
-		else if (!_stricmp(NameBuffer, "Authorization")) strlcpy(m_Authorization, ResultBuffer, sizeof(m_Authorization));
-		else if (!_stricmp(NameBuffer, "Content-Length")) m_ContentLength = atoi(ResultBuffer);
-		else if (!_stricmp(NameBuffer, "Accept-Encoding")) {}
-		else if (!_stricmp(NameBuffer, "Origin")) strlcpy(m_Origin, ResultBuffer, sizeof(m_Origin));
-		else if (!_stricmp(NameBuffer, "Sec-WebSocket-Key")) strlcpy(m_SecWebSockKey, ResultBuffer, sizeof(m_SecWebSockKey));
-		else if (!_stricmp(NameBuffer, "Sec-WebSocket-Accept")) strlcpy(m_SecWebSockKey, ResultBuffer, sizeof(m_SecWebSockKey));
-		else if (!_stricmp(NameBuffer, "Sec-WebSocket-Protocol")) strlcpy(m_SecWebSockProto, ResultBuffer, sizeof(m_SecWebSockProto));
-		else if (!_stricmp(NameBuffer, "Sec-WebSocket-Version")) m_WebSockVersion = atoi(ResultBuffer);
-		else if (!_stricmp(NameBuffer, "Cache-Control")) {
-			if (!_stricmp(ResultBuffer, "no-cache")) m_Flag |= NoCacheControl;
-		}else if (!_stricmp(NameBuffer, "Connection")) {
-			for (LWUTF8Iterator C = ResultBuffer; !C.AtEnd(); C.AdvanceToken(',').Advance().AdvanceWord(true)) {
+		LWUTF8Iterator Name = LWUTF8Iterator(NameBuffer);
+		LWUTF8Iterator Value = LWUTF8Iterator(ResultBuffer);
+		Name.Lower(NameBuffer, sizeof(NameBuffer)); //Lower Name.
+
+		//Check if header is any that we convert to flags/values.
+		if (Name.Compare("content-length")) m_ContentLength = atoi(Value.c_str());
+		else if(Name.Compare("sec-websocket-version")) m_WebSockVersion = atoi(Value.c_str());
+		else if (Name.Compare("connection")) {
+			for (LWUTF8Iterator C = Value; !C.AtEnd(); C.AdvanceToken(',').Advance().AdvanceWord(true)) {
 				if (C.Compare("close", 5)) m_Flag &= ~CONNECTIONBITS;
 				else if (C.Compare("keep-alive", 10)) m_Flag |= ConnectionKeepAlive;
 				else if (C.Compare("upgrade", 7)) m_Flag |= ConnectionUpgrade;
 			}
-		}else if (!_stricmp(NameBuffer, "Transfer-Encoding")) {
-			if (!_stricmp(ResultBuffer, "chunked")) m_Flag |= EncodeChunked;
-		} else if (!_stricmp(NameBuffer, "Content-Encoding")) {
-			if (!_stricmp(ResultBuffer, "identity")) m_Flag |= ContentEncodeIdentity;
-			else if (!_stricmp(ResultBuffer, "gzip")) m_Flag |= ContentEncodeGZip;
-			else if (!_stricmp(ResultBuffer, "compress")) m_Flag |= ContentEncodeCompress;
-			else if (!_stricmp(ResultBuffer, "deflate")) m_Flag |= ContentEncodeDeflate;
-			else if (!_stricmp(ResultBuffer, "br")) m_Flag |= ContentEncodeBR;
-		}else if(!_stricmp(NameBuffer, "Upgrade")){
-			if (!_stricmp(ResultBuffer, "websocket")) m_Flag |= UpgradeWebSock;
-		}else {
-			fmt::print("Header: '{}' - '{}'\n", NameBuffer, ResultBuffer);
+		} else {
+			//Check if header is anything where value comparison is also case-insensitive.
+			uint32_t hdr = Name.CompareList("cache-control", "transfer-encoding", "content-encoding", "upgrade");
+			if (hdr != -1) {
+				Value.Lower(ResultBuffer, sizeof(ResultBuffer)); //lower value to pre-pare for case insensitive comparisons.
+				if (hdr == 0) { //cache-control was true.
+					if (Value.Compare("no-cache")) m_Flag |= NoCacheControl;
+				} else if (hdr == 1) { //transfer-encoding.
+					if (Value.Compare("chunked")) m_Flag |= EncodeChunked;
+				} else if (hdr == 2) {
+					if (Value.Compare("identity")) m_Flag |= ContentEncodeIdentity;
+					else if (Value.Compare("gzip")) m_Flag |= ContentEncodeGZip;
+					else if (Value.Compare("compress")) m_Flag |= ContentEncodeCompress;
+					else if (Value.Compare("deflate")) m_Flag |= ContentEncodeDeflate;
+					else if (Value.Compare("br")) m_Flag |= ContentEncodeBR;
+				} else if (hdr == 3) {
+					if (Value.Compare("websocket")) m_Flag |= UpgradeWebSock;
+				}
+			} else {
+				if (!PushHeader(Name, Value)) {
+					if (Verbose) LWELogWarn<256>("HTTP header dropped: '{}' - '{}'", Name, Value);
+				}
+			}
 		}
-
 	}
 	return true;
 }
@@ -256,43 +276,93 @@ bool LWEHttpRequest::Deserialize(const char8_t *Buffer, uint32_t Len) {
 LWEHttpRequest &LWEHttpRequest::SetURI(const LWUTF8Iterator &URI) {
 	LWUTF8Iterator Proto, Domain, Path;
 	LWSocket::SplitURI(URI, m_Port, Domain, Proto, Path);
-	Domain.Copy(m_Host, sizeof(m_Host));
-	Path.Copy(m_Path, sizeof(m_Path));
+	PushHeader("host", Domain);
+	SetPath(Path);
 	return *this;
 }
 
-LWEHttpRequest &LWEHttpRequest::SetHost(const LWUTF8Iterator &Host) {
-	Host.Copy(m_Host, sizeof(m_Host));
-	return *this;
+bool LWEHttpRequest::PushHeader(const LWUTF8Iterator &HeaderName, const LWUTF8Iterator &HeaderValue) {
+	if (m_HeaderCount >= MaxHeaderItems) return false;
+	uint32_t NameOffset = m_HeaderOffset;
+	uint32_t Remaining = MaxHeaderLength - m_HeaderOffset;
+	uint32_t NameLen = std::min<uint32_t>(HeaderName.Lower(m_Header + m_HeaderOffset, Remaining) + 1, Remaining); //Add 1 to skip over terminal.
+	uint32_t ValueLen = std::min<uint32_t>(HeaderValue.Copy(m_Header + m_HeaderOffset + NameLen, Remaining - NameLen) + 1, Remaining - NameLen);
+	m_HeaderOffset += NameLen + ValueLen;
+	m_HeaderTable[m_HeaderCount++] = LWEHttpRequestHeader(NameOffset, NameLen, NameOffset + NameLen, ValueLen, LWUTF8Iterator(m_Header + NameOffset, NameLen).Hash());
+	return true;
+}
+
+bool LWEHttpRequest::GenerateAWS4Auth(const LWUTF8Iterator &AccessKeyID, const LWUTF8Iterator &SecretKey, const LWUTF8Iterator &SessionToken) {
+	const uint32_t TokenAPIID = 0;
+	const uint32_t TokenService = 1;
+	const uint32_t TokenRegion = 2;
+
+	char8_t Methods[][5] = { "GET", "POST" };
+	LWUTF8Iterator HostTokens[5];
+	LWUTF8Iterator PathTokens[2];
+	char8_t FullTimeBuffer[128];
+	char8_t SubTimeBuffer[128];
+	char8_t Algorithm[] = "AWS4-HMAC-SHA256";
+	uint32_t BodyHash[8];
+	uint32_t CanoicalHash[8];
+	uint32_t SignatureHashA[8];
+	uint32_t SignatureHashB[8];
+	char8_t CanonicalRequest[1024 * 8];
+	char8_t StringToSign[1024 * 8];
+	char8_t Authorization[1024 * 8];
+	char8_t AWSKey[512];
+	char8_t Signature[65];
+	uint32_t CanonicalLength = 0;
+	uint32_t StringToSignLength = 0;
+	uint32_t AuthLength = 0;
+	//First seperate host into tokens to get Service+Region.
+	LWUTF8Iterator Host = GetHeader("host");
+	LWUTF8Iterator Path = LWUTF8Iterator(m_Path);
+	if (Host.AtEnd()) return false;
+	if (Host.SplitToken(HostTokens, 5, '.') != 5) return false;
+	uint32_t FullTimeLen = MakeAMZDate(FullTimeBuffer, sizeof(FullTimeBuffer), true);
+	uint32_t SubTimeLen = MakeAMZDate(SubTimeBuffer, sizeof(SubTimeBuffer), false);
+	PushHeader("x-amz-date", FullTimeBuffer);
+	if (!SessionToken.AtEnd()) PushHeader("x-amz-security-token", SessionToken);
+	Path.SplitToken(PathTokens, 2, '?');
+
+	uint32_t MethodID = GetMethod();
+
+	//Build CanonicalRequest string. TODO: Actually escape URI+Querry correctly.
+	CanonicalLength += LWUTF8I::Fmt_ns(CanonicalRequest, sizeof(CanonicalRequest), CanonicalLength, "{}\n", Methods[MethodID]);
+	CanonicalLength += LWUTF8I::Fmt_ns(CanonicalRequest, sizeof(CanonicalRequest), CanonicalLength, "{}\n", PathTokens[0]); //CanonicalURI TODO: Escape URI correctly
+	CanonicalLength += LWUTF8I::Fmt_ns(CanonicalRequest, sizeof(CanonicalRequest), CanonicalLength, "{}\n", PathTokens[1]); //CanonicalQuery TODO: Escape Query.
+	
+	//Add headers(we'll try with just host+x-amz-date signed):
+	CanonicalLength += LWUTF8I::Fmt_ns(CanonicalRequest, sizeof(CanonicalRequest), CanonicalLength, "host:{}\n", Host);
+	CanonicalLength += LWUTF8I::Fmt_ns(CanonicalRequest, sizeof(CanonicalRequest), CanonicalLength, "x-amz-date:{}\n\n", FullTimeBuffer);
+	CanonicalLength += LWUTF8I::Fmt_ns(CanonicalRequest, sizeof(CanonicalRequest), CanonicalLength, "host;x-amz-date\n");
+	CanonicalLength += LWCrypto::Digest(BodyHash, LWCrypto::HashSHA256(m_Body, m_ContentLength, BodyHash), CanonicalRequest + CanonicalLength, sizeof(CanonicalRequest) - CanonicalLength); //Possible overflow here, need to fix later.
+	
+	//Build the string to sign:
+	StringToSignLength += LWUTF8I::Fmt_ns(StringToSign, sizeof(StringToSign), StringToSignLength, "{}\n{}\n", Algorithm, FullTimeBuffer); //Algorithm+Time
+	StringToSignLength += LWUTF8I::Fmt_ns(StringToSign, sizeof(StringToSign), StringToSignLength, "{}/{}/{}/aws4_request\n", SubTimeBuffer, HostTokens[TokenRegion], HostTokens[TokenService]);
+	StringToSignLength += LWCrypto::Digest(CanoicalHash, LWCrypto::HashSHA256(CanonicalRequest, CanonicalLength, CanoicalHash), StringToSign + StringToSignLength, sizeof(StringToSign) - StringToSignLength); //Possible overflow here, need to fix later.
+
+	uint32_t AWSKeyLen = LWUTF8I::Fmt_ns(AWSKey, sizeof(AWSKey), 0, "AWS4{}", SecretKey);
+	LWCrypto::HashHMAC_SHA256(SubTimeBuffer, SubTimeLen, AWSKey, AWSKeyLen, SignatureHashA);
+	LWCrypto::HashHMAC_SHA256(HostTokens[TokenRegion].c_str(), (uint32_t)HostTokens[TokenRegion].RawRemaining(), (char*)SignatureHashA, 32, SignatureHashB);
+	LWCrypto::HashHMAC_SHA256(HostTokens[TokenService].c_str(), (uint32_t)HostTokens[TokenService].RawRemaining(), (char*)SignatureHashB, 32, SignatureHashA);
+	LWCrypto::HashHMAC_SHA256("aws4_request", 12, (char*)SignatureHashA, 32, SignatureHashB);
+	LWCrypto::Digest(SignatureHashA, LWCrypto::HashHMAC_SHA256(StringToSign, StringToSignLength, (char*)SignatureHashB, 32, SignatureHashA), Signature, sizeof(Signature));
+
+	AuthLength += LWUTF8I::Fmt_ns(Authorization, sizeof(Authorization), AuthLength, "{} Credential={}/{}/{}/{}/aws4_request, SignedHeaders=host;x-amz-date, Signature={}", Algorithm, AccessKeyID, SubTimeBuffer, HostTokens[TokenRegion], HostTokens[TokenService], Signature);
+	PushHeader("Authorization", Authorization);
+	return true;
+}
+
+bool LWEHttpRequest::GenerateAWS4Auth(const LWEAWSCredentials &Credentials) {
+	return GenerateAWS4Auth(Credentials.m_AccessKey, Credentials.m_SecretKey, Credentials.m_SessionToken);
 }
 
 LWEHttpRequest &LWEHttpRequest::SetPath(const LWUTF8Iterator &Path) {
-	Path.Copy(m_Path, sizeof(m_Path));
-	return *this;
-}
-
-LWEHttpRequest &LWEHttpRequest::SetOrigin(const LWUTF8Iterator &Origin) {
-	Origin.Copy(m_Origin, sizeof(m_Origin));
-	return *this;
-}
-
-LWEHttpRequest &LWEHttpRequest::SetWebSockKey(const LWUTF8Iterator &Key) {
-	Key.Copy(m_SecWebSockKey, sizeof(m_SecWebSockKey));
-	return *this;
-}
-
-LWEHttpRequest &LWEHttpRequest::SetWebSockProto(const LWUTF8Iterator &Protocols) {
-	Protocols.Copy(m_SecWebSockProto, sizeof(m_SecWebSockProto));
-	return *this;
-}
-
-LWEHttpRequest &LWEHttpRequest::SetAuthorization(const LWUTF8Iterator &Auth) {
-	Auth.Copy(m_Authorization, sizeof(m_Authorization));
-	return *this;
-}
-
-LWEHttpRequest &LWEHttpRequest::SetContentType(const LWUTF8Iterator &ContentType) {
-	ContentType.Copy(m_ContentType, sizeof(m_ContentType));
+	if (Path.AtEnd()) strcpy(m_Path, "/");
+	else Path.Copy(m_Path, sizeof(m_Path));
 	return *this;
 }
 
@@ -321,40 +391,25 @@ LWEHttpRequest &LWEHttpRequest::SetCacheState(uint32_t CacheState) {
 	return *this;
 }
 
-LWUTF8Iterator LWEHttpRequest::GetBody(void) const {
-	return m_Body;
+LWUTF8Iterator LWEHttpRequest::operator [](const LWUTF8Iterator &HeaderName) const {
+	return GetHeader(HeaderName);
 }
 
-LWUTF8Iterator LWEHttpRequest::GetHost(void) const {
-	return m_Host;
+LWUTF8Iterator LWEHttpRequest::GetBody(void) const {
+	return m_Body;
 }
 
 LWUTF8Iterator LWEHttpRequest::GetPath(void) const {
 	return m_Path;
 }
 
-LWUTF8Iterator LWEHttpRequest::GetOrigin(void) const {
-	return m_Origin;
-}
-
-LWUTF8Iterator LWEHttpRequest::GetAuthorization(void) const {
-	return m_Authorization;
-}
-
-LWUTF8Iterator LWEHttpRequest::GetContentType(void) const {
-	return m_ContentType;
-}
-
-LWUTF8Iterator LWEHttpRequest::GetTransferEncoding(void) const {
-	return m_TransferEncoding;
-}
-
-LWUTF8Iterator LWEHttpRequest::GetSecWebSockKey(void) const {
-	return m_SecWebSockKey;
-}
-
-LWUTF8Iterator LWEHttpRequest::GetSecWebSockProto(void) const {
-	return m_SecWebSockProto;
+LWUTF8Iterator LWEHttpRequest::GetHeader(const LWUTF8Iterator &HeaderName) const {
+	uint32_t Hash = HeaderName.Hash();
+	for (uint32_t i = 0; i < m_HeaderCount; i++) {
+		const LWEHttpRequestHeader &H = m_HeaderTable[i];
+		if (Hash == H.m_NameHash) return LWUTF8Iterator(m_Header + H.m_ValueOffset, H.m_ValueLength);
+	}
+	return LWUTF8Iterator();
 }
 
 uint32_t LWEHttpRequest::GetCacheState(void) const {
@@ -397,11 +452,16 @@ bool LWEHttpRequest::isResponseReady(void) const {
 	return (m_Flag & ResponseReady) != 0;
 }
 
-LWEHttpRequest::LWEHttpRequest(const LWUTF8Iterator &URI, uint32_t Flag) : m_Flag(Flag) {
+LWEHttpRequest::LWEHttpRequest(const LWUTF8Iterator &URI, uint32_t Flag, void *UserData, LWEHttpResponseCallback Callback) : m_Flag(Flag), m_UserData(UserData), m_Callback(Callback) {
+	char8_t Date[LWEHttpRequest::ValueMaxLength];
 	SetURI(URI);
+	if (Flag & GenerateDate) {
+		MakeHTTPDate(Date, sizeof(Date));
+		PushHeader("date", Date);
+	}
 }
 
-
+//LWEProtocolHttp:
 LWProtocol &LWEProtocolHttp::Read(LWSocket &Socket, LWProtocolManager *Manager) {
 	char Buffer[1024 * 64];
 	int32_t r = Socket.Receive(Buffer, sizeof(Buffer)-1);
@@ -411,27 +471,28 @@ LWProtocol &LWEProtocolHttp::Read(LWSocket &Socket, LWProtocolManager *Manager) 
 	}
 	Buffer[r] = '\0';
 	if (!ProcessRead(Socket, Buffer, r)) {
-		fmt::print("Error parsing HTTP buffer.\n");
+		LWELogCritical<256>("parsing HTTP buffer.");
 	}
 	return *this;
 }
 
 LWProtocol &LWEProtocolHttp::SocketChanged(LWSocket &Prev, LWSocket &New, LWProtocolManager *Manager) {
-	LWEHttpRequest *Req = (LWEHttpRequest*)Prev.GetProtocolData(m_ProtocolID);
+	LWEHttpRequest *Req = (LWEHttpRequest*)New.GetProtocolData(m_ProtocolID);
 	if (Req) Req->m_Socket = &New;
 	return *this;
 }
 
 uint32_t LWEProtocolHttp::Send(LWSocket &Socket, const char *Buffer, uint32_t Len) {
-	for (uint32_t o = 0; o < Len;) {
+	uint32_t o = 0;
+	for (; o < Len;) {
 		int32_t r = Socket.Send(Buffer + o, Len - o);
 		if (r == -1) {
-			fmt::print("Socket {} Error: {}\n", Socket.GetSocketDescriptor(), LWProtocolManager::GetError());
+			LWELogCritical<256>("Socket {} Error: {}", Socket.GetSocketDescriptor(), LWProtocolManager::GetError());
 			return 1;
 		}
 		o += (uint32_t)r;
 	}
-	return 0;
+	return o;
 }
 
 bool LWEProtocolHttp::ProcessRead(LWSocket &Socket, const char *Buffer, uint32_t Len) {
@@ -444,12 +505,12 @@ bool LWEProtocolHttp::ProcessRead(LWSocket &Socket, const char *Buffer, uint32_t
 		Insert = true;
 	}
 	if (!Req->Deserialize(Buffer, Len)) {
-		fmt::print("Error deserializing response.\n");
+		LWELogCritical<256>("deserializing response.");
 		return false;
 	}
 	if (Insert) {
 		if (!GetNextFromPool(&Req)) {
-			fmt::print("Could not get a request to write to from pool.\n");
+			LWELogCritical<256>("Could not get a request to write to from pool.");
 			return false;
 		}
 		*Req = IReq;
@@ -458,7 +519,7 @@ bool LWEProtocolHttp::ProcessRead(LWSocket &Socket, const char *Buffer, uint32_t
 	if(Req->isResponseReady()) {
 		if (Req->m_Status == 0) {
 			if (!m_InRequests.Push(*Req, &Req)) {
-				fmt::print("Failed to insert response into request queue.\n");
+				LWELogCritical<256>("Failed to insert response into request queue.");
 				return false;
 			}
 			Socket.SetProtocolData(m_ProtocolID, Req);
@@ -481,37 +542,44 @@ LWEProtocolHttp &LWEProtocolHttp::ProcessRequests(uint32_t ProtocolID, LWProtoco
 		uint32_t Len = Request->Serialize(Buffer, sizeof(Buffer), IsResponse ? m_Agent : m_Server);
 		if (!Len) continue;
 		if (!Request->m_Socket) {
-			uint32_t Error = LWSocket::CreateSocket(Sock, Request->m_Host, Request->m_Port, LWSocket::Tcp, ProtocolID);
+			uint32_t Error = LWSocket::CreateSocket(Sock, (*Request)["host"], Request->m_Port, LWSocket::Tcp, ProtocolID);
 			if (Error) {
-				fmt::print("'{}:{}' Error: {}\n", Request->GetHost(), Request->m_Port, Error);
+				LWELogCritical<256>("'{}:{}' Error: {}", (*Request)["host"], Request->m_Port, Error);
+				//Create DomainNotFound Response:
+				LWEHttpRequest ErrorRes = LWEHttpRequest();
+				ErrorRes.m_Status = LWEHttpRequest::DomainNotFound;
+				ErrorRes.m_UserData = Request->m_UserData;
+				if (Request->m_Callback) Request->m_Callback(ErrorRes, LWUTF8Iterator());
 				continue;
 			}
 			Request->m_Socket = Manager.PushSocket(Sock);
 			//std::cout << "Making socket: " << Request->m_Socket->GetSocketDescriptor() << std::endl;
 			Request->m_Socket->SetProtocolData(m_ProtocolID, Request);
 			if (!Request->m_Socket) {
-				fmt::print("Error inserting socket.\n");
+				LWELogCritical<256>("inserting socket.");
 				continue;
 			}
 		}
-
 		uint32_t Res = Send(*Request->m_Socket, Buffer, Len);
 		if (Res == -1) {
-			fmt::print("Error sending request.\n");
+			LWELogCritical<256>("sending request.");
 			continue;
+		} else if (Res == 0) { //We couldn't send(likely a TLS connection, so we will re-insert and try again later).
+			LWEHttpRequest *NewRequest;
+			if (!m_OutRequests.Push(*Request, &NewRequest)) {
+				Request->m_Socket->MarkClosable();
+			} else {
+				NewRequest->m_Socket->SetProtocolData(m_ProtocolID, NewRequest);
+				return *this; //Connection is not ready, so we put it on the back of the list and wait until it is ready.
+			}
 		}
-		if (Request->CloseConnection()) Request->m_Socket->MarkClosable();
+		if (Request->CloseConnection() && Request->m_Status!=0) Request->m_Socket->MarkClosable();
 	}
 	return *this;
 }
 
 LWEProtocolHttp &LWEProtocolHttp::SetProtocolID(uint32_t ProtocolID) {
 	m_ProtocolID = ProtocolID;
-	return *this;
-}
-
-LWEProtocolHttp &LWEProtocolHttp::SetProtocolManager(LWProtocolManager *Manager) {
-	m_Manager = Manager;
 	return *this;
 }
 
@@ -547,4 +615,4 @@ LWEProtocolHttp &LWEProtocolHttp::SetServerString(const LWUTF8Iterator &Server) 
 	return *this;
 }
 
-LWEProtocolHttp::LWEProtocolHttp(uint32_t ProtocolID, LWProtocolManager *Manager) : LWProtocol(), m_ProtocolID(ProtocolID), m_Manager(m_Manager) {}
+LWEProtocolHttp::LWEProtocolHttp(uint32_t ProtocolID) : LWProtocol(), m_ProtocolID(ProtocolID) {}

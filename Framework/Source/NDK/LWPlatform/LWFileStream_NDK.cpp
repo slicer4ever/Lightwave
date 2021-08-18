@@ -210,6 +210,13 @@ LWFileStream &LWFileStream::Finished(void) {
 	return *this;
 }
 
+LWFileStream &LWFileStream::Flush(void) {
+	if (!m_FileObject) return *this;
+	if ((m_Flag & AssetMode) != 0) return *this;
+	fflush(m_FileObject);
+	return *this;
+}
+
 uint32_t LWFileStream::GetPosition(void) const {
 	typedef uint32_t(*Func_T)(void*, uint32_t);
 	auto GetAssetPos = [](void *FileObject, uint32_t Len) -> uint32_t {

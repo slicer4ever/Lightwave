@@ -111,27 +111,34 @@ uint32_t LWSocket::CreateSocket(LWSocket &Socket, const LWUTF8Iterator &Address,
 	return CreateSocket(Socket, AddrIP, RemotePort, LocalPort, (Flag | LWSocket::Tcp)&~LWSocket::Udp, ProtocolID);
 }
 
-uint32_t LWSocket::Receive(char *Buffer, uint32_t BufferLen) const {
-	return recv(m_SocketID, Buffer, BufferLen, 0);
+uint32_t LWSocket::Receive(char *Buffer, uint32_t BufferLen) {
+	uint32_t Len = recv(m_SocketID, Buffer, BufferLen, 0);
+	if (Len != -1) m_RecvBytes += Len;
+	return Len;
 }
 
-uint32_t LWSocket::Receive(char *Buffer, uint32_t BufferLen, uint32_t *RemoteIP, uint16_t *RemotePort) const {
+uint32_t LWSocket::Receive(char *Buffer, uint32_t BufferLen, uint32_t *RemoteIP, uint16_t *RemotePort) {
 	sockaddr_in rAddr;
 	int32_t rAddrLen = sizeof(rAddr);
 	uint32_t Len = recvfrom(m_SocketID, Buffer, BufferLen, 0, (sockaddr*)&rAddr, &rAddrLen);
 	if (RemoteIP) *RemoteIP = LWByteBuffer::MakeHost((uint32_t)rAddr.sin_addr.S_un.S_addr);
 	if (RemotePort) *RemotePort = LWByteBuffer::MakeHost(rAddr.sin_port);
+	if (Len != -1) m_RecvBytes += Len;
 	return Len;
 }
 
-uint32_t LWSocket::Send(const char *Buffer, uint32_t BufferLen) const {
-	return send(m_SocketID, Buffer, BufferLen, 0);
+uint32_t LWSocket::Send(const char *Buffer, uint32_t BufferLen) {
+	uint32_t Len = send(m_SocketID, Buffer, BufferLen, 0);
+	if (Len != -1) m_SentBytes += Len;
+	return Len;
 }
 
-uint32_t LWSocket::Send(char *Buffer, uint32_t BufferLen, uint32_t RemoteIP, uint16_t RemotePort) const {
+uint32_t LWSocket::Send(char *Buffer, uint32_t BufferLen, uint32_t RemoteIP, uint16_t RemotePort) {
 	sockaddr_in rAddr = { AF_INET, LWByteBuffer::MakeNetwork(RemotePort), 0,{ 0 } };
 	rAddr.sin_addr.S_un.S_addr = LWByteBuffer::MakeNetwork(RemoteIP);
-	return sendto(m_SocketID, Buffer, BufferLen, 0, (sockaddr*)&rAddr, sizeof(rAddr));
+	uint32_t Len = sendto(m_SocketID, Buffer, BufferLen, 0, (sockaddr*)&rAddr, sizeof(rAddr));
+	if (Len != -1) m_SentBytes += Len;
+	return Len;
 }
 
 bool LWSocket::Accept(LWSocket &Result, uint32_t ProtocolID) const{

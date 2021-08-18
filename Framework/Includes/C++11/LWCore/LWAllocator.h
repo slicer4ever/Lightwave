@@ -53,7 +53,7 @@ public:
 		if (!Mem) return Mem;
 		return new(Mem) Type(std::forward<Args>(Arg)...);
 	}
-
+	
 	/*! \brief Allocates n objects from the internal allocation buffer.
 		\param Length the number of objects to allocate.
 		\return a pointer to the memory allocated, or null if allocation was unsuccessful.
@@ -112,6 +112,9 @@ protected:
 
 	LWAllocator() : m_AllocatedBytes(0) {}
 };
+
 /*! @} */
+
+
 
 #endif

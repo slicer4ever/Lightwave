@@ -50,6 +50,22 @@ public:
 		return true;
 	}
 
+	/*! \brief removes an item from the list with std::move.  note: Peeking is not thread-safe, as it does not gurantee another thread hasn't already read and removed the object before Result is written to.  it is not advised to use peek unless you are certain only a single thread is popping at a time. */
+	virtual bool PopMove(Type &Result, bool Peek = false) {
+		uint32_t ReservePos = m_ReserveReadPos.load();
+		uint32_t Target = 0;
+		do {
+			if (ReservePos == m_WritePos) return false;
+			if (Peek) break;
+			Target = (ReservePos + 1);// == MaxElementCount ? 0 : ReservePos + 1;
+			if (!Target) Target = (ReservePos % MaxElementCount) + 1;
+		} while (!m_ReserveReadPos.compare_exchange_weak(ReservePos, Target));
+		uint32_t Idx = ReservePos % MaxElementCount;
+		Result = std::move(m_QueueBuffer[Idx]);
+		uint32_t Expected = ReservePos;
+		while (!m_ReadPos.compare_exchange_weak(Expected, Target)) Expected = ReservePos;
+	}
+
 	/*!< \brief removes an item from the list and returns a pointer to the underlying object.
 	\note all operations on the object are considered unsafe, be sure you know what your doing! */
 	virtual bool Pop(Type **Result) {
@@ -93,6 +109,15 @@ public:
 		if ((m_WritePos - m_ReadPos.load()) >= MaxElementCount) return false;
 		uint32_t Idx = m_WritePos % MaxElementCount;
 		m_QueueBuffer[Idx] = Item;
+		m_WritePos++;
+		return true;
+	}
+
+	/*!< \brief pushes an item onto the list with std::move. */
+	virtual bool PushMove(Type &Item) {
+		if ((m_WritePos - m_ReadPos.load()) >= MaxElementCount) return false;
+		uint32_t Idx = m_WritePos % MaxElementCount;
+		m_QueueBuffer[Idx] = std::move(Item);
 		m_WritePos++;
 		return true;
 	}
@@ -165,6 +190,24 @@ public:
 		return true;
 	}
 
+
+	/*! \brief removes an item from the list.  note: Peeking is not thread-safe, as it does not guarantee another thread hasn't already read and removed the object before Result is written to.  it is not advised to use peek unless you are certain only a single thread is popping at a time. */
+	virtual bool PopMove(Type &Result, bool Peek = false) {
+		uint32_t ReservePos = m_ReserveReadPos.load();
+		uint32_t Target = 0;
+		do {
+			if (ReservePos == m_WritePos.load()) return false;
+			if (Peek) break;
+			Target = (ReservePos + 1);// == MaxElementCount ? 0 : ReservePos + 1;
+			if (!Target) Target = (ReservePos % MaxElementCount) + 1;
+		} while (!m_ReserveReadPos.compare_exchange_weak(ReservePos, Target));
+		uint32_t Idx = ReservePos % MaxElementCount;
+		Result = std::move(m_QueueBuffer[Idx]);
+		uint32_t Expected = ReservePos;
+		while (!m_ReadPos.compare_exchange_weak(Expected, Target)) Expected = ReservePos;
+		return true;
+	}
+
 	/*!< \brief removes an item from the list and returns a pointer to the underlying object.  
 		 \note all operations on the object are considered unsafe, be sure you know what your doing! */
 	virtual bool Pop(Type **Result) {
@@ -213,7 +256,24 @@ public:
 			if (!Target) Target = (ReservePos%MaxElementCount) + 1;
 		} while (!m_ReserveWritePos.compare_exchange_weak(ReservePos, Target));
 		uint32_t Idx = ReservePos%MaxElementCount;
-		m_QueueBuffer[Idx] = (Item);
+		m_QueueBuffer[Idx] = Item;
+		uint32_t Expected = ReservePos;
+		while (!m_WritePos.compare_exchange_weak(Expected, Target)) Expected = ReservePos;
+		return true;
+	}
+
+
+	/*! \brief pushes an item onto the list with std::move. */
+	virtual bool PushMove(Type &Item) {
+		uint32_t ReservePos = m_ReserveWritePos.load();
+		uint32_t Target = 0;
+		do {
+			if (ReservePos - m_ReadPos.load() >= MaxElementCount) return false;
+			Target = (ReservePos + 1);// == MaxElementCount ? 0 : ReservePos + 1;
+			if (!Target) Target = (ReservePos % MaxElementCount) + 1;
+		} while (!m_ReserveWritePos.compare_exchange_weak(ReservePos, Target));
+		uint32_t Idx = ReservePos % MaxElementCount;
+		m_QueueBuffer[Idx] = std::move(Item);
 		uint32_t Expected = ReservePos;
 		while (!m_WritePos.compare_exchange_weak(Expected, Target)) Expected = ReservePos;
 		return true;

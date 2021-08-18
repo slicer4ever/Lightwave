@@ -4,6 +4,7 @@
 #include <LWCore/LWQuaternion.h>
 #include <LWPlatform/LWFileStream.h>
 #include <LWCore/LWMatrix.h>
+#include "LWELogger.h"
 #include <cstring>
 #include <functional>
 #include <cstdarg>
@@ -47,15 +48,31 @@ LWUTF8Iterator LWEJObject::GetValue(void) const {
 	return LWUTF8Iterator(m_Value);
 }
 
-int32_t LWEJObject::AsInt(void) {
-	return atoi(m_Value);
+int32_t LWEJObject::AsInt(void) const {
+	return strtol(m_Value, nullptr, 10);
 }
 
-float LWEJObject::AsFloat(void) {
+uint32_t LWEJObject::AsUInt(void) const {
+	return strtoul(m_Value, nullptr, 10);
+}
+
+int64_t LWEJObject::AsInt64(void) const {
+	return strtoll(m_Value, nullptr, 10);
+}
+
+uint64_t LWEJObject::AsUInt64(void) const {
+	return strtoull(m_Value, nullptr, 10);
+}
+
+float LWEJObject::AsFloat(void) const {
 	return (float)atof(m_Value);
 }
 
-bool LWEJObject::AsBoolean(void) {
+double LWEJObject::AsDouble(void) const {
+	return atof(m_Value);
+}
+
+bool LWEJObject::AsBoolean(void) const {
 	return *m_Value == 't' || *m_Value == 'T';
 }
 
@@ -435,7 +452,7 @@ bool LWEJson::LoadFile(LWEJson &Json, const LWUTF8Iterator &Path, LWAllocator &A
 
 bool LWEJson::Parse(LWEJson &JSon, const LWUTF8Iterator &Source, LWEJObject *Parent) {
 	auto OutputLineError = [](const LWUTF8Iterator &Source, const LWUTF8Iterator &P, const LWUTF8Iterator &Error)->LWUTF8Iterator {
-		fmt::print("Line {}: {}\n", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, P)), Error);
+		LWELogCritical<256>("Line {}: {}", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, P)), Error);
 		return LWUTF8Iterator();
 	};
 
@@ -455,14 +472,14 @@ bool LWEJson::Parse(LWEJson &JSon, const LWUTF8Iterator &Source, LWEJObject *Par
 				C = (NameEnd + 1).NextWord(true);
 				if (C.AtEnd() || *C != ':') return OutputLineError(Source, C, "Invalid syntax detected. Expected a : token. ");
 				LWEJObject *O = Js.MakeElement(LWUTF8Iterator(NameBegin, NameEnd), Obj);
-				if (!O) return OutputLineError(Source, C, "Error: Internal name collision occurred.");
+				if (!O) return OutputLineError(Source, C, "Internal name collision occurred.");
 				Obj = Js.Find(ObjHash);
 				C = ParseElement(Source, C + 1, O, Js);
 				if (C.AtEnd()) return C;
 				C = (C + 1).NextWord(true);
-				if (C.AtEnd()) return OutputLineError(Source, C, "Error: Unexpected end of stream.");
+				if (C.AtEnd()) return OutputLineError(Source, C, "Unexpected end of stream.");
 				if (*C == '}') break;
-				if (*C != ',') return OutputLineError(Source, C, "Error: Expected a , token.");
+				if (*C != ',') return OutputLineError(Source, C, "Expected a , token.");
 			}
 		} else if (*C == '[') {
 			if (Obj) Obj->m_Type = LWEJObject::Array;
@@ -471,26 +488,26 @@ bool LWEJson::Parse(LWEJson &JSon, const LWUTF8Iterator &Source, LWEJObject *Par
 				if (C.AtEnd() || *C == ',') return OutputLineError(Source, C, "Invalid syntax detected. Expected a , token.");
 				if (*C == ']') break;
 				LWEJObject *O = Js.MakeElement(LWUTF8I::Fmt<256>("{}[{}]", Obj ? Obj->GetName() : LWUTF8I(), i++), Obj);
-				if (!O) return OutputLineError(Source, C, "Error: Internal name collision occurred.");
+				if (!O) return OutputLineError(Source, C, "Internal name collision occurred.");
 				Obj = Js.Find(ObjHash);
 				C = ParseElement(Source, C, O, Js);
 				if (C.AtEnd()) return C;
 				C = (C + 1).AdvanceWord(true);
-				if (C.AtEnd()) return OutputLineError(Source, C, "Error: Unexpected end of stream.");
+				if (C.AtEnd()) return OutputLineError(Source, C, "Unexpected end of stream.");
 				if (*C == ']') break;
-				if (*C != ',') return OutputLineError(Source, C, "Error: Invalid syntax detected. Expected a , token.");
+				if (*C != ',') return OutputLineError(Source, C, "Invalid syntax detected. Expected a , token.");
 			}
 		} else if (*C == '\"') {
-			if (!Obj) return OutputLineError(Source, C, "Error: Unexpected \" Token.");
+			if (!Obj) return OutputLineError(Source, C, "Unexpected \" Token.");
 			LWUTF8Iterator StrEnd = (++C).NextToken('\"', false);
-			if (StrEnd.AtEnd()) return OutputLineError(Source, C, "Error: Unexpected end of stream.");
+			if (StrEnd.AtEnd()) return OutputLineError(Source, C, "Unexpected end of stream.");
 			Obj->SetValue(Js.GetAllocator(), LWUTF8Iterator(C, StrEnd));
 			Obj->m_Type = LWEJObject::String;
 			C = StrEnd;
 		} else {
-			if (!Obj) return OutputLineError(Source, C, "Error: Invalid syntax detected.");
+			if (!Obj) return OutputLineError(Source, C, "Invalid syntax detected.");
 			LWUTF8Iterator ValueEnd = C.NextTokens(u8", }]\n\r");
-			if (ValueEnd.AtEnd()) return OutputLineError(Source, C, "Error: Unexpected end of stream.");
+			if (ValueEnd.AtEnd()) return OutputLineError(Source, C, "Unexpected end of stream.");
 			Obj->SetValue(Js.GetAllocator(), LWUTF8Iterator(C, ValueEnd));
 			if (C.Compare(u8"true", 4) || C.Compare(u8"TRUE", 4) || C.Compare(u8"false", 5) || C.Compare(u8"FALSE", 5)) {
 				Obj->m_Type = LWEJObject::Boolean;
@@ -505,91 +522,52 @@ bool LWEJson::Parse(LWEJson &JSon, const LWUTF8Iterator &Source, LWEJObject *Par
 }
 
 uint32_t LWEJson::Serialize(char8_t *Buffer, uint32_t BufferLen, bool Format) {
-	std::function<uint32_t(char *, uint32_t , LWEJson &, LWEJObject &, uint32_t , bool, bool )> SerializeObjectFmt = [&SerializeObjectFmt](char8_t *Buffer, uint32_t BufferLen, LWEJson &Js, LWEJObject &Obj, uint32_t Depth, bool Last, bool WriteName)->uint32_t {
-		uint32_t o = 0;
-		uint32_t dm = Depth * 2;
+	std::function<bool(char *, uint32_t, uint32_t &, LWEJson &, LWEJObject &, uint32_t , bool, bool, bool)> SerializeObject = [&SerializeObject](char8_t *Buffer, uint32_t BufferLen, uint32_t &o, LWEJson &Js, LWEJObject &Obj, uint32_t Depth, bool Last, bool WriteName, bool Format)->bool {
+		char NewLine[2] = {};
 		char Buf[512];
-
-		if(WriteName) o += snprintf((char*)Buffer + o, BufferLen - o, "%*s\"%s\": ", dm, "", Obj.m_Name);
+		if (Format) NewLine[0] = '\n';
+		uint32_t dm = Format ? Depth * 2 : 0;
+		if(WriteName) o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "{: <{}}\"{}\": ", "", dm, Obj.m_Name);
 		if (Obj.m_Type == LWEJObject::Array) {
-			o += snprintf((char*)Buffer + o, BufferLen - o, "[");
+			o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "[");
 			for (uint32_t i = 0; i < Obj.m_Length; i++) {
 				LWEJObject *Jobj = Js.Find(Obj.m_Children[i].m_FullNameHash);
-				if(!Jobj) continue;
-				o += SerializeObjectFmt(Buffer + o, BufferLen - o, Js, *Jobj, Depth + 1, i == Obj.m_Length - 1, false);
+				if(!Jobj) return false;
+				if (!SerializeObject(Buffer, BufferLen, o, Js, *Jobj, Depth + 1, i == Obj.m_Length - 1, false, Format)) return false;
 			}
-			o += snprintf((char*)Buffer + o, BufferLen-o, "]");
+			o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "]");
 		} else if (Obj.m_Type == LWEJObject::Object) {
-			o += snprintf((char*)Buffer + o, BufferLen - o, "{\n");
+			o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "{{{}", NewLine);
 			for (uint32_t i = 0; i < Obj.m_Length; i++) {
 				LWEJObject *Jobj = Js.Find(Obj.m_Children[i].m_FullNameHash);
-				if(!Jobj) continue;
-				o += SerializeObjectFmt(Buffer + o, BufferLen - o, Js, *Jobj, Depth + 1, i == Obj.m_Length-1, true);
+				if(!Jobj) return false;
+				if (!SerializeObject(Buffer, BufferLen, o, Js, *Jobj, Depth + 1, i == Obj.m_Length - 1, true, Format)) return false;
 			}
-			o += snprintf((char*)Buffer + o, BufferLen-o, "%*s}", dm, "");
+			o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "{: <{}}}}", "", dm);
 		} else if (Obj.m_Type == LWEJObject::String) {
 			EscapeString(Obj.m_Value, Buf, sizeof(Buf));
-			o += snprintf((char*)Buffer + o, BufferLen - o, "\"%s\"", Buf);
+			o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "\"{}\"", Buf);
 		} else {
-			o += snprintf((char*)Buffer + o, BufferLen - o, "%s", Obj.m_Value);
+			o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "{}", Obj.m_Value);
 		}
-		if (!Last) o += snprintf((char*)Buffer + o, BufferLen - o, ",");
-		o += snprintf((char*)Buffer + o, BufferLen - o, "\n");
-		return o;
-	};
-
-	std::function<uint32_t(char *, uint32_t, LWEJson &, LWEJObject &, bool, bool)> SerializeObject = [&SerializeObject](char8_t *Buffer, uint32_t BufferLen, LWEJson &Js, LWEJObject &Obj, bool Last, bool WriteName) {
-		uint32_t o = 0;
-		char Buf[512];
-
-		if (WriteName) o += snprintf((char*)Buffer + o, BufferLen - o, "\"%s\":", Obj.m_Name);
-		if (Obj.m_Type == LWEJObject::Array) {
-			o += snprintf((char*)Buffer + o, BufferLen - o, "[");
-			for (uint32_t i = 0; i < Obj.m_Length; i++) {
-				LWEJObject *Jobj = Js.Find(Obj.m_Children[i].m_FullNameHash);
-				if (!Jobj) continue;
-				o += SerializeObject(Buffer + o, BufferLen - o, Js, *Jobj, i == Obj.m_Length - 1, false);
-			}
-			o += snprintf((char*)Buffer + o, BufferLen - o, "]");
-		} else if (Obj.m_Type == LWEJObject::Object) {
-			o += snprintf((char*)Buffer + o, BufferLen - o, "{");
-			for (uint32_t i = 0; i < Obj.m_Length; i++) {
-				LWEJObject *Jobj = Js.Find(Obj.m_Children[i].m_FullNameHash);
-				if (!Jobj) continue;
-				o += SerializeObject(Buffer + o, BufferLen - o, Js, *Jobj, i == Obj.m_Length - 1, true);
-			}
-			o += snprintf((char*)Buffer + o, BufferLen - o, "}");
-		} else if (Obj.m_Type == LWEJObject::String) {
-			EscapeString(Obj.m_Value, Buf, sizeof(Buf));
-			o += snprintf((char*)Buffer + o, BufferLen - o, "\"%s\"", Buf);
-		} else {
-			o += snprintf((char*)Buffer + o, BufferLen - o, "%s", Obj.m_Value);
-		}
-		if (!Last) o += snprintf((char*)Buffer + o, BufferLen - o, ",");
-		return o;
+		if (!Last) o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, ",");
+		o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "{}", NewLine);
+		return true;
 	};
 
 	uint32_t o = 0;
+	char8_t NewLine[2] = {};
+	if (Format) NewLine[0] = '\n';
 
-	if (Format) {
-		if (m_Type == LWEJObject::Array) o += snprintf((char*)Buffer + o, BufferLen - o, "[");
-		else o += snprintf((char*)Buffer + o, BufferLen - o, "{\n");
-		for (uint32_t i = 0; i < m_Length; i++) {
-			LWEJObject *J = Find(m_Elements[i]);
-			if(!J) continue;
-			o += SerializeObjectFmt(Buffer + o, BufferLen - o, *this, *J, 1, i == (m_Length - 1), m_Type != LWEJObject::Array);
-		}
-	} else {
-		if (m_Type == LWEJObject::Array) o += snprintf((char*)Buffer + o, BufferLen - o, "[");
-		else o += snprintf((char*)Buffer + o, BufferLen - o, "{");
-		for (uint32_t i = 0; i < m_Length; i++) {
-			LWEJObject *J = Find(m_Elements[i]);
-			if (!J) continue;
-			o += SerializeObject(Buffer + o, BufferLen - o, *this, *J, i == (m_Length - 1), m_Type!=LWEJObject::Array);
-		}
+	if (m_Type == LWEJObject::Array) o += snprintf((char*)Buffer + o, BufferLen - o, "[");
+	else o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "{{{}", NewLine);
+	for (uint32_t i = 0; i < m_Length; i++) {
+		LWEJObject *J = Find(m_Elements[i]);
+		if(!J) return 0;
+		if (!SerializeObject(Buffer, BufferLen, o, *this, *J, 1, i == (m_Length - 1), m_Type != LWEJObject::Array, Format)) return 0;
 	}
-	if (m_Type == LWEJObject::Array) o += snprintf((char*)Buffer + o, BufferLen - o, "]");
-	else o += snprintf((char*)Buffer + o, BufferLen - o, "}");
+	if (m_Type == LWEJObject::Array) o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "]");
+	else o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "}}");
 	return o;
 }
 
@@ -657,7 +635,7 @@ LWEJObject *LWEJson::MakeElement(const LWUTF8Iterator &Name, LWEJObject *Parent)
 	//std::pair<uint32_t, LWEJObject> p(O.m_Hash, O);
 	auto Res = m_ObjectMap.emplace(FullHash, LWEJObject(Name, "", 0, FullHash, ParentHash, m_Allocator));
 	if (!Res.second) {
-		fmt::print("JSON name collision: '{}'\n", FullNameBuffer);
+		LWELogCritical<256>("JSON name collision: '{}'", FullNameBuffer);
 		return nullptr;
 	}
 	LWEJObject &R = Res.first->second;

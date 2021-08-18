@@ -25,23 +25,29 @@ struct LWEWebPacket {
 		CONTROL_CONNECT=0x4000,
 		CONTROL_FINISHED=0x8000,
 	};
+	LWEWebSocket *m_WebSocket = nullptr;
 	char *m_Data = nullptr;
 	uint32_t m_DataLen = 0;
 	uint32_t m_DataPos = 0;
 	uint32_t m_FramePos = 0;
 	uint32_t m_ControlFlag = 0;
 	uint32_t m_Mask = 0;
-	LWEWebSocket *m_WebSocket = nullptr;
 
 	uint32_t Deserialize(const char *Buffer, uint32_t BufferLen, LWAllocator &Allocator);
 
 	uint32_t Serialize(char *Buffer, uint32_t BufferLen, bool isClient);
 
-	uint32_t GetOp(void);
+	uint32_t GetOp(void) const;
+
+	LWUTF8Iterator AsText(void) const; //Returns iterator to data as if this packet is text(op == CONTROL_TEXT).
 
 	void WorkFinished(void);
 
-	bool Finished(void);
+	bool isBinaryPacket(void) const;
+
+	bool isConnectingPacket(void) const;
+
+	bool isFinished(void) const;
 
 	LWEWebPacket &operator = (LWEWebPacket &&Other);
 
@@ -107,6 +113,7 @@ struct LWEWebSocket {
 
 class LWEProtocolWebSocket : virtual public LWProtocol {
 public:
+	static const uint32_t WebSocketVersion = 13;
 	enum {
 		PacketBufferSize = 64
 	};

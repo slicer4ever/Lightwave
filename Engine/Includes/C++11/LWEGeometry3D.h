@@ -285,6 +285,29 @@ bool LWESphereInFrustum(const LWVector3<Type> &Position, Type Radius, const LWVe
 	return m >= -Radius;
 }
 
+
+/*!< \brief returns true if the aabb is inside/intersecting the frustum. */
+template<class Type>
+bool LWEAABBInFrustum(const LWVector4<Type> &AABBMin, const LWVector4<Type> &AABBMax, const LWVector4<Type> &FrustumPosition, const LWVector4<Type> *Frustum) {
+	LWVector4<Type> Min = (AABBMin - FrustumPosition).AAAB(LWVector4<Type>((Type)1));
+	LWVector4<Type> Max = (AABBMax - FrustumPosition).AAAB(LWVector4<Type>((Type)1));
+	LWSVector4<Type> Table[8] = { //LUT of all possible Min/Max mix's.
+		Min,
+		Min.AABB(Max),
+		Min.ABAB(Max),
+		Min.ABBB(Max),
+		Min.BAAB(Max),
+		Min.BABB(Max),
+		Min.BBAB(Max),
+		Max };
+	for (uint32_t i = 0; i < 6; i++) {
+		uint32_t LUTIdx = (Frustum[i].x > (Type)0) << 2 | (Frustum[i].y > (Type)0) << 1 | (Frustum[i].z > (Type)0);
+		if (Frustum[i].Dot(Table[LUTIdx]) < (Type)0) return false; //Outside
+		if (Frustum[i].Dot(Table[(~LUTIdx) & 0x7]) <= (Type)0) return true; //Intersection
+	}
+	return true; //All inside.
+}
+
 /*!< \brief returns true if the aabb is inside the frustum, this function turns the aabb into the largest sphere, which will produce some incorrect results. */
 template<class Type>
 bool LWEAABBInFrustum(const LWVector3<Type> &AABBMin, const LWVector3<Type> &AABBMax, const LWVector3<Type> &FrustumPosition, const LWVector4<Type> *Frustum) {
