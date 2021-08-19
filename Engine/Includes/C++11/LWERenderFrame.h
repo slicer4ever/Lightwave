@@ -23,12 +23,12 @@ class LWERendererBlockGeometry;
 class LWECamera;
 
 struct LWEGeometryModelBlock {
-	LWBitField32(IndiceVB, 8, 0);
-	LWBitField32(VertexAttributeVB, 12, IndiceVBBitsOffset + 8);
-	LWBitField32(VertexPositionVB, 12, VertexAttributeVBBitsOffset + 12);
+	LWBitField64(IndiceVB, 22, 0);
+	LWBitField64(VertexAttributeVB, 21, IndiceVBBitsOffset + 22);
+	LWBitField64(VertexPositionVB, 21, VertexAttributeVBBitsOffset + 21);
 
 	uint64_t m_BlockID = -1;
-	uint32_t m_BufferName = LWUTF8I::EmptyHash; //if BlockID is -1, then BufferName is actually interpreted to be 3 video buffers, the upper 12 bits for the VertexBuffer ID for posiiton attribute vertices, the next 12 bits for the vertexBuffer ID for the attribute vertices, and lower 8 bits for the index buffer, with 0 in either indicating no bound buffer.  Note: When rending the vertex buffer, vertex input mappings are expected to be in order of positions, followed by attributes.
+	uint64_t m_BufferName = (uint64_t)LWUTF8I::EmptyHash; //if BlockID is -1, then BufferName is actually interpreted to be 3 video buffers, the upper 21 bits for the VertexBuffer ID for posiiton attribute vertices, the next 21 bits for the vertexBuffer ID for the attribute vertices, and lower 22 bits for the index buffer, with 0 in either indicating no bound buffer.  Note: When rending the vertex buffer, vertex input mappings are expected to be in order of positions, followed by attributes.
 	uint32_t m_Offset = 0;
 	uint32_t m_Count = 0;
 

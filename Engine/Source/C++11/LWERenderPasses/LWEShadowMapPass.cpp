@@ -93,6 +93,7 @@ uint32_t LWEShadowMapPass::RenderPass(LWERenderFrame &Frame, LWEGeometryRenderab
 			LWVideoBuffer *IndiceBuffer = nullptr;
 			uint32_t Count = 0;
 			LWPipeline *Pipeline = PrepareRendablePipeline(Renderable, LWERenderMaterial(), IndiceBuffer, Count, InputStreams, Driver, Renderer, p, SubPassIndex);
+			if (!Count) continue;
 			Driver->DrawIndirectBuffer(Pipeline, LWVideoDriver::Triangle, InputStreams, IndiceBuffer, m_IndirectBuffer[p], Count, RenderableOffset);
 			RenderableOffset += Count;
 		}

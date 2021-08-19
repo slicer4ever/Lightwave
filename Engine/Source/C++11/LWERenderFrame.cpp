@@ -20,13 +20,13 @@ bool LWEGeometryModelBlock::isVideoBuffer(void) const {
 	return m_BlockID == -1;
 }
 
-LWEGeometryModelBlock::LWEGeometryModelBlock(LWERendererBlockGeometry *Block, uint64_t BlockID, uint32_t Offset, uint32_t Count) : m_BlockID(BlockID), m_BufferName(Block->GetNameHash()), m_Offset(Offset), m_Count(Count) {}
+LWEGeometryModelBlock::LWEGeometryModelBlock(LWERendererBlockGeometry *Block, uint64_t BlockID, uint32_t Offset, uint32_t Count) : m_BlockID(BlockID), m_BufferName((uint64_t)Block->GetNameHash()), m_Offset(Offset), m_Count(Count) {}
 
-LWEGeometryModelBlock::LWEGeometryModelBlock(uint32_t BufferName, uint64_t BlockID, uint32_t Offset, uint32_t Count) : m_BlockID(BlockID), m_BufferName(BufferName), m_Offset(Offset), m_Count(Count) {}
+LWEGeometryModelBlock::LWEGeometryModelBlock(uint32_t BufferName, uint64_t BlockID, uint32_t Offset, uint32_t Count) : m_BlockID(BlockID), m_BufferName((uint64_t)BufferName), m_Offset(Offset), m_Count(Count) {}
 
-LWEGeometryModelBlock::LWEGeometryModelBlock(uint32_t VertexPositionBufferID, uint32_t VertexAttributeBufferID, uint32_t IndiceBufferID, uint32_t Offset, uint32_t Count) : m_BufferName((VertexPositionBufferID << VertexPositionVBBitsOffset) | (VertexAttributeBufferID << VertexAttributeVBBitsOffset) | (IndiceBufferID << IndiceVBBitsOffset)), m_Offset(Offset), m_Count(Count) {}
+LWEGeometryModelBlock::LWEGeometryModelBlock(uint32_t VertexPositionBufferID, uint32_t VertexAttributeBufferID, uint32_t IndiceBufferID, uint32_t Offset, uint32_t Count) : m_BufferName(((uint64_t)VertexPositionBufferID << VertexPositionVBBitsOffset) | ((uint64_t)VertexAttributeBufferID << VertexAttributeVBBitsOffset) | ((uint64_t)IndiceBufferID << IndiceVBBitsOffset)), m_Offset(Offset), m_Count(Count) {}
 
-LWEGeometryModelBlock::LWEGeometryModelBlock(const LWERenderVideoBuffer &VertexPositionBuffer, const LWERenderVideoBuffer &VertexAttributeBuffer, const LWERenderVideoBuffer &IndiceBuffer, uint32_t Offset, uint32_t Count) : m_BufferName((VertexPositionBuffer.m_ID << VertexPositionVBBitsOffset) | (VertexAttributeBuffer.m_ID << VertexAttributeVBBitsOffset) | (IndiceBuffer.m_ID << IndiceVBBitsOffset)), m_Offset(Offset), m_Count(Count) {}
+LWEGeometryModelBlock::LWEGeometryModelBlock(const LWERenderVideoBuffer &VertexPositionBuffer, const LWERenderVideoBuffer &VertexAttributeBuffer, const LWERenderVideoBuffer &IndiceBuffer, uint32_t Offset, uint32_t Count) : m_BufferName(((uint64_t)VertexPositionBuffer.m_ID << VertexPositionVBBitsOffset) | ((uint64_t)VertexAttributeBuffer.m_ID << VertexAttributeVBBitsOffset) | ((uint64_t)IndiceBuffer.m_ID << IndiceVBBitsOffset)), m_Offset(Offset), m_Count(Count) {}
 
 //LWEGeometryModel:
 bool LWEGeometryModel::isTransparent(void) const {
@@ -157,7 +157,7 @@ std::pair<uint32_t, uint32_t> LWEGeometryBucket::Finalize(LWERenderer *Renderer,
 				}
 				IndirectList[IndirectCount] = { Cnt, 1, Offset, 0, IDCount };
 			} else {
-				LWERendererBlockGeometry *BlockGeom = Renderer->FindNamedBlockGeometryMap(Block.m_BufferName);
+				LWERendererBlockGeometry *BlockGeom = Renderer->FindNamedBlockGeometryMap((uint32_t)Block.m_BufferName);
 				assert(BlockGeom != nullptr);
 				IndirectList[IndirectCount] = BlockGeom->MakeDrawCall(Block.m_BlockID, IDCount, Block.m_Offset, Block.m_Count);
 			}

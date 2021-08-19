@@ -68,7 +68,7 @@ LWEShaderLightData::LWEShaderLightData(const LWSVector4f &Position, float Interi
 
 
 //LWEGeometryRenderable
-LWEGeometryRenderable::LWEGeometryRenderable(uint32_t BlockBufferNameHash, const LWERenderMaterial &Material, uint32_t DrawCount) : m_BlockBufferNameHash(BlockBufferNameHash), m_Material(Material), m_DrawCount(DrawCount) {}
+LWEGeometryRenderable::LWEGeometryRenderable(uint64_t BlockBufferNameHash, const LWERenderMaterial &Material, uint32_t DrawCount) : m_BlockBufferNameHash(BlockBufferNameHash), m_Material(Material), m_DrawCount(DrawCount) {}
 
 //LWEShaderGlobalData:
 

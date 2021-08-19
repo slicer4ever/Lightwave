@@ -58,13 +58,13 @@ LWEPass *LWEGeometryPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer 
 }
 
 LWPipeline *LWEGeometryPass::PrepareRendablePipeline(const LWEGeometryRenderable &Rendable, const LWERenderMaterial &Material, LWVideoBuffer *&IndiceBuffer, uint32_t &RenderCount, LWPipelineInputStream InputStream[LWShader::MaxInputs], LWVideoDriver *Driver, LWERenderer *Renderer, uint32_t SubPassIdx, uint32_t SubPassOffset) {
-	RenderCount = Rendable.m_DrawCount & ~LWEGeometryRenderable::BufferVideoBuffer;
-	LWPipeline *Pipeline = PreparePipeline(Material, Rendable.m_BlockBufferNameHash, Driver, Renderer, SubPassIdx+SubPassOffset);;
+	LWPipeline *Pipeline = PreparePipeline(Material, (uint32_t)Rendable.m_BlockBufferNameHash, Driver, Renderer, SubPassIdx+SubPassOffset);;
 	assert(Pipeline != nullptr);
 	if (Rendable.m_DrawCount & LWEGeometryRenderable::BufferVideoBuffer) {
-		LWVideoBuffer *VPBuffer = Renderer->GetVideoBuffer(LWBitFieldGet(LWEGeometryModelBlock::VertexPositionVB, Rendable.m_BlockBufferNameHash));
-		LWVideoBuffer *VABuffer = Renderer->GetVideoBuffer(LWBitFieldGet(LWEGeometryModelBlock::VertexAttributeVB, Rendable.m_BlockBufferNameHash));
-		IndiceBuffer = Renderer->GetVideoBuffer(LWBitFieldGet(LWEGeometryModelBlock::IndiceVB, Rendable.m_BlockBufferNameHash));
+		LWVideoBuffer *VPBuffer = Renderer->GetVideoBuffer((uint32_t)LWBitFieldGet(LWEGeometryModelBlock::VertexPositionVB, Rendable.m_BlockBufferNameHash));
+		LWVideoBuffer *VABuffer = Renderer->GetVideoBuffer((uint32_t)LWBitFieldGet(LWEGeometryModelBlock::VertexAttributeVB, Rendable.m_BlockBufferNameHash));
+		IndiceBuffer = Renderer->GetVideoBuffer((uint32_t)LWBitFieldGet(LWEGeometryModelBlock::IndiceVB, Rendable.m_BlockBufferNameHash));
+		if (!VPBuffer || !VABuffer || !IndiceBuffer) return Pipeline;
 		uint32_t InputCnt = Pipeline->GetInputCount();
 		uint32_t VPSize = VPBuffer->GetTypeSize();
 		uint32_t VASize = VABuffer->GetTypeSize();
@@ -77,11 +77,13 @@ LWPipeline *LWEGeometryPass::PrepareRendablePipeline(const LWEGeometryRenderable
 			} else InputStream[i] = LWPipelineInputStream(m_IDBuffer[SubPassIdx], 0, sizeof(uint32_t));
 		}
 	} else {
-		LWERendererBlockGeometry *Geometry = Renderer->FindNamedBlockGeometryMap(Rendable.m_BlockBufferNameHash);
+		LWERendererBlockGeometry *Geometry = Renderer->FindNamedBlockGeometryMap((uint32_t)Rendable.m_BlockBufferNameHash);
 		assert(Geometry != nullptr);
 		Geometry->BuildInputStreams(Pipeline, InputStream, m_IDBuffer[SubPassIdx]);
 		IndiceBuffer = Geometry->GetIndiceBuffer();
 	}
+	RenderCount = Rendable.m_DrawCount & ~LWEGeometryRenderable::BufferVideoBuffer;
+
 	return Pipeline;
 }
 
@@ -98,6 +100,7 @@ uint32_t LWEGeometryPass::RenderPass(LWERenderFrame &Frame, LWEGeometryRenderabl
 			LWVideoBuffer *IndiceBuffer = nullptr;
 			uint32_t Count = 0;
 			LWPipeline *Pipeline = PrepareRendablePipeline(Renderable, Renderable.m_Material, IndiceBuffer, Count, InputStreams, Driver, Renderer, p, SubPassIndex);
+			if(!Count) continue;
 			Driver->DrawIndirectBuffer(Pipeline, LWVideoDriver::Triangle, InputStreams, IndiceBuffer, m_IndirectBuffer[p], Count, RenderableOffset);
 			RenderableOffset += Count;
 		}
@@ -107,6 +110,7 @@ uint32_t LWEGeometryPass::RenderPass(LWERenderFrame &Frame, LWEGeometryRenderabl
 			LWVideoBuffer *IndiceBuffer = nullptr;
 			uint32_t Count = 0;
 			LWPipeline *Pipeline = PrepareRendablePipeline(Renderable, Renderable.m_Material, IndiceBuffer, Count, InputStreams, Driver, Renderer, p, SubPassIndex);
+			if (!Count) continue;
 			Driver->DrawIndirectBuffer(Pipeline, LWVideoDriver::Triangle, InputStreams, IndiceBuffer, m_IndirectBuffer[p], Count, RenderableOffset);
 			RenderableOffset += Count;
 

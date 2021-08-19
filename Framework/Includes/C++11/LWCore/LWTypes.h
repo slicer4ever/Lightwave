@@ -27,6 +27,12 @@
 	Type Name##Bits = ((1<<(BitCount))-1)<<(BitOffset); \
 	Type Name##BitsOffset = (BitOffset);
 
+/*!< \brief used to define 64 bit+bitsoffset of Name.  Name##Bits is the bit pattern representing the field, Name##BitsOffset represents the bit offset to the patten. */
+#define LWBitField64_(Type, Name, BitCount, BitOffset) \
+	Type Name##Bits = ((1ull<<(BitCount))-1ull)<<(BitOffset); \
+	Type Name##BitsOffset = (BitOffset);
+
+
 /*!< \brief helper function used to define 32 bit bit+bitsoffset of Name.  Name##Bits is the bit pattern representing the field, Name##BitsOffset represents the bit offset to the patten. */
 #define LWBitField32(Name, BitCount, BitOffset) LWBitField(static const uint32_t, Name, (BitCount), (BitOffset))
 
@@ -34,7 +40,7 @@
 #define LWBitField16(Name, BitCount, BitOffset) LWBitField(static const uint16_t, Name, (BitCount), (BitOffset))
 
 /*!< \brief helper function used to define 64 bit bit+bitsoffset of Name.  Name##Bits is the bit pattern representing the field, Name##BitsOffset represents the bit offset to the patten. */
-#define LWBitField64(Name, BitCount, BitOffset) LWBitField(static const uint64_t, Name, (BitCount), (BitOffset))
+#define LWBitField64(Name, BitCount, BitOffset) LWBitField64_(static const uint64_t, Name, (BitCount), (BitOffset))
 
 /*!< \brief helper macro which get's the stored value from flag of the Named bitfield(as declared by LWBitField). */
 #define LWBitFieldGet(Name, Flag) \
