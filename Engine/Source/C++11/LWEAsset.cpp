@@ -27,7 +27,6 @@ const char8_t *LWEShaderSources[LWEShaderCount] = {
 #include "LWEShaders/LWEUIColor.lwps"
 #include "LWEShaders/LWEUIYUVTexture.lwps"
 #include "LWEShaders/LWEPP_Texture.lwps"
-#include "LWEShaders/LWEPP_MSAverage.lwps"
 #include "LWEShaders/LWEStructures.lws"
 #include "LWEShaders/LWEUtilitys.lws"
 #include "LWEShaders/LWELightUtilitys.lws"

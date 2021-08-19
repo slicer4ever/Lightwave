@@ -407,6 +407,10 @@ public:
 	*/
 	virtual LWVideoBuffer *CreateVideoBuffer(uint32_t Type, uint32_t UsageFlag, uint32_t TypeSize, uint32_t Length, LWAllocator &Allocator, const uint8_t *Buffer);
 
+	/*!< \brief resolve's a MSAA texture to a non-MSAA texture. 
+		 \note: Texture's must have same dimension, be 2D, and have compatable PackType.
+	*/
+	virtual bool ResolveMSAA(LWTexture *Source, LWTexture *Dest, uint32_t MipLevel = 0);
 
 	/*!< \brief constructs a video buffer of type for use.
 		 \param Type the type of the video buffer to create.

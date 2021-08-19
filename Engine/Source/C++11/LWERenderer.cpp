@@ -8,6 +8,7 @@
 #include "LWERenderPasses/LWEGeometryPass.h"
 #include "LWERenderPasses/LWEShadowMapPass.h"
 #include "LWERenderPasses/LWEPPPass.h"
+#include "LWERenderPasses/LWEResolvePass.h"
 #include "LWERenderPasses/LWEGausianBlurPass.h"
 #include "LWERenderPasses/LWEUIPass.h"
 
@@ -18,6 +19,7 @@ void LWERenderer::GenerateDefaultXMLPasses(std::unordered_map<uint32_t, LWEPassX
 	PassMap.insert({ LWUTF8I("GeometryPass").Hash(), &LWEGeometryPass::ParseXML });
 	PassMap.insert({ LWUTF8I("GausianBlurPass").Hash(), &LWEGausianBlurPass::ParseXML });
 	PassMap.insert({ LWUTF8I("ShadowMapPass").Hash(), &LWEShadowMapPass::ParseXML });
+	PassMap.insert({ LWUTF8I("ResolvePass").Hash(), &LWEResolvePass::ParseXML }); 
 	return;
 }
 
@@ -943,10 +945,17 @@ LWFrameBuffer *LWERenderer::DestroyFrameBuffer(LWFrameBuffer *FB) {
 
 
 LWERenderer::LWERenderer(LWVideoDriver *Driver, LWEAssetManager *AssetManager, LWAllocator &Allocator) : m_Allocator(Allocator), m_Driver(Driver), m_AssetManager(AssetManager) {
-	LWVertexTexture TL = LWVertexTexture(LWVector4f(-1.0f, 1.0f, 0.0f, 1.0f), LWVector4f(0.0f, 1.0f, 0.0f, 1.0f));
-	LWVertexTexture BL = LWVertexTexture(LWVector4f(-1.0f,-1.0f, 0.0f, 1.0f), LWVector4f(0.0f, 0.0f, 0.0f, 0.0f));
-	LWVertexTexture TR = LWVertexTexture(LWVector4f( 1.0f, 1.0f, 0.0f, 1.0f), LWVector4f(1.0f, 1.0f, 1.0f, 1.0f));
-	LWVertexTexture BR = LWVertexTexture(LWVector4f( 1.0f,-1.0f, 0.0f, 1.0f), LWVector4f(1.0f, 0.0f, 1.0f, 0.0f));
+	LWVertexTexture TL = LWVertexTexture(LWVector4f(-1.0f, 1.0f, 0.0f, 1.0f), LWVector4f(0.0f, 0.0f, 0.0f, 0.0f));
+	LWVertexTexture BL = LWVertexTexture(LWVector4f(-1.0f,-1.0f, 0.0f, 1.0f), LWVector4f(0.0f, 1.0f, 0.0f, 1.0f));
+	LWVertexTexture TR = LWVertexTexture(LWVector4f( 1.0f, 1.0f, 0.0f, 1.0f), LWVector4f(1.0f, 0.0f, 1.0f, 0.0f));
+	LWVertexTexture BR = LWVertexTexture(LWVector4f( 1.0f,-1.0f, 0.0f, 1.0f), LWVector4f(1.0f, 1.0f, 1.0f, 1.0f));
+	if (!LWMatrix4_UseDXOrtho) {
+		TL.m_TexCoord = LWVector4f(0.0f, 1.0f, 0.0f, 1.0f);
+		BL.m_TexCoord = LWVector4f(0.0f, 0.0f, 0.0f, 0.0f);
+		TR.m_TexCoord = LWVector4f(1.0f, 1.0f, 1.0f, 1.0f);
+		BR.m_TexCoord = LWVector4f(1.0f, 0.0f, 1.0f, 0.0f);
+	};
+
 	LWVertexTexture PPVertices[6] = { TL, BL, BR, BR, TR, TL };
 	m_PPScreenVertices = m_Driver->CreateVideoBuffer<LWVertexTexture>(LWVideoBuffer::Vertex, LWVideoBuffer::Static, 6, Allocator, PPVertices);
 	m_FrameGlobalDataBuffer = m_Driver->CreateVideoBuffer<LWEShaderGlobalData>(LWVideoBuffer::Uniform, LWVideoBuffer::WriteDiscardable, 1, m_Allocator, nullptr);

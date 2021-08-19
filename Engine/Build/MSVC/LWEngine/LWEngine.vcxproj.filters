@@ -168,6 +168,9 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEUIPass.h">
       <Filter>Header Files\LWERenderPasses</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEResolvePass.h">
+      <Filter>Header Files\LWERenderPasses</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Source\C++11\LWEAsset.cpp">
@@ -282,6 +285,9 @@
       <Filter>Source Files\LWERenderPasses</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEUIPass.cpp">
+      <Filter>Source Files\LWERenderPasses</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEResolvePass.cpp">
       <Filter>Source Files\LWERenderPasses</Filter>
     </ClCompile>
   </ItemGroup>

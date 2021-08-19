@@ -643,6 +643,10 @@ LWVideoBuffer *LWVideoDriver::CreateVideoBuffer(uint32_t Type, uint32_t UsageFla
 	return nullptr;
 }
 
+bool LWVideoDriver::ResolveMSAA(LWTexture *Source, LWTexture *Dest, uint32_t MipLevel) {
+	return false;
+}
+
 LWTexture *LWVideoDriver::CreateTexture2DMSArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, uint32_t Layers, LWAllocator &Allocator) {
 	return nullptr;
 }

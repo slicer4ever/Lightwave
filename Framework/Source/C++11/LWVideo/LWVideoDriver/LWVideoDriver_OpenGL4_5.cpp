@@ -1084,6 +1084,20 @@ bool LWVideoDriver_OpenGL4_5::SetFrameBuffer(LWFrameBuffer *Buffer, bool ChangeV
 	return true;
 }
 
+bool LWVideoDriver_OpenGL4_5::ResolveMSAA(LWTexture *Source, LWTexture *Dest, uint32_t MipLevel) {
+	assert(Source->isMultiSampled() && !Dest->isMultiSampled());
+	LWFrameBuffer *pFrameBuffer = m_ActiveFrameBuffer;
+	m_ActiveFrameBuffer = pFrameBuffer ? nullptr : (LWFrameBuffer*)(void*)0x1;
+	LWVector2i Size = Source->Get2DSize();
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_ResolveFBRead);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_ResolveFBWrite);
+	glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, ((LWOpenGL4_5Texture*)Source)->GetContext(), MipLevel);
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ((LWOpenGL4_5Texture*)Dest)->GetContext(), MipLevel);
+	glBlitFramebuffer(0, 0, Size.x, Size.y, 0, 0, Size.x, Size.y, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+	SetFrameBuffer(pFrameBuffer);
+	return true;
+}
+
 LWVideoDriver &LWVideoDriver_OpenGL4_5::ClearColor(uint32_t Color) {
 	SetFrameBuffer(m_ActiveFrameBuffer);
 	LWVector4f ClearClr = LWUNPACK_COLORVEC4f(Color);
@@ -1179,4 +1193,6 @@ LWVideoDriver_OpenGL4_5::LWVideoDriver_OpenGL4_5(LWWindow *Window, LWOpenGL4_5Co
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 	glEnable(GL_FRAMEBUFFER_SRGB);
+	glGenFramebuffers(1, &m_ResolveFBRead);
+	glGenFramebuffers(1, &m_ResolveFBWrite);
 }

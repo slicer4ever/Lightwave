@@ -61,6 +61,8 @@ public:
 
 	virtual LWFrameBuffer *CreateFrameBuffer(const LWVector2i &Size, LWAllocator &Allocator);
 
+	virtual bool ResolveMSAA(LWTexture *Source, LWTexture *Dest, uint32_t MipLevel = 0);
+
 	virtual bool UpdateTexture(LWTexture *Texture);
 
 	virtual bool UpdateTexture1D(LWTexture *Texture, uint32_t MipmapLevel, void *Texels, uint32_t Position, uint32_t Size);

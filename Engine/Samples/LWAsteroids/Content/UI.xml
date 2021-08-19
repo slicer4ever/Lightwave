@@ -6,7 +6,6 @@
 	<Shader Type="Pixel" Name="UIColorShader" Path="UIColor" />
 	<Shader Type="Vertex" Name="PPVertexShader" Path="PP_Vertex" InputType="TextureVertex" />
 	<Shader Type="Pixel" Name="PPTextureShader" Path="PP_Texture" />
-	<Shader Type="Pixel" Name="PPMSAverageShader" Path="PP_MSAverage" />
 	<Shader Type="Pixel" Name="PPPBRCompositeShader" Path="PP_PBRComposite" />
 	<Shader Type="Vertex" Name="GausianVertexShader" Path="GausianBlurVertex" InputType="TextureVertex" />
 	<Shader Type="Pixel" Name="GausianPixelShader" Path="GausianBlurPixel" />
@@ -41,14 +40,14 @@
 	<PipelineBuilder CullMode="CW">
 		<Pipeline Name="PPComposite" Vertex="PPVertexShader" Pixel="PPPBRCompositeShader" />
 		<Pipeline Name="PPGausianBlur" Vertex="GausianVertexShader" Pixel="GausianPixelShader" />
-		<Pipeline Name="PPMSAverage" Vertex="PPVertexShader" Pixel="PPMSAverageShader" />
 	</PipelineBuilder>
 </AssetManager>
 <Renderer>
 	<FrameBuffer Name="GeometryFB" Size="100%|100%" Samples="4" Color="SRGBA:MinLinear|MagLinear" Color1="SRGBA:MinLinear|MagLinear" Depth="DEPTH32" />
-	<FrameBuffer Name="MSColorFB" Size="100%|100%" Color="SRGBA:MinLinear|MagLinear" />
-	<FrameBuffer Name="MSEmissiveFB" Size="50%|50%" Color="SRGBA:MinLinear|MagLinear" />
-	<FrameBuffer Name="EmissiveBlurFB" Size="50%|50%" Color="SRGBA:MinLinear|MagLinear" />
+	<Texture2D Name="MSColorTex" Size="100%|100%" TextureState="MinLinear|MagLinear" PackType="SRGBA" />
+	<Texture2D Name="MSEmissiveTex" Size="100%|100%" TextureState="MinLinear|MagLinear" PackType="SRGBA" />
+	<FrameBuffer Name="EmissiveBlurFBA" Size="50%|50%" Color="SRGBA:MinLinear|MagLinear" />
+	<FrameBuffer Name="EmissiveBlurFBB" Size="50%|50%" Color="SRGBA:MinLinear|MagLinear" />
 	<BlockGeometry Name="StaticGeom" Type="StaticVertex" MaxVerticeBlocks="8096" MaxIndiceBlocks="8096" BuildPrimitives />
 	<BlockGeometry Name="SkeletonGeom" Type="SkeletonVertex" MaxVerticeBlocks="8096" MaxIndiceBlocks="8096" BuildPrimitives Debug />
 	<ShadowMapPass Name="ShadowMapPass" Buckets="4" ArraySize="2048 | 2048" PassBitID="1">
@@ -65,23 +64,17 @@
 		<Pipeline Name="Debug" StaticGeom="PBRUnlit_Static" SkeletonGeom="PBRUnlit_Skeleton" />
 		<Bucket Primary />
 	</GeometryPass>
-	<PPPass Name="PostProcess">
-		<Pipeline Name="Color" Default="PPMSAverage">
-			<Resources Tex="GeometryFB:Color" />
-		</Pipeline>
-		<Pipeline Name="Emissive" Default="PPMSAverage">
-			<Resources Tex="GeometryFB:Color1" />
-		</Pipeline>
-		<SubPass Pipeline="Color" Target="MSColorFB" />
-		<SubPass Pipeline="Emissive" Target="MSEmissiveFB" />
-	</PPPass>
+	<ResolvePass Name="Resolve">
+		<Resolve Source="GeometryFB:Color" Target="MSColorTex" />
+		<Resolve Source="GeometryFB:Color1" Target="MSEmissiveTex" />
+	</ResolvePass>
 	<GausianBlurPass Name="EmissiveBlur" Default="PPGausianBlur" >
-		<SubPass Target="EmissiveBlurFB" Source="MSEmissiveFB:Color" />
-		<SubPass Target="MSEmissiveFB" Source="EmissiveBlurFB:Color" Vertical />
+		<SubPass Target="EmissiveBlurFBA" Source="MSEmissiveTex" />
+		<SubPass Target="EmissiveBlurFBB" Source="EmissiveBlurFBA:Color" Vertical />
 	</GausianBlurPass>
 	<PPPass Name="Composite">
 		<Pipeline Name="Composite" Default="PPComposite">
-			<Resources ColorTex="MSColorFB:Color" EmissiveTex="MSEmissiveFB:Color" />
+			<Resources ColorTex="MSColorTex" EmissiveTex="MSEmissiveFBB:Color" />
 		</Pipeline>
 		<SubPass Pipeline="Composite" />
 	</PPPass>

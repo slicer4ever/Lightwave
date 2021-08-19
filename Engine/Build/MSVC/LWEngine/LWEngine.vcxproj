@@ -89,6 +89,7 @@
       <AdditionalIncludeDirectories>../../../Includes/C++11/;../../../../Framework/Includes/C++11/;../../../../Dependency/libz/;../../../../Dependency/libbotan/$(PlatformTarget)/build/include/;../../../../Dependency/libvpx/$(Configuration)/$(PlatformTarget)/include/</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -99,6 +100,7 @@
       <AdditionalIncludeDirectories>../../../Includes/C++11/;../../../../Framework/Includes/C++11/;../../../../Dependency/libz/;../../../../Dependency/libbotan/$(PlatformTarget)/build/include/;../../../../Dependency/libvpx/$(Configuration)/$(PlatformTarget)/include/</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -111,6 +113,7 @@
       <AdditionalIncludeDirectories>../../../Includes/C++11/;../../../../Framework/Includes/C++11/;../../../../Dependency/libz/;../../../../Dependency/libbotan/$(PlatformTarget)/build/include/;../../../../Dependency/libvpx/$(Configuration)/$(PlatformTarget)/include/</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -127,6 +130,7 @@
       <AdditionalIncludeDirectories>../../../Includes/C++11/;../../../../Framework/Includes/C++11/;../../../../Dependency/libz/;../../../../Dependency/libbotan/$(PlatformTarget)/build/include/;../../../../Dependency/libvpx/$(Configuration)/$(PlatformTarget)/include/</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;_HAS_EXCEPTIONS=0</PreprocessorDefinitions>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -155,6 +159,7 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEGausianBlurPass.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEGeometryPass.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEPPPass.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEResolvePass.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEShadowMapPass.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEUIPass.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWERenderTypes.h" />
@@ -199,6 +204,7 @@
     <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEGausianBlurPass.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEGeometryPass.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEPPPass.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEResolvePass.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEShadowMapPass.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEUIPass.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWERenderTypes.cpp" />

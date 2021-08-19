@@ -858,6 +858,20 @@ bool LWVideoDriver_OpenGL3_3::SetFrameBuffer(LWFrameBuffer *Buffer,bool ChangeVi
 	return true;
 }
 
+bool LWVideoDriver_OpenGL3_3::ResolveMSAA(LWTexture *Source, LWTexture *Dest, uint32_t MipLevel) {
+	assert(Source->isMultiSampled() && !Dest->isMultiSampled());
+	LWFrameBuffer *pFrameBuffer = m_ActiveFrameBuffer;
+	m_ActiveFrameBuffer = pFrameBuffer ? nullptr : (LWFrameBuffer*)(void*)0x1;
+	LWVector2i Size = Source->Get2DSize();
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_ResolveFBRead);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_ResolveFBWrite);
+	glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, ((LWOpenGL3_3Texture*)Source)->GetContext(), MipLevel);
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ((LWOpenGL3_3Texture*)Dest)->GetContext(), MipLevel);
+	glBlitFramebuffer(0, 0, Size.x, Size.y, 0, 0, Size.x, Size.y, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+	SetFrameBuffer(pFrameBuffer);
+	return true;
+}
+
 LWVideoDriver &LWVideoDriver_OpenGL3_3::DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t Offset){
 	const int32_t GModes[] = { GL_POINTS, GL_LINE_STRIP, GL_LINES, GL_TRIANGLE_STRIP, GL_TRIANGLES };
 	SetFrameBuffer(m_ActiveFrameBuffer);
@@ -905,4 +919,6 @@ LWVideoDriver_OpenGL3_3::LWVideoDriver_OpenGL3_3(LWWindow *Window, LWOpenGL3_3Co
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 	glEnable(GL_FRAMEBUFFER_SRGB);
+	glGenFramebuffers(1, &m_ResolveFBRead);
+	glGenFramebuffers(1, &m_ResolveFBWrite);
 }

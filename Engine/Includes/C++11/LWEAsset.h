@@ -15,10 +15,10 @@
 #include "LWETypes.h"
 #include "LWEXML.h"
 
-static const uint32_t LWEShaderCount = 19;
+static const uint32_t LWEShaderCount = 18;
 extern const char8_t *LWEShaderSources[LWEShaderCount]; //Defined in LWEAsset.cpp
 static const char8_t LWEShaderNames[LWEShaderCount][32] = {
-	"FontVertex",  "UIVertex", "PP_Vertex", "FontColor", "FontMSDF", "UITexture", "UIColor", "UIYUVTexture", "PP_Texture", "PP_MSAverage",
+	"FontVertex",  "UIVertex", "PP_Vertex", "FontColor", "FontMSDF", "UITexture", "UIColor", "UIYUVTexture", "PP_Texture",
 	"Structures", "Utilitys", "LightUtilitys", "GausianBlurVertex", "GausianBlurPixel", "DepthVertex", "PBRVertex", "PBRPixel", "PP_PBRComposite"
 };
 

@@ -232,7 +232,7 @@ App::App(LWAllocator &Allocator) : m_Allocator(Allocator) {
 		return;
 	}
 	uint32_t TargetDriver = LWVideoDriver::DirectX11_1;
-	//TargetDriver = LWVideoDriver::OpenGL4_5;
+	TargetDriver = LWVideoDriver::OpenGL4_5;
 	//TargetDriver |= LWVideoDriver::DebugLayer;
 	m_VDriver = LWVideoDriver::MakeVideoDriver(m_Window, TargetDriver);
 	if (!m_VDriver) {
