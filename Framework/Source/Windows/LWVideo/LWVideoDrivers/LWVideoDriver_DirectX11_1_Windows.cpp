@@ -13,15 +13,30 @@
 LWVideoDriver_DirectX11_1 *LWVideoDriver_DirectX11_1::MakeVideoDriver(LWWindow *Window, uint32_t Type) {
 	LWDirectX11_1Context Context;
 	LWWindowContext WinCon = Window->GetContext();
-	DXGI_SWAP_CHAIN_DESC scd = { { 0, 0,{ 0, 0 }, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED, DXGI_MODE_SCALING_UNSPECIFIED },{ 1, 0 }, DXGI_USAGE_RENDER_TARGET_OUTPUT, 3, WinCon.m_WND, (Window->GetFlag()&LWWindow::Fullscreen) == 0, DXGI_SWAP_EFFECT_FLIP_DISCARD, 0 };
+	IDXGIDevice2* DXGIDevice = nullptr; //Uh...technically we now require feature level 11.3...
+	IDXGIAdapter* DXGIAdapter = nullptr;
+	IDXGIFactory2* DXGIFactory = nullptr;
+	DXGI_SWAP_CHAIN_DESC1 scd = { 0,0, DXGI_FORMAT_R8G8B8A8_UNORM, false, {1,0}, DXGI_USAGE_RENDER_TARGET_OUTPUT, 3,DXGI_SCALING_NONE, DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL, DXGI_ALPHA_MODE_IGNORE, DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT };
 	D3D_FEATURE_LEVEL Level = D3D_FEATURE_LEVEL_11_1;
 	uint32_t Flag = 0;
+	
 	if((Type&DebugLayer)!=0) Flag |= D3D11_CREATE_DEVICE_DEBUG;
-	HRESULT Res = D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, Flag, &Level, 1, D3D11_SDK_VERSION, &scd, &Context.m_DXSwapChain, (ID3D11Device**)&Context.m_DXDevice, nullptr, (ID3D11DeviceContext**)&Context.m_DXDeviceContext);
-	if (Res != S_OK) {
-		fmt::print("Error: 'D3D11CreateDeviceAndSwapChain': {:#x}\n", Res);
-		if (Res == DXGI_ERROR_UNSUPPORTED) return nullptr;
-	} else {
+
+	auto EvaluateError = [&Context](const LWUTF8Iterator &FunctionName, HRESULT Res)->bool {
+		if (Res == S_OK) return true;
+		fmt::print("Error: '{}': {:#x}\n", FunctionName, Res);
+		if (Context.m_DXSwapChain) Context.m_DXSwapChain->Release();
+		if (Context.m_DXDeviceContext) Context.m_DXDeviceContext->Release();
+		if (Context.m_DXDevice) Context.m_DXDevice->Release();
+		return false;
+	};
+	
+	if (!EvaluateError("D3D11CreateDevice", D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, Flag, &Level, 1, D3D11_SDK_VERSION, (ID3D11Device**)&Context.m_DXDevice, nullptr, (ID3D11DeviceContext**)&Context.m_DXDeviceContext))) return nullptr;
+	else if (!EvaluateError("QueryInterface<IDXGIDevice2>", Context.m_DXDevice->QueryInterface(__uuidof(IDXGIDevice2), (void**)&DXGIDevice))) return nullptr;
+	else if (!EvaluateError("GetParent<IDXGIAdapter>", DXGIDevice->GetParent(__uuidof(IDXGIAdapter), (void**)&DXGIAdapter))) return nullptr;
+	else if (!EvaluateError("GetParent<IDXGIFactory2>", DXGIAdapter->GetParent(__uuidof(IDXGIFactory2), (void**)&DXGIFactory))) return nullptr;
+	else if (!EvaluateError("CreateSwapChainForHwnd", DXGIFactory->CreateSwapChainForHwnd(Context.m_DXDevice, WinCon.m_WND, &scd, nullptr, nullptr, (IDXGISwapChain1**)&Context.m_DXSwapChain))) return nullptr;
+	else {
 		D3D11_TEXTURE2D_DESC Desc;// = { Size.x, Size.y, 1, 1, Formats[PackType],{ 1, 0 }, D3D11_USAGE_DEFAULT, D3D11_BIND_SHADER_RESOURCE | ((TextureState&LWTexture::RenderTarget) != 0 ? D3D11_BIND_RENDER_TARGET : 0) , 0, 0 }
 		Context.m_BackBuffer = nullptr;
 		Context.m_BackBufferDepthStencilView = nullptr;
@@ -31,14 +46,7 @@ LWVideoDriver_DirectX11_1 *LWVideoDriver_DirectX11_1::MakeVideoDriver(LWWindow *
 		TexBackBuffer->GetDesc(&Desc);
 		Desc = { Desc.Width, Desc.Height, 1, 1, DXGI_FORMAT_D24_UNORM_S8_UINT , { 1, 0}, D3D11_USAGE_DEFAULT, D3D11_BIND_DEPTH_STENCIL, 0, 0 };
 		D3D11_RENDER_TARGET_VIEW_DESC RTV = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, D3D11_RTV_DIMENSION_TEXTURE2D, {0u} };
-		HRESULT Res = Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, &DepthStencilBuffer);
-		if (FAILED(Res)) {
-			fmt::print("Error creating depth stencil backbuffer: {:#x}\n", Res);
-			Context.m_DXSwapChain->Release();
-			Context.m_DXDevice->Release();
-			Context.m_DXDeviceContext->Release();
-			return nullptr;
-		}
+		if (!EvaluateError("CreateTexture2D<Depth>", Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, &DepthStencilBuffer))) return nullptr;
 		Context.m_DXDevice->CreateDepthStencilView(DepthStencilBuffer, nullptr, &Context.m_BackBufferDepthStencilView);
 		Context.m_DXDevice->CreateRenderTargetView(TexBackBuffer, &RTV, &Context.m_BackBuffer);
 		Context.m_DXDeviceContext->OMSetRenderTargets(1, &Context.m_BackBuffer, Context.m_BackBufferDepthStencilView);
@@ -84,11 +92,11 @@ bool LWVideoDriver_DirectX11_1::Update(void) {
 		if(!m_ActiveFrameBuffer) m_Context.m_DXDeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 		if(m_Context.m_BackBuffer) m_Context.m_BackBuffer->Release();
 		if(m_Context.m_BackBufferDepthStencilView) m_Context.m_BackBufferDepthStencilView->Release();
-		if (FAILED(m_Context.m_DXSwapChain->ResizeBuffers(0, Size.x, Size.y, DXGI_FORMAT_UNKNOWN, 0))) {
+		if (FAILED(m_Context.m_DXSwapChain->ResizeBuffers(0, Size.x, Size.y, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT))) {
 			fmt::print("Error: Failed to resize backbuffer's.\n");
 			return false;
 		}
-
+		m_WaitObject = nullptr;
 		m_Context.m_DXSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&TexBackBuffer);
 		m_Context.m_DXDevice->CreateRenderTargetView(TexBackBuffer, &RTV, &m_Context.m_BackBuffer);
 		
@@ -101,5 +109,7 @@ bool LWVideoDriver_DirectX11_1::Update(void) {
 		if(TexBackBuffer) TexBackBuffer->Release();
 		if(DepthStencilBuffer) DepthStencilBuffer->Release();
 	}
+	if (!m_WaitObject) m_WaitObject = m_Context.m_DXSwapChain->GetFrameLatencyWaitableObject();
+	WaitForSingleObjectEx(m_WaitObject, 1000, true);
 	return true;
 }

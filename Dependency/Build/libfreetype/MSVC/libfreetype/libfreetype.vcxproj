@@ -52,6 +52,11 @@
     <ClCompile Include="..\..\..\..\libfreetype\src\pshinter\pshinter.c" />
     <ClCompile Include="..\..\..\..\libfreetype\src\psnames\psmodule.c" />
     <ClCompile Include="..\..\..\..\libfreetype\src\raster\raster.c" />
+    <ClCompile Include="..\..\..\..\libfreetype\src\sdf\ftbsdf.c" />
+    <ClCompile Include="..\..\..\..\libfreetype\src\sdf\ftsdf.c" />
+    <ClCompile Include="..\..\..\..\libfreetype\src\sdf\ftsdfcommon.c" />
+    <ClCompile Include="..\..\..\..\libfreetype\src\sdf\ftsdfrend.c" />
+    <ClCompile Include="..\..\..\..\libfreetype\src\sdf\sdf.c" />
     <ClCompile Include="..\..\..\..\libfreetype\src\sfnt\sfnt.c" />
     <ClCompile Include="..\..\..\..\libfreetype\src\smooth\smooth.c" />
     <ClCompile Include="..\..\..\..\libfreetype\src\truetype\truetype.c" />

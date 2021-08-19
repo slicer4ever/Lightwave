@@ -1360,6 +1360,7 @@ LWVideoDriver &LWVideoDriver_DirectX11_1::Dispatch(LWPipeline *Pipeline, const L
 
 LWVideoDriver &LWVideoDriver_DirectX11_1::Present(uint32_t SwapInterval) {
 	m_Context.m_DXSwapChain->Present(SwapInterval, 0);
+	if (!m_ActiveFrameBuffer) m_Context.m_DXDeviceContext->OMSetRenderTargets(1, &m_Context.m_BackBuffer, m_Context.m_BackBufferDepthStencilView);
 	return *this;
 }
 

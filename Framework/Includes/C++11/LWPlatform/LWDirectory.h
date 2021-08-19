@@ -5,6 +5,7 @@
 #include <LWCore/LWUnicode.h>
 #include <LWPlatform/LWTypes.h>
 #include <LWPlatform/LWPlatform.h>
+#include <vector>
 
 /*! \addtogroup LWPlatform LWPlatform
 	@{

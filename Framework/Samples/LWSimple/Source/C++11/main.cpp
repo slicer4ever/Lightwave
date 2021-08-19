@@ -244,7 +244,7 @@ public:
 			return;
 		}
 		//uint32_t TargetDriver = LWVideoDriver::Vulkan | LWVideoDriver::DebugLayer;
-		uint32_t TargetDriver = LWVideoDriver::OpenGL2_1;
+		uint32_t TargetDriver = LWVideoDriver::DirectX11_1 | LWVideoDriver::DebugLayer;
 		fmt::print("Window created: {} Arch: {} Platform: {}\n", m_Window->GetSize(), ArchNames[LWARCH_ID], PlatformNames[LWPLATFORM_ID]);
 		m_Driver = LWVideoDriver::MakeVideoDriver(m_Window, TargetDriver);
 		if (!m_Driver) {
@@ -326,13 +326,11 @@ public:
 		}
 		
 		m_FrameBuffer->SetAttachment(LWFrameBuffer::Color0, m_RTex);
-		m_Driver->SetFrameBuffer(m_FrameBuffer);
-		m_Driver->ViewPort(m_FrameBuffer);
+		m_Driver->SetFrameBuffer(m_FrameBuffer, true);
 		
 		m_Driver->ClearColor(0xFFFF);
 		m_Driver->DrawMesh(m_DefaultPipeline, LWVideoDriver::Triangle, m_RectMesh);
-		m_Driver->SetFrameBuffer(nullptr);
-		m_Driver->ViewPort();
+		m_Driver->SetFrameBuffer(nullptr, true);
 		m_DefaultPipeline->SetResource(0, m_RTex);
 		float Theta = 0.0f;
 		

@@ -81,6 +81,7 @@ typedef std::thread LWThreadType;
 #ifndef LWVIDEODRIVER_DIRECTX11_PLATFORM_H
 #define LWVIDEODRIVER_DIRECTX11_PLATFORM_H
 #include <dxgi.h>
+#include <dxgi1_3.h>
 #include <d3d11.h>
 #include <d3d11_1.h>
 #include <d3d11shader.h>
@@ -96,7 +97,7 @@ struct LWDirectX11_1RasterContext {
 
 /*! \brief This context is the underlying context used in a directX video driver.  the application should never require accessing it directly, but it is provided here incase the application is specifically targeting the directX api. */
 struct LWDirectX11_1Context {
-	IDXGISwapChain *m_DXSwapChain; /*!< \brief the direct X swap chain.*/
+	IDXGISwapChain2 *m_DXSwapChain; /*!< \brief the direct X swap chain.*/
 	ID3D11Device1 *m_DXDevice; /*!< \brief the direct x device. */
 	ID3D11DeviceContext1 *m_DXDeviceContext; /*!< \brief the direct x device context. */
 	ID3D11DepthStencilView *m_BackBufferDepthStencilView;

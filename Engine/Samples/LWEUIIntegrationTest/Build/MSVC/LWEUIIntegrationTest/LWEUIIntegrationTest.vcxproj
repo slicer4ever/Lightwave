@@ -29,26 +29,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -98,7 +98,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../../../../Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Framework/Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Dependency/Binarys/$(Configuration)/$(PlatformTarget)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;LWNetwork.lib;LWEngine.lib;libfmt.lib;OpenGL32.lib;D3D11.lib;D3DCompiler.lib;dxguid.lib;SHcore.lib;libGLEW.lib;libFreetype.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;XInput.lib;libvpx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;LWNetwork.lib;LWEngine.lib;libfmt.lib;OpenGL32.lib;D3D11.lib;D3DCompiler.lib;dxguid.lib;SHcore.lib;libGLEW.lib;libFreetype.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;libcompressonator.lib;XInput.lib;libvpx.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -117,7 +117,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../../../../Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Framework/Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Dependency/Binarys/$(Configuration)/$(PlatformTarget)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;LWNetwork.lib;LWEngine.lib;libfmt.lib;OpenGL32.lib;D3D11.lib;D3DCompiler.lib;dxguid.lib;SHcore.lib;libGLEW.lib;libFreetype.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;XInput.lib;libvpx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;LWNetwork.lib;LWEngine.lib;libfmt.lib;OpenGL32.lib;D3D11.lib;D3DCompiler.lib;dxguid.lib;SHcore.lib;libGLEW.lib;libFreetype.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;libcompressonator.lib;XInput.lib;libvpx.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -132,7 +132,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../../../../Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Framework/Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Dependency/Binarys/$(Configuration)/$(PlatformTarget)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;LWNetwork.lib;LWEngine.lib;libfmt.lib;OpenGL32.lib;D3D11.lib;D3DCompiler.lib;dxguid.lib;SHcore.lib;libGLEW.lib;libFreetype.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;XInput.lib;libvpx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;LWNetwork.lib;LWEngine.lib;libfmt.lib;OpenGL32.lib;D3D11.lib;D3DCompiler.lib;dxguid.lib;SHcore.lib;libGLEW.lib;libFreetype.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;libcompressonator.lib;XInput.lib;libvpx.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -141,7 +141,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_HAS_EXCEPTIONS=0;WIN32_WINNT=0x601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;WIN32_WINNT=0x601;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../../../../../Includes/C++11/;../../../../../../Framework/Includes/C++11/;../../../Includes/C++11/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
@@ -151,7 +151,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../../../../Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Framework/Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Dependency/Binarys/$(Configuration)/$(PlatformTarget)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;LWNetwork.lib;LWEngine.lib;libfmt.lib;OpenGL32.lib;D3D11.lib;D3DCompiler.lib;dxguid.lib;SHcore.lib;libGLEW.lib;libFreetype.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;XInput9_1_0.lib;libvpx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWVideo.lib;LWAudio.lib;LWNetwork.lib;LWEngine.lib;libfmt.lib;OpenGL32.lib;D3D11.lib;D3DCompiler.lib;dxguid.lib;SHcore.lib;libGLEW.lib;libFreetype.lib;libpng.lib;libz.lib;libogg.lib;libvorbis.lib;libcompressonator.lib;XInput9_1_0.lib;libvpx.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

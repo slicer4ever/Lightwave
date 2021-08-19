@@ -1046,6 +1046,7 @@ LWEUIManager::LWEUIManager(LWWindow *Window, uint32_t ScreenDPI, LWAllocator &Al
 	m_XMLParseCallbackMap.emplace(LWUTF8I("ScrollBar").Hash(), LWEUIScrollBar::XMLParse);
 	m_XMLParseCallbackMap.emplace(LWUTF8I("ListBox").Hash(), LWEUIListBox::XMLParse);
 	m_XMLParseCallbackMap.emplace(LWUTF8I("TreeList").Hash(), LWEUITreeList::XMLParse);
+	m_XMLParseCallbackMap.emplace(LWUTF8I("RichLabel").Hash(), LWEUIRichLabel::XMLParse);
 }
 
 LWEUIManager::~LWEUIManager() {

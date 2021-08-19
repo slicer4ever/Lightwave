@@ -15,7 +15,7 @@ FreeType-2.9.1 https://www.freetype.org/ (be sure to rename the folder to libfre
 
 GLEW-1.13.0 http://glew.sourceforge.net/ (be sure to rename the folder to libGLEW)
 
-lpng1.6.34 http://www.libpng.org/pub/png/libpng.html (be sure to rename the folder to libpng amd grab the .tar version if building for android(.zip does not have neon-arm sources))
+lpng1.6.34 http://www.libpng.org/pub/png/libpng.html (be sure to rename the folder to libpng and grab the .tar version if building for android(.zip does not have neon-arm sources).  Be sure to move libpng/scripts/pnglibconf.h.prebuild to libpng/pnglibconf.h)
 
 zlib-1.2.8 https://zlib.net/ (be sure to rename the folder to libz)
 
@@ -85,7 +85,7 @@ When using libbotan for x86 or x64 the include headers are found under libbotan/
 libvpx https://github.com/webmproject/libvpx (rename to libvpx)
 This library is used for LWEVideoPlayer, omitting LWEVideoPlayer will not require this library.
 The build steps can be followed if on non-windows platforms.  if on windows10 the Build project requires Windows Subsystem for linux with any distro installed as well with make installed(apt-get update, apt-get install make).
-It also requires the correct yasm(http://yasm.tortall.net/) (Not the VS2010 version) to be installed to the visual studio common7/Tools directoy.  (copy yasm-1.x.0-win32.exe into directory and rename to yasm.exe).  after this is complete you should be able to load the msvc17 solution and build for each platform.
+It also requires the correct yasm(http://yasm.tortall.net/) (Not the VS2010 version) to be installed to the visual studio common7/Tools directoy.  (copy yasm-1.x.0-win32.exe into directory and rename to yasm.exe).  after this is complete you should be able to load the msvc solution and build for each platform.
 
 Older windows systems will have to follow the build process found on the project page.
 
@@ -100,9 +100,9 @@ make <"debug=1" for debug librarys>
 Open Framework/Build/XCode/LightWave.Framework.xcodeproj in xcode
 Build each individual module.
 ```
-### MS Visual Studio 17
+### MS Visual Studio 17/19/22
 ```
-Open Framework/Build/MSVC17/Lightwave.sln
+Open Framework/Build/MSVCLightwave.sln
 Build each individual module.
 ```
 
@@ -125,9 +125,9 @@ make <"debug=1" for debug librarys>
 Open Framework/Build/XCode/LWEngine.xcodeproj
 Build LWEngine
 ```
-### MS Visual Studio 17
+### MS Visual Studio 17/19/22
 ```
-Open Framework/Build/MSVC17/LWEngine.sln
+Open Framework/Build/MSVC/LWEngine.sln
 Build LWEngine
 ```
 ### NDK

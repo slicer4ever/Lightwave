@@ -129,6 +129,7 @@ private:
 	virtual LWVideoDriver &ClonePipeline(LWPipeline *Target, LWPipeline *Source);
 
 	LWDirectX11_1Context m_Context;
+	HANDLE m_WaitObject = nullptr;
 };
 
 /*!< \brief this context is the underlying video context used for a shader object.  the application should never require accessing it directly. */

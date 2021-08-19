@@ -121,7 +121,7 @@ Scene *Scene::LoadGLTF(const LWUTF8Iterator &Path, LWVideoDriver *Driver, LWAllo
 		M.m_SpecularGlossy.m_SpecularGlossyTexture.m_TextureIndex = MapIDToListIndex(TextureList, M.m_SpecularGlossy.m_SpecularGlossyTexture.m_TextureIndex);
 
 		M.m_NormalMapTexture.m_TextureIndex = MapIDToListIndex(TextureList, M.m_NormalMapTexture.m_TextureIndex);
-		M.m_OcclussionTexture.m_TextureIndex = MapIDToListIndex(TextureList, M.m_OcclussionTexture.m_TextureIndex);
+		M.m_OcclusionTexture.m_TextureIndex = MapIDToListIndex(TextureList, M.m_OcclusionTexture.m_TextureIndex);
 		M.m_EmissiveTexture.m_TextureIndex = MapIDToListIndex(TextureList, M.m_EmissiveTexture.m_TextureIndex);
 		S->PushMaterial(M);
 	}
@@ -300,7 +300,7 @@ uint32_t Scene::DrawScene(uint64_t lCurrentTime, const LWMatrix4f &SceneTransfor
 		}
 		MatData.m_EmissiveFactor = Mat.m_EmissiveFactor;
 		MatData.m_HasTextureFlag |= SetMaterialTexture(MatInfo.m_NormalTexture, Mat.m_NormalMapTexture.m_TextureIndex, MaterialInfo::NormalTextureBit);
-		MatData.m_HasTextureFlag |= SetMaterialTexture(MatInfo.m_OcclussionTexture, Mat.m_OcclussionTexture.m_TextureIndex, MaterialInfo::OcclussionTextureBit);
+		MatData.m_HasTextureFlag |= SetMaterialTexture(MatInfo.m_OcclussionTexture, Mat.m_OcclusionTexture.m_TextureIndex, MaterialInfo::OcclussionTextureBit);
 		MatData.m_HasTextureFlag |= SetMaterialTexture(MatInfo.m_EmissiveTexture, Mat.m_EmissiveTexture.m_TextureIndex, MaterialInfo::EmissiveTextureBit);
 		
 		MatInfo.m_Opaque = (Mat.m_Flag&LWEGLTFMaterial::AlphaBits)!=LWEGLTFMaterial::AlphaBlend;

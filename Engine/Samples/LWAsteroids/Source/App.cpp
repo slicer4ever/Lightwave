@@ -232,7 +232,7 @@ App::App(LWAllocator &Allocator) : m_Allocator(Allocator) {
 		return;
 	}
 	uint32_t TargetDriver = LWVideoDriver::DirectX11_1;
-	TargetDriver = LWVideoDriver::OpenGL4_5;
+	//TargetDriver = LWVideoDriver::OpenGL4_5;
 	//TargetDriver |= LWVideoDriver::DebugLayer;
 	m_VDriver = LWVideoDriver::MakeVideoDriver(m_Window, TargetDriver);
 	if (!m_VDriver) {
@@ -246,7 +246,7 @@ App::App(LWAllocator &Allocator) : m_Allocator(Allocator) {
 		m_JobQueue.SetFinished(true);
 		return;
 	}
-	if(!LoadGLTF("C:/Users/Tim/Downloads/glTF-Sample-Models-master/2.0/Buggy/glTF/Buggy.gltf")){
+	if(!LoadGLTF("C:/Users/tscol/Downloads/glTF-Sample-Models-master/2.0/Buggy/glTF/Buggy.gltf")){
 	//if (!LoadGLTF("C:/Users/Tim/Downloads/glTF-Sample-Models-master/2.0/WaterBottle/glTF/WaterBottle.gltf")) {
 	//if(!LoadGLTF("C:/Users/Tim/Downloads/glTF-Sample-Models-master/2.0/2CylinderEngine/glTF/2CylinderEngine.gltf")){
 	//if(!LoadGLTF("C:/Users/Tim/Downloads/glTF-Sample-Models-master/2.0/WaterBottle/glTF-pbrSpecularGlossiness/WaterBottle.gltf")){

@@ -1,7 +1,7 @@
 #ifndef LWCRYPTO_H
 #define LWCRYPTO_H
 #include "LWCore/LWTypes.h"
-
+#include <functional>
 /*!< \brief typedef for HMAC hashing function, since all HMAC hash's use the same overall algorithm, the method passed in is the actual hashing algorithm. */
 typedef std::function<uint32_t(const char **, uint32_t *, uint32_t, void *)> LWHashHMACFunc;
 

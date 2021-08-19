@@ -48,7 +48,12 @@ int __stdcall WinMain(HINSTANCE, HINSTANCE, LPSTR, int CmdCnt){
 	std::fill(LWSignal_Funcs, LWSignal_Funcs + LWSignal_Unknown, nullptr);
 	SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
 	SetConsoleCtrlHandler((PHANDLER_ROUTINE)LWSignal_Handler, true);
+	HWND ConsoleWnd = GetConsoleWindow();
+	if (!ConsoleWnd) { //redirect all outputs to null:
+		freopen("NUL:", "w", stdout);
+		freopen("NUL:", "w", stderr);
 
+	}
 	return LWMain(0, nullptr);
 }
 
