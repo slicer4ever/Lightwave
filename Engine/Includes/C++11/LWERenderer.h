@@ -338,7 +338,6 @@ struct LWERenderPendingResource {
 	uint32_t m_Flag = 0;
 };
 
-
 struct LWERendererDynamicFramebuffer {
 	uint32_t m_ID; //ID for
 	LWVector2f m_DynamicSize;
@@ -361,7 +360,7 @@ struct LWERendererDynamicScalar {
 class LWERenderer {
 public:
 	static const uint32_t FrameBuffer = 3;
-	static const uint32_t MaxPendingResources = 512;
+	static const uint32_t MaxPendingResources = 8096;
 	static const uint32_t FBAttachmentIDBit = 0x80000000;
 
 	//Add's built-in pass type's to the function map used during the renderer creation process.

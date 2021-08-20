@@ -1,4 +1,4 @@
-Lightwave is a cross platform C++ library designed for building games on linux, mac, windows, android, and iOS.  windows phones is planned for a future update.
+Lightwave is a cross platform C++ library designed for building games on linux, mac, windows, android, and iOS.
 
 Lightwave is mostly complete for creating full 2D and 3D games, the framework is designed for barebones cross platform building, while the engine is designed to plug in components, such as UI, asset managment, and job based multi-threading systems.
 The framework is designed in modules, LWCore is required by all modules, LWPlatform and LWNetwork only rely on LWCore.  LWAudio and LWVideo rely on LWCore and LWPlatform.  you can pick and choose which module fits your required needs.
@@ -11,21 +11,21 @@ Use doxygen to generate documentation over the framework, the engine still requi
 # Required dependencys
 ##### if platform requires manual building of librarys, the Build directory of dependency was built for the following versions
 
-FreeType-2.9.1 https://www.freetype.org/ (be sure to rename the folder to libfreetype)
+FreeType-2.11.0 https://www.freetype.org/ (be sure to rename the folder to libfreetype)
 
-GLEW-1.13.0 http://glew.sourceforge.net/ (be sure to rename the folder to libGLEW)
+GLEW-2.2.0 http://glew.sourceforge.net/ (be sure to rename the folder to libGLEW)
 
-lpng1.6.34 http://www.libpng.org/pub/png/libpng.html (be sure to rename the folder to libpng and grab the .tar version if building for android(.zip does not have neon-arm sources).  Be sure to move libpng/scripts/pnglibconf.h.prebuild to libpng/pnglibconf.h)
+libpng-1.6.37 http://www.libpng.org/pub/png/libpng.html (be sure to rename the folder to libpng and grab the .tar version if building for android(.zip does not have neon-arm sources).  Be sure to move libpng/scripts/pnglibconf.h.prebuild to libpng/pnglibconf.h)
 
-zlib-1.2.8 https://zlib.net/ (be sure to rename the folder to libz)
+zlib-1.2.11 https://zlib.net/ (be sure to rename the folder to libz)
 
-libogg-1.3.2 https://xiph.org/ogg/ (be sure to rename the folder to libogg)
+libogg-1.3.5 https://xiph.org/ogg/ (be sure to rename the folder to libogg)
 
-libvorbis-1.3.5 https://xiph.org/vorbis/ (be sure to rename the folder to libvorbis)
+libvorbis-1.3.7 https://xiph.org/vorbis/ (be sure to rename the folder to libvorbis)
 
-libfmt-7.10 https://github.com/fmtlib/fmt (be sure to rename the folder to libfmt) this library is required for LWUnicodeIterator::C_View formatting constructor.
+libfmt-8.0.1 https://github.com/fmtlib/fmt (be sure to rename the folder to libfmt).
 
-CompressonatorCore-4.1 https://github.com/GPUOpen-Tools/compressonator (be sure to rename the folder to libcompressonator) this library is required for LWImage DXT compression/decompression functions.
+CompressonatorCore-4.2 https://github.com/GPUOpen-Tools/compressonator (be sure to rename the folder to libcompressonator) this library is required for LWImage DXT compression/decompression functions.
 
 Place all library folders into the dependency directory then naviagate to the build system for that platform.  the build systems are designed to build statically linked librarys.
 The build systems were built with the above versions.  Using more upto date librarys may required modifications to the build processes, but ideally if the library hasn't had radical changes it should be interchangable.
@@ -71,7 +71,7 @@ libvorbis
 libogg
 
 ### Optional dependency
-Botan-2.9.0 https://github.com/randombit/botan (rename to libbotan)
+Botan-2.18.1 https://github.com/randombit/botan (rename to libbotan)
 
 This library is only fully implemented for building on msvs, other platforms well be made available in time.
 Building requires python to be installed.
@@ -82,10 +82,12 @@ The build is implemented through optional build steps in the solution.  if you u
 When using libbotan for x86 or x64 the include headers are found under libbotan/x86/include or libbotan/x64/include.
 
 
-libvpx https://github.com/webmproject/libvpx (rename to libvpx)
+libvpx- 1.10.0 https://github.com/webmproject/libvpx (rename to libvpx)
 This library is used for LWEVideoPlayer, omitting LWEVideoPlayer will not require this library.
 The build steps can be followed if on non-windows platforms.  if on windows10 the Build project requires Windows Subsystem for linux with any distro installed as well with make installed(apt-get update, apt-get install make).
 It also requires the correct yasm(http://yasm.tortall.net/) (Not the VS2010 version) to be installed to the visual studio common7/Tools directoy.  (copy yasm-1.x.0-win32.exe into directory and rename to yasm.exe).  after this is complete you should be able to load the msvc solution and build for each platform.
+
+If using a newer version then documented here, when building for MSVC requires opening the Build.ps1 and updating the version variable.
 
 Older windows systems will have to follow the build process found on the project page.
 
