@@ -1030,6 +1030,32 @@ public:
 			if (Compare(List[i], CodePointCount)) return i;
 		return -1;
 	}
+	
+	/*!< \brief search's string for the first occurrent of SubString, returning true if found, or false if not found. */
+	bool HasSubString(const LWUnicodeIterator<Type> &SubString) const {
+		return !NextSubString(SubString, false).AtEnd();
+	}
+
+	/*!< \breif base method when search's string for any of the listed substring's, returning the index of the matched substring, or -1 if non were matched. */
+	template<uint32_t N = 0, class T>
+	uint32_t HasSubStringList(const T &Arg) const {
+		return HasSubString(Arg) ? N : -1;
+	}
+
+	/*!< \breif search's string for any of the listed substring's, returning the index of the matched substring, or -1 if non were matched. */
+	template<uint32_t N = 0, class T, typename ...Args>
+	uint32_t HasSubStringList(const T &Arg, Args... Pack) const {
+		if (HasSubString(Arg)) return N;
+		return HasSubStringList<N + 1>(Pack...);
+	}
+
+	/*!< \brief search's string for any of the listed substring in the specified array, returning the index of the matched substring, or -1 if non were found. */
+	uint32_t HasSubStringLista(uint32_t Count, const LWUnicodeIterator<Type> *List) const {
+		for (uint32_t i = 0; i < Count; i++) {
+			if (HasSubString(List[i])) return i;
+		}
+		return -1;
+	}
 
 	/*!< \brief returns true if the position iterator of this == position iterator of Iter. */
 	bool operator == (const LWUnicodeIterator<Type> &Iter) const {

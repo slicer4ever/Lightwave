@@ -1103,6 +1103,7 @@ uint64_t LWERendererBlockGeometry::Free(uint64_t ID) {
 }
 
 uint64_t LWERendererBlockGeometry::DelayFree(uint64_t ID, LWERenderer *Renderer) {
+	if (ID == NullID) return NullID;
 	if (!Renderer->PushPendingResource(LWERenderPendingResource(ID, m_NameHash, LWERenderPendingResource::DestroyResource, LWERendererPendingBlockGeometry()))) return ID;
 	return NullID;
 }

@@ -188,7 +188,11 @@ oPixel main(in Pixel p) {
 	float3 SurfaceNormal = normalize(p.TBN[2]);
 	float3 Normal = SampleIf(PBRNormalTex, PBRNormalSmp, PBRNormalTexID, ModelData.HasTextureFlag, p.TexCoords[PBRNormalTexID], float4(0.5f, 0.5f, 1.0f, 0.5f)).xyz*2.0f-1.0f;
 	Normal = normalize(mul(Normal, p.TBN));
-	
+#ifdef DEBUGNORMAL
+	Result.Color = float4(Normal*0.5f+0.5f, 1.0f);
+	Result.Emissive = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	return Result;
+#endif
 	PBRMaterial PMat = PrepareMaterial(p, ModelData, Normal, nViewDir, Alpha);
 	if(Alpha<0.01f) discard;
 #ifndef PBRUNLIT
@@ -373,7 +377,12 @@ void main(void) {
 	vec3 SurfaceNormal = normalize(p.TBN[2]);
 	vec3 Normal = SampleIf(PBRNormalTex, PBRNormalTexID, ModelData.HasTextureFlag, p.TexCoords[PBRNormalTexID], vec4(0.5f, 0.5f, 1.0f, 0.5f)).xyz*2.0f-1.0f;
 	Normal = normalize(p.TBN*Normal);
-	
+#ifdef DEBUGNORMAL
+	oColor = vec4(Normal*0.5f+0.5f, 1.0f);
+	oEmissive = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	return;
+#endif
+
 	PBRMaterial PMat = PrepareMaterial(ModelData, Normal, nViewDir, Alpha);
 	if(Alpha<0.01f) discard;
 #ifndef PBRUNLIT
