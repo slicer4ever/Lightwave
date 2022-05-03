@@ -95,7 +95,7 @@ uint32_t LWSocket::Receive(void *Buffer, uint32_t BufferLen) {
 
 uint32_t LWSocket::Receive(void *Buffer, uint32_t BufferLen, LWSocketAddr &RemoteAddr) {
 	sockaddr_in rAddr;
-	int32_t rAddrLen = sizeof(rAddr);
+	socklen_t rAddrLen = sizeof(rAddr);
 	uint32_t Len = recvfrom(m_Handle, (char *)Buffer, BufferLen, 0, (sockaddr *)&rAddr, &rAddrLen);
 	RemoteAddr = FromSockAddr(rAddr);
 	if (Len != -1) m_RecvBytes += Len;
@@ -117,8 +117,8 @@ uint32_t LWSocket::Send(const void *Buffer, uint32_t BufferLen, const LWSocketAd
 
 bool LWSocket::Accept(LWSocket &Result, uint32_t ProtocolID) const {
 	sockaddr_in rAddr, lAddr;
-	int32_t rAddrLen = sizeof(rAddr);
-	int32_t lAddrLen = sizeof(lAddr);
+	socklen_t rAddrLen = sizeof(rAddr);
+	socklen_t lAddrLen = sizeof(lAddr);
 	uint32_t SockID = (uint32_t)accept(m_Handle, nullptr, nullptr);
 
 	uint32_t TcpNoDelay = (m_Flags & LWSocket::TcpNoDelay) ? true : false;
