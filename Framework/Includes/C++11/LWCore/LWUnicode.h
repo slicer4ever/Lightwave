@@ -162,6 +162,7 @@ public:
 	*/
 	bool Reserve(uint32_t Length) {
 		LWAllocator::Destroy(pReserve(Length));
+		return true;
 	}
 
 	/*!< \brief returns an iterator to the first grapheme in the unicode string. */

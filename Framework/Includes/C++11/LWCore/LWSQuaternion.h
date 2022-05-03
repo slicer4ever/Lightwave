@@ -237,9 +237,9 @@ struct alignas(Type[4]) LWSQuaternion {
 		return LWSQuaternion(-w, -x, -y, -z);
 	}
 
-	LWSQuaternion(const LWQuaternion<Type> &Q) : w(Q.w), x(Q.x), y(Q.y), z(Q.z) {}
+	LWSQuaternion(const LWQuaternion<Type> &Q) : x(Q.x), y(Q.y), z(Q.z), w(Q.w) {}
 
-	LWSQuaternion(Type vw, Type vx, Type vy, Type vz) : w(vw), x(vx), y(vy), z(vz) {}
+	LWSQuaternion(Type vw, Type vx, Type vy, Type vz) : x(vx), y(vy), z(vz), w(vw) {}
 
 	LWSQuaternion(const LWSMatrix4<Type> &Mat) {
 		LWVector4<Type> R0 = Mat.m_Rows[0].AsVec4();

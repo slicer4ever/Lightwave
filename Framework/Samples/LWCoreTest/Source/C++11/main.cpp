@@ -705,8 +705,8 @@ bool PerformLWByteStreamTest(void) {
 
 	int8_t Buffer[4096];
 	int8_t NetBuffer[4096];
-	LWByteBuffer ByteBuf(Buffer, sizeof(Buffer), LWByteBuffer::BufferNotOwned);
-	LWByteBuffer NetByteBuf(NetBuffer, sizeof(NetBuffer), LWByteBuffer::BufferNotOwned | LWByteBuffer::Network);
+	LWByteBuffer ByteBuf(Buffer, sizeof(Buffer));
+	LWByteBuffer NetByteBuf(NetBuffer, sizeof(NetBuffer), LWByteBuffer::Network);
 	ByteBuf.Write<int16_t>(4, Values16); ByteBuf.Write<int32_t>(4, Values32); ByteBuf.Write<int64_t>(4, Values64); ByteBuf.Write<float>(4, ValuesF); ByteBuf.Write<double>(4, ValuesD);
 	ByteBuf.Write<LWVector2d>(4, ValuesVec2d); ByteBuf.Write<LWVector2f>(4, ValuesVec2f); ByteBuf.Write<LWVector2i>(4, ValuesVec2i);
 	ByteBuf.Write<LWVector3d>(4, ValuesVec3d); ByteBuf.Write<LWVector3f>(4, ValuesVec3f); ByteBuf.Write<LWVector3i>(4, ValuesVec3i);
@@ -1506,7 +1506,7 @@ bool PerformLWByteBufferTest(void){
 	if (ResultVec4i[0] != ValuesVec4i[0] || ResultVec4i[1] != ValuesVec4i[1] || ResultVec4i[2] != ValuesVec4i[2] || ResultVec4i[3] != ValuesVec4i[3]) return false;
 
 
-	LWByteBuffer NormalBuf(Buffer, sizeof(Buffer), LWByteBuffer::BufferNotOwned);
+	LWByteBuffer NormalBuf(Buffer, sizeof(Buffer));
 	LWLogEvent<256>("Performing Read/Write on Normal buffer:");
 	NormalBuf.Write(10);
 	NormalBuf.WriteL<int32_t>(2, 11, 12);
@@ -1664,7 +1664,7 @@ bool PerformLWByteBufferTest(void){
 	LWLogEvent<256>("Testing: {}", ResultText);
 	if (strcmp(ResultText, ValuesText)!=0) return false;
 	LWLogEvent<256>("Performing Read/Write on Network Buffer!");
-	LWByteBuffer NetworkBuf(Buffer, sizeof(Buffer), LWByteBuffer::BufferNotOwned | LWByteBuffer::Network);
+	LWByteBuffer NetworkBuf(Buffer, sizeof(Buffer), LWByteBuffer::Network);
 	NetworkBuf.Write(10);
 	NetworkBuf.WriteL<int32_t>(2, 11, 12);
 	NetworkBuf.Write(LW_PI);
@@ -1707,7 +1707,7 @@ bool PerformLWByteBufferTest(void){
 	NetworkBuf.Write(4, ValuesMat2i);
 	NetworkBuf.WriteUTF(LWUTF8Iterator(ValuesText));
 	LWLogEvent<256>("Network wrote to position: {} | {}", NetworkBuf.GetPosition(), NetworkBuf.GetBytesWritten());
-	NetworkBuf.OffsetPosition(-NetworkBuf.GetPosition());
+	NetworkBuf.Seek(-NetworkBuf.GetPosition());
 	LWLogEvent<256>("A");
 	if (NetworkBuf.Read<int32_t>() != 10) return false;
 	LWLogEvent<256>("B");
