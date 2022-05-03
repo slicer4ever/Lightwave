@@ -302,7 +302,7 @@ bool LWAudioDriver::CreateSoundPlatform(LWSound *Sound) {
 	return true;
 }
 
-LWAudioDriver::LWAudioDriver(void *UserData, LWAllocator &Allocator, LWAudioCallback FinishedCallback, LWAudioCallback CreateCallback, LWAudioCallback ReleaseCallback) m_Allocator(Allocator), m_Flag(Dirty) {
+LWAudioDriver::LWAudioDriver(void *UserData, LWAllocator &Allocator, LWAudioCallback FinishedCallback, LWAudioCallback CreateCallback, LWAudioCallback ReleaseCallback) : m_Allocator(Allocator), m_Flag(Dirty) {
 	std::fill(m_ChannelVolumes, m_ChannelVolumes + ChannelCount, 1.0f);
 	m_CallBacks[CallbackCreate] = CreateCallback;
 	m_CallBacks[CallbackFinished] = FinishedCallback;
