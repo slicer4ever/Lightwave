@@ -5,57 +5,58 @@
 #include <iostream>
 #include <cstdarg>
 
+
+/*!< \brief LWUTFC_View is for giving to c api's a static null terminated copy of the iterator. */
+template<class Type, std::size_t Len>
+struct LWUTFC_View {
+	Type m_Data[Len];
+	const Type *m_ReadData = m_Data;
+	uint32_t m_DataLen = 0;
+
+	/*!< \brief returns the underlying data for giving to the c-api(since these c-api's almost universally take a const char *, we return a const char *). */
+	const char *operator*(void) const {
+		return (const char *)m_ReadData;
+	}
+
+	/*!< \brief returns an iterator to C_View data. */
+	LWUnicodeIterator<Type> operator()(void) const {
+		return LWUnicodeIterator<Type>(m_ReadData);
+	}
+
+	friend std::ostream &operator<<(std::ostream &o, const LWUTFC_View<Type, Len> &cView) {
+		return o << LWUnicodeIterator<Type>(cView);
+	}
+
+	/*!< \brief constructs the c string copy of the iterator range, if Iterator ends on a null character then ReadData will point to the iterator current position instead. */
+	LWUTFC_View(const LWUnicodeIterator<Type> &Iterator) {
+		uint32_t L = Iterator.Copy(m_Data, Len);
+		if (L) m_ReadData = (*(Iterator() + (L - 1))) == 0 ? Iterator() : m_Data;
+		m_DataLen = std::min<uint32_t>(L, Len);
+	}
+
+	/*!< \brief constructs a formated string into data. */
+	template<typename ...Args>
+	LWUTFC_View(const Type *Fmt, Args ...Pack) {
+		m_DataLen = std::min<uint32_t>((uint32_t)fmt::format_to_n((char *)m_Data, Len - 1, Fmt, Pack...).size, Len - 1); //Truncate string if it exceeds our buffer.
+		m_Data[m_DataLen++] = '\0'; //Add null character.
+	}
+
+	/*!< \brief default constructor for c_view. */
+	LWUTFC_View() = default;
+};
+
 /*!< \brief Unicode UTF iterator, iterates over codepoints for utf-8, utf-16, and utf-32.  String should be validated first with Create, otherwise if constructed directly the application must ensure the utf is valid.  utf-8 is specialized as char8_t, utf-16 is char16_t, and utf-32 is char32_t.  no other specializations were created. */
 template<class Type>
 class LWUnicodeIterator {
 public:
 	static const uint32_t EmptyHash = LWCrypto::FNV1AHash;
 
-	/*!< \brief C_View is for giving to c api's a static heap null terminated copy of the iterator. */
-	template<std::size_t Len>
-	struct C_View {
-		Type m_Data[Len];
-		const Type *m_ReadData = m_Data;
-		uint32_t m_DataLen = 0;
-
-		/*!< \brief returns the underlying data for giving to the c-api(since these c-api's almost universally take a const char *, we return a const char *). */
-		const char *operator*(void) const {
-			return (const char*)m_ReadData;
-		}
-
-		/*!< \brief returns an iterator to C_View data. */
-		LWUnicodeIterator<Type> operator()(void) const {
-			return LWUnicodeIterator<Type>(m_ReadData);
-		}
-
-		friend std::ostream &operator<<(std::ostream &o, const C_View<Len> &cView) {
-			return o << LWUnicodeIterator<Type>(cView);
-		}
-
-		/*!< \brief constructs the c string copy of the iterator range, if Iterator ends on a null character then ReadData will point to the iterator current position instead. */
-		C_View(const LWUnicodeIterator<Type> &Iterator) {
-			uint32_t L = Iterator.Copy(m_Data, Len);
-			if (L) m_ReadData = (*(Iterator() + (L - 1))) == 0 ? Iterator() : m_Data;
-			m_DataLen = std::min<uint32_t>(L, Len);
-		}
-
-		/*!< \brief constructs a formated string into data. */
-		template<typename ...Args> 
-		C_View(const Type *Fmt, Args ...Pack) {
-			m_DataLen = std::min<uint32_t>((uint32_t)fmt::format_to_n((char*)m_Data, Len-1, Fmt, Pack...).size, Len-1); //Truncate string if it exceeds our buffer.
-			m_Data[m_DataLen++] = '\0'; //Add null character.
-		}
-
-		/*!< \brief default constructor for c_view. */
-		C_View() = default;
-	};
-
 	static const uint32_t MaxCodePoints = 0x10FFFF;
 
 	/*!< \brief forwards fmt arguments to C_View constructor. */
 	template<uint32_t Len, typename ...Args>
-	static C_View<Len> Fmt(const Type *Fmt, Args ...Pack) {
-		return C_View<Len>(Fmt, Pack...);
+	static LWUTFC_View<Type, Len> Fmt(const Type *Fmt, Args ...Pack) {
+		return LWUTFC_View<Type, Len>(Fmt, Pack...);
 	}
 
 	/*!< \brief fmt's into Buffer, returning the length of bytes needed to hold the formatted string(-1 as null terminator is not included), automatically add's \0 if buffer is not null. */
@@ -1109,8 +1110,8 @@ public:
 
 	/*!< \brief creates a C_View with Len of space to pass to c api's. */
 	template<std::size_t Len>
-	C_View<Len> c_str(void) const {
-		return C_View<Len>(*this);
+	LWUTFC_View<Type,Len> c_str(void) const {
+		return LWUTFC_View<Type,Len>(*this);
 	}
 
 	/*!< \brief returns a c_str view of this iterator, note that using this method the program must guarantee the iterator is null terminated, as well the position is not checked against Last so the contents will be read upto the end of the buffer that iterator is pointing to. */
@@ -1148,7 +1149,7 @@ public:
 
 	/*!< \brief constructs an iterator to a c_view of a c string created by another iterator, this constructor is provided for implict conversions to an interator when a c_view is returned(such as what Format does). */
 	template<size_t Len>
-	LWUnicodeIterator(const LWUnicodeIterator<Type>::C_View<Len> &CStr) : LWUnicodeIterator<Type>(CStr.m_Data) {}
+	LWUnicodeIterator(const LWUTFC_View<Type, Len> &CStr) : LWUnicodeIterator<Type>(CStr.m_Data) {}
 
 	/*!< \brief constructs an iterator to stack allocated array. */
 	template<size_t Len>
@@ -1318,5 +1319,14 @@ inline bool LWUnicodeIterator<char32_t>::isTrailingCodeUnit(const char32_t *Pos)
 std::ostream &operator << (std::ostream &o, const LWUTF8Iterator &Iter);
 std::ostream &operator << (std::ostream &o, const LWUTF16Iterator &Iter);
 std::ostream &operator << (std::ostream &o, const LWUTF32Iterator &Iter);
+
+template<std::size_t Len>
+using LWUTF8C_View = LWUTFC_View<char8_t, Len>;
+
+template<std::size_t Len>
+using LWUTF16C_View = LWUTFC_View<char16_t, Len>;
+
+template<std::size_t Len>
+using LWUTF32C_View = LWUTFC_View<char32_t, Len>;
 
 #endif

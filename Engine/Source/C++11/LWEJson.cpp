@@ -600,21 +600,21 @@ LWEJObject *LWEJson::MakeStringElement(const LWUTF8Iterator &Name, const LWUTF8I
 
 LWEJObject *LWEJson::PushArrayObjectElement(LWEJObject *Parent) {
 	uint32_t Len = Parent ? Parent->m_Length : m_Length;
-	LWEJObject *Obj = MakeElement(LWUTF8Iterator::C_View<16>(u8"[{}]", Len), Parent);
+	LWEJObject *Obj = MakeElement(LWUTF8C_View<16>(u8"[{}]", Len), Parent);
 	if (Obj) Obj->m_Type = LWEJObject::Object;
 	return Obj;
 }
 
 LWEJObject *LWEJson::PushArrayArrayElement(LWEJObject *Parent){
 	uint32_t Len = Parent ? Parent->m_Length : m_Length;
-	LWEJObject *Obj = MakeElement(LWUTF8Iterator::C_View<16>(u8"[{}]", Len), Parent);
+	LWEJObject *Obj = MakeElement(LWUTF8C_View<16>(u8"[{}]", Len), Parent);
 	if (Obj) Obj->m_Type = LWEJObject::Array;
 	return Obj;
 }
 
 LWEJObject *LWEJson::PushArrayStringElement(const LWUTF8Iterator &Value, LWEJObject *Parent){
 	uint32_t Len = Parent ? Parent->m_Length : m_Length;
-	LWEJObject *Obj = MakeElement(LWUTF8Iterator::C_View<16>(u8"[{}]", Len), Parent);
+	LWEJObject *Obj = MakeElement(LWUTF8C_View<16>(u8"[{}]", Len), Parent);
 	if (Obj) Obj->SetValue(m_Allocator, Value);
 	return Obj;
 }

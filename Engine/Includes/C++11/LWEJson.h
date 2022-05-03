@@ -146,7 +146,7 @@ public:
 	template<class Type>
 	LWEJObject *PushArrayValueElement(Type Value, LWEJObject *Parent = nullptr) {
 		uint32_t Len = Parent ? Parent->m_Length : m_Length;
-		LWEJObject *Obj = MakeElement(LWUTF8Iterator::C_View<32>("[{}]", Len), Parent);
+		LWEJObject *Obj = MakeElement(LWUTF8C_View<32>("[{}]", Len), Parent);
 		if (Obj) Obj->SetTypeValue(m_Allocator, Value);
 		return Obj;
 	}
@@ -198,61 +198,61 @@ inline LWEJObject &LWEJObject::SetTypeValue<bool>(LWAllocator &Allocator, bool V
 template<>
 inline LWEJObject &LWEJObject::SetTypeValue<int8_t>(LWAllocator &Allocator, int8_t Value) {
 	m_Type = Number;
-	return SetValue(Allocator, LWUTF8Iterator::C_View<16>("{}", Value));
+	return SetValue(Allocator, LWUTF8C_View<16>("{}", Value));
 }
 
 template<>
 inline LWEJObject &LWEJObject::SetTypeValue<uint8_t>(LWAllocator &Allocator, uint8_t Value) {
 	m_Type = Number;
-	return SetValue(Allocator, LWUTF8Iterator::C_View<16>("{}", Value));
+	return SetValue(Allocator, LWUTF8C_View<16>("{}", Value));
 }
 
 template<>
 inline LWEJObject &LWEJObject::SetTypeValue<int16_t>(LWAllocator &Allocator, int16_t Value) {
 	m_Type = Number;
-	return SetValue(Allocator, LWUTF8Iterator::C_View<16>("{}", Value));
+	return SetValue(Allocator, LWUTF8C_View<16>("{}", Value));
 }
 
 template<>
 inline LWEJObject &LWEJObject::SetTypeValue<uint16_t>(LWAllocator &Allocator, uint16_t Value) {
 	m_Type = Number;
-	return SetValue(Allocator, LWUTF8Iterator::C_View<16>("{}", Value));
+	return SetValue(Allocator, LWUTF8C_View<16>("{}", Value));
 }
 
 template<>
 inline LWEJObject &LWEJObject::SetTypeValue<int32_t>(LWAllocator &Allocator, int32_t Value) {
 	m_Type = Number;
-	return SetValue(Allocator, LWUTF8Iterator::C_View<16>("{}", Value));
+	return SetValue(Allocator, LWUTF8C_View<16>("{}", Value));
 }
 
 template<>
 inline LWEJObject &LWEJObject::SetTypeValue<uint32_t>(LWAllocator &Allocator, uint32_t Value) {
 	m_Type = Number;
-	return SetValue(Allocator, LWUTF8Iterator::C_View<16>("{}", Value));
+	return SetValue(Allocator, LWUTF8C_View<16>("{}", Value));
 }
 
 template<>
 inline LWEJObject &LWEJObject::SetTypeValue<int64_t>(LWAllocator &Allocator, int64_t Value) {
 	m_Type = Number;
-	return SetValue(Allocator, LWUTF8Iterator::C_View<16>("{}", Value));
+	return SetValue(Allocator, LWUTF8C_View<16>("{}", Value));
 }
 
 template<>
 inline LWEJObject &LWEJObject::SetTypeValue<uint64_t>(LWAllocator &Allocator, uint64_t Value) {
 	m_Type = Number;
-	return SetValue(Allocator, LWUTF8Iterator::C_View<16>("{}", Value));
+	return SetValue(Allocator, LWUTF8C_View<16>("{}", Value));
 }
 
 template<>
 inline LWEJObject &LWEJObject::SetTypeValue<float>(LWAllocator &Allocator, float Value) {
 	m_Type = Number;
-	return SetValue(Allocator, LWUTF8Iterator::C_View<16>("{}", Value));
+	return SetValue(Allocator, LWUTF8C_View<16>("{}", Value));
 }
 
 template<>
 inline LWEJObject &LWEJObject::SetTypeValue<double>(LWAllocator &Allocator, double Value) {
 	m_Type = Number;
-	return SetValue(Allocator, LWUTF8Iterator::C_View<16>("{}", Value));
+	return SetValue(Allocator, LWUTF8C_View<16>("{}", Value));
 }
 
 

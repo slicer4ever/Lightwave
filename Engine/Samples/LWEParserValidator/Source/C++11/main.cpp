@@ -2,8 +2,11 @@
 #include <LWCore/LWAllocators/LWAllocator_Default.h>
 #include <LWPlatform/LWFileStream.h>
 #include <LWPlatform/LWPlatform.h>
+#include <LWCore/LWLogger.h>
 #include <LWEJson.h>
 #include <LWEXML.h>
+
+LWLOG_DEFAULT
 
 int32_t LWMain(int32_t argc, LWUTF8Iterator *Argv) {
 	const int32_t Success = 0;

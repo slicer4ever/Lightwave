@@ -1,7 +1,10 @@
 #include <LWCore/LWTypes.h>
 #include <LWCore/LWAllocators/LWAllocator_Default.h>
 #include <LWCore/LWAllocators/LWAllocator_DefaultDebug.h>
+#include <LWCore/LWLogger.h>
 #include "App.h"
+
+LWLOG_DEFAULT;
 
 int32_t LWMain(int32_t argc, LWUTF8Iterator *Argv) {
 	//LWAllocator_DefaultDebug DefAlloc;

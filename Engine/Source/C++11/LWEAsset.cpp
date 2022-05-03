@@ -588,8 +588,8 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 	const uint32_t MaxDefines = 32;
 	const uint32_t MaxErrorBufferLen = 4 * 1024;
 	const uint32_t TotalDriverCnt = 10;
-	LWUTF8Iterator::C_View<MaxBufferLen> Buffer;
-	LWUTF8Iterator::C_View<MaxBufferLen> CBuffer;
+	LWUTF8C_View<MaxBufferLen> Buffer;
+	LWUTF8C_View<MaxBufferLen> CBuffer;
 	LWUTF8Iterator AssetPath;
 	
 	char CompiledBuffer[MaxFileBufferLen];
@@ -848,7 +848,7 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 		const char *DriverNames[] = LWVIDEODRIVER_NAMES;
 		char CompiledBuffer[MaxBufferLength];
 		char ErrorBuffer[MaxBufferLength] = "";
-		LWUTF8Iterator::C_View<MaxNameLen> CBuffer;
+		LWUTF8C_View<MaxNameLen> CBuffer;
 		LWUTF8Iterator AssetPath = SourcePath;
 		LWShaderInput SInputList[LWShader::MaxInputs];
 		uint32_t SResourceList[LWShader::MaxResources];

@@ -2852,51 +2852,51 @@ bool PerformSIMDVec4Test(uint32_t Count, const LWUTF8Iterator &Name, LWAllocator
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Initialize");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Type Val = i & 1 ? -(Type)i : (Type)i;  Vec = LWVector4<Type>(Val); })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Type Val = i & 1 ? -(Type)i : (Type)i;  Vec = LWSVector4<Type>(Val); })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Type Val = i & 1 ? -(Type)i : (Type)i;  Vec = LWVector4<Type>(Val); })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Type Val = i & 1 ? -(Type)i : (Type)i;  Vec = LWSVector4<Type>(Val); })));
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Operator<==>");
 	bool isEqual = true;
 	uint64_t EqualTime = DoWork(PartCnt, PartitionLens, SVec4, Vec4, [&isEqual](LWSVector4<Type> &SVec4, LWVector4<Type> &Vec4, uint32_t i) { isEqual = SVec4 == Vec4 && isEqual; });
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize * 2 + 1, *LWUTF8Iterator::C_View<32>("{}ms - {}", EqualTime, isEqual));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize * 2 + 1, *LWUTF8C_View<32>("{}ms - {}", EqualTime, isEqual));
 	if (!isEqual) return false;
 
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Length");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [&FinalLen](LWVector4<Type> &Vec, uint32_t i) { FinalLen += Vec.Length(); })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [&SFinalLen](LWSVector4<Type> &Vec, uint32_t i) { SFinalLen += Vec.Length(); })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [&FinalLen](LWVector4<Type> &Vec, uint32_t i) { FinalLen += Vec.Length(); })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [&SFinalLen](LWSVector4<Type> &Vec, uint32_t i) { SFinalLen += Vec.Length(); })));
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "LengthSq");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [&FinalLen](LWVector4<Type> &Vec, uint32_t i) { FinalLen += Vec.LengthSquared(); })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [&SFinalLen](LWSVector4<Type> &Vec, uint32_t i) { SFinalLen += Vec.LengthSquared(); })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [&FinalLen](LWVector4<Type> &Vec, uint32_t i) { FinalLen += Vec.LengthSquared(); })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [&SFinalLen](LWSVector4<Type> &Vec, uint32_t i) { SFinalLen += Vec.LengthSquared(); })));
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Normalize");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Vec = Vec.Normalize(); })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec = Vec.Normalize(); })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Vec = Vec.Normalize(); })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec = Vec.Normalize(); })));
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Add");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Vec += Vec; })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec *= Vec; })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Vec += Vec; })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec *= Vec; })));
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Multiply");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) {Vec *= Vec; })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec *= Vec; })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) {Vec *= Vec; })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec *= Vec; })));
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Sub");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Vec -= LWVector4<Type>(1); })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec -= LWSVector4<Type>(1); })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Vec -= LWVector4<Type>(1); })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec -= LWSVector4<Type>(1); })));
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Divide");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Vec /= Vec; })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec /= Vec; })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Vec /= Vec; })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec /= Vec; })));
 	fmt::print("{:-<{}}\n", "", LineSize);
 
 	FreePartitions(PartCnt, PartitionLens, Vec4, SVec4);
@@ -2930,30 +2930,30 @@ bool PerformSIMDMat4Test(uint32_t Count, const LWUTF8Iterator &Name, LWAllocator
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Initialize");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Mat4, [](LWMatrix4<Type> &Mat, uint32_t i) { Type Pitch = -(Type)i * (Type)0.2; Type Yaw = (Type)i * (Type)0.1; Type Roll = (Type)i; Mat = LWMatrix4<Type>::RotationXYZ(Pitch, Yaw, Roll); })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SMat4, [](LWSMatrix4<Type> &Mat, uint32_t i) { Type Pitch = -(Type)i * (Type)0.2; Type Yaw = (Type)i * (Type)0.1; Type Roll = (Type)i; Mat = LWSMatrix4<Type>::RotationXYZ(Pitch, Yaw, Roll); })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Mat4, [](LWMatrix4<Type> &Mat, uint32_t i) { Type Pitch = -(Type)i * (Type)0.2; Type Yaw = (Type)i * (Type)0.1; Type Roll = (Type)i; Mat = LWMatrix4<Type>::RotationXYZ(Pitch, Yaw, Roll); })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SMat4, [](LWSMatrix4<Type> &Mat, uint32_t i) { Type Pitch = -(Type)i * (Type)0.2; Type Yaw = (Type)i * (Type)0.1; Type Roll = (Type)i; Mat = LWSMatrix4<Type>::RotationXYZ(Pitch, Yaw, Roll); })));
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Operator<==>");
 	bool isEqual = true;
 	uint64_t EqualTime = DoWork(PartCnt, PartitionLens, SMat4, Mat4, [&isEqual](LWSMatrix4<Type> &SMat, LWMatrix4<Type> &Mat, uint32_t i) { isEqual = SMat == Mat && isEqual; });
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize*2+1, *LWUTF8Iterator::C_View<32>("{}ms - {}", EqualTime, isEqual));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize*2+1, *LWUTF8C_View<32>("{}ms - {}", EqualTime, isEqual));
 	if (!isEqual) return false;
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Transpose");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Mat4, [](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.Transpose(); })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SMat4, [](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.Transpose(); })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Mat4, [](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.Transpose(); })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SMat4, [](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.Transpose(); })));
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "TransformInverse");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Mat4, [](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.TransformInverse(); })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SMat4, [](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.TransformInverse(); })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Mat4, [](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.TransformInverse(); })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SMat4, [](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.TransformInverse(); })));
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Inverse");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Mat4, [](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.Inverse(); })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SMat4, [](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.Inverse(); })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Mat4, [](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.Inverse(); })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SMat4, [](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat.Inverse(); })));
 
 	//std::cout << std::setprecision(20); 
 	//for (uint32_t i = 0; i < Count; i++) std::cout << i << ": " << Mat4[0][i] << std::endl << i << ": " << SMat4[0][i] << std::endl;
@@ -2961,23 +2961,23 @@ bool PerformSIMDMat4Test(uint32_t Count, const LWUTF8Iterator &Name, LWAllocator
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "MultVec4");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Mat4, [&FinalSum](LWMatrix4<Type> &Mat, uint32_t i) { FinalSum += Mat * LWVector4<Type>((Type)1); })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SMat4, [&SFinalSum](LWSMatrix4<Type> &Mat, uint32_t i) { SFinalSum += Mat * LWSVector4<Type>((Type)1); })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Mat4, [&FinalSum](LWMatrix4<Type> &Mat, uint32_t i) { FinalSum += Mat * LWVector4<Type>((Type)1); })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SMat4, [&SFinalSum](LWSMatrix4<Type> &Mat, uint32_t i) { SFinalSum += Mat * LWSVector4<Type>((Type)1); })));
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Multiply");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Mat4, [&FinalSum](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat * Mat; })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SMat4, [&SFinalSum](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat * Mat; })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Mat4, [&FinalSum](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat * Mat; })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SMat4, [&SFinalSum](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat * Mat; })));
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Add");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Mat4, [&FinalSum](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat + Mat; })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SMat4, [&SFinalSum](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat + Mat; })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Mat4, [&FinalSum](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat + Mat; })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SMat4, [&SFinalSum](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat + Mat; })));
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Subtract");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Mat4, [&FinalSum](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat - Mat; })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SMat4, [&SFinalSum](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat - Mat; })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Mat4, [&FinalSum](LWMatrix4<Type> &Mat, uint32_t i) { Mat = Mat - Mat; })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SMat4, [&SFinalSum](LWSMatrix4<Type> &Mat, uint32_t i) { Mat = Mat - Mat; })));
 
 	
 	fmt::print("{:-<{}}\n", "", LineSize);
@@ -3016,30 +3016,30 @@ bool PerformSIMDQuatTest(uint32_t Count, const LWUTF8Iterator &Name, LWAllocator
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Initialize");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Quat, [](LWQuaternion<Type> &Q, uint32_t i) { Type Pitch = -(Type)i * (Type)0.2; Type Yaw = (Type)i * (Type)0.1; Type Roll = (Type)i; Q = LWQuaternion<Type>::FromEuler(Pitch, Yaw, Roll); })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SQuat, [](LWSQuaternion<Type> &Q, uint32_t i) { Type Pitch = -(Type)i * (Type)0.2; Type Yaw = (Type)i * (Type)0.1; Type Roll = (Type)i; Q = LWSQuaternion<Type>::FromEuler(Pitch, Yaw, Roll); })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Quat, [](LWQuaternion<Type> &Q, uint32_t i) { Type Pitch = -(Type)i * (Type)0.2; Type Yaw = (Type)i * (Type)0.1; Type Roll = (Type)i; Q = LWQuaternion<Type>::FromEuler(Pitch, Yaw, Roll); })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SQuat, [](LWSQuaternion<Type> &Q, uint32_t i) { Type Pitch = -(Type)i * (Type)0.2; Type Yaw = (Type)i * (Type)0.1; Type Roll = (Type)i; Q = LWSQuaternion<Type>::FromEuler(Pitch, Yaw, Roll); })));
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Operator<==>");
 	bool isEqual = true;
 	uint64_t EqualTime = DoWork(PartCnt, PartitionLens, SQuat, Quat, [&isEqual](LWSQuaternion<Type> &SQuat, LWQuaternion<Type> &Quat, uint32_t i) { isEqual = SQuat == Quat && isEqual; });
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize * 2 + 1, *LWUTF8Iterator::C_View<32>("{}ms - {}", EqualTime, isEqual));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize * 2 + 1, *LWUTF8C_View<32>("{}ms - {}", EqualTime, isEqual));
 	if (!isEqual) return false;
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Multiply");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Quat, [](LWQuaternion<Type> &Q, uint32_t i) { Q *= LWQuaternion<Type>(); })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SQuat, [](LWSQuaternion<Type> &Q, uint32_t i) { Q *= LWSQuaternion<Type>(); })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Quat, [](LWQuaternion<Type> &Q, uint32_t i) { Q *= LWQuaternion<Type>(); })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SQuat, [](LWSQuaternion<Type> &Q, uint32_t i) { Q *= LWSQuaternion<Type>(); })));
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Conjugate");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Quat, [](LWQuaternion<Type> &Q, uint32_t i) { Q = Q.Conjugate(); })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SQuat, [](LWSQuaternion<Type> &Q, uint32_t i) { Q = Q.Conjugate(); })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Quat, [](LWQuaternion<Type> &Q, uint32_t i) { Q = Q.Conjugate(); })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SQuat, [](LWSQuaternion<Type> &Q, uint32_t i) { Q = Q.Conjugate(); })));
  
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "RotatePnt4");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Quat, [&FinalPnt](LWQuaternion<Type> &Q, uint32_t i) { FinalPnt = Q.RotatePoint(FinalPnt); })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8Iterator::C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SQuat, [&SFinalPnt](LWSQuaternion<Type> &Q, uint32_t i) { SFinalPnt = Q.RotatePoint(SFinalPnt); })));
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Quat, [&FinalPnt](LWQuaternion<Type> &Q, uint32_t i) { FinalPnt = Q.RotatePoint(FinalPnt); })));
+	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SQuat, [&SFinalPnt](LWSQuaternion<Type> &Q, uint32_t i) { SFinalPnt = Q.RotatePoint(SFinalPnt); })));
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	/*

@@ -3,9 +3,12 @@
 #include <LWCore/LWTypes.h>
 #include <LWPlatform/LWFileStream.h>
 #include <LWPlatform/LWDirectory.h>
+#include <LWCore/LWLogger.h>
 #include <iostream>
 #include <errno.h>
 //This test runs through the LWFileStream methods, and creates and destroys files.
+
+LWLOG_DEFAULT
 
 bool TestFolderPath(const LWUTF8Iterator &FolderName, uint32_t FolderID){
 	char8_t Buffer[256];

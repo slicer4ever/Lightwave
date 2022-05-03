@@ -222,7 +222,7 @@ public:
 		LWVideoMode *Modes = Allocator.Allocate<LWVideoMode>(AvailableModes);
 		uint32_t nModes = LWVideoMode::GetAllDisplayModes(Modes, AvailableModes);
 		if (nModes != AvailableModes) {
-			SetFinished(LWUTF8Iterator::C_View<256>("Error incorrect mode list encountered {}, Expected: {}\n", nModes, AvailableModes));
+			SetFinished(LWUTF8C_View<256>("Error incorrect mode list encountered {}, Expected: {}\n", nModes, AvailableModes));
 			return;
 		}
 		fmt::print("Modes: {}\n", AvailableModes);
@@ -259,13 +259,13 @@ public:
 		uint32_t CompiledLen = 0;
 		m_DefaultVertexShader = m_Driver->LoadShader(LWShader::Vertex, "App:DefaultShader.vlws", Allocator, 0, nullptr, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
 		if (!m_DefaultVertexShader) {
-			SetFinished(LWUTF8Iterator::C_View<256>("Error loading vertex shader:\n{}\n", ErrorBuffer));
+			SetFinished(LWUTF8C_View<256>("Error loading vertex shader:\n{}\n", ErrorBuffer));
 			return;
 		}
 		m_DefaultVertexShader->SetInputMapList("Position", LWShaderInput::Vec4, 1, "TexCoord", LWShaderInput::Vec4, 1);
 		m_DefaultPixelShader = m_Driver->LoadShader(LWShader::Pixel, "App:DefaultShader.plws", Allocator, 0, nullptr, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
 		if (!m_DefaultPixelShader) {
-			SetFinished(LWUTF8Iterator::C_View<256>("Error loading pixel shader:\n{}\n", ErrorBuffer));
+			SetFinished(LWUTF8C_View<256>("Error loading pixel shader:\n{}\n", ErrorBuffer));
 			return;
 		}
 		m_DefaultPipeline = m_Driver->CreatePipeline(m_DefaultVertexShader, nullptr, m_DefaultPixelShader, 0, 0, LWPipeline::CULL_NONE, LWPipeline::SOLID, Allocator);
@@ -317,7 +317,7 @@ public:
 		m_RectMesh = LWVertexTexture::MakeMesh(Allocator, m_VertexBuffer, 6);
 		LWVertexTexture::WriteRectangle(m_RectMesh, LWVector2f(0.75f), LWVector2f(-0.75f), LWVector2f(0.0f, 0.0f), LWVector2f(1.0f, 1.0f));
 		m_Driver->UpdateMesh(&m_RectMesh->Finished());
-		m_Window->SetTitle(LWUTF8Iterator::C_View<256>("LWPlatform Simple example. | {} | {} | {}", DriverNames[m_Driver->GetDriverID()], PlatformNames[LWPLATFORM_ID], ArchNames[LWARCH_ID]));
+		m_Window->SetTitle(LWUTF8C_View<256>("LWPlatform Simple example. | {} | {} | {}", DriverNames[m_Driver->GetDriverID()], PlatformNames[LWPLATFORM_ID], ArchNames[LWARCH_ID]));
 
 		m_UniBlock->Color = LWVector4f(1.0f);
 		m_UniformBuffer->SetEditLength(sizeof(UniformBlock));
@@ -363,20 +363,20 @@ public:
 
 		m_FontVertexShader = m_Driver->ParseShader(LWShader::Vertex, LWShaderSources[LWShaderFontVertex], Allocator, 0, nullptr, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
 		if (!m_FontVertexShader) {
-			SetFinished(LWUTF8Iterator::C_View<256>("Error creating Font vertex shader:\n{}\n", ErrorBuffer));
+			SetFinished(LWUTF8C_View<256>("Error creating Font vertex shader:\n{}\n", ErrorBuffer));
 			return;
 		}
 		m_FontVertexShader->SetInputMapList("Position", LWShaderInput::Vec4, 1, "Color", LWShaderInput::Vec4, 1, "TexCoord", LWShaderInput::Vec4, 1);
 
 		m_FontColorShader = m_Driver->ParseShader(LWShader::Pixel, LWShaderSources[LWShaderFontColor], Allocator, 0, nullptr, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
 		if (!m_FontColorShader) {
-			SetFinished(LWUTF8Iterator::C_View<256>("Error creating Color pixel shader:\n{}\n", ErrorBuffer));
+			SetFinished(LWUTF8C_View<256>("Error creating Color pixel shader:\n{}\n", ErrorBuffer));
 			return;
 		}
 
 		m_FontMSDFShader = m_Driver->ParseShader(LWShader::Pixel, LWShaderSources[LWShaderFontMSDF], Allocator, 0, nullptr, nullptr, ErrorBuffer, CompiledLen, sizeof(ErrorBuffer));
 		if (!m_FontMSDFShader) {
-			SetFinished(LWUTF8Iterator::C_View<256>("Error creating msdf pixel shader:\n{}\n", ErrorBuffer));
+			SetFinished(LWUTF8C_View<256>("Error creating msdf pixel shader:\n{}\n", ErrorBuffer));
 			return;
 		}
 

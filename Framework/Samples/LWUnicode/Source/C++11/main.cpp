@@ -3,10 +3,13 @@
 #include <LWCore/LWAllocators/LWAllocator_Default.h>
 #include <LWCore/LWCrypto.h>
 #include <LWCore/LWByteStream.h>
+#include <LWCore/LWLogger.h>
 #include <LWPlatform/LWFileStream.h>
 #include <LWNetwork/LWSocket.h>
 #include <LWNetwork/LWProtocolManager.h>
 #include <iostream>
+
+LWLOG_DEFAULT
 
 int32_t main(int32_t argc, char **argv) {
 	//Download file from: http://www.unicode.org/Public/UCD/latest/ucd/auxiliary/GraphemeBreakProperty.txt

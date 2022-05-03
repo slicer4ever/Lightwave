@@ -4,6 +4,8 @@
 #include <LWCore/LWByteBuffer.h>
 #include <LWCore/LWSVector.h>
 #include <LWPlatform/LWFileStream.h>
+#include <LWCore/LWLogger.h>
+
 const char FPNames[][16] = { "Fast", "Precise", "Strict", "Exceptions", "Unknown" };
 const uint32_t FPFast = 0;
 const uint32_t FPPrecise = 1;
@@ -23,6 +25,8 @@ static uint32_t FPMode = FPExceptions;
 static uint32_t FPMode = FPUnknown;
 #endif
 
+LWLOG_DEFAULT
+
 template<class Type>
 bool ValidateResults(const LWUTF8Iterator &TestName, LWByteBuffer &Buffer, const Type &Value, bool WriteMode) {
 	int8_t CmpBuffer[sizeof(Type)];
@@ -34,7 +38,7 @@ bool ValidateResults(const LWUTF8Iterator &TestName, LWByteBuffer &Buffer, const
 	int32_t c = LWByteBuffer::Write<Type>(Value, CmpBuffer);
 	bool Result = memcmp(Buffer.GetReadBuffer() + Buffer.GetPosition(), CmpBuffer, c) == 0;
 	if (!Result) fmt::print("Failed at test: '{}'\n", TestName);
-	Buffer.OffsetPosition(c);
+	Buffer.Seek(c);
 	return Result;
 }
 
@@ -49,7 +53,7 @@ bool ValidateResults(const LWUTF8Iterator &TestName, LWByteBuffer &Buffer, const
 	int32_t c = LWByteBuffer::Write<float>(Value, CmpBuffer);
 	bool Result = memcmp(Buffer.GetReadBuffer() + Buffer.GetPosition(), CmpBuffer, c) == 0;
 	if (!Result) fmt::print("Failed at test: '{}'\n", TestName);
-	Buffer.OffsetPosition(c);
+	Buffer.Seek(c);
 	return Result;
 }
 
@@ -83,7 +87,7 @@ bool LinearMathTest(const LWUTF8Iterator &Name, int8_t *Buffer, uint32_t BufferS
 	const uint32_t FloatTestCount = 128;
 	bool WriteMode = !ReadFile(FileName, Buffer, BufferSize, Allocator);
 	float fBuffer[FloatTestCount];
-	LWByteBuffer Buf = LWByteBuffer(Buffer + sizeof(int32_t), BufferSize, LWByteBuffer::BufferNotOwned);
+	LWByteBuffer Buf = LWByteBuffer(Buffer + sizeof(int32_t), BufferSize);
 	
 	//Initialize fbuffer.
 	for (uint32_t i = 0; i < FloatTestCount; i++) {
@@ -130,7 +134,7 @@ bool TrigMathTest(const LWUTF8Iterator &Name, int8_t *Buffer, uint32_t BufferSiz
 	char FileName[] = "TrigMathTest";
 	const uint32_t FloatTestCount = 4096;
 	bool WriteMode = !ReadFile(FileName, Buffer+sizeof(int32_t), BufferSize, Allocator);
-	LWByteBuffer Buf = LWByteBuffer(Buffer+sizeof(int32_t), BufferSize, LWByteBuffer::BufferNotOwned);
+	LWByteBuffer Buf = LWByteBuffer(Buffer+sizeof(int32_t), BufferSize);
 	float fBuffer[FloatTestCount];
 	for (uint32_t i = 0; i < FloatTestCount; i++) {
 		fBuffer[i] = ((float)i) * LW_DEGTORAD * 0.5f - LW_2PI*2.0f;
@@ -170,7 +174,7 @@ bool LinearSSEMathTest(const LWUTF8Iterator &Name, int8_t *Buffer, uint32_t Buff
 	const uint32_t TestCount = 128;
 	bool WriteMode = !ReadFile(FileName, Buffer, BufferSize, Allocator);
 	LWSVector4f vBuffer[TestCount];
-	LWByteBuffer Buf = LWByteBuffer(Buffer + sizeof(int32_t), BufferSize, LWByteBuffer::BufferNotOwned);
+	LWByteBuffer Buf = LWByteBuffer(Buffer + sizeof(int32_t), BufferSize);
 	//Initialize fbuffer.
 	for (uint32_t i = 0; i < TestCount; i++) {
 		float n = ((float)i) * 0.1f;

@@ -17,7 +17,7 @@ struct LWSocketAddr {
 
 	/*!< \brief turns IP address into an IPNotation string, does not perform IP6 condensation of spaces. */
 	template<std::size_t Len = 40>
-	LWUTF8I::C_View<Len> MakeIPNotation(void) const {
+	LWUTFC_View<char8_t, Len> MakeIPNotation(void) const {
 		if (IsIP6Addr()) return LWUTF8I::Fmt<Len>("{:x}:{:x}:{:x}:{:x}:{:x}:{:x}:{:x}:{:x}", 
 			(uint32_t)((IP[0] >> 16) & 0xFFFF), (uint32_t)(IP[0] & 0xFFFF), 
 			(uint32_t)((IP[1] >> 16) & 0xFFFF), (uint32_t)(IP[1] & 0xFFFF), 

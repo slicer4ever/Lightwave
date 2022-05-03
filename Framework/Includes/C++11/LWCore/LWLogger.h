@@ -108,7 +108,7 @@ extern uint32_t LWCurrentLogLevel;
 
 /*!< \brief constructs a formatted string with time stamp and error code. */
 template<uint32_t Len>
-inline LWUTF8I::C_View<Len> LWLog_FormatString(uint32_t LogLevel, const LWUTF8Iterator &LogText) {
+inline LWUTF8C_View<Len> LWLog_FormatString(uint32_t LogLevel, const LWUTF8Iterator &LogText) {
 	const char8_t *Levels[] = { "EVENT:", "WARN:", "CRIT:" };
 	LogLevel = std::min<uint32_t>(LogLevel, 2);
 	std::chrono::system_clock::time_point tp = std::chrono::system_clock::now();

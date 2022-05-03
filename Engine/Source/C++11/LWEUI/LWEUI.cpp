@@ -98,7 +98,7 @@ bool LWEUI::XMLParse(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Man
 	const uint32_t MaxBufferSize = 256;
 	const uint32_t MaxFlagIters = 32;
 	char8_t Buffer[MaxBufferSize];
-	LWUTF8Iterator::C_View<MaxBufferSize> NameBuffer;
+	LWUTF8C_View<MaxBufferSize> NameBuffer;
 	LWEXMLAttribute *NameAttr = Node->FindAttribute("Name");
 	LWEXMLAttribute *FlagAttr = FindAttribute(Node, Style, "Flag");
 	LWEXMLAttribute *PosAttr = FindAttribute(Node, Style, "Position");
@@ -128,7 +128,7 @@ bool LWEUI::XMLParse(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Man
 		LWUTF8Iterator Name = ParseComponentAttribute(Buffer, sizeof(Buffer), NameAttr->GetValue(), ActiveComponent, ActiveComponentNode);
 		if (!Name.AtEnd()) {
 			if (!ActiveComponentName.AtEnd()) {
-				NameBuffer = LWUTF8Iterator::C_View<MaxBufferSize>("{}.{}", ActiveComponentName, Name);
+				NameBuffer = LWUTF8C_View<MaxBufferSize>("{}.{}", ActiveComponentName, Name);
 				Name = NameBuffer;
 			}
 			LWLogCriticalIf<256>(Manager->InsertNamedUI(Name, UI), "Detected namedui conflict: {}", Name);
