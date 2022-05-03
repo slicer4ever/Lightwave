@@ -152,7 +152,7 @@ bool LWAudioDriver::UpdateSoundPlatform(LWSound *Sound, uint64_t ElapsedTime) {
 	LWSoundContext &Context = Sound->GetContext();
 	LWAudioStream *Stream = Sound->GetAudioStream();
 
-	pa_stream_state_t State = pa_stream_get_state(Context->m_Source);
+	pa_stream_state_t State = pa_stream_get_state(Context.m_Source);
 	if (State != PA_STREAM_READY) return true; //should also check for failure
 
 	uint64_t Time = Sound->GetTimePlayed();
