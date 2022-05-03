@@ -46,6 +46,9 @@
 #define X11_MOUSE_SCROLL_INCREMENT 120
 #define LWPLATFORM_ID LWPLATFORM_LINUX
 
+typedef uintptr_t LWSocketHandle;
+typedef pollfd LWSocketPollHandle;
+
 /*! \brief This context is provided here incase your application does need to access the underlying x11 window context information.  in general this information should not ever be required by an application. */
 struct LWWindowContext {
 	//X11 context:
