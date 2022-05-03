@@ -114,7 +114,11 @@ inline LWUTF8I::C_View<Len> LWLog_FormatString(uint32_t LogLevel, const LWUTF8It
 	std::chrono::system_clock::time_point tp = std::chrono::system_clock::now();
 	time_t Time = std::chrono::system_clock::to_time_t(tp);
 	tm t;
+#ifdef _MSC_VER //because people need to be weird :\
 	localtime_s(&t, &Time);	
+#else
+	localtime_s(&Time, &t);
+#endif
 	return LWUTF8I::Fmt<Len>("[{}/{}/{} {}:{:02}:{:02}]{} {}\n", t.tm_mon + 1, t.tm_mday, (t.tm_year + 1900), t.tm_hour, t.tm_min, t.tm_sec, Levels[LogLevel], LogText);
 }
 
