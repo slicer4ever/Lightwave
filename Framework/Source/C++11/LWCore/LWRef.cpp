@@ -1,5 +1,5 @@
 #include <LWCore/LWRef.h>
-
+#include <LWCore/LWAllocator.h>
 
 uint32_t LWRef_Counter::AddRef(void) {
 	return UseCount++;

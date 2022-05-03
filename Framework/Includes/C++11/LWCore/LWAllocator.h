@@ -3,6 +3,7 @@
 #include <memory>
 #include <new>
 #include <atomic>
+#include "LWCore/LWRef.h"
 #include "LWCore/LWTypes.h"
 
 /*! \defgroup LWAllocator LWAllocator

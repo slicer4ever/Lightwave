@@ -1,7 +1,6 @@
 #ifndef LWREF_H
 #define LWREF_H
 #include <LWCore/LWTypes.h>
-#include <LWCore/LWAllocator.h>
 #include <atomic>
 #include <functional>
 
