@@ -90,6 +90,8 @@ typedef std::thread LWThreadType;
 struct LWOpenGL3_3Context {
 	GLXContext m_GLContext;/*!< \brief the x11 openGL context. */
 	uint32_t m_VAOID; /*!< \brief the Vertex array object id for the entire context. */
+	uint32_t m_ActiveAttribs = 0; /*!< \brief the number of currently active attribute arrays. */
+	uint32_t m_ActiveAttributeIDs[32];
 };
 
 #endif
