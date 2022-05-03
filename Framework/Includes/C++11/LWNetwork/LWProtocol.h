@@ -3,6 +3,7 @@
 #include "LWCore/LWTypes.h"
 #include "LWNetwork/LWSocket.h"
 #include "LWNetwork/LWTypes.h"
+#include "LWCore/LWRef.h"
 #include <shared_mutex>
 #include <unordered_map>
 
