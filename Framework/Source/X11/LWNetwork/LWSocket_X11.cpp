@@ -9,12 +9,12 @@
 
 sockaddr_in ToSockAddr(const LWSocketAddr &Addr) {
 	sockaddr_in Result = { AF_INET, LWByteBuffer::MakeNetwork(Addr.GetPort()), 0, {0} };
-	Result.sin_addr.S_un.S_addr = LWByteBuffer::MakeNetwork(Addr.IP[3]);
+	Result.sin_addr.s_addr = LWByteBuffer::MakeNetwork(Addr.IP[3]);
 	return Result;
 }
 
 LWSocketAddr FromSockAddr(const sockaddr_in &Addr) {
-	return LWSocketAddr(LWByteBuffer::MakeHost((uint32_t)Addr.sin_addr.S_un.S_addr), LWByteBuffer::MakeHost(Addr.sin_port));
+	return LWSocketAddr(LWByteBuffer::MakeHost((uint32_t)Addr.sin_addr.s_addr), LWByteBuffer::MakeHost(Addr.sin_port));
 }
 
 
