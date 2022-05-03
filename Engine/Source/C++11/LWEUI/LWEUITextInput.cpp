@@ -1,6 +1,7 @@
 #include <LWPlatform/LWWindow.h>
 #include <LWVideo/LWFont.h>
 #include <LWCore/LWTimer.h>
+#include <LWPlatform/LWInputDevice.h>
 #include <LWPlatform/LWWindow.h>
 #include "LWEUI/LWEUITextInput.h"
 #include "LWELocalization.h"
@@ -193,14 +194,14 @@ LWEUITextInput *LWEUITextInput::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIMan
 
 LWEUITextInput &LWEUITextInput::UpdateTouchButtons(LWEUIManager &Manager, float Scale, uint64_t lCurrentTime) {
 	const LWVector2f DefaultPos = LWVector2f(-1000.0f, -1000.0f);
-	auto UpdateButton = [this](const LWTouchPoint &TP, uint32_t TPIndex, LWEUIManager &Manager, LWETextInputTouchBtn &Btn, float Scale, uint64_t lCurrentTime, LWKey KeyPress, bool ShiftDown, bool CtrlDown)->void {
+	auto UpdateButton = [this](const LWTouchPoint &TP, uint32_t TPIndex, LWEUIManager &Manager, LWETextInputTouchBtn &Btn, float Scale, uint64_t lCurrentTime, LWKey lKeyPress, bool ShiftDown, bool CtrlDown)->void {
 		LWVector2f DownPnt = LWVector2f(-1000.0f, -1000.0f);
 		float BtnHeight = m_Font->GetLineSize()*m_FontScale;
 		LWVector2f Size = LWVector2f(Btn.m_Size.x, BtnHeight)*Scale;
 		bool isOver = PointInside(TP.m_Position.CastTo<float>(), TP.m_Size*Scale, Btn.m_Position, Size);
 		Btn.m_Flag = isOver ? LWETextInputTouchBtn::ButtonOver : 0;
 		if (TP.m_State == LWTouchPoint::UP) {
-			if(isOver) ProcessKey(KeyPress, ShiftDown, CtrlDown, Scale);
+			if(isOver) ProcessKey(lKeyPress, ShiftDown, CtrlDown, Scale);
 			return;
 		}
 		if (Manager.DispatchEvent(this, LWEUI::Event_TempOverInc | (TPIndex << LWEUI::Event_OverOffset), isOver)){
