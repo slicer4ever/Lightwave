@@ -195,7 +195,7 @@ struct LWEHTTPMessage {
 
 	LWEHTTPMessage &SetUpgradeState(uint32_t Upgrade);
 
-	LWEHTTPMessage &SetStatus(uint32_t Status);
+	LWEHTTPMessage &SetStatus(uint32_t lStatus);
 
 	//if seconds > 0, set's the Keep-Alive connection flag.
 	LWEHTTPMessage &SetKeepAlive(uint32_t Seconds, uint32_t Messages);

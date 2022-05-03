@@ -98,15 +98,15 @@ uint32_t LWEHTTPMessage::SerializeHeaders(void *Buffer, uint32_t BufferLen, cons
 	uint32_t Encoding = GetEncodeType();
 	uint32_t ContentEncode = GetContentEncoding();
 	uint32_t UpgradeState = GetUpgradeState();
-	uint32_t Status = GetStatus();
-	bool bIsResponse = Status!=S_Request;
+	uint32_t lStatus = GetStatus();
+	bool bIsResponse = lStatus!=S_Request;
 	
 	//if (!m_ChunkLength) { //This is the first "Chunk", we send chunk encoding if m_ContentLength>BufferLen.
 	if(bIsResponse) {
-		const uint32_t *StatusMap = std::find(StatusCodeMap, StatusCodeMap+S_Count, Status);
+		const uint32_t *StatusMap = std::find(StatusCodeMap, StatusCodeMap+S_Count, lStatus);
 		uint32_t Index = (uint32_t)std::distance(StatusCodeMap, StatusMap);
 		const char8_t *lStatus = Index==S_Count ? "" : StatusCodeNames[Index];
-		o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "HTTP/1.1 {} {}\r\n", Status, lStatus);
+		o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "HTTP/1.1 {} {}\r\n", lStatus, lStatus);
 	}else o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "{} {} HTTP/1.1\r\n", Methods[GetMethod()], m_Path);
 	
 	//Write all header's:
@@ -429,8 +429,8 @@ LWEHTTPMessage &LWEHTTPMessage::SetUpgradeState(uint32_t Upgrade) {
 	return *this;
 }
 
-LWEHTTPMessage &LWEHTTPMessage::SetStatus(uint32_t Status) {
-	m_Flag = LWBitFieldSet(StatusBits, m_Flag, Status);
+LWEHTTPMessage &LWEHTTPMessage::SetStatus(uint32_t lStatus) {
+	m_Flag = LWBitFieldSet(StatusBits, m_Flag, lStatus);
 	return *this;
 }
 
@@ -645,12 +645,12 @@ LWEProtocol_HTTP &LWEProtocol_HTTP::ProcessOutboundMessages(LWProtocolManager &M
 			Socket = Message->m_Socket = Manager.CreateAsyncSocket(Host, Message->m_Port, LWSocket::TCP, 0, ProtocolID);
 			if (!LWLogCriticalIfv((bool)Socket, Verbose, "Protocolmanager exceeded supported sockets.")) continue;
 		}
-		uint32_t Status = Socket->GetStatus();
+		uint32_t lStatus = Socket->GetStatus();
 		if(!IsResponse) {
-			if(Status==LWSocket::S_Connecting) { //add message back into queue, we are still waiting on the initial handshake to finish:
+			if(lStatus==LWSocket::S_Connecting) { //add message back into queue, we are still waiting on the initial handshake to finish:
 				if(!LWLogCriticalIfv<256>(m_OutMessages.PushMove(Message), Verbose, "Failed to reinsert message into outbound messages.")) Socket->MarkClosable();
 				return *this; //We don't want to end up in a loop on the same message, so we'll let a frame go by before trying again.
-			}else if(Status==LWSocket::S_Error || Status==LWSocket::S_Closed) {
+			}else if(lStatus==LWSocket::S_Error || lStatus==LWSocket::S_Closed) {
 				LWLogEventv<256>(Verbose, "Failed to connect to domain '{}'.", (*Message)["host"]);
 				//Domain closed the connection before a response was received, so we send back DomainNoResponse.
 				Message->SetStatus(LWEHTTPMessage::S_DomainNoResponse);
