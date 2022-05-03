@@ -1,6 +1,6 @@
 #include "LWPlatform/LWFileStream.h"
 #include "LWPlatform/LWPlatform.h"
-#include "LWCore/LWText.h"
+#include "LWCore/LWUnicodeIterator.h"
 #include <cstdarg>
 #include <cstdlib>
 #include <cstring>
