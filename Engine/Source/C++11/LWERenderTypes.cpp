@@ -12,12 +12,12 @@ bool LWERenderVideoBuffer::UploadData(LWERenderer *Renderer, bool DiscardData) {
 }
 
 bool LWERenderVideoBuffer::ReleaseData(LWERenderer *Renderer) {
-	bool Success = true;
+	bool lSuccess = true;
 	if (m_ID && Renderer) {
-		Success = Renderer->PushPendingResource(LWERenderPendingResource(m_ID, LWERenderPendingBuffer())) == 0;
+		lSuccess = Renderer->PushPendingResource(LWERenderPendingResource(m_ID, LWERenderPendingBuffer())) == 0;
 	}
 	m_Data = LWAllocator::Destroy(m_Data);
-	return Success;
+	return lSuccess;
 }
 
 LWERenderVideoBuffer::LWERenderVideoBuffer(uint32_t BufferType, uint32_t BufferUsage) : m_BufferType(BufferType), m_BufferUsage(BufferUsage) {}
