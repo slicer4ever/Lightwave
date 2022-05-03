@@ -13,6 +13,8 @@
 #include "../../../../Dependency/libfmt/include/fmt/ostream.h"
 #else
 #include <fmt/format.h>
+#include <fmt/chrono.h>
+#include <fmt/ostream.h>
 #endif
 
 /*!< \brief assert's in debug builds, but still keeps expression in non debug builds for simpler one-liners used by lightwave. */

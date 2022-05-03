@@ -5,7 +5,6 @@
 #include <iostream>
 #include <cstdarg>
 
-
 /*!< \brief LWUTFC_View is for giving to c api's a static null terminated copy of the iterator. */
 template<class Type, std::size_t Len>
 struct LWUTFC_View {
