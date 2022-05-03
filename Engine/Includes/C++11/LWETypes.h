@@ -1,5 +1,6 @@
 #ifndef LWETYPES_H
 #define LWETYPES_H 
+#include <LWCore/LWTypes.h>
 #include <functional>
 
 class LWEAsset;
