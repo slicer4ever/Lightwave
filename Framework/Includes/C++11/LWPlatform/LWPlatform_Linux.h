@@ -7,6 +7,7 @@
 #include <X11/extensions/Xrandr.h>
 #include <sys/poll.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <netinet/tcp.h>
