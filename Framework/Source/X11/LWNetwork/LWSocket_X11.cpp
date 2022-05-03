@@ -132,7 +132,7 @@ bool LWSocket::Accept(LWSocket &Result, uint32_t ProtocolID) const {
 
 LWSocket &LWSocket::Close(void) {
 	m_Flags = LWBitFieldSet(StatusBits, m_Flags, S_Closed);
-	if (m_Handle) closesocket(m_Handle);
+	if (m_Handle) close(m_Handle);
 	m_Handle = 0;
 	return *this;
 }
