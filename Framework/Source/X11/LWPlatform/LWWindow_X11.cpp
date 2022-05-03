@@ -377,7 +377,9 @@ bool LWWindow::isVirtualKeyboardPresent(void) const {
 	return (m_Flag&KeyboardPresent) != 0;
 }
 
-LWWindow::LWWindow(const LWUTF8 &Title, const LWUTF8 &Name, LWAllocator &Allocator, uint32_t Flag, const LWVector2i &Position, const LWVector2i &Size) : m_Title(LWText(Title.GetCharacters(), Allocator)), m_Name(LWText(Name.GetCharacters(), Allocator)), m_Allocator(&Allocator), m_FirstDevice(nullptr), m_Position(Position), m_Size(Size), m_Flag(Flag){
+LWWindow::LWWindow(const LWUTF8Iterator &Title, const LWUTF8Iterator &Name, LWAllocator &Allocator, uint32_t Flag, const LWVector2i &Position, const LWVector2i &Size) :  m_Allocator(&Allocator), m_FirstDevice(nullptr), m_Position(Position), m_Size(Size), m_Flag(Flag){
+	SetTitle(Title);
+	SetName(Name);
 	m_MouseDevice = nullptr;
 	m_KeyboardDevice = nullptr;
 	m_TouchDevice = nullptr;

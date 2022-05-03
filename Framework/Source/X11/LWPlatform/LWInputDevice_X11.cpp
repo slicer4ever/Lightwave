@@ -193,7 +193,7 @@ bool LWKeyboard::ProcessSystemMessage(uint32_t MessageID, void *MessageData, uin
 		if (MessageID == KeyPress) {
 			KeySym KeyS;
 			uint32_t n = XLookupString(KEvnt, Buffer, sizeof(Buffer), &KeyS, nullptr);
-			if (n && m_CharPressed < MaxKeyChanges) m_CharInputs[m_CharPressed++] = LWText::GetCharacter(Buffer);
+			if (n && m_CharPressed < MaxKeyChanges) m_CharInputs[m_CharPressed++] = *LWUTF8I(Buffer);
 		};
 	}
 	if (TransKey == LWKey::Unknown) return false;
