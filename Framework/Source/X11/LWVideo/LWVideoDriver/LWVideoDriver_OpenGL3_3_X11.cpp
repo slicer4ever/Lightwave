@@ -15,7 +15,7 @@ LWVideoDriver_OpenGL3_3 *LWVideoDriver_OpenGL3_3::MakeVideoDriver(LWWindow *Wind
 	if (glewInit() != GLEW_OK) return nullptr;
 	if (GLEW_VERSION_3_3) {
 		int32_t UniformBlockSize = 0;
-		sglGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &UniformBlockSize);
+		glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &UniformBlockSize);
 		return Window->GetAllocator()->Create<LWVideoDriver_OpenGL3_3>(Window, GLContext, (uint32_t)UniformBlockSize);
 	}
 	glXMakeCurrent(WinCon.m_Display, 0, nullptr);
