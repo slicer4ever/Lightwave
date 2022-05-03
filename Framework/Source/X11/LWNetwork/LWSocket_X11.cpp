@@ -19,7 +19,7 @@ LWSocketAddr FromSockAddr(const sockaddr_in &Addr) {
 
 
 uint32_t LWSocket::LookUpAddress(const LWUTF8Iterator &Address, LWSocketAddr *AddrBuffer, uint32_t AddrBufferLen, char *Addresses, uint32_t AddressLen) {
-	addrinfo hint = { AI_CANONNAME | AI_RETURN_PREFERRED_NAMES, AF_INET, 0, 0, 0, nullptr, nullptr, nullptr }, *servinfo = nullptr;
+	addrinfo hint = { AI_CANONNAME, AF_INET, 0, 0, 0, nullptr, nullptr, nullptr }, *servinfo = nullptr;
 	if (getaddrinfo(*Address.c_str<256>(), nullptr, &hint, &servinfo)) return 0xFFFFFFFF;
 	unsigned int i = 0;
 	char *AL = Addresses + AddressLen;
