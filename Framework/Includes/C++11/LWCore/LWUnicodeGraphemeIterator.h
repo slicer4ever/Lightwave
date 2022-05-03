@@ -734,7 +734,7 @@ public:
 	}
 
 	template<std::size_t Len>
-	LWUnicodeGraphemeIterator(const typename LWUTFC_View<Type, Len> &CStr) : LWUnicodeGraphemeIterator(CStr.m_Data) {
+	LWUnicodeGraphemeIterator(const LWUTFC_View<Type, Len> &CStr) : LWUnicodeGraphemeIterator(CStr.m_Data) {
 		m_CodePointCount = CountGraphemeCluster(*this);
 	}
 
