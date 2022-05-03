@@ -67,12 +67,12 @@ typedef std::thread LWThreadType;
 #endif
 
 #define LWVIDEO_IMPLEMENTED_OPENGL2_1
-#define LWVIDEO_IMPLEMENTED_OPENGL3_2
+#define LWVIDEO_IMPLEMENTED_OPENGL3_3
 #endif
 
-#ifdef LWVIDEODRIVER_OPENGL3_2_H
-#ifndef LWVIDEODRIVER_OPENGL3_2_PLATFORM_H
-#define LWVIDEODRIVER_OPENGL3_2_PLATFORM_H
+#ifdef LWVIDEODRIVER_OPENGL3_3_H
+#ifndef LWVIDEODRIVER_OPENGL3_3_PLATFORM_H
+#define LWVIDEODRIVER_OPENGL3_3_PLATFORM_H
 #include <GL/glew.h>
 #include <GL/glxew.h>
 #include <GL/glext.h>
@@ -87,7 +87,7 @@ typedef std::thread LWThreadType;
 #endif
 
 /*! \brief This context is the underlying context used in the x11 openGL video driver.  the application should never require accessing it directly, but it is provided here incase the application is specifically targeting the openGL api. */
-struct LWOpenGL3_2Context {
+struct LWOpenGL3_3Context {
 	GLXContext m_GLContext;/*!< \brief the x11 openGL context. */
 	uint32_t m_VAOID; /*!< \brief the Vertex array object id for the entire context. */
 };
@@ -95,9 +95,9 @@ struct LWOpenGL3_2Context {
 #endif
 #endif
 
-#ifdef LWVIDEODRIVER_OPENGL4_4_H
-#ifndef LWVIDEODRIVER_OPENGL4_4_PLATFORM_H
-#define LWVIDEODRIVER_OPENGL4_4_PLATFORM_H
+#ifdef LWVIDEODRIVER_OPENGL4_5_H
+#ifndef LWVIDEODRIVER_OPENGL4_5_PLATFORM_H
+#define LWVIDEODRIVER_OPENGL4_5_PLATFORM_H
 #include <GL/glew.h>
 #include <GL/glxew.h>
 #include <GL/glext.h>
@@ -111,7 +111,7 @@ struct LWOpenGL3_2Context {
 #define GL_COMPRESSED_RGBA_BPTC_UNORM_EXT 0x8E8C
 #endif
 
-struct LWOpenGL4_4Context {
+struct LWOpenGL4_5Context {
 	GLXContext m_GLContext;
 	uint32_t m_VAOID;
 };
