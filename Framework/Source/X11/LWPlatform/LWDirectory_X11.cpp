@@ -38,7 +38,7 @@ bool LWDirectory::OpenDir(LWDirectory &DirObject, const LWUTF8Iterator &Director
 		bool isHidden = *FName == '.' ? Hidden : 0;
 		bool isReadable = access(FileBuffer, R_OK) != 0;
 		bool isWriteable = access(FileBuffer, W_OK) != 0;
-		DirObject.PushFile(LWFile(LWUTF8Iterator((const char8_t*)FName, (uint64_t)s.st_size, (isDirectory ? Directory : 0) | (isHidden ? Hidden : 0) | (isReadable ? CanRead : 0) | (isWriteable ? CanWrite : 0)));
+		DirObject.PushFile(LWFile(LWUTF8Iterator(FName), (uint64_t)s.st_size, (isDirectory ? Directory : 0) | (isHidden ? Hidden : 0) | (isReadable ? CanRead : 0) | (isWriteable ? CanWrite : 0)));
 	}
 	closedir(D);
 	return true;
