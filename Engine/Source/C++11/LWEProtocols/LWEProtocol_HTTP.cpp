@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <iostream>
 #include <zlib.h>
-#include <ctime>
+#include <time.h>
 #include <cstdio>
 #include <functional>
 
@@ -51,14 +51,22 @@ uint32_t LWEHTTPMessage::MakeJSONQueryString(LWEJson &Json, char8_t *Buffer, uin
 uint32_t LWEHTTPMessage::MakeHTTPDate(void *Buffer, uint32_t BufferLen) {
 	time_t now = time(0);
 	struct tm mtime;
+#if _MSC_VER
 	gmtime_s(&mtime, &now);
+#else
+	gmtime_r(&now, &mtime);
+#endif
 	return (uint32_t)strftime((char*)Buffer, BufferLen, "%a, %d %b %Y %H:%M:%S %Z", &mtime);
 }
 
 uint32_t LWEHTTPMessage::MakeAMZDate(void *Buffer, uint32_t BufferLen, bool IncludeSubTime) {
 	time_t now = time(0);
 	struct tm gtime;
+#if _MSC_VER
 	gmtime_s(&gtime, &now);
+#else
+	gmtime_r(&now, &gtime);
+#endif
 	if (IncludeSubTime) return (uint32_t)strftime((char*)Buffer, BufferLen, "%Y%m%dT%H%M%SZ", &gtime);
 	return (uint32_t)strftime((char*)Buffer, BufferLen, "%Y%m%d", &gtime);
 }
