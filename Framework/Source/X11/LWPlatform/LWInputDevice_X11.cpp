@@ -1,8 +1,9 @@
-#include "LWCore/LWText.h"
 #include "LWPlatform/LWInputDevice.h"
 #include "LWPlatform/LWPlatform.h"
 #include "LWPlatform/LWWindow.h"
+#include "LWCore/LWUnicodeIterator.h"
 #include <iostream>
+
 #pragma region LWMouse
 bool LWMouse::ProcessSystemMessage(uint32_t MessageID, void *MessageData, uint64_t lCurrentTime, LWWindow *Window){
 
