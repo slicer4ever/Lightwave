@@ -6,6 +6,7 @@
 #include "LWCore/LWLogger.h"
 #include "LWPlatform/LWFileStream.h"
 #include "LWPlatform/LWWindow.h"
+#include <pulse/stream.h>
 #include <algorithm>
 #include <iostream>
 #include <vorbis/codec.h>
