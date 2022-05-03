@@ -55,7 +55,7 @@ uint32_t LWSocket::LookUpDNSServers(LWSocketAddr *AddrBuffer, uint32_t AddrBuffe
 uint32_t LWSocket::CreateSocket(LWSocket &Socket, uint32_t Type, const LWSocketAddr &RemoteAddr, uint16_t LocalPort, uint32_t Flag, uint32_t ProtocolID) {
 	sockaddr_in sBindAddr = ToSockAddr(LWSocketAddr(0, LocalPort));
 	sockaddr_in sConnectAddr = ToSockAddr(RemoteAddr);
-	int32_t AddrSize = sizeof(sockaddr_in);
+	socklen_t AddrSize = sizeof(sockaddr_in);
 	uint32_t UPDNoConnReset = (Flag & LWSocket::UDPConnReset) == 0;
 	uint32_t SockBroadcast = (Flag & LWSocket::BroadcastAble) != 0;
 	uint32_t iTcpNoDelay = (Flag & LWSocket::TcpNoDelay) != 0;
