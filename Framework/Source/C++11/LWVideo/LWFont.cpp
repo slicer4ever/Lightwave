@@ -1,10 +1,11 @@
+#include "LWVideo/LWFont.h"
 #include "LWCore/LWUnicode.h"
 #include "LWPlatform/LWFileStream.h"
-#include "LWVideo/LWFont.h"
 #include "LWVideo/LWVideoDriver.h"
 #include "LWVideo/LWImage.h"
 #include "LWCore/LWByteBuffer.h"
 #include "LWCore/LWCrypto.h"
+#include "LWCore/LWLogger.h"
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include <iostream>
@@ -85,20 +86,14 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 			const uint32_t Artery_Header_Magic = 0x4d276a5cu;
 
 			Buf.Read<char>(Header.m_Tag, sizeof(ARHeader::m_Tag));
-			if (!std::equal(Header.m_Tag, Header.m_Tag + sizeof(ARHeader::m_Tag), Artery_Font_Header_Tag)) {
-				fmt::print("Font header tag is invalid: '{}'\n", Header.m_Tag);
-				return false;
-			}
+			if(!LWLogCriticalIf<128>(std::equal(Header.m_Tag, Header.m_Tag + sizeof(ARHeader::m_Tag), Artery_Font_Header_Tag), "Font header tag is invalid: '{}'", Header.m_Tag)) return false;
+
 			Header.m_Magic = Buf.Read<uint32_t>();
-			if (Header.m_Magic != Artery_Header_Magic) {
-				fmt::print("Font header magic is invalid.\n");
-				return false;
-			}
+			if(!LWLogCriticalIf(Header.m_Magic==Artery_Header_Magic, "Font header magic is invalid.")) return false;
+
 			Header.m_Version = Buf.Read<uint32_t>();
-			if (Header.m_Version != Artery_Header_Version) {
-				fmt::print("Font version is not supported: {}\n", Header.m_Version);
-				return false;
-			}
+			if(!LWLogCriticalIf<128>(Header.m_Version==Artery_Header_Version, "Font version is not supported: {}", Header.m_Version)) return false;
+
 			Header.m_Flag = Buf.Read<uint32_t>();
 			Header.m_RealType = Buf.Read<uint32_t>();
 			Buf.Read<uint32_t>(Header.m_ReservedA, 4);
@@ -126,10 +121,8 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 			const uint32_t Artery_Footer_Magic = 0x55ccb363u;
 			Footer.m_Salt = Buf.Read<uint32_t>();
 			Footer.m_Magic = Buf.Read<uint32_t>();
-			if (Footer.m_Magic != Artery_Footer_Magic) {
-				fmt::print("Font Footer magic is incorrect.\n");
-				return false;
-			}
+			if(!LWLogCriticalIf(Footer.m_Magic==Artery_Footer_Magic, "Font Footer magic is incorrect.")) return false;
+
 			Buf.Read<uint32_t>(Footer.m_ReservedA, 4);
 			Footer.m_TotalLength = Buf.Read<uint32_t>();
 			Footer.m_Checksum = Buf.Read<uint32_t>();
@@ -323,7 +316,7 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 				Buf.AlignPosition(4);
 			}
 			Image.m_Data = Buf.GetReadBuffer() + Buf.GetPosition();
-			Buf.OffsetPosition(Image.m_DataLength);
+			Buf.Seek(Image.m_DataLength);
 			Buf.AlignPosition(4);
 			return true;
 		};
@@ -344,7 +337,7 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 				Buf.AlignPosition(4);
 			}
 			Appendix.m_Data = Buf.GetReadBuffer() + Buf.GetPosition();
-			Buf.OffsetPosition(Appendix.m_DataLength);
+			Buf.Seek(Appendix.m_DataLength);
 			Buf.AlignPosition(4);
 			return true;
 		}
@@ -365,7 +358,7 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 
 	char *FileBuffer = Allocator.Allocate<char>(Stream->Length());
 	Stream->Read(FileBuffer, Stream->Length());
-	LWByteBuffer Buf = LWByteBuffer((const int8_t*)FileBuffer, Stream->Length(), LWByteBuffer::BufferNotOwned);
+	LWByteBuffer Buf = LWByteBuffer((const int8_t*)FileBuffer, Stream->Length(), 0);
 	ARHeader Header;
 	ARFooter Footer;
 	if (!ARHeader::Deserialize(Header, Buf)) return Cleanup(FileBuffer, nullptr, nullptr, nullptr, nullptr);
@@ -378,63 +371,45 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 		if (!ARFontVariant::Deserialize(Variants[i], Buf, Allocator)) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
 		if (Variants[i].m_CodePointType == CodepointType_Unicode) SelectedVariant = i;
 	}
-	if ((Buf.GetPosition() - pPos) != Header.m_VariantsLength) {
-		fmt::print("Error font's variants lengths invalid.\n");
-		return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
-	}
+	if(!LWLogCriticalIf((Buf.GetPosition()-pPos)==Header.m_VariantsLength, "Error Font's variants lengths invalid.")) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
+
 	pPos = Buf.GetPosition();
 	for (uint32_t i = 0; i < Header.m_ImageCount; i++) {
 		if (!ARImageHeader::Deserialize(Images[i], Buf, Allocator)) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
 	}
-	if ((Buf.GetPosition() - pPos) != Header.m_ImagesLength) {
-		fmt::print("Error font's images lengths invalid.\n");
-		return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
-	}
+	if(!LWLogCriticalIf((Buf.GetPosition()-pPos)==Header.m_ImagesLength, "Error Font's images lengths invalid.")) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
+
 	pPos = Buf.GetPosition();
 	for (uint32_t i = 0; i < Header.m_AppendixCount; i++) {
 		if (!ARAppendix::Deserialize(Appendixs[i], Buf, Allocator)) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
 	}
-	if ((Buf.GetPosition() - pPos) != Header.m_AppendixsLength) {
-		fmt::print("Error font's appendixes lengths invalid.\n");
-		return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
-	}
+	if(!LWLogCriticalIf((Buf.GetPosition()-pPos)==Header.m_AppendixsLength, "Error Font's appendixes lengths invalid.")) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
+
 	if (!ARFooter::Deserialize(Footer, Buf)) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
 	uint32_t CRC = LWCrypto::CRC32((uint8_t*)FileBuffer, Buf.GetPosition() - 4, ~0, false); //Have to set CRC32 finished to false as artery file does not do final ^0xFFFFFFFF to checksum.
-	if (CRC != Footer.m_Checksum) {
-		fmt::print("Checksum for font file is incorrect.\n");
-		return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
-	}
-	if (SelectedVariant == -1) {
-		fmt::print("No supported font variant was found for font.\n");
-		return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
-	}
+	if(!LWLogCriticalIf(CRC==Footer.m_Checksum, "Error Font's checksum is incorrect.")) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
+	
+	if(!LWLogCriticalIf(SelectedVariant!=-1, "No supported font variant was found for font.")) return Cleanup(FileBuffer, Variants, Images, Appendixs, nullptr);
+
 	ARFontVariant &SelV = Variants[SelectedVariant];
 	LWFont *Fnt = Allocator.Create<LWFont>(Driver, SelV.m_Metrics.m_LineHeight*SelV.m_Metrics.m_FontSize);
 	for (uint32_t i = 0; i < Header.m_ImageCount; i++) {
 		ARImageHeader &I = Images[i];
 		LWImage TexImg;
-		LWByteBuffer Buf = LWByteBuffer(I.m_Data, I.m_DataLength, LWByteBuffer::BufferNotOwned);
+		LWByteBuffer Buf = LWByteBuffer(I.m_Data, I.m_DataLength, 0);
 		if (I.m_Encoding == ImageEncoding_PNG) {
-			if (!LWImage::LoadImagePNG(TexImg, Buf, Allocator)) {
-				fmt::print("Error loading font png image.\n");
-				continue;
-			}
+			if(!LWLogCriticalIf(LWImage::LoadImagePNG(TexImg, Buf, Allocator), "Error loading font png image.")) continue;
 		} else if (I.m_Encoding == ImageEncoding_TGA) {
-			if (!LWImage::LoadImageTGA(TexImg, Buf, Allocator)) {
-				fmt::print("Error loading font tga image.\n");
-				continue;
-			}
+			if(!LWLogCriticalIf(LWImage::LoadImageTGA(TexImg, Buf, Allocator), "Error loading font tga image.")) continue;
 		} else {
-			fmt::print("Font contains image that is not supported.\n");
+			LWLogCritical("Font contains image format that is not supported.");
 			continue;
 		}
 		//Need to check if not color type font:
 		TexImg.SetSRGBA(false);
 		LWTexture *Tex = Driver->CreateTexture(LWTexture::MinLinear | LWTexture::MagLinear, TexImg, Allocator);
-		if (!Tex) {
-			fmt::print("Failed to create texture for font.\n");
-			continue;
-		}
+		if(!LWLogCriticalIf(Tex, "Failed to create texture for font.")) continue;
+
 		Fnt->SetTexture(i, Tex);
 	}
 	Fnt->SetErrorGlyph(SelV.m_FallbackGlyph);
@@ -485,17 +460,12 @@ LWFont *LWFont::LoadFontFNT(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloc
 		uint32_t Index = 0;
 		sscanf(Line, "page id = %d file = \"%[^\"]", &Index, FilePathbuffer);
 		LWImage TexImg;
-		if (!LWImage::LoadImage(TexImg, FilePathbuffer, Allocator, ExistingStream)) {
-			fmt::print("Error loading image: '{}'\n", FilePathbuffer);
-			return false;
-		}
+		if(!LWLogCriticalIf<256>(LWImage::LoadImage(TexImg, FilePathbuffer, Allocator, ExistingStream), "Error loading image: '{}'", FilePathbuffer)) return false;
+
 		LWTexture *FontTex = nullptr;
 
 		FontTex = Driver->CreateTexture(LWTexture::MagLinear | LWTexture::MinLinear, TexImg, Allocator);		
-		if (!FontTex) {
-			fmt::print("Error creating font texture: '{}'\n", FilePathbuffer);
-			return false;
-		}
+		if(!LWLogCriticalIf<256>(FontTex, "Error creating font texture: '{}'", FilePathbuffer)) return false;
 		Fnt->SetTexture(Index, FontTex);
 		return true;
 	};
@@ -602,14 +572,16 @@ LWFont *LWFont::LoadFontTTF(LWFileStream *Stream, LWVideoDriver *Driver, uint32_
 	FT_Open_Args Args = { FT_OPEN_STREAM, nullptr, 0,  nullptr, &SR, 0, 0, nullptr };
 	uint32_t Error = 0;
 	FT_Error ErrorCode = 0;
-	if ((ErrorCode = FT_Init_FreeType(&ftLib)) != 0) Error = 1;
-	else if ((ErrorCode = FT_Open_Face(ftLib, &Args, 0, &ftFace))!=0) Error = 2;
-	else if ((ErrorCode = FT_Select_Charmap(ftFace, ft_encoding_unicode))!=0) Error = 3;
-	else if ((ErrorCode = FT_Set_Char_Size(ftFace, emSize << 6, 0, 72, 0))!=0 ) Error = 4;
-	if (Error) {
+
+	bool bSucceeded = true;
+	if(!LWLogCriticalFunc<64>(FT_Init_FreeType(&ftLib), 0, "FT_Init_FreeType")) bSucceeded = false;
+	else if(!LWLogCriticalFunc<64>(FT_Open_Face(ftLib, &Args, 0, &ftFace), 0, "FT_Open_Face")) bSucceeded = false;
+	else if(!LWLogCriticalFunc<64>(FT_Select_Charmap(ftFace, ft_encoding_unicode), 0, "FT_Select_Charmap")) bSucceeded = false;
+	else if(!LWLogCriticalFunc<64>(FT_Set_Char_Size(ftFace, emSize<<6, 0, 72, 0), 0, "FT_Set_Char_Size")) bSucceeded = false;
+
+	if(!bSucceeded){
 		if (ftFace) FT_Done_Face(ftFace);
 		FT_Done_FreeType(ftLib);
-		fmt::print("Font loading error: {} Code: {}\n", Error, ErrorCode);
 		return nullptr;
 	}
 	const uint32_t MaxTextureWidth = 512; //an font texture can not be larger than 512 units wide, this is an attempt to make the texture square.
@@ -628,10 +600,7 @@ LWFont *LWFont::LoadFontTTF(LWFileStream *Stream, LWVideoDriver *Driver, uint32_
 	
 	for (uint32_t n = 0; n < RangeCount; n++) {
 		for (uint32_t i = FirstChar[n]; i < FirstChar[n] + NbrChars[n]; i++) {
-			if (FT_Load_Char(ftFace, i, FT_LOAD_RENDER)) {
-				fmt::print("Error loading glyph: {}\n", i);
-				continue;
-			}
+			if(!LWLogCriticalFunc<64>(FT_Load_Char(ftFace, i, FT_LOAD_RENDER), 0, "FT_Load_Char")) continue;
 			CurrentLineWidth += ftFace->glyph->bitmap.width+PadWidth*2;
 			if (CurrentLineWidth > MaxTextureWidth) {
 				CurrentLineWidth = 0;
@@ -688,18 +657,14 @@ LWFont *LWFont::LoadFontTTF(LWFileStream *Stream, LWVideoDriver *Driver, uint32_
 	//BuildTransformTable(DTexels, Texels, PackSize*TextureWidth, TextureWidth, TextureHeight, 4);
 	LWTexture *Tex = Driver->CreateTexture2D(LWTexture::MinLinear|LWTexture::MagLinear, LWImage::SRGBA, LWVector2i(TextureWidth, TextureHeight), &Texels, 0, Allocator);
 
-	if (Tex) F->SetTexture(0, Tex);
+
+	if (LWLogCriticalIf(Tex, "Error creating textures.")) F->SetTexture(0, Tex);
+	else F = LWAllocator::Destroy(F);
 
 	LWAllocator::Destroy(Texels);
 	//LWAllocator::Destroy(DTexels);
 	FT_Done_Face(ftFace);
 	FT_Done_FreeType(ftLib);
-	if (!Tex) {
-		fmt::print("Error making texture!\n");
-		LWAllocator::Destroy(F);
-		F = nullptr;
-	}
-
 	return F;
 }
 
@@ -881,14 +846,14 @@ LWVector4f LWFont::DrawClippedText(const LWUTF8GraphemeIterator &Text, const LWV
 LWFont &LWFont::InsertKern(uint32_t Left, uint32_t Right, float Kerning) {
 	uint32_t Key = Left | (Right << 16); //yea yea, 32 bits, blah blah blah, hopefully these keys don't overlap.
 	auto Res = m_KernTable.emplace(Key, Kerning);
-	if (!Res.second) fmt::print("Kern collision: {} | {}\n", Left, Right);
+	LWLogWarnIf<64>(Res.second, "Kern collision: {} | {}", Left, Right);
 	return *this;
 }
 
 LWFont &LWFont::InsertGlyphName(const LWUTF8Iterator &GlyphName, uint32_t GlyphID) {
 	uint32_t Hash = LWCrypto::HashFNV1A(GlyphName);
 	auto Res = m_GlyphNameMap.emplace(Hash, GlyphID);
-	if (!Res.second) fmt::print("Glyph name map collision: '{}'", GlyphName);
+	LWLogWarnIf<64>(Res.second, "Glyph name map collision: {}", GlyphName);
 	return *this;
 }
 

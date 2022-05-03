@@ -1,17 +1,17 @@
 #include "LWNetwork/LWProtocol.h"
 #include "LWNetwork/LWProtocolManager.h"
+#include "LWCore/LWLogger.h"
 
-LWProtocol &LWProtocol::Accept(LWSocket &NewSocket, LWProtocolManager *Manager) {
-	if (!Manager->PushSocket(NewSocket)) {
-		fmt::print("Error inserting new socket to protocol manager!.\n");
-	}
+bool LWProtocol::Accept(LWRef<LWSocket> &Listener, LWSocket &NewSocket, LWProtocolManager &Manager) {
+	return true;
+}
+
+LWProtocol &LWProtocol::SocketClosed(LWRef<LWSocket> &Socket, LWProtocolManager &Manager) {
 	return *this;
 }
 
-LWProtocol &LWProtocol::SocketClosed(LWSocket &Socket, LWProtocolManager *Manager) {
+LWProtocol &LWProtocol::SocketAdded(LWRef<LWSocket> &NewSocket, LWProtocolManager &Manager) {
 	return *this;
 }
 
-LWProtocol &LWProtocol::SocketChanged(LWSocket &Prev, LWSocket &New, LWProtocolManager *Manager) {
-	return *this;
-}
+LWProtocol::LWProtocol(uint32_t ProtocolID) : ProtocolID(ProtocolID){}

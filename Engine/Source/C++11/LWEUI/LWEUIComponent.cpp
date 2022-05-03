@@ -1,7 +1,7 @@
 #include "LWEUI/LWEUIComponent.h"
 #include <LWCore/LWVector.h>
 #include <LWCore/LWTimer.h>
-#include <LWELogger.h>
+#include <LWCore/LWLogger.h>
 #include <algorithm>
 #include <iostream>
 
@@ -10,10 +10,8 @@ LWEUIComponent *LWEUIComponent::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIMan
 	char8_t NameBuffer[256]="";
 	uint32_t NameHash = Node->GetName().Hash();
 	auto Iter = ComponentMap.find(NameHash);
-	if (Iter == ComponentMap.end()) {
-		LWELogCritical<256>("unknown node: '{}'", Node->GetName());
-		return nullptr;
-	}
+	if(!LWLogCriticalIf<256>(Iter!=ComponentMap.end(), "Unknown node: '{}'", Node->GetName())) return nullptr;
+
 	LWEXMLNode *Component = Iter->second;
 	LWEXMLAttribute *NameAttr = Node->FindAttribute("Name");
 	LWUTF8Iterator ActiveName = NameBuffer;

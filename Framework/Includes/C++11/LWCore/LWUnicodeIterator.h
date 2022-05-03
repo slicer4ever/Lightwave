@@ -84,6 +84,17 @@ public:
 	*	 \return the number of unit's needed to store the codepoint. */
 	static uint32_t EncodeCodePoint(Type *Buffer, uint32_t BufferSize, uint32_t CodePoint);
 
+	/*!< \brief encode's a codepoint at the specified offset of the bufferSize, and adds a null terminator to the buffer if BufferOffset+CodePoitnSize < BufferSize.
+	*	 \return the number of unit's needed to store the codepoint(without the terminator).
+	*/
+	static uint32_t EncodeCodePoint_s(Type *Buffer, uint32_t BufferSize, uint32_t BufferOffset, uint32_t CodePoint) {
+		uint32_t Remaining = BufferSize - std::min<uint32_t>(BufferSize, BufferOffset);
+		uint32_t r = EncodeCodePoint(Buffer + BufferOffset, Remaining, CodePoint);
+		if (Remaining > r) Buffer[BufferOffset + r] = '\0';
+		else if (Remaining) Buffer[BufferOffset] = '\0';
+		return r;
+	}
+
 	/*!< \brief iterates over the iterator and checks that no malformed utf is detected. */
 	static bool ValidateIterator(const LWUnicodeIterator<Type> &Iter, uint32_t &Length, uint32_t &RawLength) {
 		LWUnicodeIterator<Type> C = Iter;
@@ -203,6 +214,11 @@ public:
 	/*!< \brief returns true if the codepoint is a line ending character(\r or \n). */
 	static bool isLineEnd(uint32_t CodePoint) {
 		return CodePoint == '\n' || CodePoint == '\r';
+	}
+
+	/*!< \brief explicit bool conversion which returns true if not at end. */
+	explicit operator bool(void) const {
+		return !AtEnd();
 	}
 
 	/*!< \brief returns if Pos is currently at the start of a codepoint, or in the middle of one. */

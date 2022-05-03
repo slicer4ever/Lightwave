@@ -2,6 +2,7 @@
 #include "LWPlatform/LWWindow.h"
 #include "LWCore/LWVector.h"
 #include "LWCore/LWMatrix.h"
+#include "LWCore/LWLogger.h"
 #include "LWVideo/LWImage.h"
 #include "LWVideo/LWFrameBuffer.h"
 #include "LWVideo/LWPipeline.h"
@@ -85,7 +86,7 @@ LWPipeline *LWVideoDriver_OpenGL3_3::CreatePipeline(LWPipeline *Source, LWAlloca
 		else if (Type == GL_FLOAT_MAT3x4) return { LWShaderInput::Vec3, 4 };
 		else if (Type == GL_FLOAT_MAT4x2) return { LWShaderInput::Vec4, 2 };
 		else if (Type == GL_FLOAT_MAT4x3) return { LWShaderInput::Vec4, 3 };
-		fmt::print("Unknown type: {}\n", Type);
+		LWLogCritical<64>("GL Unknown type: {}", Type);
 		return { LWShaderInput::Float, 1 };
 	};
 
@@ -108,7 +109,7 @@ LWPipeline *LWVideoDriver_OpenGL3_3::CreatePipeline(LWPipeline *Source, LWAlloca
 		*ErrorBuffer = '\0';
 		glGetProgramInfoLog(Context.m_ProgramID, sizeof(ErrorBuffer), &Len, ErrorBuffer);
 		glDeleteProgram(Context.m_ProgramID);
-		fmt::print("Error in pipeline:\n{}\n", ErrorBuffer);
+		LWLogCritical<1024>("Error in pipeline:\n{}\n", ErrorBuffer);
 		return nullptr;
 	}
 	glUseProgram(Context.m_ProgramID);

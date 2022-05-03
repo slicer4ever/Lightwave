@@ -1,7 +1,6 @@
 #include "LWEMesh.h"
 #include <LWESGeometry3D.h>
 #include "LWERenderer.h"
-#include "LWELogger.h"
 
 //LWEBone:
 LWUTF8Iterator LWEBone::GetName(void) const {
@@ -99,7 +98,7 @@ LWEMesh &LWEMesh::MakeGLTFMesh(LWEGLTFParser &P, LWEGLTFNode *Source, LWEGLTFMes
 				}
 			}
 		} else {
-			LWELogWarn("Model has no tangents, attempting to generate them.");
+			LWLogWarn("Model has no tangents, attempting to generate them.");
 			for (uint32_t i = 0; i < VertCnt; i++) {
 				LWVector4f *Normal = (LWVector4f*)(VA + m_VerticeAttributeTypeSize * i + VertexNormalOffset);
 				LWVector4f *Tangent = (LWVector4f*)(VA + m_VerticeAttributeTypeSize * i + VertexTangentOffset);
@@ -170,7 +169,7 @@ LWEMesh &LWEMesh::BuildAABB(const LWSMatrix4f &Transform, const LWSMatrix4f *Bon
 
 LWEMesh &LWEMesh::MakeGLTFSkin(LWEGLTFParser &P, LWEGLTFNode *Source, LWEGLTFSkin *Skin, LWAllocator &Allocator) {
 	if (!Skin->m_JointList.size()) return *this;
-	if (Skin->m_JointList.size() > LWEMaxBones) LWELogWarn<256>("importing model with more bones than supported: {} ({})", (uint32_t)Skin->m_JointList.size(), LWEMaxBones);
+	if (Skin->m_JointList.size() > LWEMaxBones) LWLogWarn<256>("importing model with more bones than supported: {} ({})", (uint32_t)Skin->m_JointList.size(), LWEMaxBones);
 	LWMatrix4f InvBindMatrixs[LWEMaxBones];
 	m_BoneCount = (uint32_t)Skin->m_JointList.size();
 	LWEGLTFAccessorView InvBindView;

@@ -3,7 +3,7 @@
 #include "LWERenderPass.h"
 
 struct LWEBucketPropertys {
-	LWBitField32(PassBitID, 8, 0);
+	LWBitField32(PassBitIDBits, 8, 0);
 	static const uint32_t PrimarySource = 0x1000000;
 
 	LWEPassPropertys m_PassPropertys;

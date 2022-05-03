@@ -23,9 +23,9 @@ class LWERendererBlockGeometry;
 class LWECamera;
 
 struct LWEGeometryModelBlock {
-	LWBitField64(IndiceVB, 22, 0);
-	LWBitField64(VertexAttributeVB, 21, IndiceVBBitsOffset + 22);
-	LWBitField64(VertexPositionVB, 21, VertexAttributeVBBitsOffset + 21);
+	LWBitField64(IndiceVBBits, 22, 0);
+	LWBitField64(VertexAttributeVBBits, 21, IndiceVBBitsOffset + 22);
+	LWBitField64(VertexPositionVBBits, 21, VertexAttributeVBBitsOffset + 21);
 
 	uint64_t m_BlockID = -1;
 	uint64_t m_BufferName = (uint64_t)LWUTF8I::EmptyHash; //if BlockID is -1, then BufferName is actually interpreted to be 3 video buffers, the upper 21 bits for the VertexBuffer ID for posiiton attribute vertices, the next 21 bits for the vertexBuffer ID for the attribute vertices, and lower 22 bits for the index buffer, with 0 in either indicating no bound buffer.  Note: When rending the vertex buffer, vertex input mappings are expected to be in order of positions, followed by attributes.
@@ -49,7 +49,7 @@ struct LWEGeometryModelBlock {
 };
 
 struct LWEGeometryModel {
-	LWBitField32(DistanceMode, 2, 0);
+	LWBitField32(DistanceModeBits, 2, 0);
 
 	static const uint32_t DefaultDistance = 0;
 	static const uint32_t ForceDrawFirst = 0x1;
@@ -103,8 +103,8 @@ struct LWEShadowBucketItem {
 };
 
 struct LWEGeometryBucket {
-	LWBitField32(OpaqueSort, 2, 0);
-	LWBitField32(TransparentSort, 2, OpaqueSortBitsOffset + 2);
+	LWBitField32(OpaqueSortBits, 2, 0);
+	LWBitField32(TransparentSortBits, 2, OpaqueSortBitsOffset + 2);
 
 	static const uint32_t SortByStates = 0;
 	static const uint32_t SortBackToFront = 1;

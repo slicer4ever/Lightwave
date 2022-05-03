@@ -3,6 +3,7 @@
 #include "LWAudio/LWAudioStream.h"
 #include "LWCore/LWTimer.h"
 #include "LWCore/LWAllocator.h"
+#include "LWCore/LWLogger.h"
 #include "LWPlatform/LWFileStream.h"
 #include "LWPlatform/LWWindow.h"
 #include <algorithm>
@@ -316,7 +317,7 @@ LWAudioDriver::LWAudioDriver(void *UserData, LWAudioCallback FinishedCallback, L
 		State = pa_context_get_state(m_Context.m_Context);
 		if (State == PA_CONTEXT_READY) break;
 		else if (State == PA_CONTEXT_FAILED) {
-			fmt::print("AudioDriver State failed.\n");
+			LWLogEvent("AudioDriver State failed.");
 			m_Flag |= Error;
 			break;
 		}

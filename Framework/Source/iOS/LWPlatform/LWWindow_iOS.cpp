@@ -2,10 +2,11 @@
 #include "LWPlatform/LWInputDevice.h"
 #include "LWVideo/LWVideoDriver.h"
 #include "LWCore/LWTimer.h"
+#include "LWCore/LWLogger.h"
 #include <iostream>
 
 uint32_t LWWindow::MakeDialog(const LWUTF8Iterator &Text, const LWText &Header, uint32_t DialogFlags){
-	fmt::print("Dialog: {}: {}\n", Header, Text);
+    LWLogEvent<256>("Dialog: {}: {}", Header, Text);
     return 0;
 }
 

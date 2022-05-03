@@ -1,4 +1,6 @@
 #include "LWCore/LWAllocators/LWAllocator_DefaultDebug.h"
+#include "LWCore/LWAllocator.h"
+#include "LWCore/LWLogger.h"
 #include <iostream>
 
 /*! \cond */
@@ -12,22 +14,17 @@ struct alignas(16) LWAllocatorEnvironmentDebug {
 /*! \endcond */
 
 void LWAllocator_DefaultDebug::OutputUnfreedIDs(void) {
-	if (!m_AllocatedBytes) {
-		fmt::print("No leaks detected.\n");
-		return;
-	}
-	if (!m_FirstAllocation) {
-		fmt::print("Leak detected: {} However allocator detector failed.\n", m_AllocatedBytes);
-		return;
-	}
-	fmt::print("Remaining: {}\n", m_AllocatedBytes);
+	uint32_t AllocBytes = m_AllocatedBytes;
+	if(!LWLogEventIf(AllocBytes, "No leaks detected")) return;
+	if(!LWLogEventIf<256>(m_FirstAllocation, "Leak detected: {} However allocator detector failed.", AllocBytes)) return;
+	LWLogEvent<256>("Leak detected: {}", AllocBytes);
 	uint32_t c = 0;
 	LWAllocatorEnvironmentDebug *A = (LWAllocatorEnvironmentDebug*)m_FirstAllocation;
 	for (; A; A = (LWAllocatorEnvironmentDebug*)A->m_NextAlloc) {
-		fmt::print("MemoryID: {} Allocated: {}\n", A->m_AllocID, A->m_Size);
+		LWLogEvent<256>("MemoryID: {} Allocated: {}", A->m_AllocID, A->m_Size);
 		c += (A->m_Size+sizeof(LWAllocatorEnvironmentDebug));
 	}
-	if (c != m_AllocatedBytes) fmt::print("Error, untracked memory lost.\n");
+	LWLogCriticalIf(c== AllocBytes, "Error, untracked memory lost.");
 	return;
 }
 

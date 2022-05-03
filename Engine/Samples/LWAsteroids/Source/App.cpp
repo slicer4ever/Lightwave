@@ -9,7 +9,7 @@
 #include <LWERenderPass.h>
 #include <LWERenderPasses/LWEShadowMapPass.h>
 #include <LWERenderPasses/LWEUIPass.h>
-#include <LWELogger.h>
+#include <LWCore/LWLogger.h>
 
 //PrimitiveMaterial:
 PrimitiveMaterial::PrimitiveMaterial(LWEGLTFParser &P, LWEGLTFMaterial *Mat, const LWSMatrix4f &Transform, LWERenderer *R, LWAllocator &Allocator) {
@@ -165,9 +165,8 @@ void App::Run(void) {
 
 bool App::LoadAssets(const LWUTF8I &Path) {
 	LWEXML X;
-	if (!LWEXML::LoadFile(X, m_Allocator, Path, true)) {
-		return LWELogCritical<256>("Error: Could not open assets file: '{}'", Path);
-	}
+	if(!LWLogCriticalIf<256>(LWEXML::LoadFile(X, m_Allocator, Path, true), "Error: Could not open assets file: '{}'", Path)) return false;
+
 	std::unordered_map<uint32_t, LWEPassXMLCreateFunc> PassCreateMap;
 	LWERenderer::GenerateDefaultXMLPasses(PassCreateMap);
 
@@ -184,9 +183,8 @@ bool App::LoadAssets(const LWUTF8I &Path) {
 
 bool App::LoadGLTF(const LWUTF8I &Path) {
 	LWEGLTFParser P;
-	if (!LWEGLTFParser::LoadFile(P, Path, m_Allocator)) {
-		return LWELogCritical<256>("Error: Could not load gltf '{}'", Path);
-	}
+	if(!LWLogCriticalIf<256>(LWEGLTFParser::LoadFile(P, Path, m_Allocator), "Error: Could not load gltf file '{}'", Path)) return false;
+
 	std::function<void(LWEGLTFParser &, LWEGLTFNode*)> ParseNode = [this, &ParseNode](LWEGLTFParser &P, LWEGLTFNode *N) {
 		LWEGLTFMesh *GMesh = P.GetMesh(N->m_MeshID);
 		LWEGLTFSkin *GSkin = P.GetSkin(N->m_SkinID);
@@ -211,7 +209,7 @@ bool App::LoadGLTF(const LWUTF8I &Path) {
 
 
 	LWEGLTFScene *Scene = P.GetScene(P.GetDefaultSceneID());
-	if (!Scene) return LWELogCritical("Error: GLTF contains no valid scene.");
+	if(!LWLogCriticalIf(Scene, "Error: GLTF contains no valid scene.")) return false;
 	for (auto &&Iter : Scene->m_NodeList) ParseNode(P, P.GetNode(Iter));
 
 	return true;
@@ -226,8 +224,7 @@ App::App(LWAllocator &Allocator) : m_Allocator(Allocator) {
 	LWVector2i TargetSize = LWVector2i(1280, 720);
 
 	m_Window = m_Allocator.Create<LWWindow>(AppName, AppName, m_Allocator, LWWindow::WindowedMode | LWWindow::KeyboardDevice | LWWindow::MouseDevice, CurrMode.GetSize() / 2 - TargetSize / 2, TargetSize);
-	if (m_Window->DidError()) {
-		LWELogCritical<256>("creating window.");
+	if(!LWLogCriticalIf(!m_Window->DidError(), "Error creating window.")) {
 		m_JobQueue.SetFinished(true);
 		return;
 	}
@@ -235,8 +232,7 @@ App::App(LWAllocator &Allocator) : m_Allocator(Allocator) {
 	//TargetDriver = LWVideoDriver::OpenGL4_5;
 	//TargetDriver |= LWVideoDriver::DebugLayer;
 	m_VDriver = LWVideoDriver::MakeVideoDriver(m_Window, TargetDriver);
-	if (!m_VDriver) {
-		LWELogCritical<256>("creating video driver.");
+	if(!LWLogCriticalIf(m_VDriver, "Error creating video driver.")) {
 		m_JobQueue.SetFinished(true);
 		return;
 	}
@@ -246,7 +242,7 @@ App::App(LWAllocator &Allocator) : m_Allocator(Allocator) {
 		m_JobQueue.SetFinished(true);
 		return;
 	}
-	if(!LoadGLTF("C:/Users/tscol/Downloads/glTF-Sample-Models-master/2.0/Buggy/glTF/Buggy.gltf")){
+	if(!LoadGLTF("C:/Users/Tim/Downloads/glTF-Sample-Models-master/2.0/Buggy/glTF/Buggy.gltf")){
 	//if (!LoadGLTF("C:/Users/Tim/Downloads/glTF-Sample-Models-master/2.0/WaterBottle/glTF/WaterBottle.gltf")) {
 	//if(!LoadGLTF("C:/Users/Tim/Downloads/glTF-Sample-Models-master/2.0/2CylinderEngine/glTF/2CylinderEngine.gltf")){
 	//if(!LoadGLTF("C:/Users/Tim/Downloads/glTF-Sample-Models-master/2.0/WaterBottle/glTF-pbrSpecularGlossiness/WaterBottle.gltf")){

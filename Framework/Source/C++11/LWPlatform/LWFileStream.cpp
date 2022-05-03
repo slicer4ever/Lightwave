@@ -3,6 +3,7 @@
 #include "LWPlatform/LWPlatform.h"
 #include "LWPlatform/LWDirectory.h"
 #include "LWCore/LWUnicode.h"
+#include "LWCore/LWLogger.h"
 #include <cstdarg>
 #include <cstdio>
 #include <algorithm>
@@ -167,13 +168,14 @@ uint32_t LWFileStream::ParsePath(const LWUTF8Iterator &FilePath, char8_t *Buffer
 	return FilePath.Copy(Buffer, BufferLen);
 }
 
-bool LWFileStream::DelFile(const LWUTF8Iterator &Filepath) {
-	auto Res = remove(*Filepath.c_str<256>());
-	if (Res) fmt::print("Error removing: {}\n", errno);
-	return Res == 0;
+bool LWFileStream::DelFile(const LWUTF8Iterator &Filepath, bool bVerbose) {
+	char8_t Path[256];
+	ParsePath(Filepath, Path, sizeof(Path));
+	auto Res = remove(Path);
+	return LWLogWarnIfv<256>(Res==0, bVerbose, "Error removing file '{}': {}", Filepath, errno);
 }
 
-bool LWFileStream::MovFile(const LWUTF8Iterator &SrcFilepath, const LWUTF8Iterator &DstFilepath) {
+bool LWFileStream::MovFile(const LWUTF8Iterator &SrcFilepath, const LWUTF8Iterator &DstFilepath, bool bVerbose) {
 	char8_t SrcPath[256];
 	char8_t DstPath[256];
 	uint32_t sLen = ParsePath(SrcFilepath, SrcPath, sizeof(SrcPath));
@@ -185,11 +187,10 @@ bool LWFileStream::MovFile(const LWUTF8Iterator &SrcFilepath, const LWUTF8Iterat
 		if (!LWDirectory::CreateDir(DstDir, nullptr)) return false;
 	}
 	auto Res = rename((const char*)SrcPath, (const char*)DstPath);
-	if (Res) fmt::print("Error moving: {}\n", errno);
-	return Res == 0;
+	return LWLogWarnIfv<256>(Res==0, bVerbose, "Error moving file '{}' to '{}': {}", SrcFilepath, DstFilepath, errno);
 }
 
-bool LWFileStream::CpyFile(const LWUTF8Iterator &SrcFilePath, const LWUTF8Iterator &DstFilePath, LWAllocator &Allocator) {
+bool LWFileStream::CpyFile(const LWUTF8Iterator &SrcFilePath, const LWUTF8Iterator &DstFilePath, LWAllocator &Allocator, bool bVerbose) {
 	char8_t SrcPath[256];
 	char8_t DstPath[256];
 	LWFileStream SrcStream;
@@ -201,21 +202,16 @@ bool LWFileStream::CpyFile(const LWUTF8Iterator &SrcFilePath, const LWUTF8Iterat
 	if (DstDir.isInitialized()) {
 		if (!LWDirectory::CreateDir(DstPath, nullptr)) return false;
 	}
-	if (!LWFileStream::OpenStream(SrcStream, SrcFilePath, LWFileStream::BinaryMode | LWFileStream::ReadMode, Allocator)) {
-		fmt::print("Error opening File: '{}'\n", SrcFilePath);
-		return false;
-	}
-	if (!LWFileStream::OpenStream(DstStream, DstFilePath, LWFileStream::BinaryMode | LWFileStream::WriteMode, Allocator)) {
-		fmt::print("Error opening File: '{}'\n", DstFilePath);
-		return false;
-	}
+	if(!LWLogWarnIfv<256>(LWFileStream::OpenStream(SrcStream, SrcPath, LWFileStream::BinaryMode | LWFileStream::ReadMode, Allocator), bVerbose, "Error opening file: '{}'", SrcFilePath)) return false;
+	if(!LWLogWarnIfv<256>(LWFileStream::OpenStream(DstStream, DstPath, LWFileStream::BinaryMode|LWFileStream::WriteMode, Allocator), bVerbose, "Error opening file: '{}'", DstFilePath)) return false;
+
 	char *Buffer = Allocator.Allocate<char>(SrcStream.Length());
 	if (!Buffer) return false;
 	bool Result = true;
 	if (SrcStream.Read(Buffer, SrcStream.Length()) != SrcStream.Length()) Result = false;
 	else if (DstStream.Write(Buffer, SrcStream.Length()) != SrcStream.Length()) Result = false;
 	LWAllocator::Destroy(Buffer);
-	return false;
+	return Result;
 }
 
 LWFileStream &LWFileStream::operator =(LWFileStream &&Other){

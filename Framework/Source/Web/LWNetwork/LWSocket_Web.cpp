@@ -45,14 +45,8 @@ uint32_t LWSocket::LookUpDNSServers(uint32_t *IPBuf, uint32_t IPBufferLen) {
 
 
 uint32_t LWSocket::CreateSocket(LWSocket &Socket, uint16_t Port, uint32_t Flag, uint32_t ProtocolID) {
-	if (Flag&LWSocket::Udp) {
-		fmt::print("Error udp sockets are not supported with WebSockets.\n");
-		return LWSocket::ErrSocket;
-	}
-	if (Flag&LWSocket::Listen) {
-		fmt::print("Error WebSockets do support acting as listeners.\n");
-		return LWSocket::ErrSocket;
-	}
+	if(!LWLogCriticalIf((Flag&LWSocket::Udp)==0, "Error udp sockets are not supported with WebSockets.")) return LWSocket::ErrSocket;
+	if(!LWLogCriticalIf((Flag&LWSocket::Listen)==0, "Error WebSockets do not support being listeners.")) return LWSocket::ErrSocket;
 
 	sockaddr_in Addr = { AF_INET, LWByteBuffer::MakeNetwork(Port), INADDR_ANY,{ 0 } }, lAddr;
 	socklen_t AddrLen = sizeof(Addr);
@@ -66,15 +60,9 @@ uint32_t LWSocket::CreateSocket(LWSocket &Socket, uint16_t Port, uint32_t Flag, 
 }
 
 uint32_t LWSocket::CreateSocket(LWSocket &Socket, uint32_t RemoteIP, uint16_t RemotePort, uint16_t LocalPort, uint32_t Flag, uint32_t ProtocolID) {
-	if (Flag & LWSocket::Udp) {
-		fmt::print("Error udp sockets are not supported with WebSockets.\n");
-		return LWSocket::ErrSocket;
-	}
-	if (Flag & LWSocket::Listen) {
-		fmt::print("Error WebSockets do support acting as listeners.\n");
-		return LWSocket::ErrSocket;
-	}
-	
+	if (!LWLogCriticalIf((Flag & LWSocket::Udp) == 0, "Error udp sockets are not supported with WebSockets.")) return LWSocket::ErrSocket;
+	if (!LWLogCriticalIf((Flag & LWSocket::Listen) == 0, "Error WebSockets do not support being listeners.")) return LWSocket::ErrSocket;
+
 	sockaddr_in lAddr = { AF_INET, LWByteBuffer::MakeNetwork(LocalPort), INADDR_ANY,{ 0 } };
 	sockaddr_in rAddr = { AF_INET, LWByteBuffer::MakeNetwork(RemotePort), 0,{ 0 } };
 	rAddr.sin_addr.s_addr = LWByteBuffer::MakeNetwork(RemoteIP);
@@ -139,18 +127,18 @@ bool LWSocket::Accept(LWSocket &Result, uint32_t ProtocolID) const {
 	socklen_t lAddrLen = sizeof(lAddr);
 	uint32_t SockID = (uint32_t)accept(m_SocketID, nullptr, nullptr);
 
-	uint32_t TcpNoDelay = (m_Flag&LWSocket::TcpNoDelay) ? true : false;
+	uint32_t TcpNoDelay = (m_Flags&LWSocket::TcpNoDelay) ? true : false;
 	if (setsockopt(SockID, IPPROTO_TCP, TCP_NODELAY, (char*)&TcpNoDelay, sizeof(TcpNoDelay))) return false;
 
 	if (getsockname(SockID, (sockaddr*)&lAddr, &lAddrLen)) return false;
 	if (getpeername(SockID, (sockaddr*)&rAddr, &rAddrLen)) return false;
-	Result = LWSocket(SockID, ProtocolID, LWByteBuffer::MakeHost((uint32_t)lAddr.sin_addr.s_addr), LWByteBuffer::MakeHost(lAddr.sin_port), LWByteBuffer::MakeHost((uint32_t)rAddr.sin_addr.s_addr), LWByteBuffer::MakeHost(rAddr.sin_port), m_Flag&~LWSocket::Listen);
+	Result = LWSocket(SockID, ProtocolID, LWByteBuffer::MakeHost((uint32_t)lAddr.sin_addr.s_addr), LWByteBuffer::MakeHost(lAddr.sin_port), LWByteBuffer::MakeHost((uint32_t)rAddr.sin_addr.s_addr), LWByteBuffer::MakeHost(rAddr.sin_port), m_Flags&~LWSocket::Listen);
 	return true;
 }
 
 LWSocket &LWSocket::Close(void) {
 	if (m_SocketID) {
-		m_Flag |= LWSocket::Closeable;
+		m_Flags |= LWSocket::Closeable;
 		close(m_SocketID);
 		m_SocketID = 0;
 	}

@@ -1,12 +1,12 @@
 #include <LWERenderPasses/LWEPPPass.h>
 #include <LWERenderer.h>
-#include <LWELogger.h>
+#include <LWCore/LWLogger.h>
 
 //LWEPassPostProcess
 LWEPass *LWEPPPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer *Renderer, LWEAssetManager *AssetManager, LWAllocator &Allocator) {
 	LWEPPPass *PPPass = Pass ? (LWEPPPass*)Pass : Allocator.Create<LWEPPPass>();
-	if (!LWEPass::ParseXML(Node, PPPass, Renderer, AssetManager, Allocator)) {
-		LWELogCritical<256>("could not create pass '{}'", Node->GetName());
+	
+	if(!LWLogCriticalIf<256>(LWEPass::ParseXML(Node, PPPass, Renderer, AssetManager, Allocator), "Could not create pass '{}'", Node->GetName())) {
 		if (!Pass) LWAllocator::Destroy(PPPass);
 		return nullptr;
 	}
@@ -72,10 +72,7 @@ LWEPass &LWEPPPass::ReleaseFrame(LWERenderFrame &Frame, LWVideoDriver *Driver) {
 }
 
 bool LWEPPPass::PushSubPass(uint32_t PipelineName, const LWEPassPropertys &SubPass) {
-	if (m_SubPassCount >= MaxSubPasses) {
-		LWELogCritical("PP Pass has exceeded max subpass's.");
-		return false;
-	}
+	if(!LWLogCriticalIf(m_SubPassCount<MaxSubPasses, "PP Pass has exceeded max subpass's.")) return false;
 	m_SubPassPipeline[m_SubPassCount] = PipelineName;
 	m_SubPassList[m_SubPassCount] = SubPass;
 	m_SubPassCount++;

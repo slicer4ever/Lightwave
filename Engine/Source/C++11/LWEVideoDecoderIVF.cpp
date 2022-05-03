@@ -7,7 +7,7 @@
 #include <LWCore/LWByteBuffer.h>
 #include <LWCore/LWTimer.h>
 #include "LWEVideoPlayer.h"
-#include "LWELogger.h"
+#include <LWCore/LWLogger.h>
 
 LWEVideoIVFHeader::LWEVideoIVFHeader(const int8_t *Buffer) {
 	uint32_t o = 0;
@@ -51,10 +51,8 @@ uint32_t LWEVideoDecoderIVF::AdvanceFrame(uint8_t *PixelBuffer, const LWVector2i
 	int8_t FrameHeaderBuf[LWE_IVF_FRAME_HDR_SZ];
 	uint32_t Res = m_Stream.Read((char*)FrameHeaderBuf, LWE_IVF_FRAME_HDR_SZ);
 	if (!Res) return Error_OutofFrames;
-	if(Res!=LWE_IVF_FRAME_HDR_SZ){
-		LWELogCritical<256>("Header not expected size.");
-		return Error_Decoding;
-	}
+	if(!LWLogCriticalIf(Res==LWE_IVF_FRAME_HDR_SZ, "Header not expected size.")) return Error_Decoding;
+
 	m_FramePositions[m_Frame] = m_Stream.GetPosition() - LWE_IVF_FRAME_HDR_SZ;
 	LWEVideoIVFFrameHeader FrameHeader(FrameHeaderBuf);
 	if (FrameHeader.m_FrameSize > m_FrameBufferSize) {
@@ -63,20 +61,13 @@ uint32_t LWEVideoDecoderIVF::AdvanceFrame(uint8_t *PixelBuffer, const LWVector2i
 		m_FrameBufferSize = FrameHeader.m_FrameSize;
 		LWAllocator::Destroy(oBuffer);
 	}
-	if (m_Stream.Read(m_FrameBuffer, FrameHeader.m_FrameSize) != FrameHeader.m_FrameSize) {
-		LWELogCritical<256>("occurred while reading frame.");
-		return Error_Decoding;
-	}
-	if (vpx_codec_decode(m_Codec, m_FrameBuffer, FrameHeader.m_FrameSize, nullptr, 0)) {
-		LWELogCritical<256>("decoding frame.");
-		return Error_Decoding;
-	}
+	if(!LWLogCriticalIf(m_Stream.Read(m_FrameBuffer, FrameHeader.m_FrameSize)==FrameHeader.m_FrameSize, "Stream did not read bytes equal to FrameSize.")) return Error_Decoding;
+	if(!LWLogCriticalIf(vpx_codec_decode(m_Codec, m_FrameBuffer, FrameHeader.m_FrameSize, nullptr, 0)==0, "Decoding Frame failed.")) return Error_Decoding;
+
 	vpx_codec_iter_t ImgIter = nullptr;
 	vpx_image_t *Img = vpx_codec_get_frame(m_Codec, &ImgIter);
-	if (!Img) {
-		LWELogCritical<256>("getting frame.");
-		return Error_Decoding;
-	}
+	if(!LWLogCriticalIf(Img, "Failed to get frame.")) return Error_Decoding;
+
 	LWVector2i hSize = FrameSize / 2;
 	for (int32_t y = 0; y < hSize.y; y++) {
 
@@ -111,10 +102,7 @@ bool LWEVideoDecoderIVF::GoToFrame(uint32_t FrameIdx) {
 				}
 				m_Stream.Seek(FramePos, LWFileStream::SeekStart);
 				uint32_t Len = m_Stream.Read((char*)HeaderBuf, LWE_IVF_FRAME_HDR_SZ);
-				if (Len != LWE_IVF_FRAME_HDR_SZ) {
-					LWELogCritical<256>("going to frame.");
-					return false;
-				}
+				if(!LWLogCriticalIf(Len==LWE_IVF_FRAME_HDR_SZ, "Stream did not read frame header size.")) return false;
 				LWEVideoIVFFrameHeader Header(HeaderBuf);
 				m_FramePositions[i] = FramePos + LWE_IVF_FRAME_HDR_SZ + Header.m_FrameSize;
 				FramePos = m_FramePositions[i];

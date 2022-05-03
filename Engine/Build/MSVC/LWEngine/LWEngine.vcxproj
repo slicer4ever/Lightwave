@@ -90,6 +90,7 @@
       <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -101,6 +102,7 @@
       <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -111,9 +113,10 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>../../../Includes/C++11/;../../../../Framework/Includes/C++11/;../../../../Dependency/libz/;../../../../Dependency/libbotan/$(PlatformTarget)/build/include/;../../../../Dependency/libvpx/$(Configuration)/$(PlatformTarget)/include/</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;NDEBUG</PreprocessorDefinitions>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -128,9 +131,10 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>../../../Includes/C++11/;../../../../Framework/Includes/C++11/;../../../../Dependency/libz/;../../../../Dependency/libbotan/$(PlatformTarget)/build/include/;../../../../Dependency/libvpx/$(Configuration)/$(PlatformTarget)/include/</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;NDEBUG</PreprocessorDefinitions>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -146,13 +150,12 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWEJobQueue.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEJson.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWELocalization.h" />
-    <ClInclude Include="..\..\..\Includes\C++11\LWELogger.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWEMesh.h" />
-    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolHTTP.h" />
-    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolHTTPS.h" />
-    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolTLS.h" />
-    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolWebSocket.h" />
-    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolWebSocketSecure.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocol_HTTP.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocol_HTTPS.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocol_TLS.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocol_WebSocket.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocol_WebSocketSecure.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWERenderer.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWERenderFrame.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWERenderPass.h" />
@@ -191,13 +194,12 @@
     <ClCompile Include="..\..\..\Source\C++11\LWEJobQueue.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEJson.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWELocalization.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWELogger.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWEMesh.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolHTTP.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolHTTPS.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolTLS.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolWebSocket.cpp" />
-    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolWebSocketSecure.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocol_HTTP.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocol_HTTPS.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocol_TLS.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocol_WebSocket.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocol_WebSocketSecure.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWERenderer.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWERenderFrame.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWERenderPass.cpp" />

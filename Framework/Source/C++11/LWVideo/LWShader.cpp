@@ -4,50 +4,50 @@
 
 //LWShaderInput:
 LWShaderInput &LWShaderInput::SetType(uint32_t lType) {
-	m_Flag = LWBitFieldSet(Type, m_Flag, lType);
+	m_Flag = LWBitFieldSet(TypeBits, m_Flag, lType);
 	return *this;
 }
 
 LWShaderInput &LWShaderInput::SetBindIndex(uint32_t lBindIndex) {
-	m_Flag = LWBitFieldSet(BindIndex, m_Flag, lBindIndex);
+	m_Flag = LWBitFieldSet(BindIndexBits, m_Flag, lBindIndex);
 	return *this;
 }
 
 LWShaderInput &LWShaderInput::SetOffset(uint32_t lOffset) {
 	assert((lOffset % 4) == 0);
 	lOffset /= 4;
-	m_Flag = LWBitFieldSet(Offset, m_Flag, lOffset);
+	m_Flag = LWBitFieldSet(OffsetBits, m_Flag, lOffset);
 	return *this;
 }
 
 LWShaderInput &LWShaderInput::SetLength(uint32_t lLength) {
-	m_Flag = LWBitFieldSet(Length, m_Flag, lLength);
+	m_Flag = LWBitFieldSet(LengthBits, m_Flag, lLength);
 	return *this;
 }
 
 LWShaderInput &LWShaderInput::SetInstanceFrequency(uint32_t lFrequency) {
-	m_Flag = LWBitFieldSet(InstanceFrequency, m_Flag, lFrequency);
+	m_Flag = LWBitFieldSet(InstanceFrequencyBits, m_Flag, lFrequency);
 	return *this;
 }
 
 uint32_t LWShaderInput::GetType(void) const {
-	return LWBitFieldGet(Type, m_Flag);
+	return LWBitFieldGet(TypeBits, m_Flag);
 }
 
 uint32_t LWShaderInput::GetBindIndex(void) const {
-	return LWBitFieldGet(BindIndex, m_Flag);
+	return LWBitFieldGet(BindIndexBits, m_Flag);
 }
 
 uint32_t LWShaderInput::GetOffset(void) const {
-	return (uint32_t)LWBitFieldGet(Offset, m_Flag)*4;
+	return (uint32_t)LWBitFieldGet(OffsetBits, m_Flag)*4;
 }
 
 uint32_t LWShaderInput::GetLength(void) const {
-	return LWBitFieldGet(Length, m_Flag);
+	return LWBitFieldGet(LengthBits, m_Flag);
 }
 
 uint32_t LWShaderInput::GetInstanceFrequency(void) const {
-	return LWBitFieldGet(InstanceFrequency, m_Flag);
+	return LWBitFieldGet(InstanceFrequencyBits, m_Flag);
 }
 
 
@@ -64,35 +64,35 @@ LWShaderResource &LWShaderResource::SetStageBinding(uint32_t StageID, uint32_t I
 }
 
 LWShaderResource &LWShaderResource::SetVertexStageBinding(uint32_t Idx) {
-	m_StageBindings = LWBitFieldSet(VertexBinding, m_StageBindings, Idx);
+	m_StageBindings = LWBitFieldSet(VertexBindingBits, m_StageBindings, Idx);
 	m_Flag |= VertexStage;
 	return *this;
 }
 
 LWShaderResource &LWShaderResource::SetComputeStageBinding(uint32_t Idx) {
-	m_StageBindings = LWBitFieldSet(ComputeBinding, m_StageBindings, Idx);
+	m_StageBindings = LWBitFieldSet(ComputeBindingBits, m_StageBindings, Idx);
 	m_Flag |= ComputeStage;
 	return *this;
 }
 
 LWShaderResource &LWShaderResource::SetPixelStageBinding(uint32_t Idx) {
-	m_StageBindings = LWBitFieldSet(PixelBinding, m_StageBindings, Idx);
+	m_StageBindings = LWBitFieldSet(PixelBindingBits, m_StageBindings, Idx);
 	m_Flag |= PixelStage;
 	return *this;
 }
 
 LWShaderResource &LWShaderResource::SetGeometryStageBinding(uint32_t Idx) {
-	m_StageBindings = LWBitFieldSet(GeometryBinding, m_StageBindings, Idx);
+	m_StageBindings = LWBitFieldSet(GeometryBindingBits, m_StageBindings, Idx);
 	m_Flag |= GeometryStage;
 	return *this;
 }
 
 uint32_t LWShaderResource::GetTypeID(void) const {
-	return LWBitFieldGet(Type, m_Flag);
+	return LWBitFieldGet(TypeBits, m_Flag);
 }
 
 uint32_t LWShaderResource::GetLength(void) const {
-	return LWBitFieldGet(Length, m_Flag);
+	return LWBitFieldGet(LengthBits, m_Flag);
 }
 
 uint32_t LWShaderResource::GetStageBinding(uint32_t StageID) const {
@@ -101,19 +101,19 @@ uint32_t LWShaderResource::GetStageBinding(uint32_t StageID) const {
 }
 
 uint32_t LWShaderResource::GetVertexStageBinding(void) const {
-	return LWBitFieldGet(VertexBinding, m_StageBindings);
+	return LWBitFieldGet(VertexBindingBits, m_StageBindings);
 }
 
 uint32_t LWShaderResource::GetComputeStageBinding(void) const {
-	return LWBitFieldGet(ComputeBinding, m_StageBindings);
+	return LWBitFieldGet(ComputeBindingBits, m_StageBindings);
 }
 
 uint32_t LWShaderResource::GetPixelStageBinding(void) const {
-	return LWBitFieldGet(PixelBinding, m_StageBindings);
+	return LWBitFieldGet(PixelBindingBits, m_StageBindings);
 }
 
 uint32_t LWShaderResource::GetGeometryStageBinding(void) const {
-	return LWBitFieldGet(GeometryBinding, m_StageBindings);
+	return LWBitFieldGet(GeometryBindingBits, m_StageBindings);
 }
 
 bool LWShaderResource::HasStage(uint32_t StageID) const {

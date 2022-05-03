@@ -1,6 +1,7 @@
 #include "LWPlatform/LWInputDevice.h"
 #include "LWPlatform/LWPlatform.h"
 #include "LWPlatform/LWWindow.h"
+#include "LWCore/LWLogger.h"
 #include <Xinput.h>
 #include <algorithm>
 #include <iostream>
@@ -177,7 +178,7 @@ bool LWKeyboard::ProcessSystemMessage(uint32_t MessageID, void *MessageData, uin
 
 	if (MessageID == WM_KEYUP || MessageID == WM_KEYDOWN || MessageID == WM_SYSKEYUP || MessageID == WM_SYSKEYDOWN) {
 		Key = Translate((uint32_t)M->wParam);
-		if (Key == LWKey::Unknown) fmt::print("Keycode: {}\n", (uint32_t)M->wParam);
+		LWLogWarnIf<64>(Key!=LWKey::Unknown, "Unknown Keycode: {}", Key);
 	}
 	if (Key == LWKey::Unknown) return false;
 	SetKeyState((uint32_t)Key, Up);

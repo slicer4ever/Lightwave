@@ -1,8 +1,8 @@
 #include "LWEJobQueue.h"
 #include <LWCore/LWTimer.h>
+#include <LWCore/LWLogger.h>
 #include <algorithm>
 #include <iostream>
-#include "LWELogger.h"
 
 LWEJob::LWEJob(std::function<void(LWEJob &, LWEJobThread &, LWEJobQueue &, uint64_t)> Func, void *UserData, uint64_t UpdateFrequency, uint32_t LockIDs, uint32_t UnlockIDs, uint32_t LockedOutIDs, uint32_t LockedInIDs, uint32_t LoopCount, uint32_t ThreadLimit) {
 	m_Func = Func;
@@ -39,7 +39,8 @@ void LWEJobQueue::RunThread(LWEJobThread *Thread, LWEJobQueue *Queue) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			JobSleepCnt = 0;
 			continue;
-		}CurrentTime = LWTimer::GetCurrent();
+		}
+		CurrentTime = LWTimer::GetCurrent();
 		J->m_Func(*J, *Thread, *Queue, CurrentTime);
 		uint64_t Elasped = LWTimer::GetCurrent() - CurrentTime;
 		Thread->m_TimeInJobs += Elasped;
@@ -62,7 +63,7 @@ bool LWEJobQueue::PushJob(const LWEJob &Job) {
 	uint32_t JC = m_JobCount.load();
 	uint32_t i = 0;
 	bool Inserted = false;
-	for (; i < JC; i++) {
+	for (; i < JC; i++) { 
 		uint32_t Exp = (uint32_t)JobNull;
 		if (m_JobState[i].compare_exchange_weak(Exp, (uint32_t)JobRunning)) break;
 	}
@@ -156,7 +157,7 @@ LWEJobQueue &LWEJobQueue::OutputJobTimings(void){
 	for (uint32_t i = 0; i < m_JobCount; i++) {
 		if (m_JobState[i].load() == (uint32_t)JobNull) continue;
 		uint64_t Average = m_Jobs[i].m_RunCount ? m_Jobs[i].m_ElapsedTime / m_Jobs[i].m_RunCount : 0;
-		LWELogEvent<256>("Job {}: Avg: {}ms Total: {}ms Times ran: {}", i, LWTimer::ToMilliSecond(Average), LWTimer::ToMilliSecond(m_Jobs[i].m_ElapsedTime), m_Jobs[i].m_RunCount);
+		LWLogEvent<256>("Job {}: Avg: {}ms Total: {}ms Times ran: {}", i, LWTimer::ToMilliSecond(Average), LWTimer::ToMilliSecond(m_Jobs[i].m_ElapsedTime), m_Jobs[i].m_RunCount);
 	}
 	return *this;
 }
@@ -164,7 +165,7 @@ LWEJobQueue &LWEJobQueue::OutputJobTimings(void){
 LWEJobQueue &LWEJobQueue::OutputThreadTimings(void) {
 	for (uint32_t i = 0; i < m_ThreadCount; i++) {
 		uint64_t Average = m_Threads[i].m_JobsRan ? m_Threads[i].m_TimeInJobs / m_Threads[i].m_JobsRan : 0;
-		LWELogEvent<256>("JThread {}: Avg: {}ms Total: {}ms Jobs ran: {}", i, LWTimer::ToMilliSecond(Average), LWTimer::ToMilliSecond(m_Threads[i].m_TimeInJobs), m_Threads[i].m_JobsRan);
+		LWLogEvent<256>("JThread {}: Avg: {}ms Total: {}ms Jobs ran: {}", i, LWTimer::ToMilliSecond(Average), LWTimer::ToMilliSecond(m_Threads[i].m_TimeInJobs), m_Threads[i].m_JobsRan);
 	}
 	return *this;
 }

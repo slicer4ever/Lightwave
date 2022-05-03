@@ -16,6 +16,7 @@
 #include "LWCore/LWTimer.h"
 #include "LWCore/LWMatrix.h"
 #include "LWCore/LWMath.h"
+#include "LWCore/LWLogger.h"
 #include "LWPlatform/LWApplication.h"
 #include "LWAudio/LWAudioDriver.h"
 #include "LWAudio/LWAudioStream.h"
@@ -23,6 +24,9 @@
 #include <iostream>
 #include <functional>
 #include <cstdarg>
+
+LWLOG_DEFAULT
+
 //This sample demonstrate a very simple fully-complete example of the LWFramework in action.
 //The end goal of this sample should be a textured rectangle bumping around the screen(and grabable), with accompanying audio noises, this test should demonstrate a number of features utilized in the framework.  although it is not comprise to every possible function, it should cover many.
 
@@ -244,7 +248,7 @@ public:
 			return;
 		}
 		//uint32_t TargetDriver = LWVideoDriver::Vulkan | LWVideoDriver::DebugLayer;
-		uint32_t TargetDriver = LWVideoDriver::DirectX11_1 | LWVideoDriver::DebugLayer;
+		uint32_t TargetDriver = LWVideoDriver::DirectX11_1;
 		fmt::print("Window created: {} Arch: {} Platform: {}\n", m_Window->GetSize(), ArchNames[LWARCH_ID], PlatformNames[LWPLATFORM_ID]);
 		m_Driver = LWVideoDriver::MakeVideoDriver(m_Window, TargetDriver);
 		if (!m_Driver) {

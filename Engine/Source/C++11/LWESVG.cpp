@@ -4,7 +4,7 @@
 #include <LWCore/LWMath.h>
 #include <LWCore/LWSVector.h>
 #include <LWCore/LWSMatrix.h>
-#include "LWELogger.h"
+#include <LWCore/LWLogger.h>
 
 //LWESVGStyle:
 LWESVGStyle &LWESVGStyle::SetxPos(float Position, bool bIsPercent) {
@@ -50,7 +50,7 @@ LWESVGStyle &LWESVGStyle::SetyRadi(float Radi, bool bIsPercent, bool bIsAuto) {
 }
 
 LWESVGStyle &LWESVGStyle::SetLineCaps(uint32_t LineCaps) {
-	LWBitFieldSet(LineCap, m_Flag, LineCaps);
+	LWBitFieldSet(LineCapBits, m_Flag, LineCaps);
 	m_HasFlags |= hasLineCap;
 	return *this;
 }
@@ -74,7 +74,7 @@ LWESVGStyle &LWESVGStyle::SetStrokeWidth(const float StokeWidth) {
 }
 
 uint32_t LWESVGStyle::GetLineCap(void) const {
-	return LWBitFieldGet(LineCap, m_Flag);
+	return LWBitFieldGet(LineCapBits, m_Flag);
 }
 
 bool LWESVGStyle::isWidthAuto(void) const {
@@ -131,7 +131,7 @@ LWESVGStyle::LWESVGStyle(const LWESVGStyle &Style, const LWESVGStyle &Inheritanc
 
 //LWESVGElement:
 uint32_t LWESVGElement::GetType(void) const {
-	return LWBitFieldGet(Type, m_Flag);
+	return LWBitFieldGet(TypeBits, m_Flag);
 }
 
 LWESVGElement::LWESVGElement(const LWESVGStyle &Style, uint32_t Type) : m_Style(Style), m_Flag(Type) {}
@@ -156,9 +156,7 @@ bool LWESVG::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *XML) {
 	if (heightAttr) SVGSize.y = ParseLengthValue(heightAttr->GetValue(), bIsPercent);
 	*SVG = LWESVG(SVGSize);
 	for (LWEXMLNode *C = Node->m_FirstChild; C; C = C->m_Next) {
-		if (!XMLParseBaseElement(C, *SVG, -1, XML)) {
-			LWELogCritical<256>("failed to parse node: '{}'", C->GetName());
-		}
+		LWLogCriticalIf<256>(XMLParseBaseElement(C, *SVG, -1, XML), "Failed to parse node: '{}'", C->GetName());
 	}	
 	return true;
 }
@@ -185,9 +183,7 @@ bool LWESVG::XMLParseBaseElement(LWEXMLNode *Node, LWESVG &SVG, uint32_t ParentE
 	ID = SVG.PushElementLast(Elem, ParentElemID);
 
 	for (LWEXMLNode *C = Node->m_FirstChild; C; C = C->m_Next) {
-		if (!XMLParseBaseElement(C, SVG, ID, XML)) {
-			LWELogCritical<256>("failed to parse node: '{}'", C->GetName());
-		}
+		LWLogCriticalIf<256>(XMLParseBaseElement(C, SVG, ID, XML), "Failed to parse node: '{}'", C->GetName());
 	}
 	return false;
 }

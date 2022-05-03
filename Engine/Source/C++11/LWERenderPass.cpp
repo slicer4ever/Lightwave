@@ -1,10 +1,10 @@
 #include "LWERenderPass.h"
 #include <LWPlatform/LWWindow.h>
 #include <LWCore/LWMatrix.h>
+#include <LWCore/LWLogger.h>
 #include <LWEAsset.h>
 #include "LWERenderFrame.h"
 #include "LWERenderer.h"
-#include "LWELogger.h"
 #include "LWECamera.h"
 
 //LWEPassResource:
@@ -60,16 +60,25 @@ bool LWEPass::ParseXMLPassPropertys(LWEXMLNode *Node, LWEPassPropertys &Property
 	LWEXMLAttribute *ViewportAttr = Node->FindAttribute("Viewport");
 	LWEXMLAttribute *TargetAttr = Node->FindAttribute("Target");
 	if (ClearColorAttr) {
-		sscanf(ClearColorAttr->GetValue().c_str(), "#%x", &Propertys.m_ClearColor);
-		Propertys.m_Flag |= LWEPassPropertys::ClearColor;
+		if (ClearColorAttr->GetValue().AtEnd()) Propertys.m_Flag &= ~LWEPassPropertys::ClearColor;
+		else {
+			sscanf(ClearColorAttr->GetValue().c_str(), "#%x", &Propertys.m_ClearColor);
+			Propertys.m_Flag |= LWEPassPropertys::ClearColor;
+		}
 	}
 	if (ClearDepthAttr) {
-		Propertys.m_ClearDepth = (float)atof(ClearDepthAttr->GetValue().c_str());
-		Propertys.m_Flag |= LWEPassPropertys::ClearDepth;
+		if (ClearDepthAttr->GetValue().AtEnd()) Propertys.m_Flag &= ~LWEPassPropertys::ClearDepth;
+		else {
+			Propertys.m_ClearDepth = (float)atof(ClearDepthAttr->GetValue().c_str());
+			Propertys.m_Flag |= LWEPassPropertys::ClearDepth;
+		}
 	}
 	if (ClearStencilAttr) {
-		Propertys.m_ClearStencil = (uint8_t)atoi(ClearStencilAttr->GetValue().c_str());
-		Propertys.m_Flag |= LWEPassPropertys::ClearStencil;
+		if (ClearStencilAttr->GetValue().AtEnd()) Propertys.m_Flag &= ~LWEPassPropertys::ClearStencil;
+		else {
+			Propertys.m_ClearStencil = (uint8_t)atoi(ClearStencilAttr->GetValue().c_str());
+			Propertys.m_Flag |= LWEPassPropertys::ClearStencil;
+		}
 	}
 	if (ViewportAttr) {
 		sscanf(ViewportAttr->GetValue().c_str(), "%d | %d | %d | %d", &Propertys.m_Viewport.x, &Propertys.m_Viewport.y, &Propertys.m_Viewport.z, &Propertys.m_Viewport.w);
@@ -87,7 +96,7 @@ bool LWEPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer *Renderer, L
 	LWEXMLAttribute *DisabledAttr = Node->FindAttribute("Disabled");
 	LWEXMLAttribute *DefaultAttr = Node->FindAttribute("Default");
 	if (!NameAttr) {
-		LWELogCritical<128>("'{}' has no Name.", Node->GetName());
+		LWLogCritical<128>("'{}' has no Name.", Node->GetName());
 		return false;
 	}
 	LWEPassPropertys Props;
@@ -125,10 +134,7 @@ bool LWEPass::ParseXMLPipelineResource(LWEXMLAttribute &Attr, LWEPassResource &R
 		RenderID = Renderer->FindNamedFrameBuffer(SplitList[0], false);
 		if (RenderID) {
 			uint32_t Offset = SplitCnt == 2 ? SplitList[1].CompareList("Color", "Color1", "Color2", "Color3", "Color4", "Color5", "Depth") : 0;
-			if (Offset == -1) {
-				LWELogCritical<256>("Framebuffer attachment specifier is incorrectly named: {}", SplitList[1]);
-				return false;
-			}
+			if(!LWLogCriticalIf<256>(Offset!=-1, "Framebuffer attachment specifier has unknown name: {}", SplitList[1])) return false;
 			Resource = LWEPassResource(Attr.GetName(), RenderID | LWEPassResource::FrameBufferBit, Offset);
 		} else {
 			RenderID = Renderer->FindNamedVideoBuffer(SplitList[0], false);
@@ -171,10 +177,7 @@ bool LWEPass::ParseXMLPipelinePropertys(LWEXMLNode *Node, uint32_t &PipelineName
 	Desc = LWEPassPipelinePropertys();
 	if (DefaultAttr) {
 		Desc.m_DefaultPipeline = AssetManager->GetAsset<LWPipeline>(DefaultAttr->GetValue());
-		if (!Desc.m_DefaultPipeline) {
-			LWELogCritical<256>("{} can not find Default Pipeline named: '{}'.", NameAttr ? NameAttr->GetValue() : "", DefaultAttr->GetValue());
-			return false;
-		}
+		if(!LWLogCriticalIf<256>(Desc.m_DefaultPipeline, "{} can not find default Pipeline named: '{}'", NameAttr ? NameAttr->GetValue() : "", DefaultAttr->GetValue())) return false;
 	}
 	for (uint32_t i = 0; i < Node->m_AttributeCount; i++) {
 		LWEXMLAttribute &Attr = Node->m_Attributes[i];
@@ -187,7 +190,7 @@ bool LWEPass::ParseXMLPipelinePropertys(LWEXMLNode *Node, uint32_t &PipelineName
 		uint32_t cID = C->GetName().CompareList("Blocks", "Resources");
 		if (cID == 0) ParsePipelineBlocksNode(C, Desc);
 		else if (cID == 1) ParsePipelineResourceNode(C, Desc);
-		else if(!InPassLine) LWELogCritical<256>("Unknown pipeline child '{}'", C->GetName());
+		else if(!InPassLine) LWLogCritical<256>("Unknown pipeline child '{}'", C->GetName());
 	}
 	PipelineNameHash = NameAttr ? NameAttr->GetValue().Hash() : LWUTF8I::EmptyHash;
 	return true;
@@ -204,20 +207,18 @@ bool LWEPass::ParseXMLChild(LWEXMLNode *cNode, LWEPass *Pass, LWERenderer *Rende
 	};
 
 	if (NodeType == 0) return ParsePipelineNode(cNode);
-	LWELogCritical<256>("unknown pass child node encountered: '{}'", cNode->GetName());
+	LWLogCritical<256>("unknown pass child node encountered: '{}'", cNode->GetName());
 	return false;
 }
 
 bool LWEPass::AddPipeline(const LWUTF8Iterator &PipelineName, const LWEPassPipelinePropertys &PipelinePropertys) {
 	auto Res = m_PipelineMap.insert({ PipelineName.Hash(), PipelinePropertys });
-	if (!Res.second) LWELogCritical<256>("Adding pipeline '{}' failed.", PipelineName);
-	return Res.second;
+	return LWLogCriticalIf<256>(Res.second, "Adding pipeline '{}' failed.", PipelineName);
 }
 
 bool LWEPass::AddPipeline(uint32_t PipelineNameHash, const LWEPassPipelinePropertys &PipelineProps) {
 	auto Res = m_PipelineMap.insert({ PipelineNameHash, PipelineProps });
-	if (!Res.second) LWELogCritical<256>("Adding pipleine {:#x} failed.", PipelineNameHash);
-	return Res.second;;
+	return LWLogCriticalIf<256>(Res.second, "Adding pipeline {:#x} failed.", PipelineNameHash);
 }
 
 LWEPass &LWEPass::SetPropertys(const LWEPassPropertys &Propertys) {
@@ -282,10 +283,8 @@ bool LWEPass::PipelineBindResource(LWPipeline *Pipeline, LWERenderer *Renderer, 
 
 LWPipeline *LWEPass::PreparePipeline(const LWERenderMaterial &Material, uint32_t GeometryNameBlock, LWVideoDriver *Driver, LWERenderer *Renderer, uint32_t PassIndex) {
 	auto Iter = m_PipelineMap.find(Material.m_PipelineName);
-	if (Iter == m_PipelineMap.end()) {
-		LWELogCritical<256>("could not find pipeline with name hash: {:#x}", Material.m_PipelineName);
-		return nullptr;
-	}
+	if(!LWLogCriticalIf<256>(Iter!=m_PipelineMap.end(), "Could not find pipeline with name hash: {:#x}", Material.m_PipelineName)) return nullptr;
+
 	LWEPassPipelinePropertys &PipeProps = (*Iter).second;
 	LWPipeline *Pipeline = PipeProps.m_DefaultPipeline;
 	auto GeomIter = PipeProps.m_GeometryPipelineMap.find(GeometryNameBlock);
@@ -322,7 +321,7 @@ const LWEPassPropertys &LWEPass::GetPropertys(void) const {
 LWEPassPipelinePropertys *LWEPass::FindPipeline(const LWUTF8I &Name, bool Verbose) {
 	auto Iter = m_PipelineMap.find(Name.Hash());
 	if (Iter == m_PipelineMap.end()) {
-		if (Verbose) LWELogWarn<256>("could not find pipeline with name {}", Name);
+		if (Verbose) LWLogWarn<256>("could not find pipeline with name {}", Name);
 		return nullptr;
 	}
 	return &(*Iter).second;
@@ -331,7 +330,7 @@ LWEPassPipelinePropertys *LWEPass::FindPipeline(const LWUTF8I &Name, bool Verbos
 LWEPassPipelinePropertys *LWEPass::FindPipeline(uint32_t NameHash, bool Verbose) {
 	auto Iter = m_PipelineMap.find(NameHash);
 	if (Iter == m_PipelineMap.end()) {
-		if (Verbose) LWELogWarn<256>("could not find pipeline with hash {:#x}", NameHash);
+		if (Verbose) LWLogWarn<256>("could not find pipeline with hash {:#x}", NameHash);
 		return nullptr;
 	}
 	return &(*Iter).second;

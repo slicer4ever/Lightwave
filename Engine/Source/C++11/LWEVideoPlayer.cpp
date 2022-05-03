@@ -8,16 +8,13 @@
 #include <iostream>
 #include "LWEVideoDecoderIVF.h"
 #include "LWEVideoDecoderWEBM.h"
-#include "LWELogger.h"
+#include <LWCore/LWLogger.h>
 
 bool LWEVideoPlayer::YUVToRGBA(const uint8_t **YUVArrays, const LWVector3i &YUVStrides, const LWVector2i &ImageSize, uint8_t *Buffer, uint32_t BufferSize) {
 	LWVector2i hSize = ImageSize / 2;
 	uint32_t Stride = 4 * ImageSize.x;
 	
-	if (Stride*ImageSize.y > BufferSize) {
-		LWELogCritical<256>("buffer too small for size: {} Expected: {}", BufferSize, Stride * ImageSize.y);
-		return false;
-	}
+	if(!LWLogCriticalIf<256>(Stride*ImageSize.y <= BufferSize, "Buffer too small for size: {}, expected: {}", Buffer, Stride*ImageSize.y)) return false;
 
 	for(int32_t y=0;y<ImageSize.y;y++){
 		uint8_t *Dst = Buffer + (Stride * y);
@@ -49,10 +46,7 @@ bool LWEVideoPlayer::YUVToRGBA(const uint8_t **YUVArrays, const LWVector3i &YUVS
 
 bool LWEVideoPlayer::OpenVideo(LWEVideoPlayer &Player, LWVideoDriver *Driver, const LWUTF8Iterator &Path, bool StartPlaying, uint32_t LoopCnt, void *UserData, std::function<void(LWEVideoPlayer &, void*)> FinishedCallback, float PlaybackSpeed, LWAllocator &Allocator, LWFileStream *Existing) {
 	LWFileStream Stream;
-	if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::BinaryMode | LWFileStream::ReadMode, Allocator, Existing)) {
-		LWELogCritical<256>("Failed to open video file: '{}'", Path);
-		return false;
-	}
+	if(!LWLogCriticalIf<256>(LWFileStream::OpenStream(Stream, Path, LWFileStream::BinaryMode | LWFileStream::ReadMode, Allocator, Existing), "Failed to open video file: '{}'", Path)) return false;
 
 	auto OpenIVF = [](LWEVideoPlayer &Player, LWFileStream &Stream, LWVideoDriver *Driver, uint32_t Flags, uint32_t LoopCnt, void *UserData, std::function<void(LWEVideoPlayer&, void*)> FinishedCallback, float PlaybackSpeed, LWAllocator &Allocator)->bool {
 		Stream.Seek(0, LWFileStream::SeekStart);
@@ -65,9 +59,9 @@ bool LWEVideoPlayer::OpenVideo(LWEVideoPlayer &Player, LWVideoDriver *Driver, co
 	};*/
 	uint32_t Flag = StartPlaying ? PlayRequested : 0;
 	//if (OpenWEBM(Player, Stream, Driver, Flag, LoopCnt, UserData, FinishedCallback, PlaybackSpeed, Allocator)) return true;
+
 	if (OpenIVF(Player, Stream, Driver, Flag, LoopCnt, UserData, FinishedCallback, PlaybackSpeed, Allocator)) return true;
-	LWELogCritical<256>("could not find decoder for: '{}'", Path);
-	return false;
+	return LWLogCritical<256>("could not find decoder for: '{}'", Path);
 }
 
 LWEVideoPlayer &LWEVideoPlayer::Update(uint64_t lCurrentTime) {

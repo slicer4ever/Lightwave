@@ -5,7 +5,7 @@
 //LWEShadowMapPass
 class LWEShadowMapPass : public LWEGeometryPass {
 public:
-	LWBitField32(CubeFaceIndex, 3, 28);
+	LWBitField32(CubeFaceIndexBits, 3, 28);
 	static const uint32_t CubeIndex = 0x80000000;
 
 	/*!< \brief parse's shadowmap pass, creating the following named Textures in renderer: {PassName}TexArray, {PassName}CubeArray.

@@ -59,9 +59,6 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWQuaternion.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWText.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWTimer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -114,6 +111,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWGraphemeTable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWLogger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWRef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -179,6 +182,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWUnicode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWLogger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWRef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

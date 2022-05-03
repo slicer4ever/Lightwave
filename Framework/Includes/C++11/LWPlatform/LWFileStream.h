@@ -115,17 +115,17 @@ public:
 	*    \param MakeDirectors pre-create the directorys as necessary, if false failure may occur due to the directory not existing.
 		 \return true on success, false on failure.
 	*/
-	static bool MovFile(const LWUTF8Iterator &SrcFilepath, const LWUTF8Iterator &DstFilepath);
+	static bool MovFile(const LWUTF8Iterator &SrcFilepath, const LWUTF8Iterator &DstFilepath, bool bVerbose = true);
 
 	/*!< \brief copy's a file on the file system to another location. (note: misspelling is on purpose due to name collisions on certain platforms.)
 	*    \param MakeDirectorys pre-create the directorys as necessary, if false failure may occur due to the directory not existing.
 	*	 \return true on success, false on failure. */
-	static bool CpyFile(const LWUTF8Iterator &SrcFilePath, const LWUTF8Iterator &DstFilePath, LWAllocator &Allocator);
+	static bool CpyFile(const LWUTF8Iterator &SrcFilePath, const LWUTF8Iterator &DstFilePath, LWAllocator &Allocator, bool bVerbose = true);
 
 	/*!< \brief deletes a file on the file system.
 		 \return true on success, false on failure.
 	*/
-	static bool DelFile(const LWUTF8Iterator &Filepath);
+	static bool DelFile(const LWUTF8Iterator &Filepath, bool bVerbose = true);
 
 	/*! \brief set's and move's the data from other to this object. */
 	LWFileStream &operator = (LWFileStream &&Other);

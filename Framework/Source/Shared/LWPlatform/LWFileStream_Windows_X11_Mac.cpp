@@ -15,6 +15,16 @@ bool LWFileStream::OpenStream(LWFileStream &Result, const LWUTF8Iterator &FilePa
 	return true;
 }
 
+bool LWFileStream::Exists(const LWUTF8Iterator &FilePath, const LWFileStream *ExistingStream){
+	char8_t Buffer[512];
+	if (!ParsePath(FilePath, Buffer, sizeof(Buffer), ExistingStream)) return false;
+	FILE *pFile = nullptr;
+	pFile = fopen(Buffer, "rb");
+	if (!pFile) return false;
+	fclose(pFile);
+	return true;
+}
+
 uint8_t LWFileStream::ReadByte(void) {
 	return (uint8_t)fgetc(m_FileObject);
 }

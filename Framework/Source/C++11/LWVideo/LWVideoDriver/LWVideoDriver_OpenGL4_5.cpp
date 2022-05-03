@@ -2,6 +2,7 @@
 #include "LWPlatform/LWWindow.h"
 #include "LWCore/LWVector.h"
 #include "LWCore/LWMatrix.h"
+#include "LWCore/LWLogger.h"
 #include "LWVideo/LWPipeline.h"
 #include "LWVideo/LWImage.h"
 #include "LWVideo/LWFrameBuffer.h"
@@ -152,7 +153,7 @@ LWPipeline *LWVideoDriver_OpenGL4_5::CreatePipeline(LWPipeline *Source, LWAlloca
 		else if (Type == GL_DOUBLE_MAT3x4) return { LWShaderInput::dVec3, 4 };
 		else if (Type == GL_DOUBLE_MAT4x2) return { LWShaderInput::dVec4, 2 };
 		else if (Type == GL_DOUBLE_MAT4x3) return { LWShaderInput::dVec4, 3 };
-		fmt::print("Unknown type: {}\n", Type);
+		LWLogCritical<64>("Unknown type: {}", Type);
 		return { LWShaderInput::Float, 1 };
 	};
 

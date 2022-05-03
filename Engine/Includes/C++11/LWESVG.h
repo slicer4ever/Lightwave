@@ -20,7 +20,7 @@ typedef std::function<bool(uint32_t, LWESVGElement &, LWESVGElement *, LWESVG &)
 typedef std::function<bool(uint32_t, const LWESVGElement &, const LWESVGElement *, const LWESVG &)> LWESVGConstIterateFunc;
 
 struct LWESVGStyle {
-	LWBitField32(LineCap, 2, 0);
+	LWBitField32(LineCapBits, 2, 0);
 
 	//Flags:
 	static const uint32_t WidthAuto      = 0x400000;
@@ -101,7 +101,7 @@ struct LWESVGStyle {
 
 /*!< \brief each element in the dom structure of the svg object. */
 struct LWESVGElement {
-	LWBitField32(Type, 4, 0);
+	LWBitField32(TypeBits, 4, 0);
 
 	//SVG Types:
 	static const uint32_t Group = 0;

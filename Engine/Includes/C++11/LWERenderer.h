@@ -3,12 +3,12 @@
 #include <LWCore/LWConcurrent/LWFIFO.h>
 #include <LWVideo/LWVideoDriver.h>
 #include <LWVideo/LWImage.h>
+#include <LWCore/LWLogger.h>
 #include <LWEUIManager.h>
 #include <LWEAsset.h>
 #include "LWERenderFrame.h"
 #include "LWERenderPass.h"
 #include "LWERenderTypes.h"
-#include "LWELogger.h"
 #include <functional>
 #include <mutex>
 
@@ -232,9 +232,9 @@ struct LWERenderPendingTexture {
 };
 
 struct LWERenderFramebufferTexture {
-	LWBitField32(NamedLayer, 16, 0); 
-	LWBitField32(NamedFace, 8, NamedLayerBitsOffset + 16);
-	LWBitField32(NamedMipmap, 7, NamedFaceBitsOffset + 8);
+	LWBitField32(NamedLayerBits, 16, 0); 
+	LWBitField32(NamedFaceBits, 8, NamedLayerBitsOffset + 16);
+	LWBitField32(NamedMipmapBits, 7, NamedFaceBitsOffset + 8);
 	static const uint32_t FrameBufferName = 0x80000000; //if framebuffer is set, layer is used to refer to the attachment point being referenced.
 
 	uint32_t m_NameHash = LWUTF8I::EmptyHash; //If name is non-empty, the texture will be searched for.
@@ -275,7 +275,7 @@ struct LWERenderPendingFrameBuffer {
 };
 
 struct LWERenderPendingResource {
-	LWBitField32(Type, 2, 0);
+	LWBitField32(TypeBits, 2, 0);
 	static const uint32_t NoDiscard = 0x4; //If NoDiscard is raised, then the data/Image are not destroyed once upload is complete.
 	static const uint32_t DestroyResource = 0x8; //The renderer reference to the object this resource refers to is destroyed.
 	static const uint32_t WriteOverlap = 0x10; //If buffer already exists, then this buffer will update a portion of that buffer.
@@ -497,11 +497,11 @@ public:
 
 	LWERendererBlockGeometry *GetDebugGeometry(void);
 
-	const LWELoggerTimeMetrics &GetApplyFrameMetric(void) const;
+	const LWLoggerTimeMetrics &GetApplyFrameMetric(void) const;
 
-	const LWELoggerTimeMetrics &GetRenderFrameMetric(void) const;
+	const LWLoggerTimeMetrics &GetRenderFrameMetric(void) const;
 
-	const LWELoggerTimeMetrics &GetPendingFrameMetric(void) const;
+	const LWLoggerTimeMetrics &GetPendingFrameMetric(void) const;
 
 	LWEAssetManager *GetAssetManager(void);
 
@@ -525,6 +525,9 @@ protected:
 	std::pair<uint32_t, uint32_t> m_GeometryRendableCount[LWEMaxGeometryBuckets];
 	LWConcurrentFIFO<LWERenderPendingResource, MaxPendingResources> m_PendingResources;
 	LWERenderFrame m_Frames[FrameBuffer];
+	LWLoggerTimeMetrics m_ApplyFrameMetric;
+	LWLoggerTimeMetrics m_RenderFrameMetric;
+	LWLoggerTimeMetrics m_PendingFrameMetric;
 	std::vector<LWEPass*> m_PassList;
 	LWAllocator &m_Allocator;
 	LWVideoDriver *m_Driver = nullptr;
@@ -555,9 +558,6 @@ protected:
 	std::atomic<uint32_t> m_NextFramebufferID = 1;
 	std::atomic<uint32_t> m_WriteFrame = 0;
 	std::atomic<uint32_t> m_ReadFrame = 0;
-	LWELoggerTimeMetrics m_ApplyFrameMetric;
-	LWELoggerTimeMetrics m_RenderFrameMetric;
-	LWELoggerTimeMetrics m_PendingFrameMetric;
 	uint32_t m_NamedDynamicID = 0;
 	float m_Time = 0.0f;
 	bool m_SizeChanged = true;

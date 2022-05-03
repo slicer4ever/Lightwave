@@ -17,6 +17,7 @@
 #include <LWCore/LWAllocators/LWAllocator_LocalHeap.h>
 #include <LWCore/LWConcurrent/LWFIFO.h>
 #include <LWCore/LWCrypto.h> 
+#include <LWCore/LWLogger.h>
 #include <thread> 
 #include <iostream>
 #include <iomanip>
@@ -26,18 +27,20 @@
 #include <string>
 #include <cstdarg>
 
+LWLOG_DEFAULT
+
 template<typename Func, class ResultType>
 bool PerformTest(const char *FunctionName, Func F, ResultType ExpectedResult, bool ResultHex = false){
 	ResultType R = F();
-	if (ResultHex) fmt::print("Test: '{}' Expected: {:#x} Receivied: {:#x}\n", FunctionName, ExpectedResult, R);
-	else fmt::print("Test: '{}' Expected: {} Received: {}\n", FunctionName, ExpectedResult, R);
+	if (ResultHex) LWLogEvent<256>("Test: '{}' Expected: {:#x} Receivied: {:#x}", FunctionName, ExpectedResult, R);
+	else LWLogEvent<256>("Test: '{}' Expected: {} Received: {}", FunctionName, ExpectedResult, R);
 	return R == ExpectedResult;
 }
 
 template<typename Func>
 bool PerformTest(const char *FunctionName, Func F, float ExpectedResult, bool ResultHex = false){
 	float R = F();
-	fmt::print("Test: '{}' Expected: {} Received: {}\n", FunctionName, ExpectedResult, R);
+	LWLogEvent<256>("Test: '{}' Expected: {} Received: {}", FunctionName, ExpectedResult, R);
 	return std::abs(R - ExpectedResult) < std::numeric_limits<float>::epsilon();
 }
 
@@ -45,28 +48,28 @@ template<typename Func>
 bool PerformTest(const char *FunctionName, Func F, double ExpectedResult, bool ResultHex = false){
 	double e = (double)std::numeric_limits<float>::epsilon(); //uses float epsilon instead of double as double epsilon precision is too high for some of the tests.
 	double R = F();
-	fmt::print("Test: '{}' Expected: {} Received: {}\n", FunctionName, ExpectedResult, R);
+	LWLogEvent<256>("Test: '{}' Expected: {} Received: {}", FunctionName, ExpectedResult, R);
 	return std::abs(R - ExpectedResult) < e;
 }
 
 template<typename Func>
 bool PerformTest(const char *FunctionName, Func F, bool ExpectedResult, bool ResultHex = false) {
 	bool R = F();
-	fmt::print("Test: '{}' Expected: {} Receivied: {}\n", FunctionName, ExpectedResult, R);
+	LWLogEvent<256>("Test: '{}' Expected: {} Receivied: {}", FunctionName, ExpectedResult, R);
 	return R == ExpectedResult;
 }
 
 template<class Type>
 bool TestEqualityPOD(const char *TestName, Type A, Type B) {
 	bool Result = A == B;
-	fmt::print("Test: '{}' Result: {}\n", TestName, (Result ? "Correct" : "Incorrect"));
+	LWLogEvent<256>("Test: '{}' Result: {}", TestName, (Result ? "Correct" : "Incorrect"));
 	return Result;
 }
 
 template<class Type>
 bool TestEquality(const char *TestName, const Type &A, const Type &B){
 	bool Result = A == B;
-	fmt::print("Test: '{}' Result: {}\n", TestName, (Result ? "Correct" : "Incorrect"));
+	LWLogEvent<256>("Test: '{}' Result: {}", TestName, (Result ? "Correct" : "Incorrect"));
 	return Result;
 }
 
@@ -74,7 +77,7 @@ template<class Type>
 bool TestEquality(const char *TestName, uint32_t Cnt, const Type *A, const Type *B) {
 	bool Result = true;
 	for (uint32_t i = 0; i < Cnt && Result; i++) Result = A[i] == B[i];
-	fmt::print("Test: '{}' Result: {}\n", TestName, (Result ? "Correct" : "Incorrect"));
+	LWLogEvent<256>("Test: '{}' Result: {}", TestName, (Result ? "Correct" : "Incorrect"));
 	return Result;
 }
 
@@ -82,31 +85,31 @@ bool TestCryptoHash(const char *InputValue, uint32_t *Result, uint32_t HashSize,
 	char Digest[128];
 	LWCrypto::Digest(Result, HashSize, Digest, sizeof(Digest));
 	if(!ExpectedDigest.Compare(Digest)){
-		fmt::print("Hash incorrect: '{}' Expected: '{}' Received: '{}'\n", InputValue, ExpectedDigest, Digest);
+		LWLogEvent<256>("Hash incorrect: '{}' Expected: '{}' Received: '{}'", InputValue, ExpectedDigest, Digest);
 		return false;
 	} else {
-		fmt::print("Hashed: '{}' Got: '{}'\n", InputValue, Digest);
+		LWLogEvent<256>("Hashed: '{}' Got: '{}'", InputValue, Digest);
 	}
 	return true;
 }
 
 bool PerformAllocatorTest(const char *AllocatorName, LWAllocator &Allocator){
-	fmt::print("Beginning allocation testing for: {}\n", AllocatorName);
+	LWLogEvent<256>("Beginning allocation testing for: {}", AllocatorName);
 	const int32_t AllocationCount = 2500;
 	const int32_t LargeCount = 1000;
 	const int32_t SmallCount = 2;
 	auto Start = std::chrono::steady_clock::now();
 	int32_t *m_Allocations32t[AllocationCount];
 	LWVector4i *m_AllocationsVec4t[AllocationCount]; 
-	fmt::print("Performing small POD allocation Tests.\n");
+	LWLogEvent<256>("Performing small POD allocation Tests.");
 	for (int32_t i = 0; i < AllocationCount; i++){
 		m_Allocations32t[i] = Allocator.Allocate<int32_t>(SmallCount);
 		if (!m_Allocations32t[i]){
-			fmt::print("Error allocation: {}\n", i);
+			LWLogEvent<256>("Error allocation: {}", i);
 			return false;
 		}
 		if (LWAllocator::GetAllocationSize(m_Allocations32t[i]) != sizeof(int32_t) * SmallCount) {
-			fmt::print("Error allocating: {} Got: {} Expected: {}\n", i, LWAllocator::GetAllocationSize(m_Allocations32t[i]), sizeof(int32_t) * SmallCount);
+			LWLogEvent<256>("Error allocating: {} Got: {} Expected: {}", i, LWAllocator::GetAllocationSize(m_Allocations32t[i]), sizeof(int32_t) * SmallCount);
 			return false;
 		}
 		for (int32_t d = 0; d < 2; d++) m_Allocations32t[i][d] = d; //populate data.
@@ -115,15 +118,15 @@ bool PerformAllocatorTest(const char *AllocatorName, LWAllocator &Allocator){
 		for (int32_t d = 0; d < SmallCount; d++) if (m_Allocations32t[i][d] != d) return false; //verify data.
 		LWAllocator::Destroy(m_Allocations32t[i]);
 	}
-	fmt::print("Performing large POD allocation Tests.\n");
+	LWLogEvent<256>("Performing large POD allocation Tests.");
 	for (int32_t i = 0; i < AllocationCount; i++){
 		m_Allocations32t[i] = Allocator.Allocate<int32_t>(LargeCount);
 		if (!m_Allocations32t[i]){
-			fmt::print("Error allocation: {}\n", i);
+			LWLogEvent<256>("Error allocation: {}", i);
 			return false;
 		}
 		if (LWAllocator::GetAllocationSize(m_Allocations32t[i]) != sizeof(int32_t) * LargeCount) {
-			fmt::print("Error allocating: {} Got: {} Expected: {}\n", i, LWAllocator::GetAllocationSize(m_Allocations32t[i]), sizeof(int32_t) * LargeCount);
+			LWLogEvent<256>("Error allocating: {} Got: {} Expected: {}", i, LWAllocator::GetAllocationSize(m_Allocations32t[i]), sizeof(int32_t) * LargeCount);
 			return false;
 		}
 
@@ -133,15 +136,15 @@ bool PerformAllocatorTest(const char *AllocatorName, LWAllocator &Allocator){
 		for (int32_t d = 0; d < LargeCount; d++) if (m_Allocations32t[i][d] != d) return false; //verify data.
 		LWAllocator::Destroy(m_Allocations32t[i]);
 	}
-	fmt::print("Performing mixed POD allocation/deallocation Tests.\n");
+	LWLogEvent<256>("Performing mixed POD allocation/deallocation Tests.");
 	for (int32_t i = 0; i < AllocationCount; i++){
 		m_Allocations32t[i] = Allocator.Allocate<int32_t>(i);
 		if (!m_Allocations32t[i]){
-			fmt::print("Error allocating: {}\n", i);
+			LWLogEvent<256>("Error allocating: {}", i);
 			return false;
 		}
 		if (LWAllocator::GetAllocationSize(m_Allocations32t[i]) != sizeof(int32_t) * i) {
-			fmt::print("Error allocating: {} Got: {} Expected: {}\n", i, LWAllocator::GetAllocationSize(m_Allocations32t[i]), sizeof(int32_t) * i);
+			LWLogEvent<256>("Error allocating: {} Got: {} Expected: {}", i, LWAllocator::GetAllocationSize(m_Allocations32t[i]), sizeof(int32_t) * i);
 			return false;
 		}
 		for (int32_t d = 0; d < i; d++) m_Allocations32t[i][d] = d;
@@ -154,15 +157,15 @@ bool PerformAllocatorTest(const char *AllocatorName, LWAllocator &Allocator){
 		for (int32_t d = 0; d < i; d++) if (m_Allocations32t[i][d] != d) return false;
 		LWAllocator::Destroy(m_Allocations32t[i]);
 	}
-	fmt::print("Performing small non-POD allocation Tests.\n");
+	LWLogEvent<256>("Performing small non-POD allocation Tests.");
 	for (int32_t i = 0; i < AllocationCount; i++){
 		m_AllocationsVec4t[i] = Allocator.Allocate<LWVector4i>(SmallCount);
 		if (!m_AllocationsVec4t[i]){
-			fmt::print("Error allocating: {}\n", i);
+			LWLogEvent<256>("Error allocating: {}", i);
 			return false;
 		}
 		if (LWAllocator::GetAllocationSize(m_AllocationsVec4t[i]) != sizeof(LWVector4i) * SmallCount) {
-			fmt::print("Error allocating: {} Got: {} Expected: {}\n", i, LWAllocator::GetAllocationSize(m_AllocationsVec4t[i]), sizeof(LWVector4i) * SmallCount);
+			LWLogEvent<256>("Error allocating: {} Got: {} Expected: {}", i, LWAllocator::GetAllocationSize(m_AllocationsVec4t[i]), sizeof(LWVector4i) * SmallCount);
 			return false;
 		}
 		for (int32_t d = 0; d < SmallCount; d++) m_AllocationsVec4t[i][d] = LWVector4i(d);
@@ -171,15 +174,15 @@ bool PerformAllocatorTest(const char *AllocatorName, LWAllocator &Allocator){
 		for (int32_t d = 0; d < SmallCount; d++) if (m_AllocationsVec4t[i][d].x != d || m_AllocationsVec4t[i][d].y != d || m_AllocationsVec4t[i][d].z != d || m_AllocationsVec4t[i][d].w != d) return false;
 		LWAllocator::Destroy(m_AllocationsVec4t[i]);
 	}
-	fmt::print("Performing large non-POD allocation Tests.\n");
+	LWLogEvent<256>("Performing large non-POD allocation Tests.");
 	for (int32_t i = 0; i < AllocationCount; i++){
 		m_AllocationsVec4t[i] = Allocator.Allocate<LWVector4i>(LargeCount);
 		if (!m_AllocationsVec4t[i]){
-			fmt::print("Error allocating: {}\n", i);
+			LWLogEvent<256>("Error allocating: {}", i);
 			return false;
 		}
 		if (LWAllocator::GetAllocationSize(m_AllocationsVec4t[i]) != sizeof(LWVector4i) * LargeCount) {
-			fmt::print("Error allocating: {} Got: {} Expected: {}\n", i, LWAllocator::GetAllocationSize(m_AllocationsVec4t[i]), sizeof(LWVector4i) * LargeCount);
+			LWLogEvent<256>("Error allocating: {} Got: {} Expected: {}", i, LWAllocator::GetAllocationSize(m_AllocationsVec4t[i]), sizeof(LWVector4i) * LargeCount);
 			return false;
 		}
 		for (int32_t d = 0; d < LargeCount; d++) m_AllocationsVec4t[i][d] = LWVector4i(d);
@@ -188,15 +191,15 @@ bool PerformAllocatorTest(const char *AllocatorName, LWAllocator &Allocator){
 		for (int32_t d = 0; d < LargeCount; d++) if (m_AllocationsVec4t[i][d].x != d || m_AllocationsVec4t[i][d].y != d || m_AllocationsVec4t[i][d].z != d || m_AllocationsVec4t[i][d].w != d) return false;
 		LWAllocator::Destroy(m_AllocationsVec4t[i]);
 	}
-	fmt::print("Performing mixed non-POD allocation/deallocation Tests.\n");
+	LWLogEvent<256>("Performing mixed non-POD allocation/deallocation Tests.");
 	for (int32_t i = 0; i < AllocationCount; i++){
 		m_AllocationsVec4t[i] = Allocator.Allocate<LWVector4i>(i);
 		if (!m_AllocationsVec4t[i]){
-			fmt::print("Error allocating: {}", i);
+			LWLogEvent<256>("Error allocating: {}", i);
 			return false;
 		}
 		if (LWAllocator::GetAllocationSize(m_AllocationsVec4t[i]) != sizeof(LWVector4i) * i) {
-			fmt::print("Error allocating: {} Got: {} Expected: {}\n", i, LWAllocator::GetAllocationSize(m_AllocationsVec4t[i]), sizeof(LWVector4i) * i);
+			LWLogEvent<256>("Error allocating: {} Got: {} Expected: {}", i, LWAllocator::GetAllocationSize(m_AllocationsVec4t[i]), sizeof(LWVector4i) * i);
 			return false;
 		}
 		for (int32_t d = 0; d < i; d++) m_AllocationsVec4t[i][d] = LWVector4i(d);
@@ -209,15 +212,15 @@ bool PerformAllocatorTest(const char *AllocatorName, LWAllocator &Allocator){
 		for (int32_t d = 0; d < i; d++) if (m_AllocationsVec4t[i][d].x != d || m_AllocationsVec4t[i][d].y != d || m_AllocationsVec4t[i][d].z != d || m_AllocationsVec4t[i][d].w != d) return false;
 		LWAllocator::Destroy(m_AllocationsVec4t[i]);
 	}
-	fmt::print("Checking allocated Bytes: {}\n", Allocator.GetAllocatedBytes());
+	LWLogEvent<256>("Checking allocated Bytes: {}", Allocator.GetAllocatedBytes());
 	if (Allocator.GetAllocatedBytes() != 0) return false;
 	auto Elapsed = std::chrono::steady_clock::now()-Start;
-	fmt::print("Finished allocation tests, time take: {}\n", std::chrono::duration_cast<std::chrono::milliseconds>(Elapsed));
+	LWLogEvent<256>("Finished allocation tests, time take: {}", std::chrono::duration_cast<std::chrono::milliseconds>(Elapsed));
 	return true;
 }
 
 bool PerformLWAllocatorTest(void){
-	fmt::print("Performing LWAllocator test:\n");
+	LWLogEvent<256>("Performing LWAllocator test:");
 	const uint32_t AllocSize = 1024 * 1024 * 64;
 	LWAllocator_Default Default;
 	LWAllocator_DefaultDebug DefaultDebug;
@@ -233,7 +236,7 @@ bool PerformLWAllocatorTest(void){
 }
 
 bool PerformLWSVectorTest(void) {
-	fmt::print("Testing LWSVector4f:\n");
+	LWLogEvent<256>("Testing LWSVector4f:");
 	auto SumValuesf = [](const LWSVector4f &t) {
 		LWVector4f V = t.AsVec4();
 		return V.x + V.y + V.z + V.w;
@@ -333,7 +336,7 @@ bool PerformLWSVectorTest(void) {
 	if (!TestEquality("LWSVector4f<BBBA>", Af.BBBA(Bf), LWSVector4f(5.0f, 6.0f, 7.0f, 4.0f))) return false;
 
 	//Test doubles
-	fmt::print("Testing LWSVector4d:\n");
+	LWLogEvent<256>("Testing LWSVector4d:");
 
 	auto SumValuesd = [](const LWSVector4d &t) {
 		LWVector4d V = t.AsVec4();
@@ -434,7 +437,7 @@ bool PerformLWSVectorTest(void) {
 
 
 	//Test int32_t
-	fmt::print("Testing LWSVector4i:\n");
+	LWLogEvent<256>("Testing LWSVector4i:");
 
 	auto SumValuesi = [](const LWSVector4i &t) {
 		LWVector4i V = t.AsVec4();
@@ -498,7 +501,7 @@ bool PerformLWSVectorTest(void) {
 };
 
 bool PerformLWVectorTest(void){
-	fmt::print("Testing LWVector4:\n");
+	LWLogEvent<256>("Testing LWVector4:");
 
 	auto SumValues = [](const LWVector4f &t){ return t.x + t.y + t.z + t.w;  };
 	auto SumValues3 = [](const LWVector3f &t){ return t.x + t.y + t.z; };
@@ -547,7 +550,7 @@ bool PerformLWVectorTest(void){
 	LWVector4i Testi = LWVector4f(2.0f, 3.0f, 4.0f, 5.0f).CastTo<int32_t>();
 	if (!PerformTest("LWVector4<cast>", std::bind([](const LWVector4i &P){return P.x + P.y + P.z + P.w; }, Testi), 14)) return false;
 
-	fmt::print("Testing LWVector3:\n");
+	LWLogEvent<256>("Testing LWVector3:");
 	LWVector3f Test3(1.0f);
 	if (!PerformTest("LWVector3<Construct>", std::bind(SumValues3, Test3), 3.0f)) return false;
 	Test3 += LWVector3f(2.0f, 3.0f, 4.0f);
@@ -592,7 +595,7 @@ bool PerformLWVectorTest(void){
 	LWVector3i Test3i = LWVector3f(2.0f, 3.0f, 4.0f).CastTo<int32_t>();
 	if (!PerformTest("LWVector3<cast>", std::bind([](const LWVector3i &P){return P.x + P.y + P.z; }, Test3i), 9)) return false;
 
-	fmt::print("Testing LWVector2:\n");
+	LWLogEvent<256>("Testing LWVector2:");
 	LWVector2f Test2(1.0f);
 	if (!PerformTest("LWVector2<Construct>", std::bind(SumValues2, Test2), 2.0f)) return false;
 	Test2 += LWVector2f(2.0f, 3.0f);
@@ -738,12 +741,12 @@ bool PerformLWByteStreamTest(void) {
 		NetBytePos += Len;
 		return Len;
 	};
-	fmt::print("Performing Byte Stream class test:\n");
+	LWLogEvent<256>("Performing Byte Stream class test:");
 	for (uint32_t i = 0; i < 2; i++) {
 		LWByteStream Stream;
 		if (i == 0) Stream = LWByteStream(5, ReadBytes, LWByteStream::AutoSize, nullptr, DefAlloc);
 		else {
-			fmt::print("Performing network byte stream test:\n");
+			LWLogEvent<256>("Performing network byte stream test:");
 			Stream = LWByteStream(5, ReadNetBytes, LWByteStream::Network|LWByteStream::AutoSize, nullptr, DefAlloc);
 		}
 		Result16[0] = Stream.Read<int16_t>();
@@ -827,7 +830,7 @@ bool PerformLWByteStreamTest(void) {
 		if (!TestEquality("ReadText", (uint32_t)strlen(ValuesText), ResultText, ValuesText)) return false;
 
 	}
-	fmt::print("LWByteStream test was successful.\n");
+	LWLogEvent<256>("LWByteStream test was successful.");
 	return true;
 }
 
@@ -885,7 +888,7 @@ bool PerformLWByteBufferTest(void){
 	const bool BigEndian = ((int8_t*)&CheckEndianValue)[0] != 0x11;
 	const uint32_t Pi32 = BigEndian ? 1078530011 : 3675212096;
 	const uint64_t Pi64 = BigEndian ? 4614256656748904448 : 416530106688;
-	fmt::print("Performing Byte Buffer class test:\nIs BigEndian: {}\nTesting Static members:\n", BigEndian);
+	LWLogEvent<256>("Performing Byte Buffer class test:\nIs BigEndian: {}\nTesting Static members:", BigEndian);
 
 	if (!PerformTest("MakeNetwork<int8>",   std::bind<int8_t(int8_t)>     (LWByteBuffer::MakeNetwork, 0x11), 0x11, true)) return false;
 	if (!PerformTest("MakeNetwork<uint8>",  std::bind<uint8_t(uint8_t)>   (LWByteBuffer::MakeNetwork, 0x11), 0x11, true)) return false;
@@ -1028,323 +1031,323 @@ bool PerformLWByteBufferTest(void){
 
 
 	if (!PerformTest("WriteVariant<uint16_t>", std::bind<int32_t(uint16_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0u, Buffer, 0), 1)) return false;
-	if (!PerformTest("ReadVariant<uint16_t>", std::bind<int32_t(uint16_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U16, Buffer), 1)) return false;
+	if (!PerformTest("ReadVariant<uint16_t>", std::bind<int32_t(uint16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U16, Buffer, Buffer+sizeof(Buffer)), 1)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint16_t)0u, U16)) return false;
 	if (!PerformTest("WriteVariant<uint16_t>", std::bind<int32_t(uint16_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x7F, Buffer, 0), 1)) return false;
-	if (!PerformTest("ReadVariant<uint16_t>", std::bind<int32_t(uint16_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U16, Buffer), 1)) return false;
+	if (!PerformTest("ReadVariant<uint16_t>", std::bind<int32_t(uint16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U16, Buffer, Buffer + sizeof(Buffer)), 1)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint16_t)0x7F, U16)) return false;
 	if (!PerformTest("WriteVariant<uint16_t>", std::bind<int32_t(uint16_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x80, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadVariant<uint16_t>", std::bind<int32_t(uint16_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U16, Buffer), 2)) return false;
+	if (!PerformTest("ReadVariant<uint16_t>", std::bind<int32_t(uint16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U16, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint16_t)0x80, U16)) return false;
 	if (!PerformTest("WriteVariant<uint16_t>", std::bind<int32_t(uint16_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x3FFF, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadVariant<uint16_t>", std::bind<int32_t(uint16_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U16, Buffer), 2)) return false;
+	if (!PerformTest("ReadVariant<uint16_t>", std::bind<int32_t(uint16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U16, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint16_t)0x3FFF, U16)) return false;
 	if (!PerformTest("WriteVariant<uint16_t>", std::bind<int32_t(uint16_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x4000, Buffer, 0), 3)) return false;
-	if (!PerformTest("ReadVariant<uint16_t>", std::bind<int32_t(uint16_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U16, Buffer), 3)) return false;
+	if (!PerformTest("ReadVariant<uint16_t>", std::bind<int32_t(uint16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U16, Buffer, Buffer + sizeof(Buffer)), 3)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint16_t)0x4000, U16)) return false;
 	if (!PerformTest("WriteVariant<uint16_t>", std::bind<int32_t(uint16_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0xFFFF, Buffer, 0), 3)) return false;
-	if (!PerformTest("ReadVariant<uint16_t>", std::bind<int32_t(uint16_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U16, Buffer), 3)) return false;
+	if (!PerformTest("ReadVariant<uint16_t>", std::bind<int32_t(uint16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U16, Buffer, Buffer + sizeof(Buffer)), 3)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint16_t)0xFFFF, U16)) return false;
 
 
 	if (!PerformTest("WriteVariant<int16_t>", std::bind<int32_t(int16_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, (int16_t)0x8000, Buffer, 0), 10)) return false;
-	if (!PerformTest("ReadVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &S16, Buffer), 10)) return false;
+	if (!PerformTest("ReadVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &S16, Buffer, Buffer + sizeof(Buffer)), 10)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (int16_t)0x8000, S16)) return false;
 
 	if (!PerformTest("WriteVariant<int16_t>", std::bind<int32_t(int16_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 1, Buffer, 10), 10)) return false;
-	if (!PerformTest("ReadVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &S16, Buffer), 10)) return false;
+	if (!PerformTest("ReadVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &S16, Buffer, Buffer + sizeof(Buffer)), 10)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (int16_t)1, S16)) return false;
 
 	if (!PerformTest("WriteVariant<int16_t>", std::bind<int32_t(int16_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, -1, Buffer, 0), 10)) return false;
-	if (!PerformTest("ReadVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &S16, Buffer), 10)) return false;
+	if (!PerformTest("ReadVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &S16, Buffer, Buffer + sizeof(Buffer)), 10)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (int16_t)-1, S16)) return false;
 
 	if (!PerformTest("WriteVariant<uint32_t>", std::bind<int32_t(uint32_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0u, Buffer, 0), 1)) return false;
-	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U32, Buffer), 1)) return false;
+	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U32, Buffer, Buffer + sizeof(Buffer)), 1)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint32_t)0u, U32)) return false;
 	if (!PerformTest("WriteVariant<uint32_t>", std::bind<int32_t(uint32_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x7F, Buffer, 0), 1)) return false;
-	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U32, Buffer), 1)) return false;
+	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U32, Buffer, Buffer + sizeof(Buffer)), 1)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint32_t)0x7F, U32)) return false;
 	if (!PerformTest("WriteVariant<uint32_t>", std::bind<int32_t(uint32_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x80, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U32, Buffer), 2)) return false;
+	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U32, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint32_t)0x80, U32)) return false;
 	if (!PerformTest("WriteVariant<uint32_t>", std::bind<int32_t(uint32_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x3FFF, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U32, Buffer), 2)) return false;
+	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U32, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint32_t)0x3FFF, U32)) return false;
 	if (!PerformTest("WriteVariant<uint32_t>", std::bind<int32_t(uint32_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x4000, Buffer, 0), 3)) return false;
-	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U32, Buffer), 3)) return false;
+	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U32, Buffer, Buffer + sizeof(Buffer)), 3)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint32_t)0x4000, U32)) return false;
 	if (!PerformTest("WriteVariant<uint32_t>", std::bind<int32_t(uint32_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x1FFFFF, Buffer, 0), 3)) return false;
-	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U32, Buffer), 3)) return false;
+	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U32, Buffer, Buffer + sizeof(Buffer)), 3)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint32_t)0x1FFFFF, U32)) return false;
 	if (!PerformTest("WriteVariant<uint32_t>", std::bind<int32_t(uint32_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x200000, Buffer, 0), 4)) return false;
-	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U32, Buffer), 4)) return false;
+	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U32, Buffer, Buffer + sizeof(Buffer)), 4)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint32_t)0x200000, U32)) return false;
 	if (!PerformTest("WriteVariant<uint32_t>", std::bind<int32_t(uint32_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x7ffffff, Buffer, 0), 4)) return false;
-	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U32, Buffer), 4)) return false;
+	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U32, Buffer, Buffer + sizeof(Buffer)), 4)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint32_t)0x7ffffff, U32)) return false;
 	if (!PerformTest("WriteVariant<uint32_t>", std::bind<int32_t(uint32_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x10000000, Buffer, 0), 5)) return false;
-	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U32, Buffer), 5)) return false;
+	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U32, Buffer, Buffer + sizeof(Buffer)), 5)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint32_t)0x10000000, U32)) return false;
 	if (!PerformTest("WriteVariant<uint32_t>", std::bind<int32_t(uint32_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0xFFFFFFFF, Buffer, 0), 5)) return false;
-	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U32, Buffer), 5)) return false;
+	if (!PerformTest("ReadVariant<uint32_t>", std::bind<int32_t(uint32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U32, Buffer, Buffer + sizeof(Buffer)), 5)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint32_t)0xFFFFFFFF, U32)) return false;
 
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0u, Buffer, 0), 1)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 1)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 1)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0u, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x7F, Buffer, 0), 1)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 1)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 1)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x7F, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x80, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 2)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x80, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x3FFF, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 2)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x3FFF, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x4000, Buffer, 0), 3)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 3)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 3)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x4000, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x1FFFFF, Buffer, 0), 3)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 3)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 3)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x1FFFFF, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x200000, Buffer, 0), 4)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 4)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 4)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x200000, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x7ffffff, Buffer, 0), 4)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 4)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 4)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x7ffffff, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x10000000, Buffer, 0), 5)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 5)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 5)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x10000000, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x4ffffffff, Buffer, 0), 5)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 5)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 5)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x4ffffffff, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x800000000, Buffer, 0), 6)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 6)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 6)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x800000000, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x2ffffffffff, Buffer, 0), 6)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 6)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 6)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x2ffffffffff, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x40000000000, Buffer, 0), 7)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 7)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 7)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x40000000000, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x1ffffffffffff, Buffer, 0), 7)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 7)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 7)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x1ffffffffffff, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x2000000000000, Buffer, 0), 8)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 8)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 8)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x2000000000000, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x7fffffffffffff, Buffer, 0), 8)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 8)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 8)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x7fffffffffffff, U64)) return false;	
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x100000000000000, Buffer, 0), 9)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 9)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 9)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x100000000000000, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x4fffffffffffffff, Buffer, 0), 9)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 9)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 9)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x4fffffffffffffff, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0x8000000000000000, Buffer, 0), 10)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 10)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 10)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0x8000000000000000, U64)) return false;
 	if (!PerformTest("WriteVariant<uint64_t>", std::bind<int32_t(uint64_t, int8_t *, int32_t)>(LWByteBuffer::WriteVariant, 0xFFFFFFFFFFFFFFFF, Buffer, 0), 10)) return false;
-	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*)>(LWByteBuffer::ReadVariant, &U64, Buffer), 10)) return false;
+	if (!PerformTest("ReadVariant<uint64_t>", std::bind<int32_t(uint64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadVariant, &U64, Buffer, Buffer + sizeof(Buffer)), 10)) return false;
 	if (!TestEqualityPOD("ReadVariant<==>", (uint64_t)0xFFFFFFFFFFFFFFFF, U64)) return false;
 
 	if (!PerformTest("WriteSVariant<int16_t>", std::bind<int32_t(int16_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 0, Buffer, 0), 1)) return false;
-	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S16, Buffer), 1)) return false;
+	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S16, Buffer, Buffer + sizeof(Buffer)), 1)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int16_t)0, S16)) return false;
 	if (!PerformTest("WriteSVariant<int16_t>", std::bind<int32_t(int16_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 63, Buffer, 0), 1)) return false;
-	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S16, Buffer), 1)) return false;
+	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S16, Buffer, Buffer + sizeof(Buffer)), 1)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int16_t)63, S16)) return false;
 	if (!PerformTest("WriteSVariant<int16_t>", std::bind<int32_t(int16_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -64, Buffer, 0), 1)) return false;
-	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S16, Buffer), 1)) return false;
+	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S16, Buffer, Buffer + sizeof(Buffer)), 1)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int16_t)-64, S16)) return false;
 	if (!PerformTest("WriteSVariant<int16_t>", std::bind<int32_t(int16_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant,-65, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S16, Buffer), 2)) return false;
+	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S16, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int16_t)-65, S16)) return false;
 	if (!PerformTest("WriteSVariant<int16_t>", std::bind<int32_t(int16_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant,128, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S16, Buffer), 2)) return false;
+	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S16, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int16_t)128, S16)) return false;
 	if (!PerformTest("WriteSVariant<int16_t>", std::bind<int32_t(int16_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant,-128, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S16, Buffer), 2)) return false;
+	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S16, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int16_t)-128, S16)) return false;
 	if (!PerformTest("WriteSVariant<int16_t>", std::bind<int32_t(int16_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 8191, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S16, Buffer), 2)) return false;
+	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S16, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int16_t)8191, S16)) return false;
 	if (!PerformTest("WriteSVariant<int16_t>", std::bind<int32_t(int16_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant,-8192, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S16, Buffer), 2)) return false;
+	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S16, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int16_t)-8192, S16)) return false;
 	if (!PerformTest("WriteSVariant<int16_t>", std::bind<int32_t(int16_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -8193, Buffer, 0), 3)) return false;
-	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S16, Buffer), 3)) return false;
+	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S16, Buffer, Buffer + sizeof(Buffer)), 3)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int16_t)-8193, S16)) return false;
 	if (!PerformTest("WriteSVariant<int16_t>", std::bind<int32_t(int16_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 8192, Buffer, 0), 3)) return false;
-	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S16, Buffer), 3)) return false;
+	if (!PerformTest("ReadSVariant<int16_t>", std::bind<int32_t(int16_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S16, Buffer, Buffer + sizeof(Buffer)), 3)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int16_t)8192, S16)) return false;
 
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 0, Buffer, 0), 1)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 1)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 1)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)0, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 63, Buffer, 0), 1)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 1)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 1)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)63, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -64, Buffer, 0), 1)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 1)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 1)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)-64, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -65, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 2)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)-65, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 128, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 2)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)128, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -128, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 2)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)-128, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 8191, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 2)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)8191, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -8192, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 2)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)-8192, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -8193, Buffer, 0), 3)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 3)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 3)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)-8193, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 8192, Buffer, 0), 3)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 3)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 3)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)8192, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 1048575, Buffer, 0), 3)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 3)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 3)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)1048575, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -1048576, Buffer, 0), 3)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 3)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 3)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)-1048576, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 1048576, Buffer, 0), 4)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 4)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 4)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)1048576, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -1048577, Buffer, 0), 4)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 4)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 4)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)-1048577, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 134217727, Buffer, 0), 4)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 4)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 4)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)134217727, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -134217728, Buffer, 0), 4)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 4)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 4)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)-134217728, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 134217728, Buffer, 0), 5)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 5)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 5)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)134217728, S32)) return false;
 	if (!PerformTest("WriteSVariant<int32_t>", std::bind<int32_t(int32_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -134217729, Buffer, 0), 5)) return false;
-	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S32, Buffer), 5)) return false;
+	if (!PerformTest("ReadSVariant<int32_t>", std::bind<int32_t(int32_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S32, Buffer, Buffer + sizeof(Buffer)), 5)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int32_t)-134217729, S32)) return false;
 
 
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 0, Buffer, 0), 1)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 1)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 1)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)0, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 63, Buffer, 0), 1)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 1)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 1)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)63, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -64, Buffer, 0), 1)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 1)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 1)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-64, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -65, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 2)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-65, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 128, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 2)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)128, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -128, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 2)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-128, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 8191, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 2)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)8191, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -8192, Buffer, 0), 2)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 2)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 2)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-8192, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -8193, Buffer, 0), 3)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 3)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 3)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-8193, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 8192, Buffer, 0), 3)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 3)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 3)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)8192, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 1048575, Buffer, 0), 3)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 3)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 3)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)1048575, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -1048576, Buffer, 0), 3)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 3)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 3)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-1048576, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 1048576, Buffer, 0), 4)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 4)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 4)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)1048576, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -1048577, Buffer, 0), 4)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 4)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 4)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-1048577, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 134217727, Buffer, 0), 4)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 4)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 4)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)134217727, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -134217728, Buffer, 0), 4)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 4)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 4)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-134217728, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 134217728, Buffer, 0), 5)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 5)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 5)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)134217728, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -134217729, Buffer, 0), 5)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 5)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 5)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-134217729, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 17179869183, Buffer, 0), 5)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 5)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 5)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)17179869183, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -17179869184, Buffer, 0), 5)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 5)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 5)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-17179869184, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 17179869184, Buffer, 0), 6)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 6)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 6)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)17179869184, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -17179869185, Buffer, 0), 6)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 6)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 6)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-17179869185, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 2199023255551, Buffer, 0), 6)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 6)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 6)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)2199023255551, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -2199023255552, Buffer, 0), 6)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 6)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 6)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-2199023255552, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 2199023255552, Buffer, 0), 7)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 7)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 7)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)2199023255552, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -2199023255553, Buffer, 0), 7)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 7)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 7)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-2199023255553, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 281474976710655, Buffer, 0), 7)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 7)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 7)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)281474976710655, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -281474976710656, Buffer, 0), 7)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 7)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 7)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-281474976710656, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 281474976710656, Buffer, 0), 8)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 8)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 8)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)281474976710656, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -281474976710657, Buffer, 0), 8)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 8)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 8)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-281474976710657, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 36028797018963967, Buffer, 0), 8)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 8)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 8)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)36028797018963967, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant,-36028797018963968, Buffer, 0), 8)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 8)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 8)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-36028797018963968, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 36028797018963968, Buffer, 0), 9)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 9)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 9)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)36028797018963968, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, -36028797018963969, Buffer, 0), 9)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 9)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 9)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-36028797018963969, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant, 4611686018427387903, Buffer, 0), 9)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 9)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 9)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)4611686018427387903, S64)) return false;
 	if (!PerformTest("WriteSVariant<int64_t>", std::bind<int32_t(int64_t, int8_t *, int32_t)>(LWByteBuffer::WriteSVariant,-4611686018427387904, Buffer, 0), 9)) return false;
-	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*)>(LWByteBuffer::ReadSVariant, &S64, Buffer), 9)) return false;
+	if (!PerformTest("ReadSVariant<int64_t>", std::bind<int32_t(int64_t*, const int8_t*, const int8_t *)>(LWByteBuffer::ReadSVariant, &S64, Buffer, Buffer + sizeof(Buffer)), 9)) return false;
 	if (!TestEqualityPOD("ReadSVariant<==>", (int64_t)-4611686018427387904, S64)) return false;
 
 	if (!PerformTest("Write<int8>", std::bind<int32_t(int8_t, int8_t*)>(LWByteBuffer::Write, 0x11, Buffer), 1)) return false;
@@ -1504,7 +1507,7 @@ bool PerformLWByteBufferTest(void){
 
 
 	LWByteBuffer NormalBuf(Buffer, sizeof(Buffer), LWByteBuffer::BufferNotOwned);
-	fmt::print("Performing Read/Write on Normal buffer:\n");
+	LWLogEvent<256>("Performing Read/Write on Normal buffer:");
 	NormalBuf.Write(10);
 	NormalBuf.WriteL<int32_t>(2, 11, 12);
 	NormalBuf.Write(LW_PI);
@@ -1546,121 +1549,121 @@ bool PerformLWByteBufferTest(void){
 	NormalBuf.Write(4, ValuesMat2f);
 	NormalBuf.Write(4, ValuesMat2i);
 	NormalBuf.WriteUTF(LWUTF8Iterator(ValuesText));
-	fmt::print("Normal Wrote to position: {} | {}\n", NormalBuf.GetPosition(), NormalBuf.GetBytesWritten());
+	LWLogEvent<256>("Normal Wrote to position: {} | {}", NormalBuf.GetPosition(), NormalBuf.GetBytesWritten());
 	NormalBuf.SetPosition(0);
-	fmt::print("A");
+	LWLogEvent<256>("A");
 	if (NormalBuf.Read<int32_t>() != 10) return false;
-	fmt::print("B");
+	LWLogEvent<256>("B");
 	if (NormalBuf.Read<int32_t>() != 11) return false;
-	fmt::print("C");
+	LWLogEvent<256>("C");
 	if (NormalBuf.Read<int32_t>() != 12) return false;
-	fmt::print("D");
+	LWLogEvent<256>("D");
 	if (NormalBuf.Read<float>() != LW_PI) return false;
-	fmt::print("E");
+	LWLogEvent<256>("E");
 	if (NormalBuf.Read<uint64_t>() != (uint64_t)Values[0]) return false;
-	fmt::print("F");
+	LWLogEvent<256>("F");
 	if (NormalBuf.Read<uint64_t>() != (uint64_t)Values[1]) return false;
-	fmt::print("G");
+	LWLogEvent<256>("G");
 	if (NormalBuf.Read<uint64_t>() != (uint64_t)Values[2]) return false;
-	fmt::print("H");
+	LWLogEvent<256>("H");
 	if (NormalBuf.Read<uint64_t>() != (uint64_t)Values[3]) return false;
-	fmt::print("I");
+	LWLogEvent<256>("I");
 	if (NormalBuf.Read<uint64_t>(16) != (uint64_t)Values[0]) return false;
-	fmt::print("J");
+	LWLogEvent<256>("J");
 	if (NormalBuf.Read<LWVector2d>() != ValuesVec2d[0]) return false;
-	fmt::print("K");
+	LWLogEvent<256>("K");
 	if (NormalBuf.Read<LWVector2f>() != ValuesVec2f[0]) return false;
-	fmt::print("L");
+	LWLogEvent<256>("L");
 	if (NormalBuf.Read<LWVector2i>() != ValuesVec2i[0]) return false;
-	fmt::print("M");
+	LWLogEvent<256>("M");
 	if (NormalBuf.Read<LWVector3d>() != ValuesVec3d[0]) return false;
-	fmt::print("N");
+	LWLogEvent<256>("N");
 	if (NormalBuf.Read<LWVector3f>() != ValuesVec3f[0]) return false;
-	fmt::print("O");
+	LWLogEvent<256>("O");
 	if (NormalBuf.Read<LWVector3i>() != ValuesVec3i[0]) return false;
-	fmt::print("P");
+	LWLogEvent<256>("P");
 	if (NormalBuf.Read<LWVector4d>() != ValuesVec4d[0]) return false;
-	fmt::print("Q");
+	LWLogEvent<256>("Q");
 	if (NormalBuf.Read<LWVector4f>() != ValuesVec4f[0]) return false;
-	fmt::print("R");
+	LWLogEvent<256>("R");
 	if (NormalBuf.Read<LWVector4i>() != ValuesVec4i[0]) return false;
-	fmt::print("S");
+	LWLogEvent<256>("S");
 	if (NormalBuf.Read<LWMatrix4d>() != ValuesMat4d[0]) return false;
-	fmt::print("T");
+	LWLogEvent<256>("T");
 	if (NormalBuf.Read<LWMatrix4f>() != ValuesMat4f[0]) return false;
-	fmt::print("U");
+	LWLogEvent<256>("U");
 	if (NormalBuf.Read<LWMatrix4i>() != ValuesMat4i[0]) return false;
-	fmt::print("V");
+	LWLogEvent<256>("V");
 	if (NormalBuf.Read<LWMatrix3d>() != ValuesMat3d[0]) return false;
-	fmt::print("W");
+	LWLogEvent<256>("W");
 	if (NormalBuf.Read<LWMatrix3f>() != ValuesMat3f[0]) return false;
-	fmt::print("X");
+	LWLogEvent<256>("X");
 	if (NormalBuf.Read<LWMatrix3i>() != ValuesMat3i[0]) return false;
-	fmt::print("Y");
+	LWLogEvent<256>("Y");
 	if (NormalBuf.Read<LWMatrix2d>() != ValuesMat2d[0]) return false;
-	fmt::print("Z");
+	LWLogEvent<256>("Z");
 	if (NormalBuf.Read<LWMatrix2f>() != ValuesMat2f[0]) return false;
-	fmt::print("a");
+	LWLogEvent<256>("a");
 	if (NormalBuf.Read<LWMatrix2i>() != ValuesMat2i[0]) return false;
-	fmt::print("b");
+	LWLogEvent<256>("b");
 	NormalBuf.Read(ResultVec2d, 4);
 	NormalBuf.Read(ResultVec2f, 4);
 	NormalBuf.Read(ResultVec2i, 4);
 	if (ResultVec2d[0] != ValuesVec2d[0] || ResultVec2d[1] != ValuesVec2d[1] || ResultVec2d[2] != ValuesVec2d[2] || ResultVec2d[3] != ValuesVec2d[3]) return false;
-	fmt::print("c");
+	LWLogEvent<256>("c");
 	if (ResultVec2f[0] != ValuesVec2f[0] || ResultVec2f[1] != ValuesVec2f[1] || ResultVec2f[2] != ValuesVec2f[2] || ResultVec2f[3] != ValuesVec2f[3]) return false;
-	fmt::print("d");
+	LWLogEvent<256>("d");
 	if (ResultVec2i[0] != ValuesVec2i[0] || ResultVec2i[1] != ValuesVec2i[1] || ResultVec2i[2] != ValuesVec2i[2] || ResultVec2i[3] != ValuesVec2i[3]) return false;
-	fmt::print("e");
+	LWLogEvent<256>("e");
 	NormalBuf.Read(ResultVec3d, 4);
 	NormalBuf.Read(ResultVec3f, 4);
 	NormalBuf.Read(ResultVec3i, 4);
 	if (ResultVec3d[0] != ValuesVec3d[0] || ResultVec3d[1] != ValuesVec3d[1] || ResultVec3d[2] != ValuesVec3d[2] || ResultVec3d[3] != ValuesVec3d[3]) return false;
-	fmt::print("f");
+	LWLogEvent<256>("f");
 	if (ResultVec3f[0] != ValuesVec3f[0] || ResultVec3f[1] != ValuesVec3f[1] || ResultVec3f[2] != ValuesVec3f[2] || ResultVec3f[3] != ValuesVec3f[3]) return false;
-	fmt::print("g");
+	LWLogEvent<256>("g");
 	if (ResultVec3i[0] != ValuesVec3i[0] || ResultVec3i[1] != ValuesVec3i[1] || ResultVec3i[2] != ValuesVec3i[2] || ResultVec3i[3] != ValuesVec3i[3]) return false;
-	fmt::print("h");
+	LWLogEvent<256>("h");
 	NormalBuf.Read(ResultVec4d, 4);
 	NormalBuf.Read(ResultVec4f, 4);
 	NormalBuf.Read(ResultVec4i, 4);
 	if (ResultVec4d[0] != ValuesVec4d[0] || ResultVec4d[1] != ValuesVec4d[1] || ResultVec4d[2] != ValuesVec4d[2] || ResultVec4d[3] != ValuesVec4d[3]) return false;
-	fmt::print("i");
+	LWLogEvent<256>("i");
 	if (ResultVec4f[0] != ValuesVec4f[0] || ResultVec4f[1] != ValuesVec4f[1] || ResultVec4f[2] != ValuesVec4f[2] || ResultVec4f[3] != ValuesVec4f[3]) return false;
-	fmt::print("j");
+	LWLogEvent<256>("j");
 	if (ResultVec4i[0] != ValuesVec4i[0] || ResultVec4i[1] != ValuesVec4i[1] || ResultVec4i[2] != ValuesVec4i[2] || ResultVec4i[3] != ValuesVec4i[3]) return false;
-	fmt::print("k");
+	LWLogEvent<256>("k");
 	NormalBuf.Read(ResultMat4d, 4);
 	NormalBuf.Read(ResultMat4f, 4);
 	NormalBuf.Read(ResultMat4i, 4);
 	if (ResultMat4d[0] != ValuesMat4d[0] || ResultMat4d[1] != ValuesMat4d[1] || ResultMat4d[2] != ValuesMat4d[2] || ResultMat4d[3] != ValuesMat4d[3]) return false;
-	fmt::print("l");
+	LWLogEvent<256>("l");
 	if (ResultMat4f[0] != ValuesMat4f[0] || ResultMat4f[1] != ValuesMat4f[1] || ResultMat4f[2] != ValuesMat4f[2] || ResultMat4f[3] != ValuesMat4f[3]) return false;
-	fmt::print("m");
+	LWLogEvent<256>("m");
 	if (ResultMat4i[0] != ValuesMat4i[0] || ResultMat4i[1] != ValuesMat4i[1] || ResultMat4i[2] != ValuesMat4i[2] || ResultMat4i[3] != ValuesMat4i[3]) return false;
-	fmt::print("n");
+	LWLogEvent<256>("n");
 	NormalBuf.Read(ResultMat3d, 4);
 	NormalBuf.Read(ResultMat3f, 4);
 	NormalBuf.Read(ResultMat3i, 4);
 	if (ResultMat3d[0] != ValuesMat3d[0] || ResultMat3d[1] != ValuesMat3d[1] || ResultMat3d[2] != ValuesMat3d[2] || ResultMat3d[3] != ValuesMat3d[3]) return false;
-	fmt::print("o");
+	LWLogEvent<256>("o");
 	if (ResultMat3f[0] != ValuesMat3f[0] || ResultMat3f[1] != ValuesMat3f[1] || ResultMat3f[2] != ValuesMat3f[2] || ResultMat3f[3] != ValuesMat3f[3]) return false;
-	fmt::print("p");
+	LWLogEvent<256>("p");
 	if (ResultMat3i[0] != ValuesMat3i[0] || ResultMat3i[1] != ValuesMat3i[1] || ResultMat3i[2] != ValuesMat3i[2] || ResultMat3i[3] != ValuesMat3i[3]) return false;
-	fmt::print("q");
+	LWLogEvent<256>("q");
 	NormalBuf.Read(ResultMat2d, 4);
 	NormalBuf.Read(ResultMat2f, 4); 
 	NormalBuf.Read(ResultMat2i, 4);
 	if (ResultMat2d[0] != ValuesMat2d[0] || ResultMat2d[1] != ValuesMat2d[1] || ResultMat2d[2] != ValuesMat2d[2] || ResultMat2d[3] != ValuesMat2d[3]) return false;
-	fmt::print("r");
+	LWLogEvent<256>("r");
 	if (ResultMat2f[0] != ValuesMat2f[0] || ResultMat2f[1] != ValuesMat2f[1] || ResultMat2f[2] != ValuesMat2f[2] || ResultMat2f[3] != ValuesMat2f[3]) return false;
-	fmt::print("s");
+	LWLogEvent<256>("s");
 	if (ResultMat2i[0] != ValuesMat2i[0] || ResultMat2i[1] != ValuesMat2i[1] || ResultMat2i[2] != ValuesMat2i[2] || ResultMat2i[3] != ValuesMat2i[3]) return false;
-	fmt::print("!\n");
+	LWLogEvent<256>("!");
 	if (NormalBuf.ReadUTF((char8_t*)ResultText, sizeof(ResultText)) != sizeof(ValuesText) + 1) return false;
-	fmt::print("Testing: {}\n", ResultText);
+	LWLogEvent<256>("Testing: {}", ResultText);
 	if (strcmp(ResultText, ValuesText)!=0) return false;
-	fmt::print("Performing Read/Write on Network Buffer!\n");
+	LWLogEvent<256>("Performing Read/Write on Network Buffer!");
 	LWByteBuffer NetworkBuf(Buffer, sizeof(Buffer), LWByteBuffer::BufferNotOwned | LWByteBuffer::Network);
 	NetworkBuf.Write(10);
 	NetworkBuf.WriteL<int32_t>(2, 11, 12);
@@ -1703,126 +1706,126 @@ bool PerformLWByteBufferTest(void){
 	NetworkBuf.Write(4, ValuesMat2f);
 	NetworkBuf.Write(4, ValuesMat2i);
 	NetworkBuf.WriteUTF(LWUTF8Iterator(ValuesText));
-	fmt::print("Network wrote to position: {} | {}\n", NetworkBuf.GetPosition(), NetworkBuf.GetBytesWritten());
+	LWLogEvent<256>("Network wrote to position: {} | {}", NetworkBuf.GetPosition(), NetworkBuf.GetBytesWritten());
 	NetworkBuf.OffsetPosition(-NetworkBuf.GetPosition());
-	fmt::print("A");
+	LWLogEvent<256>("A");
 	if (NetworkBuf.Read<int32_t>() != 10) return false;
-	fmt::print("B");
+	LWLogEvent<256>("B");
 	if (NetworkBuf.Read<int32_t>() != 11) return false;
-	fmt::print("C");
+	LWLogEvent<256>("C");
 	if (NetworkBuf.Read<int32_t>() != 12) return false;
-	fmt::print("D");
+	LWLogEvent<256>("D");
 	if (NetworkBuf.Read<float>() != LW_PI) return false;
-	fmt::print("E");
+	LWLogEvent<256>("E");
 	if (NetworkBuf.Read<uint64_t>() != (uint64_t)Values[0]) return false;
-	fmt::print("F");
+	LWLogEvent<256>("F");
 	if (NetworkBuf.Read<uint64_t>() != (uint64_t)Values[1]) return false;
-	fmt::print("G");
+	LWLogEvent<256>("G");
 	if (NetworkBuf.Read<uint64_t>() != (uint64_t)Values[2]) return false;
-	fmt::print("H");
+	LWLogEvent<256>("H");
 	if (NetworkBuf.Read<uint64_t>() != (uint64_t)Values[3]) return false;
-	fmt::print("I");
+	LWLogEvent<256>("I");
 	if (NetworkBuf.Read<uint64_t>(16) != (uint64_t)Values[0]) return false;
-	fmt::print("J");
+	LWLogEvent<256>("J");
 	if (NetworkBuf.Read<LWVector2d>() != ValuesVec2d[0]) return false;
-	fmt::print("K");
+	LWLogEvent<256>("K");
 	if (NetworkBuf.Read<LWVector2f>() != ValuesVec2f[0]) return false;
-	fmt::print("L");
+	LWLogEvent<256>("L");
 	if (NetworkBuf.Read<LWVector2i>() != ValuesVec2i[0]) return false;
-	fmt::print("M");
+	LWLogEvent<256>("M");
 	if (NetworkBuf.Read<LWVector3d>() != ValuesVec3d[0]) return false;
-	fmt::print("N");
+	LWLogEvent<256>("N");
 	if (NetworkBuf.Read<LWVector3f>() != ValuesVec3f[0]) return false;
-	fmt::print("O");
+	LWLogEvent<256>("O");
 	if (NetworkBuf.Read<LWVector3i>() != ValuesVec3i[0]) return false;
-	fmt::print("P");
+	LWLogEvent<256>("P");
 	if (NetworkBuf.Read<LWVector4d>() != ValuesVec4d[0]) return false;
-	fmt::print("Q");
+	LWLogEvent<256>("Q");
 	if (NetworkBuf.Read<LWVector4f>() != ValuesVec4f[0]) return false;
-	fmt::print("R");
+	LWLogEvent<256>("R");
 	if (NetworkBuf.Read<LWVector4i>() != ValuesVec4i[0]) return false;
-	fmt::print("S");
+	LWLogEvent<256>("S");
 	if (NetworkBuf.Read<LWMatrix4d>() != ValuesMat4d[0]) return false;
-	fmt::print("T");
+	LWLogEvent<256>("T");
 	if (NetworkBuf.Read<LWMatrix4f>() != ValuesMat4f[0]) return false;
-	fmt::print("U");
+	LWLogEvent<256>("U");
 	if (NetworkBuf.Read<LWMatrix4i>() != ValuesMat4i[0]) return false;
-	fmt::print("V");
+	LWLogEvent<256>("V");
 	if (NetworkBuf.Read<LWMatrix3d>() != ValuesMat3d[0]) return false;
-	fmt::print("W");
+	LWLogEvent<256>("W");
 	if (NetworkBuf.Read<LWMatrix3f>() != ValuesMat3f[0]) return false;
-	fmt::print("X");
+	LWLogEvent<256>("X");
 	if (NetworkBuf.Read<LWMatrix3i>() != ValuesMat3i[0]) return false;
-	fmt::print("Y");
+	LWLogEvent<256>("Y");
 	if (NetworkBuf.Read<LWMatrix2d>() != ValuesMat2d[0]) return false;
-	fmt::print("Z");
+	LWLogEvent<256>("Z");
 	if (NetworkBuf.Read<LWMatrix2f>() != ValuesMat2f[0]) return false;
-	fmt::print("a");
+	LWLogEvent<256>("a");
 	if (NetworkBuf.Read<LWMatrix2i>() != ValuesMat2i[0]) return false;
-	fmt::print("b");
+	LWLogEvent<256>("b");
 	NetworkBuf.Read(ResultVec2d, 4);
 	NetworkBuf.Read(ResultVec2f, 4);
 	NetworkBuf.Read(ResultVec2i, 4);
 	if (ResultVec2d[0] != ValuesVec2d[0] || ResultVec2d[1] != ValuesVec2d[1] || ResultVec2d[2] != ValuesVec2d[2] || ResultVec2d[3] != ValuesVec2d[3]) return false;
-	fmt::print("b");
+	LWLogEvent<256>("b");
 	if (ResultVec2f[0] != ValuesVec2f[0] || ResultVec2f[1] != ValuesVec2f[1] || ResultVec2f[2] != ValuesVec2f[2] || ResultVec2f[3] != ValuesVec2f[3]) return false;
-	fmt::print("c");
+	LWLogEvent<256>("c");
 	if (ResultVec2i[0] != ValuesVec2i[0] || ResultVec2i[1] != ValuesVec2i[1] || ResultVec2i[2] != ValuesVec2i[2] || ResultVec2i[3] != ValuesVec2i[3]) return false;
-	fmt::print("d");
+	LWLogEvent<256>("d");
 	NetworkBuf.Read(ResultVec3d, 4);
 	NetworkBuf.Read(ResultVec3f, 4);
 	NetworkBuf.Read(ResultVec3i, 4);
 	if (ResultVec3d[0] != ValuesVec3d[0] || ResultVec3d[1] != ValuesVec3d[1] || ResultVec3d[2] != ValuesVec3d[2] || ResultVec3d[3] != ValuesVec3d[3]) return false;
-	fmt::print("e");
+	LWLogEvent<256>("e");
 	if (ResultVec3f[0] != ValuesVec3f[0] || ResultVec3f[1] != ValuesVec3f[1] || ResultVec3f[2] != ValuesVec3f[2] || ResultVec3f[3] != ValuesVec3f[3]) return false;
-	fmt::print("f");
+	LWLogEvent<256>("f");
 	if (ResultVec3i[0] != ValuesVec3i[0] || ResultVec3i[1] != ValuesVec3i[1] || ResultVec3i[2] != ValuesVec3i[2] || ResultVec3i[3] != ValuesVec3i[3]) return false;
-	fmt::print("g");
+	LWLogEvent<256>("g");
 	NetworkBuf.Read(ResultVec4d, 4);
 	NetworkBuf.Read(ResultVec4f, 4);
 	NetworkBuf.Read(ResultVec4i, 4);
 	if (ResultVec4d[0] != ValuesVec4d[0] || ResultVec4d[1] != ValuesVec4d[1] || ResultVec4d[2] != ValuesVec4d[2] || ResultVec4d[3] != ValuesVec4d[3]) return false;
-	fmt::print("h");
+	LWLogEvent<256>("h");
 	if (ResultVec4f[0] != ValuesVec4f[0] || ResultVec4f[1] != ValuesVec4f[1] || ResultVec4f[2] != ValuesVec4f[2] || ResultVec4f[3] != ValuesVec4f[3]) return false;
-	fmt::print("i");
+	LWLogEvent<256>("i");
 	if (ResultVec4i[0] != ValuesVec4i[0] || ResultVec4i[1] != ValuesVec4i[1] || ResultVec4i[2] != ValuesVec4i[2] || ResultVec4i[3] != ValuesVec4i[3]) return false;
-	fmt::print("j");
+	LWLogEvent<256>("j");
 	NetworkBuf.Read(ResultMat4d, 4);
 	NetworkBuf.Read(ResultMat4f, 4);
 	NetworkBuf.Read(ResultMat4i, 4);
 	if (ResultMat4d[0] != ValuesMat4d[0] || ResultMat4d[1] != ValuesMat4d[1] || ResultMat4d[2] != ValuesMat4d[2] || ResultMat4d[3] != ValuesMat4d[3]) return false;
-	fmt::print("k");
+	LWLogEvent<256>("k");
 	if (ResultMat4f[0] != ValuesMat4f[0] || ResultMat4f[1] != ValuesMat4f[1] || ResultMat4f[2] != ValuesMat4f[2] || ResultMat4f[3] != ValuesMat4f[3]) return false;
-	fmt::print("l");
+	LWLogEvent<256>("l");
 	if (ResultMat4i[0] != ValuesMat4i[0] || ResultMat4i[1] != ValuesMat4i[1] || ResultMat4i[2] != ValuesMat4i[2] || ResultMat4i[3] != ValuesMat4i[3]) return false;
-	fmt::print("m");
+	LWLogEvent<256>("m");
 	NetworkBuf.Read(ResultMat3d, 4);
 	NetworkBuf.Read(ResultMat3f, 4);
 	NetworkBuf.Read(ResultMat3i, 4);
 	if (ResultMat3d[0] != ValuesMat3d[0] || ResultMat3d[1] != ValuesMat3d[1] || ResultMat3d[2] != ValuesMat3d[2] || ResultMat3d[3] != ValuesMat3d[3]) return false;
-	fmt::print("n");
+	LWLogEvent<256>("n");
 	if (ResultMat3f[0] != ValuesMat3f[0] || ResultMat3f[1] != ValuesMat3f[1] || ResultMat3f[2] != ValuesMat3f[2] || ResultMat3f[3] != ValuesMat3f[3]) return false;
-	fmt::print("o");
+	LWLogEvent<256>("o");
 	if (ResultMat3i[0] != ValuesMat3i[0] || ResultMat3i[1] != ValuesMat3i[1] || ResultMat3i[2] != ValuesMat3i[2] || ResultMat3i[3] != ValuesMat3i[3]) return false;
-	fmt::print("p");
+	LWLogEvent<256>("p");
 	NetworkBuf.Read(ResultMat2d, 4);
 	NetworkBuf.Read(ResultMat2f, 4);
 	NetworkBuf.Read(ResultMat2i, 4);
 	if (ResultMat2d[0] != ValuesMat2d[0] || ResultMat2d[1] != ValuesMat2d[1] || ResultMat2d[2] != ValuesMat2d[2] || ResultMat2d[3] != ValuesMat2d[3]) return false;
-	fmt::print("q");
+	LWLogEvent<256>("q");
 	if (ResultMat2f[0] != ValuesMat2f[0] || ResultMat2f[1] != ValuesMat2f[1] || ResultMat2f[2] != ValuesMat2f[2] || ResultMat2f[3] != ValuesMat2f[3]) return false;
-	fmt::print("r");
+	LWLogEvent<256>("r");
 	if (ResultMat2i[0] != ValuesMat2i[0] || ResultMat2i[1] != ValuesMat2i[1] || ResultMat2i[2] != ValuesMat2i[2] || ResultMat2i[3] != ValuesMat2i[3]) return false;
-	fmt::print("!");
+	LWLogEvent<256>("!");
 	if (NetworkBuf.ReadUTF<char8_t>((char8_t*)ResultText, sizeof(ResultText)) != sizeof(ValuesText)+1) return false;
-	fmt::print("\nTesting: {}\n", ResultText);
+	LWLogEvent<256>("\nTesting: {}", ResultText);
 	if (strcmp(ResultText, ValuesText) != 0) return false;
-	fmt::print("LWByteBuffer Success!\n");
+	LWLogEvent<256>("LWByteBuffer Success!");
 	return true;
 }
 
 bool PerformLWQuaternionTest(void) {
-	fmt::print("Performing LWQuaternion test:\n");
+	LWLogEvent<256>("Performing LWQuaternion test:");
 	LWQuaternionf Testf;
 	if (!TestEquality("LWQuaternionf<Identity>", Testf, LWQuaternionf(1.0f, 0.0f, 0.0f, 0.0f))) return false;
 	Testf *= LWQuaternionf::FromEuler(0.0f, LW_PI, 0.0f);
@@ -1847,7 +1850,7 @@ bool PerformLWQuaternionTest(void) {
 }
 
 bool PerformLWSQuaternionTest(void) {
-	fmt::print("Performing LWSQuaternion test:\n");
+	LWLogEvent<256>("Performing LWSQuaternion test:");
 	LWSQuaternionf Testf;
 	if (!TestEquality("LWSQuaternionf<Identity>", Testf, LWSQuaternionf(1.0f, 0.0f, 0.0f, 0.0f))) return false;
 	Testf *= LWSQuaternionf::FromEuler(0.0f, LW_PI, 0.0f);
@@ -1863,7 +1866,7 @@ bool PerformLWSQuaternionTest(void) {
 	if (!TestEquality("LWSQuaternionf<RotatePoint>", Pnt4f, LWSVector4f(0.0f, 0.0f, -1.0f, 0.0f))) return false;
 	if (!TestEquality("LWSQuaternionf<ToEuler>", Testf.ToEuler(), LWSVector4f(0.0f, LW_PI_2, 0.0f, 0.0f))) return false;
 
-	fmt::print("LWSQuaterniond:\n");
+	LWLogEvent<256>("LWSQuaterniond:");
 	LWSQuaterniond Testd;
 	if (!TestEquality("LWSQuaterniond<Identity>", Testd, LWSQuaterniond(1.0, 0.0, 0.0, 0.0))) return false;
 	Testd *= LWSQuaterniond::FromEuler(0.0, LW_PI, 0.0);
@@ -1882,8 +1885,8 @@ bool PerformLWSQuaternionTest(void) {
 }
 
 bool PerformLWSMatrixTest(void) {
-	fmt::print("Performing LWSMatrix test:\n");
-	fmt::print("Testing LWSMatrix4f:\n");
+	LWLogEvent<256>("Performing LWSMatrix test:");
+	LWLogEvent<256>("Testing LWSMatrix4f:");
 	LWSMatrix4f Trans = LWSMatrix4f(LWSVector4f(1.0f, 2.0f, 3.0f, 4.0f), LWSVector4f(5.0f, 6.0f, 7.0f, 8.0f), LWSVector4f(9.0f, 10.0f, 11.0f, 12.0f), LWSVector4f(13.0f, 14.0f, 15.0f, 16.0f));
 	if (!TestEquality("LWSMatrix4f<Transpose>", Trans.Transpose(), LWSMatrix4f(LWSVector4f(1.0f, 5.0f, 9.0f, 13.0f), LWSVector4f(2.0f, 6.0f, 10.0f, 14.0f), LWSVector4f(3.0f, 7.0f, 11.0f, 15.0f), LWSVector4f(4.0f, 8.0f, 12.0f, 16.0f)))) return false;
 	if (!TestEquality("LWSMatrix4f<Transpose3x3>", Trans.Transpose3x3(), LWSMatrix4f(LWSVector4f(1.0f, 5.0f, 9.0f, 4.0f), LWSVector4f(2.0f, 6.0f, 10.0f, 8.0f), LWSVector4f(3.0f, 7.0f, 11.0f, 12.0f), LWSVector4f(13.0f, 14.0f, 15.0f, 16.0f)))) return false;
@@ -1936,7 +1939,7 @@ bool PerformLWSMatrixTest(void) {
 	Mat4f = LWSMatrix4f(LWSVector4f(2.0f, 2.0f, 2.0f, 0.0f), LWSQuaternionf::FromEuler(0.0f, LW_PI_2, 0.0f), LWSVector4f(1.0f, 2.0f, 3.0f, 1.0f));
 	if (!TestEquality("LWSMatrix4f<Scale_Quaternion_Pos>", Mat4f, LWSMatrix4f({ 0.0f, 0.0f, 2.0f, 0.0f }, { 0.0f, 2.0f, 0.0f, 0.0f }, { -2.0f, 0.0f, 0.0f, 0.0f }, { 1.0f, 2.0f, 3.0f, 1.0f }))) return false;
 
-	fmt::print("Testing LWSMatrix4d:\n");	
+	LWLogEvent<256>("Testing LWSMatrix4d:");	
 	LWSMatrix4d Transd = LWSMatrix4d(LWSVector4d(1.0, 2.0, 3.0, 4.0), LWSVector4d(5.0, 6.0, 7.0, 8.0), LWSVector4d(9.0, 10.0, 11.0, 12.0), LWSVector4d(13.0, 14.0, 15.0, 16.0));
 	if (!TestEquality("LWSMatrix4d<Transpose>", Transd.Transpose(), LWSMatrix4d(LWSVector4d(1.0f, 5.0, 9.0, 13.0), LWSVector4d(2.0, 6.0, 10.0, 14.0), LWSVector4d(3.0, 7.0, 11.0, 15.0), LWSVector4d(4.0, 8.0, 12.0, 16.0)))) return false;
 	if (!TestEquality("LWSMatrix4d<Transpose3x3>", Transd.Transpose3x3(), LWSMatrix4d(LWSVector4d(1.0, 5.0, 9.0, 4.0), LWSVector4d(2.0, 6.0, 10.0, 8.0), LWSVector4d(3.0, 7.0, 11.0, 12.0), LWSVector4d(13.0, 14.0, 15.0, 16.0)))) return false;
@@ -1972,7 +1975,7 @@ bool PerformLWSMatrixTest(void) {
 	if (!TestEquality("LWSMatrix4d<*LWSVector4>", LWSMatrix4d() * Testd, Testd)) return false;
 	if (!TestEquality("LWSMatrix4d<*LWSVector4>", Mat4d * Testd, LWSVector4d(Mat4d.AsMat4() * Testd.AsVec4()))) return false;
 	Mat4d *= LWSMatrix4d::Translation(LWSVector4d(1.0f, 2.0, 3.0, 1.0));
-	fmt::print("InvResultd: {}\nMat4d: {}\n", InvResultd, Mat4d.TransformInverse());
+	LWLogEvent<256>("InvResultd: {}\nMat4d: {}", InvResultd, Mat4d.TransformInverse());
 
 
 	if (!TestEquality("LWSMatrix4d<TransformInverse>", Mat4d.TransformInverse(), InvResultd)) return false;
@@ -1996,8 +1999,8 @@ bool PerformLWSMatrixTest(void) {
 }
 
 bool PerformLWMatrixTest(void){
-	fmt::print("Performing LWMatrix test:\n");
-	fmt::print("Testing LWMatrix4:\n");
+	LWLogEvent<256>("Performing LWMatrix test:");
+	LWLogEvent<256>("Testing LWMatrix4:");
 	LWMatrix4f Trans = LWMatrix4f(LWVector4f(1.0f, 2.0f, 3.0f, 4.0f), LWVector4f(5.0f, 6.0f, 7.0f, 8.0f), LWVector4f(9.0f, 10.0f, 11.0f, 12.0f), LWVector4f(13.0f, 14.0f, 15.0f, 16.0f));
 	if (!TestEquality("LWSMatrix4f<Transpose>", Trans.Transpose(), LWMatrix4f(LWVector4f(1.0f, 5.0f, 9.0f, 13.0f), LWVector4f(2.0f, 6.0f, 10.0f, 14.0f), LWVector4f(3.0f, 7.0f, 11.0f, 15.0f), LWVector4f(4.0f, 8.0f, 12.0f, 16.0f)))) return false;
 	if (!TestEquality("LWSMatrix4f<Transpose3x3>", Trans.Transpose3x3(), LWMatrix4f(LWVector4f(1.0f, 5.0f, 9.0f, 4.0f), LWVector4f(2.0f, 6.0f, 10.0f, 8.0f), LWVector4f(3.0f, 7.0f, 11.0f, 12.0f), LWVector4f(13.0f, 14.0f, 15.0f, 16.0f)))) return false;
@@ -2017,7 +2020,7 @@ bool PerformLWMatrixTest(void){
 	if (!TestEquality("LWMatrix4<TransformInverse>", Mat4f.TransformInverse(), InvResult)) return false;
 	if (!TestEquality("LWMatrix4<Inverse>", Mat4f.Inverse(), InvResult)) return false;
 
-	fmt::print("Testing LWMatrix3:\n");
+	LWLogEvent<256>("Testing LWMatrix3:");
 	LWMatrix3f Mat3f = LWMatrix3f::RotationX(LW_PI*0.25f);
 	if (!TestEquality("LWMatrix3::RotationX", Mat3f, LWMatrix3f({ 1.0f, 0.0f, 0.0f }, { 0.0f, C, -S }, { 0.0f, S, C }))) return false;
 	Mat3f = LWMatrix3f::RotationY(LW_PI*0.25f);
@@ -2027,25 +2030,25 @@ bool PerformLWMatrixTest(void){
 	if (!TestEquality("LWMatrix3<Identity>", LWMatrix3f()*LWMatrix3f(), LWMatrix3f())) return false;
 	if (!TestEquality("LWMatrix3<Multiply>", Mat3f*LWMatrix3f(), Mat3f)) return false;
 
-	fmt::print("Testing LWMatrix2:\n");
+	LWLogEvent<256>("Testing LWMatrix2:");
 	LWMatrix2f Mat2f = LWMatrix2f::Rotation(LW_PI*0.25f);
 	if (!TestEquality("LWMatrix2::Rotation", Mat2f, LWMatrix2f({ C, -S }, { S, C }))) return false;
 	if (!TestEquality("LWMatrix2<Identity>", LWMatrix2f()*LWMatrix2f(), LWMatrix2f())) return false;
 	if (!TestEquality("LWMatrix2<Multiply>", Mat2f*LWMatrix2f(), Mat2f)) return false;
 
-	fmt::print("Finished LWMatrix test.\n");
+	LWLogEvent<256>("Finished LWMatrix test.");
 	return true;
 }
 
 //Helper function for building unicode word+new line index's, used after verification of AdvanceX were working.
 template<class IterType>
 uint32_t OutputUnicodeIndexs(const char8_t *IndexListName, const IterType &First, std::function<void(IterType &Iter)> AdvanceFunc, std::function<uint32_t(const IterType &Iter)> IndexFunc) {
-	fmt::print("const uint32_t {}[] = {{", IndexListName);
+	LWLogEvent<256>("const uint32_t {}[] = {{", IndexListName);
 	uint32_t Count = 0;
 	for (IterType Iter = First; !Iter.AtEnd(); AdvanceFunc(Iter), Count++) {
-		fmt::print("{} {}", Count ? ", " : "", IndexFunc(Iter));
+		LWLogEvent<256>("{} {}", Count ? ", " : "", IndexFunc(Iter));
 	}
-	fmt::print("}};\n");
+	LWLogEvent<256>("}};");
 	return Count;
 };
 
@@ -2103,7 +2106,7 @@ struct UTFData {
 template<class Type>
 bool PerformLWUnicodeTest(void) {
 	LWAllocator_Default DefAlloc;
-	fmt::print("Testing LWUTF{}\n", sizeof(Type) * 8);
+	LWLogEvent<256>("Testing LWUTF{}", sizeof(Type) * 8);
 	const char8_t ValidText8[] = u8"Hello world, Καλημέρα\r\n\r\nκόσμε, コンニチハ\nგთხოვთ Hello 𐌳 сейчас\nต้องรบราฆ่าฟันจนบรรลัย, ሰማይ ᚳᚹᚫᚦ H₂ 𐀁.";
 	const char16_t ValidText16[] = u"Hello world, Καλημέρα\r\n\r\nκόσμε, コンニチハ\nგთხოვთ Hello 𐌳 сейчас\nต้องรบราฆ่าฟันจนบรรลัย, ሰማይ ᚳᚹᚫᚦ H₂ 𐀁.";
 	const char32_t ValidText32[] = U"Hello world, Καλημέρα\r\n\r\nκόσμε, コンニチハ\nგთხოვთ Hello 𐌳 сейчас\nต้องรบราฆ่าฟันจนบรรลัย, ሰማይ ᚳᚹᚫᚦ H₂ 𐀁.";
@@ -2161,7 +2164,7 @@ bool PerformLWUnicodeTest(void) {
 	const uint32_t GTokenListIndexs[] = { 10,  16,  25,  26,  29,  30 };
 
 	uint32_t ValidGCharLen = 32; //Update if GValidText is modified.
-	fmt::print("Testing LWUTF{}Iterator.", sizeof(Type) * 8);
+	LWLogEvent<256>("Testing LWUTF{}Iterator.", sizeof(Type) * 8);
 	LWUnicodeIterator<Type> SampleIterator;
 	LWUnicodeGraphemeIterator<Type> GSampleIterator;
 	uint32_t Chars = 0;
@@ -2184,7 +2187,7 @@ bool PerformLWUnicodeTest(void) {
 	if (!TestEquality("MakeUTF32==ValidText32", sizeof(ValidText32) / sizeof(char32_t), ValidText32Res, ValidText32)) return false;
 	if (!PerformTest("SampleIterator Compare ValidText", [&SampleIterator, &ValidText]()->bool {
 		return SampleIterator.Compare(ValidText.m_Data); }, true)) return false;
-	fmt::print("Output: '{}'\n", SampleIterator);
+	LWLogEvent<256>("Output: '{}'", SampleIterator);
 	if (!PerformTest("Forward pre increment Iterating test.", [&SampleIterator, &ValidText32](void)->bool {
 		LWUnicodeIterator<Type> Iter = SampleIterator;
 		for (; !Iter.AtEnd(); ++Iter)
@@ -2390,7 +2393,7 @@ bool PerformLWUnicodeTest(void) {
 		}
 		
 		return true; }, true)) return false;
-	fmt::print("LWUTF{0}Iterator Test complete, starting test LWUTF{0}GraphemeIterator\n", sizeof(Type) * 8);
+	LWLogEvent<256>("LWUTF{0}Iterator Test complete, starting test LWUTF{0}GraphemeIterator", sizeof(Type) * 8);
 	if (MalformedTextA.m_DataLen && !TestEquality("LWUnicodeGraphemeIterator::Create<MalformedA>", LWUnicodeGraphemeIterator<Type>::Create(GSampleIterator, MalformedTextA.m_Data, MalformedTextA.m_DataLen, Chars, Len, RawLen), false)) return false;
 	if (MalformedTextB.m_DataLen && !TestEquality("LWUnicodeGraphemeIterator::Create<MalformedB>", LWUnicodeGraphemeIterator<Type>::Create(GSampleIterator, MalformedTextB.m_Data, MalformedTextB.m_DataLen, Chars, Len, RawLen), false)) return false;
 	if (MalformedTextC.m_DataLen && !TestEquality("LWUnicodeGraphemeIterator::Create<MalformedC>", LWUnicodeGraphemeIterator<Type>::Create(GSampleIterator, MalformedTextC.m_Data, MalformedTextC.m_DataLen, Chars, Len, RawLen), false)) return false;
@@ -2400,7 +2403,7 @@ bool PerformLWUnicodeTest(void) {
 	if (!TestEquality("LWUnicodeGraphemeIterator::Characters==ValidGChar", Chars, ValidGCharLen)) return false;
 	if (!PerformTest("GSampleIterator Compare ValidGText", [&GSampleIterator, &ValidGText]()->bool {
 		return GSampleIterator.Compare(ValidGText.m_Data); }, true)) return false;
-	//fmt::print("Output: '{}'\n", GSampleIterator);
+	//LWLogEvent<256>("Output: '{}'", GSampleIterator);
 	if (!PerformTest("Forward pre increment Iterating test.", [&GSampleIterator, &ValidGText32](void)->bool {
 		LWUnicodeGraphemeIterator<Type> Iter = GSampleIterator;
 		for (uint32_t c = 0; !Iter.AtEnd(); ++Iter, ++c)
@@ -2608,7 +2611,7 @@ bool PerformLWUnicodeTest(void) {
 			if (GSampleIterator.CharacterDistance(IterBuffer[i]) != GLineIndexs[i]) return false;
 		}
 		return true; }, true)) return false;
-	fmt::print("LWUTF{0}GraphemeIterator test complete, start test LWUTF{0}:\n", sizeof(Type) * 8);
+	LWLogEvent<256>("LWUTF{0}GraphemeIterator test complete, start test LWUTF{0}:", sizeof(Type) * 8);
 	if (!PerformTest("Create String.", [&SampleIterator, &ValidText, &DefAlloc]()->bool {
 		LWUnicode<Type> U;
 		if (!LWUnicode<Type>::Create(U, ValidText.m_Data, ValidText.m_DataLen, DefAlloc)) return false;
@@ -2628,12 +2631,12 @@ bool PerformLWUnicodeTest(void) {
 		if (!Pos.Compare(SampleIterator, Len)) return false;
 		return true; }, true)) return false;
 	if (!TestEquality("MemoryLeakCheck", DefAlloc.GetAllocatedBytes(), 0u)) return false;
-	fmt::print("LWUTF{} test complate.\n", sizeof(Type) * 8);
+	LWLogEvent<256>("LWUTF{} test complate.", sizeof(Type) * 8);
 	return true;
 }
 
 bool PerformLWTimerTest(void){
-	fmt::print("Testing LWTimer:\nResolution: {}\nTesting 5 second delay:\n", LWTimer::GetResolution());
+	LWLogEvent<256>("Testing LWTimer:\nResolution: {}\nTesting 5 second delay:", LWTimer::GetResolution());
 	uint64_t FirstHR = LWTimer::GetCurrent();
 	uint64_t LastHR = FirstHR;
 	uint32_t FirstClk = clock();
@@ -2642,12 +2645,12 @@ bool PerformLWTimerTest(void){
 	uint32_t LastClk = clock();
 	//Add a bit of margin as Clock will not be exactly on the nose.
 	if (LastClk - FirstClk>CLOCKS_PER_SEC * 5 + CLOCKS_PER_SEC / 4 || LastClk-FirstClk<CLOCKS_PER_SEC*5-CLOCKS_PER_SEC/4){
-		fmt::print("Error with 5 second delay, took: {} While high-frequency timer reported: {}\n", (LastClk - FirstClk), (LastHR - FirstHR));
+		LWLogEvent<256>("Error with 5 second delay, took: {} While high-frequency timer reported: {}", (LastClk - FirstClk), (LastHR - FirstHR));
 		return false;
 	}
-	fmt::print("Delay Time: {}\n", (LastHR - FirstHR));
+	LWLogEvent<256>("Delay Time: {}", (LastHR - FirstHR));
 	LWTimer Timer(LWTimer::GetResolution() / 60, LWTimer::Running);
-	fmt::print("Timer Frequency; {}\nTesting 5 second ticks:\n", Timer.GetFrequency());
+	LWLogEvent<256>("Timer Frequency; {}\nTesting 5 second ticks:", Timer.GetFrequency());
 	FirstHR = LWTimer::GetCurrent();
 	LastHR = FirstHR;
 	uint32_t Count = 0;
@@ -2659,18 +2662,18 @@ bool PerformLWTimerTest(void){
 	}
 	uint32_t CountDiff = Count > 300 ? Count - 300 : 300 - Count;
 	if (CountDiff>1){ //Depending on the os timing slices, it's possible that between 299-301 ticks could have passed, anything beyond that window is considered a fail.
-		fmt::print("Error with timing, expected 300 ticks to have passed, instead {} passed.\n", Count);
-		fmt::print("Time passed: {}\n", LastHR - FirstHR);
+		LWLogEvent<256>("Error with timing, expected 300 ticks to have passed, instead {} passed.", Count);
+		LWLogEvent<256>("Time passed: {}", LastHR - FirstHR);
 		return false;
 	}
-	fmt::print("Time passed: {}\n", LastHR - FirstHR);
-	fmt::print("LWTimer successfully tested!\n");
+	LWLogEvent<256>("Time passed: {}", LastHR - FirstHR);
+	LWLogEvent<256>("LWTimer successfully tested!");
 	return true;
 }
 
 bool PerformLWConcurrentTest(void){
-	fmt::print("Beginning Concurrency algorithmn tests.\n");
-	fmt::print("Beginning FIFO tests:\n");
+	LWLogEvent<256>("Beginning Concurrency algorithmn tests.");
+	LWLogEvent<256>("Beginning FIFO tests:");
 	LWConcurrentFIFO<int, 20> Fifo;
 	int Count = 0;
 	std::thread PushThread([&Fifo](){for (int i = 0; i < 100; i++) while(!Fifo.Push(i)); });
@@ -2684,13 +2687,13 @@ bool PerformLWConcurrentTest(void){
 	PushThread.join();
 	ReadThread.join();
 	if (Count != 4950) return false;
-	fmt::print("Finished FIFO Test.\n");
-	fmt::print("Finished Concurrent test.\n");
+	LWLogEvent<256>("Finished FIFO Test.");
+	LWLogEvent<256>("Finished Concurrent test.");
 	return true;
 }
 
 bool PerformLWCryptoTest(void){
-	fmt::print("Beginning LWCrypto test:\n");
+	LWLogEvent<256>("Beginning LWCrypto test:");
 	char BufferA[256];
 	char BufferB[256];
 	uint32_t HashOutputs[8];
@@ -2702,15 +2705,15 @@ bool PerformLWCryptoTest(void){
 		uint32_t Len = LWCrypto::Base64Encode(Inputs[i], (uint32_t)strlen(Inputs[i]), BufferA, sizeof(BufferA));
 		BufferA[Len] = '\0';
 		if(!LWUnicodeIterator<char8_t>((char8_t*)BufferA, sizeof(BufferA)).Compare((char8_t*)Outputs[i])) {
-			fmt::print("Error with encoding base64: '{}' Received: '{}' Instead of: '{}'\n", Inputs[i], BufferA, Outputs[i]);
+			LWLogEvent<256>("Error with encoding base64: '{}' Received: '{}' Instead of: '{}'", Inputs[i], BufferA, Outputs[i]);
 			return false;
-		} else fmt::print("Encoded: '{}' To: '{}'\n", Inputs[i], BufferA);
+		} else LWLogEvent<256>("Encoded: '{}' To: '{}'", Inputs[i], BufferA);
 		Len = LWCrypto::Base64Decode(BufferA, Len, BufferB, sizeof(BufferB));
 		BufferB[Len] = '\0';
 		if (!LWUnicodeIterator<char8_t>((char8_t*)BufferB, sizeof(BufferB)).Compare((char8_t*)Inputs[i])) {
-			fmt::print("Error with decoding base64: '{}' Received: '{}' Instead of: '{}'\n", BufferA, BufferB, Inputs[i]);
+			LWLogEvent<256>("Error with decoding base64: '{}' Received: '{}' Instead of: '{}'", BufferA, BufferB, Inputs[i]);
 			return false;
-		} else fmt::print("Decoded: '{}' To: '{}'\n", BufferA, BufferB);
+		} else LWLogEvent<256>("Decoded: '{}' To: '{}'", BufferA, BufferB);
 	}
 	const uint32_t HashCount = 9;
 	char HashInputs[HashCount][256] = { "", "The quick brown fox jumps over the lazy dog", "The quick brown fox jumps over the lazy dog The quick brown fox jumps over the lazy dog", "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghi", "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghij", "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijk", "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijkl", "abcdefghijklmnopqrstuvwyzabcdefghijklmnopqrstuvwxyzabcde", "01234567890123456789012345678901234567890123456789012345678912340123456789012345678901234567890123456789012345678901234567891234012345678901234567890123456789012345678901234567890123401234567890123456789012345678901234" };
@@ -2728,55 +2731,55 @@ bool PerformLWCryptoTest(void){
 	char MD5Digests[][33] = { "d41d8cd98f00b204e9800998ecf8427e", "9e107d9d372bb6826bd81d3542a419d6", "038aee51276c48bf27db12299909ae88", "8b57f7e0623fc0e7a04b379914988fd9", "47d0af9c0a3338abc8c6ed7452ee9d50", "1b30c0670c15e7da3c2ba7bce77ebe99", "a2eaf6295c32adc403865fd96a2f182b", "b5b0fb92dd48bc211b483068c16cb58a", "44d9a4da58d3e947a2f0a4075bfa5c6a" };
 	char SHA1Digests[][41] = { "da39a3ee5e6b4b0d3255bfef95601890afd80709", "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12", "d2f76f0b044c24c7941d42d2eddcb34ab54e1ca0", "d343477267541bfba0f9b05c64187cd8812a2f1b", "3ba53d6cb1408a0cb35520428a5916aefca1500e", "fc8a5ab77259625085ead3ec96515b3b8d933fad", "93249d4c2f8903ebf41ac358473148ae6ddd7042", "b8e444fd445ba96e9eb30d2c353a48dfc9019e3a", "2d87266e86d8959b79168c926133e6e59ffde39a" };
 	char SHA256Digests[][65] = { "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592", "be3ad62812f9c55285c4cc3b041ec96b3787800f4522d52d79d805c8b9aa4197", "050c761c092b0b58514e3b980f9eeabcff934921b9da20c89b67a1a5da84a083", "78a08480079addf8f63112aa195cbb6e940e3bf2efcd331920f0fda2a3556ac6", "5ca3e1ef5207490eac01a795e5cc94d59582a5118bf9534665c8668d87aa647c", "2fcd5a0d60e4c941381fcc4e00a4bf8be422c3ddfafb93c809e8d1e2bfffae8e", "77c270465fa5650944d8ab70c31ebea032fb4284de0169f8d06b7f231af1d2db", "4d8ffb79064633997de73f5e5e38497b5109359181865544c03b0b4e0039e27c" };
-	fmt::print("Beginning MD5 Hash tests:\n");
+	LWLogEvent<256>("Beginning MD5 Hash tests:");
 	for (uint32_t i = 0; i < HashCount;i++){
 		LWCrypto::HashMD5(HashInputs[i], (uint32_t)strlen(HashInputs[i]), HashOutputs);
 		if (!TestCryptoHash(HashInputs[i], HashOutputs, 16, MD5Digests[i])) return false;
 	}
-	fmt::print("MD5 hash passed!\n");
-	fmt::print("Beginning MD5 Hash Partial tests:\n");
+	LWLogEvent<256>("MD5 hash passed!");
+	LWLogEvent<256>("Beginning MD5 Hash Partial tests:");
 	for (uint32_t i = 0; i < HashCount; i++) {
 		uint32_t Lens[4] = { (uint32_t)strlen(HashPartials[i][0]), (uint32_t)strlen(HashPartials[i][1]), (uint32_t)strlen(HashPartials[i][2]), (uint32_t)strlen(HashPartials[i][3]) };
 		const char *HashList[4] = { HashPartials[i][0], HashPartials[i][1], HashPartials[i][2], HashPartials[i][3] };
 		LWCrypto::HashMD5l((const char**)HashList, Lens, 4, HashOutputs);
 		if (!TestCryptoHash(HashInputs[i], HashOutputs, 16, MD5Digests[i])) return false;
 	}
-	fmt::print("MD5 hash partial passed!\n");
+	LWLogEvent<256>("MD5 hash partial passed!");
 
-	fmt::print("Beginning SHA-1 Hash tests:\n");
+	LWLogEvent<256>("Beginning SHA-1 Hash tests:");
 	for (uint32_t i = 0; i < HashCount; i++){
 		LWCrypto::HashSHA1(HashInputs[i], (uint32_t)strlen(HashInputs[i]), HashOutputs);
 		if (!TestCryptoHash(HashInputs[i], HashOutputs, 20, SHA1Digests[i])) return false;
 	}
-	fmt::print("SHA-1 hash passed!\n");
+	LWLogEvent<256>("SHA-1 hash passed!");
 
-	fmt::print("Beginning SHA-1 Hash Partial tests:\n");
+	LWLogEvent<256>("Beginning SHA-1 Hash Partial tests:");
 	for (uint32_t i = 0; i < HashCount; i++) {
 		uint32_t Lens[4] = { (uint32_t)strlen(HashPartials[i][0]), (uint32_t)strlen(HashPartials[i][1]), (uint32_t)strlen(HashPartials[i][2]), (uint32_t)strlen(HashPartials[i][3]) };
 		const char *HashList[4] = { HashPartials[i][0], HashPartials[i][1], HashPartials[i][2], HashPartials[i][3] };
 		LWCrypto::HashSHA1l((const char**)HashList, Lens, 4, HashOutputs);
 		if (!TestCryptoHash(HashInputs[i], HashOutputs, 20, SHA1Digests[i])) return false;
 	}
-	fmt::print("SHA-1 hash partial passed!\n");
+	LWLogEvent<256>("SHA-1 hash partial passed!");
 
-	fmt::print("Beginning SHA-256 Hash tests:\n");
+	LWLogEvent<256>("Beginning SHA-256 Hash tests:");
 	for (uint32_t i = 0; i < HashCount; i++) {
 		LWCrypto::HashSHA256(HashInputs[i], (uint32_t)strlen(HashInputs[i]), HashOutputs);
 		if (!TestCryptoHash(HashInputs[i], HashOutputs, 32, SHA256Digests[i])) return false;
 	}
-	fmt::print("SHA-256 hash passed!\n");
+	LWLogEvent<256>("SHA-256 hash passed!");
 
-	fmt::print("Beginning SHA-256 Hash Partial tests:\n");
+	LWLogEvent<256>("Beginning SHA-256 Hash Partial tests:");
 	for (uint32_t i = 0; i < HashCount; i++) {
 		uint32_t Lens[4] = { (uint32_t)strlen(HashPartials[i][0]), (uint32_t)strlen(HashPartials[i][1]), (uint32_t)strlen(HashPartials[i][2]), (uint32_t)strlen(HashPartials[i][3]) };
 		const char *HashList[4] = { HashPartials[i][0], HashPartials[i][1], HashPartials[i][2], HashPartials[i][3] };
 		LWCrypto::HashSHA256l((const char**)HashList, Lens, 4, HashOutputs);
 		if (!TestCryptoHash(HashInputs[i], HashOutputs, 32, SHA256Digests[i])) return false;
 	}
-	fmt::print("SHA-256 hash partial passed!\n");
+	LWLogEvent<256>("SHA-256 hash partial passed!");
 
 
-	fmt::print("Successfully finished LWCrypto test.\n");
+	LWLogEvent<256>("Successfully finished LWCrypto test.");
 	return true;
 }
 
@@ -2835,8 +2838,8 @@ bool PerformSIMDVec4Test(uint32_t Count, const LWUTF8Iterator &Name, LWAllocator
 	const uint32_t ColumnSize = 16;
 	const uint32_t LineSize = ColumnSize * 3 + 4;
 	const char Border = '|';
-	fmt::print("Performing {} Test:\n", Name);
-	fmt::print("Allocating data: {}\n", (sizeof(LWVector4<Type>) * Count + sizeof(LWSVector4<Type>) * Count));
+	LWLogEvent<256>("Performing {} Test:", Name);
+	LWLogEvent<256>("Allocating data: {}", (sizeof(LWVector4<Type>) * Count + sizeof(LWSVector4<Type>) * Count));
 	uint32_t *PartitionLens = nullptr;
 	LWVector4<Type> **Vec4 = nullptr;
 	LWSVector4<Type> **SVec4 = nullptr;
@@ -2902,8 +2905,8 @@ bool PerformSIMDVec4Test(uint32_t Count, const LWUTF8Iterator &Name, LWAllocator
 	else {
 		fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Sanitized");
 		fmt::print("{2:^{1}.5e}{0}", Border, ColumnSize, FinalLen);
-		fmt::print("{2:^{1}.5e}{0}\n", Border, ColumnSize, SFinalLen);
-		fmt::print("{:-<{}}\n", "", LineSize);
+		fmt::print("{2:^{1}.5e}{0}", Border, ColumnSize, SFinalLen);
+		fmt::print("{:-<{}}", "", LineSize);
 	}
 	return FinalLen==SFinalLen;*/
 	return true;
@@ -2914,8 +2917,8 @@ bool PerformSIMDMat4Test(uint32_t Count, const LWUTF8Iterator &Name, LWAllocator
 	const uint32_t ColumnSize = 32;
 	const uint32_t LineSize = ColumnSize*3+4;
 	const char Border = '|';
-	fmt::print("Performing {} Test:\n", Name);
-	fmt::print("Allocating data: {}.\n", (sizeof(LWMatrix4<Type>)*Count + sizeof(LWSMatrix4<Type>)*Count));
+	LWLogEvent<256>("Performing {} Test:", Name);
+	LWLogEvent<256>("Allocating data: {}.", (sizeof(LWMatrix4<Type>)*Count + sizeof(LWSMatrix4<Type>)*Count));
 	uint32_t *PartitionLens = nullptr;
 	LWMatrix4<Type> **Mat4 = nullptr;
 	LWSMatrix4<Type> **SMat4 = nullptr;
@@ -2981,14 +2984,14 @@ bool PerformSIMDMat4Test(uint32_t Count, const LWUTF8Iterator &Name, LWAllocator
 	/*
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Sanitize");
 	fmt::print("{2:^{1}e}{0}", Border, ColumnSize, (FinalSum.x + FinalSum.y + FinalSum.z + FinalSum.w));
-	fmt::print("{2:^{1}e}{0}\n", Border, ColumnSize, SFinalSum.Sum4());
-	fmt::print("{:-<{}}\n", "", LineSize);
+	fmt::print("{2:^{1}e}{0}", Border, ColumnSize, SFinalSum.Sum4());
+	fmt::print("{:-<{}}", "", LineSize);
 	Type Val = (FinalSum.x + FinalSum.y + FinalSum.z + FinalSum.w);
 	Type SVal = SFinalSum.Sum4();*/
 	FreePartitions(PartCnt, PartitionLens, Mat4, SMat4);
 	
-	//fmt::print("Matrix0 {}\nMatrix 1 {}\nSMatrix0 {}\nSMatrix1 {}\n", Mat4[0][0], Mat4[0][1], SMat4[0][0], SMat4[0][1]);
-	//fmt::print("Sums: {:.20f} {:.20f} {:.20f} {:.20f}\nSums: {:.20f} {:.20f} {:.20f} {:.20f}\n{:.20f} | {:.20f}\n", FinalSum.x, FinalSum.y, FinalSum.z, FinalSum.w, SFinalSum.x, SFinalSum.y, SFinalSum.z, SFinalSum.w, Val, SVal);
+	//fmt::print("Matrix0 {}\nMatrix 1 {}\nSMatrix0 {}\nSMatrix1 {}", Mat4[0][0], Mat4[0][1], SMat4[0][0], SMat4[0][1]);
+	//fmt::print("Sums: {:.20f} {:.20f} {:.20f} {:.20f}\nSums: {:.20f} {:.20f} {:.20f} {:.20f}\n{:.20f} | {:.20f}", FinalSum.x, FinalSum.y, FinalSum.z, FinalSum.w, SFinalSum.x, SFinalSum.y, SFinalSum.z, SFinalSum.w, Val, SVal);
 	return true;
 	//return (Type)abs(Val - SVal) <= (Type)std::numeric_limits<float>::epsilon();
 };
@@ -2998,8 +3001,8 @@ bool PerformSIMDQuatTest(uint32_t Count, const LWUTF8Iterator &Name, LWAllocator
 	const uint32_t ColumnSize = 32;
 	const uint32_t LineSize = ColumnSize * 3 + 4;
 	const char Border = '|';
-	fmt::print("Performing {} Test:\n", Name);
-	fmt::print("Allocating data: {}\n", (sizeof(LWQuaternion<Type>) * Count + sizeof(LWSQuaternion<Type>) * Count));
+	LWLogEvent<256>("Performing {} Test:", Name);
+	LWLogEvent<256>("Allocating data: {}", (sizeof(LWQuaternion<Type>) * Count + sizeof(LWSQuaternion<Type>) * Count));
 
 	uint32_t *PartitionLens = nullptr;
 	LWQuaternion<Type> **Quat = nullptr;
@@ -3042,8 +3045,8 @@ bool PerformSIMDQuatTest(uint32_t Count, const LWUTF8Iterator &Name, LWAllocator
 	/*
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Sanitize");
 	fmt::print("{2:^{1}}{0}", Border, ColumnSize, FinalPnt);
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, SFinalPnt);
-	fmt::print("{:-<{}}\n", "", LineSize);
+	fmt::print("{2:^{1}}{0}", Border, ColumnSize, SFinalPnt);
+	fmt::print("{:-<{}}", "", LineSize);
 	*/
 	FreePartitions(PartCnt, PartitionLens, Quat, SQuat);
 	return true;

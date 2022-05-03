@@ -1,6 +1,6 @@
 #include "LWNetwork/LWSocket.h"
 #include "LWNetwork/LWProtocolManager.h"
-#include "LWCore/LWText.h"
+#include "LWCore/LWLogger.h"
 #include "LWCore/LWByteBuffer.h"
 #include "LWPlatform/LWPlatform.h"
 #include <arpa/inet.h>
@@ -39,10 +39,8 @@ uint32_t LWSocket::LookUpDNSServers(uint32_t *IPBuf, uint32_t IPBufferLen) {
 	char Buffer[1024];
 	char Command[] = "getprop net.dns1";
 	FILE *pFile = popen(Command, "r");
-	if (!pFile) {
-		fmt::print("Failed to get dns server.\n");
-		return 0;
-	}
+	if(!LWLogCriticalIf(pFile, "Failed to get dns server.")) return 0;
+
 	fread(Buffer, sizeof(char), sizeof(Buffer), pFile);
 	fclose(pFile);
 	uint32_t Len = strlen(Buffer);
@@ -50,7 +48,6 @@ uint32_t LWSocket::LookUpDNSServers(uint32_t *IPBuf, uint32_t IPBufferLen) {
 	Buffer[Len] = '\0'; //remove newline!
 
 	uint32_t Cnt = 0;
-	fmt::print("dns ip: '{}'\n", Buffer);
 	uint32_t IP = LWSocket::MakeIP(Buffer);
 	if (Cnt < IPBufferLen)	IPBuf[Cnt] = IP;
 	Cnt++;
@@ -164,18 +161,18 @@ bool LWSocket::Accept(LWSocket &Result, uint32_t ProtocolID) const {
 	socklen_t lAddrLen = sizeof(lAddr);
 	uint32_t SockID = (uint32_t)accept(m_SocketID, nullptr, nullptr);
 
-	uint32_t TcpNoDelay = (m_Flag&LWSocket::TcpNoDelay) ? true : false;
+	uint32_t TcpNoDelay = (m_Flags&LWSocket::TcpNoDelay) ? true : false;
 	if (setsockopt(SockID, IPPROTO_TCP, TCP_NODELAY, (char*)&TcpNoDelay, sizeof(TcpNoDelay))) return false;
 
 	if (getsockname(SockID, (sockaddr*)&lAddr, &lAddrLen)) return false;
 	if (getpeername(SockID, (sockaddr*)&rAddr, &rAddrLen)) return false;
-	Result = LWSocket(SockID, ProtocolID, LWByteBuffer::MakeHost((uint32_t)lAddr.sin_addr.s_addr), LWByteBuffer::MakeHost(lAddr.sin_port), LWByteBuffer::MakeHost((uint32_t)rAddr.sin_addr.s_addr), LWByteBuffer::MakeHost(rAddr.sin_port), m_Flag&~LWSocket::Listen);
+	Result = LWSocket(SockID, ProtocolID, LWByteBuffer::MakeHost((uint32_t)lAddr.sin_addr.s_addr), LWByteBuffer::MakeHost(lAddr.sin_port), LWByteBuffer::MakeHost((uint32_t)rAddr.sin_addr.s_addr), LWByteBuffer::MakeHost(rAddr.sin_port), m_Flags&~LWSocket::Listen);
 	return true;
 }
 
 LWSocket &LWSocket::Close(void) {
 	if (m_SocketID) {
-		m_Flag |= LWSocket::Closeable;
+		m_Flags |= LWSocket::Closeable;
 		close(m_SocketID);
 		m_SocketID = 0;
 	}

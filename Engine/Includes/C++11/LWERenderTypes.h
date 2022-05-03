@@ -176,9 +176,9 @@ struct alignas(32) LWEGeometryModelData {
 
 //The following data structure is added to a shader when including <Structures> while the #LIGHTDATA define is set.
 struct alignas(16) LWEShaderLightData {
-	LWBitField32(ShadowPassID, 8, 0);
-	LWBitField32(ShadowSubPassIdx, 8, ShadowPassIDBitsOffset + 8);
-	LWBitField32(ShadowLayer, 8, ShadowSubPassIdxBitsOffset + 8);
+	LWBitField32(ShadowPassIDBits, 8, 0);
+	LWBitField32(ShadowSubPassIdxBits, 8, ShadowPassIDBitsOffset + 8);
+	LWBitField32(ShadowLayerBits, 8, ShadowSubPassIdxBitsOffset + 8);
 
 	LWSVector4f m_Position; //w==0 means direction light, 1 means point, >1 means spot light(Theta-1), <0 means ambient light.
 	LWSVector4f m_Direction; //w for spot = Length, x for point is interior radius(where max brightness is, y is falloff from 1-0 radius).

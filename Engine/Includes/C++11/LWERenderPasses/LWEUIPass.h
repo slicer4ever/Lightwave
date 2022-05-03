@@ -10,7 +10,7 @@ struct LWEUIPassFrameData : public LWEPassFrameData {
 class LWEUIPass : public LWEPass {
 public:
 	static const uint32_t MaxUIItems = 4096;
-
+	
 	/*!< \brief UIPass has the following additional children nodes:
 	*	       -UIShaders: Color=UIColorShaderName, Texture=UITextureShaderName, Font=UIFontShaderName.
 	*/
@@ -18,6 +18,7 @@ public:
 
 	virtual uint32_t RenderPass(LWERenderFrame &Frame, LWEGeometryRenderable RenderableList[LWEMaxGeometryBuckets][LWEMaxBucketSize], std::pair<uint32_t, uint32_t> RenderableCount[LWEMaxGeometryBuckets], LWERenderer *Renderer, LWVideoDriver *Driver, uint32_t PassIndex);
 
+	//Updates the bound UIBuffer matrix to the window size ortho
 	virtual LWEPass &WindowSizeChanged(LWVideoDriver *Driver, LWERenderer *Renderer, LWWindow *Window, LWAllocator &Allocator);
 
 	virtual uint32_t InitializePass(LWVideoDriver *Driver, LWERenderer *Renderer, LWEAssetManager *AssetManager, LWEShaderPassData *PassData, LWAllocator &Allocator);
@@ -26,6 +27,8 @@ public:
 
 	virtual LWEPass &InitializeFrame(LWERenderFrame &Frame);
 
+
+	//If Frame.GlobalData.PassData[PassID].PassData[0] is not NaN constant, then a viewport is assumed to being used, so the UIBuffer uniform is updated to an ortho matrix where the vec4 of the viewport(left = x, bottom = y, right = x+z, top = y+w, near=0, far=1).
 	virtual LWEPass &PreFinalizeFrame(LWERenderFrame &Frame, LWVideoBuffer *IndirectBufferList[LWEMaxGeometryBuckets], LWVideoBuffer *IDBufferList[LWEMaxGeometryBuckets], LWERenderer *Renderer, LWVideoDriver *Driver);
 
 	virtual LWEPass &PostFinalizeFrame(LWERenderFrame &Frame, LWERenderer *Renderer, LWVideoDriver *Driver);

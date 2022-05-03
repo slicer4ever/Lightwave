@@ -12,7 +12,7 @@ int32_t LWMain(int32_t argc, LWUTF8Iterator *Argv) {
 		fmt::print("Error: No file was specified.\n");
 		return 1;
 	}
-	LWAllocator_Default DefAlloc;
+	LWAllocator_Default DefAlloc; 
 	LWFileStream Stream;
 	int32_t Res = Success;
 	for (int32_t i = 1; i < argc && Res==Success; ++i) {

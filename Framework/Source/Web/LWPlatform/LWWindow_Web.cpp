@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 uint32_t LWWindow::MakeDialog(const LWUTF8Iterator &Text, const LWUTF8Iterator &Header, uint32_t DialogFlags) {
-	fmt::print("Dialog: {}: {}\n", Header, Text);
+	LWLogEvent<256>("Dialog: {}: {}", Header, Text);
 	return 0;
 }
 
@@ -151,7 +151,7 @@ LWWindow &LWWindow::Update(uint64_t lCurrentTime) {
 	for (LWInputDevice *Device = m_FirstDevice; Device; Device = Device->GetNext()) Device->Update(this, lCurrentTime);
 	while ((m_Flag&Terminate) == 0 && m_Context.PopEvent(Event)) {
 		if (!ProcessWindowMessage(Event.m_Type, &Event, lCurrentTime)) {
-			fmt::print("Unknown event received: {}\n", Event.m_Type);
+			LWLogWarn<256>("Unknown event received: {}\n", Event.m_Type);
 		}
 	}
 	return *this;

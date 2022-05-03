@@ -12,7 +12,7 @@
 #include "LWEAsset.h"
 #include <iostream>
 #include <algorithm>
-#include "LWELogger.h"
+#include <LWCore/LWLogger.h>
 
 LWVector4f LWEUI::EvaluatePerPixelAttr(const LWUTF8Iterator &Value) {
 	LWVector4f Val = LWVector4f(0.0f);
@@ -86,8 +86,7 @@ LWEUI *LWEUI::XMLParseSubNodes(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIMa
 	if (StyleAttr) {
 		LWUTF8Iterator StyleName = ParseComponentAttribute(Buffer, sizeof(Buffer), StyleAttr->GetValue(), ActiveComponent, ActiveComponentNode);
 		auto Iter = StyleMap.find(StyleName.Hash());
-		if (Iter == StyleMap.end()) LWELogCritical<256>("could not find style with name: '{}' | '{}'", StyleName, StyleAttr->GetValue());
-		else Style = Iter->second;
+		if(LWLogCriticalIf<256>(Iter!=StyleMap.end(), "Could not find style with name: '{}' | '{}'", StyleName, StyleAttr->GetValue())) Style = Iter->second;
 	}
 	LWEUI *U = Manager->DispatchXMLParser(Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 	if (!U) return nullptr;
@@ -122,9 +121,7 @@ bool LWEUI::XMLParse(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Man
 		uint32_t FlagCnt = std::min<uint32_t>(C.SplitToken(FlagIterList, MaxFlagIters, '|'), MaxFlagIters);
 		for (uint32_t i = 0; i < FlagCnt; i++) {
 			uint32_t n = FlagIterList[i].AdvanceWord(true).CompareLista(TotalFlagCount, FlagNames);
-			if (n == -1) {
-				LWELogCritical<256>("Unknown flag found: {} '{}' for: '{}'", i, FlagIterList[i], (NameAttr ? NameAttr->GetValue() : Node->GetName()));
-			} else Flag ^= FlagValues[n];
+			if(LWLogCriticalIf<256>(n!=-1, "Unknown flag found: '{}' for '{}'", FlagIterList[i], (NameAttr ? NameAttr->GetValue() : Node->GetName()))) Flag ^= FlagValues[n];
 		}
 	}
 	if (NameAttr) {
@@ -134,9 +131,7 @@ bool LWEUI::XMLParse(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Man
 				NameBuffer = LWUTF8Iterator::C_View<MaxBufferSize>("{}.{}", ActiveComponentName, Name);
 				Name = NameBuffer;
 			}
-			if (!Manager->InsertNamedUI(Name, UI)) {
-				LWELogCritical<256>("Name Conflict detected: {}", Name);
-			}
+			LWLogCriticalIf<256>(Manager->InsertNamedUI(Name, UI), "Detected namedui conflict: {}", Name);
 		}
 	}
 	if (TooltipAttr) {

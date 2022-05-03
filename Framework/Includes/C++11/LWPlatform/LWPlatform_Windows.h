@@ -56,6 +56,9 @@
 #define strncasecmp _strnicmp
 #endif
 
+typedef uintptr_t LWSocketHandle;
+typedef pollfd LWSocketPollHandle;
+
 #define LWVIDEO_IMPLEMENTED_DIRECTX11
 #define LWVIDEO_IMPLEMENTED_OPENGL2_1
 #define LWVIDEO_IMPLEMENTED_OPENGL3_3

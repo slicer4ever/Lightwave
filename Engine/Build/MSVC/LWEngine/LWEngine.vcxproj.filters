@@ -81,19 +81,19 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWEJobQueue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolHTTP.h">
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocol_HTTP.h">
       <Filter>Header Files\LWEProtocols</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolTLS.h">
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocol_TLS.h">
       <Filter>Header Files\LWEProtocols</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolHTTPS.h">
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocol_HTTPS.h">
       <Filter>Header Files\LWEProtocols</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolWebSocket.h">
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocol_WebSocket.h">
       <Filter>Header Files\LWEProtocols</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolWebSocketSecure.h">
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocol_WebSocketSecure.h">
       <Filter>Header Files\LWEProtocols</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Includes\C++11\LWEGeometry3D.h">
@@ -133,9 +133,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Includes\C++11\LWECamera.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\Includes\C++11\LWELogger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Includes\C++11\LWEMesh.h">
@@ -215,19 +212,19 @@
     <ClCompile Include="..\..\..\Source\C++11\LWEJobQueue.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolHTTP.cpp">
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocol_HTTP.cpp">
       <Filter>Source Files\LWEProtocols</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolTLS.cpp">
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocol_TLS.cpp">
       <Filter>Source Files\LWEProtocols</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolHTTPS.cpp">
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocol_HTTPS.cpp">
       <Filter>Source Files\LWEProtocols</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolWebSocket.cpp">
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocol_WebSocket.cpp">
       <Filter>Source Files\LWEProtocols</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolWebSocketSecure.cpp">
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocol_WebSocketSecure.cpp">
       <Filter>Source Files\LWEProtocols</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\C++11\LWEVideoDecoderIVF.cpp">
@@ -252,9 +249,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\C++11\LWECamera.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\Source\C++11\LWELogger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\C++11\LWEMesh.cpp">

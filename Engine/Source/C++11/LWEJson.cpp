@@ -4,7 +4,7 @@
 #include <LWCore/LWQuaternion.h>
 #include <LWPlatform/LWFileStream.h>
 #include <LWCore/LWMatrix.h>
-#include "LWELogger.h"
+#include <LWCore/LWLogger.h>
 #include <cstring>
 #include <functional>
 #include <cstdarg>
@@ -90,6 +90,11 @@ LWEJObject *LWEJObject::FindChild(const LWUTF8Iterator &ChildName, LWEJson &J) {
 		if (m_Children[i].m_SubNameHash == Hash) return J.Find(m_Children[i].m_FullNameHash);
 	}
 	return nullptr;
+}
+
+LWEJObject *LWEJObject::GetChild(uint32_t i, LWEJson &J) {
+	if(i>=m_Length) return nullptr;
+	return J.Find(m_Children[i].m_FullNameHash);
 }
 
 LWEJObject &LWEJObject::PushChild(LWEJObject *Child, LWAllocator &Allocator) {
@@ -452,11 +457,14 @@ bool LWEJson::LoadFile(LWEJson &Json, const LWUTF8Iterator &Path, LWAllocator &A
 
 bool LWEJson::Parse(LWEJson &JSon, const LWUTF8Iterator &Source, LWEJObject *Parent) {
 	auto OutputLineError = [](const LWUTF8Iterator &Source, const LWUTF8Iterator &P, const LWUTF8Iterator &Error)->LWUTF8Iterator {
-		LWELogCritical<256>("Line {}: {}", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, P)), Error);
+		LWLogCritical<256>("Line {}: {}", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, P)), Error);
 		return LWUTF8Iterator();
 	};
 
-	std::function<LWUTF8Iterator(const LWUTF8Iterator &, const LWUTF8Iterator &, LWEJObject *, LWEJson &)> ParseElement = [&ParseElement, &OutputLineError](const LWUTF8Iterator &Source, const LWUTF8Iterator &P, LWEJObject *Obj, LWEJson &Js)->LWUTF8Iterator {
+	std::function<LWUTF8Iterator(const LWUTF8Iterator &, const LWUTF8Iterator &, LWEJObject *, LWEJson &, uint32_t)> ParseElement = [&ParseElement, &OutputLineError](const LWUTF8Iterator &Source, const LWUTF8Iterator &P, LWEJObject *Obj, LWEJson &Js, uint32_t Depth)->LWUTF8Iterator {
+		static const uint32_t MaxDepth = 64; //simple stack overflow protection, need to restructure things so infinite depth is supported in the future.
+		if(Depth>=MaxDepth) return OutputLineError(Source, P, u8"JSON exceeds depth allowed for stack.");
+
 		LWUTF8Iterator C = P.NextWord(true);
 		if (C.AtEnd()) return OutputLineError(Source, C, u8"Unexpected end of stream.");
 		uint32_t i = 0;
@@ -474,7 +482,7 @@ bool LWEJson::Parse(LWEJson &JSon, const LWUTF8Iterator &Source, LWEJObject *Par
 				LWEJObject *O = Js.MakeElement(LWUTF8Iterator(NameBegin, NameEnd), Obj);
 				if (!O) return OutputLineError(Source, C, "Internal name collision occurred.");
 				Obj = Js.Find(ObjHash);
-				C = ParseElement(Source, C + 1, O, Js);
+				C = ParseElement(Source, C + 1, O, Js, Depth+1);
 				if (C.AtEnd()) return C;
 				C = (C + 1).NextWord(true);
 				if (C.AtEnd()) return OutputLineError(Source, C, "Unexpected end of stream.");
@@ -490,7 +498,7 @@ bool LWEJson::Parse(LWEJson &JSon, const LWUTF8Iterator &Source, LWEJObject *Par
 				LWEJObject *O = Js.MakeElement(LWUTF8I::Fmt<256>("{}[{}]", Obj ? Obj->GetName() : LWUTF8I(), i++), Obj);
 				if (!O) return OutputLineError(Source, C, "Internal name collision occurred.");
 				Obj = Js.Find(ObjHash);
-				C = ParseElement(Source, C, O, Js);
+				C = ParseElement(Source, C, O, Js, Depth+1);
 				if (C.AtEnd()) return C;
 				C = (C + 1).AdvanceWord(true);
 				if (C.AtEnd()) return OutputLineError(Source, C, "Unexpected end of stream.");
@@ -518,7 +526,7 @@ bool LWEJson::Parse(LWEJson &JSon, const LWUTF8Iterator &Source, LWEJObject *Par
 		}
 		return C;
 	};
-	return ParseElement(Source, Source, Parent, JSon).isInitialized();
+	return ParseElement(Source, Source, Parent, JSon, 0).isInitialized();
 }
 
 uint32_t LWEJson::Serialize(char8_t *Buffer, uint32_t BufferLen, bool Format) {
@@ -559,7 +567,7 @@ uint32_t LWEJson::Serialize(char8_t *Buffer, uint32_t BufferLen, bool Format) {
 	char8_t NewLine[2] = {};
 	if (Format) NewLine[0] = '\n';
 
-	if (m_Type == LWEJObject::Array) o += snprintf((char*)Buffer + o, BufferLen - o, "[");
+	if (m_Type == LWEJObject::Array) o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "[");
 	else o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "{{{}", NewLine);
 	for (uint32_t i = 0; i < m_Length; i++) {
 		LWEJObject *J = Find(m_Elements[i]);
@@ -624,20 +632,18 @@ LWEJObject *LWEJson::MakeElement(const LWUTF8Iterator &Name, LWEJObject *Parent)
 	}
 	uint32_t o = 0;
 	while (ParentCnt) {
-		o += snprintf(FullNameBuffer + o, sizeof(FullNameBuffer) - o, "%s.", ParentTable[ParentCnt - 1]->m_Name);
+		o += LWUTF8I::Fmt_ns(FullNameBuffer, sizeof(FullNameBuffer), o, "{}.", ParentTable[ParentCnt-1]->m_Name);
 		ParentCnt--;
 	}
-	snprintf(FullNameBuffer + o, sizeof(FullNameBuffer) - o, "%s", *Name.c_str<256>());
+	o += LWUTF8I::Fmt_ns(FullNameBuffer, sizeof(FullNameBuffer), o, "{}", Name);
 	uint32_t ParentHash = Parent ? Parent->m_Hash : 0;
 	uint32_t FullHash = LWUTF8Iterator(FullNameBuffer).Hash();
 	//LWEJObject O = LWEJObject(Name, "", 0, LWText::MakeHash(FullNameBuffer), ParentHash);
 
 	//std::pair<uint32_t, LWEJObject> p(O.m_Hash, O);
 	auto Res = m_ObjectMap.emplace(FullHash, LWEJObject(Name, "", 0, FullHash, ParentHash, m_Allocator));
-	if (!Res.second) {
-		LWELogCritical<256>("JSON name collision: '{}'", FullNameBuffer);
-		return nullptr;
-	}
+	if(!LWLogCriticalIf<256>(Res.second, "JSON name collision: '{}'", FullNameBuffer)) return nullptr;
+
 	LWEJObject &R = Res.first->second;
 	if (Parent) Parent->PushChild(&R, m_Allocator);
 	else PushRootElement(&R);

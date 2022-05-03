@@ -167,18 +167,18 @@ bool LWSocket::Accept(LWSocket &Result, uint32_t ProtocolID) const {
 	socklen_t lAddrLen = sizeof(lAddr);
 	uint32_t SockID = (uint32_t)accept(m_SocketID, nullptr, nullptr);
 
-	uint32_t TcpNoDelay = (m_Flag&LWSocket::TcpNoDelay) ? true : false;
+	uint32_t TcpNoDelay = (m_Flags&LWSocket::TcpNoDelay) ? true : false;
 	if (setsockopt(SockID, IPPROTO_TCP, TCP_NODELAY, (char*)&TcpNoDelay, sizeof(TcpNoDelay))) return false;
 
 	if (getsockname(SockID, (sockaddr*)&lAddr, &lAddrLen)) return false;
 	if (getpeername(SockID, (sockaddr*)&rAddr, &rAddrLen)) return false;
-	Result = LWSocket(SockID, ProtocolID, LWByteBuffer::MakeHost((uint32_t)lAddr.sin_addr.s_addr), LWByteBuffer::MakeHost(lAddr.sin_port), LWByteBuffer::MakeHost((uint32_t)rAddr.sin_addr.s_addr), LWByteBuffer::MakeHost(rAddr.sin_port), m_Flag&~LWSocket::Listen);
+	Result = LWSocket(SockID, ProtocolID, LWByteBuffer::MakeHost((uint32_t)lAddr.sin_addr.s_addr), LWByteBuffer::MakeHost(lAddr.sin_port), LWByteBuffer::MakeHost((uint32_t)rAddr.sin_addr.s_addr), LWByteBuffer::MakeHost(rAddr.sin_port), m_Flags&~LWSocket::Listen);
 	return true;
 }
 
 LWSocket &LWSocket::Close(void) {
 	if (m_SocketID) {
-		m_Flag |= LWSocket::Closeable;
+		m_Flags |= LWSocket::Closeable;
 		close(m_SocketID);
 		m_SocketID = 0;
 	}

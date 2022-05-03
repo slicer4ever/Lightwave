@@ -201,6 +201,11 @@ public:
 		return LWCrypto::HashFNV1A(begin());
 	}
 
+	/*!< \brief explicit bool conversion which returns true if not at end. */
+	explicit operator bool(void) const {
+		return *m_Buffer;
+	}
+
 	/*!< \brief returns a pointer to the underlying data. */
 	const Type *operator()(void) const {
 		return m_Buffer;

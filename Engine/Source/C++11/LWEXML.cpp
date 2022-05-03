@@ -1,7 +1,7 @@
 #include "LWEXML.h"
 #include <LWCore/LWAllocator.h>
 #include <LWPlatform/LWFileStream.h>
-#include <LWELogger.h>
+#include <LWCore/LWLogger.h>
 #include <iostream>
 #include <functional>
 #include <cstdarg>
@@ -160,43 +160,30 @@ bool LWEXML::ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterat
 				continue;
 			}else if(*C=='/') { //is termination node for our active node:
 				++C;
-				if (!ActiveNode) {
-					LWELogCritical<256>("Line {}:  found termination node with no active node.", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)));
-					return false;
-				}else {
-					if (!C.isSubString(ActiveNode->GetName())) {
-						LWUTF8Iterator E = C.NextTokens(u8"> ");
-						LWELogCritical<256>("Line {}: Error found incorrect termination name, active: '{}' Discovered: '{}'", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)), ActiveNode->GetName(), LWUTF8Iterator(C, E));
-						return false;
-					}
-					C.AdvanceToken('>');
-					P = C + 1;
-					ChildNode = ActiveNode;
-					ActiveNode = ActiveNode->m_Parent;
-					continue;
-				}
+				if(!LWLogCriticalIf<256>(ActiveNode, "Line {}: found termination node with no active node.", LWUTF8I::CountLines(LWUTF8I(Source, F)))) return false;
+				if(!LWLogCriticalIf<256>(C.isSubString(ActiveNode->GetName()), "Line {}: Error found incorrect termination name, active: '{}' Discovered: '{}'", LWUTF8I::CountLines(LWUTF8I(Source, F)), ActiveNode->GetName(), LWUTF8I(C, C.NextTokens(u8"> ")))) return false;
+
+				C.AdvanceToken('>');
+				P = C + 1;
+				ChildNode = ActiveNode;
+				ActiveNode = ActiveNode->m_Parent;
+				continue;
 			}
 			//Now process this node!
 			P = C;
 			QuoteCounter = 0;
 			ActiveNode = XML.GetInsertedNodeAfter(ActiveNode, ChildNode, Allocator);
 			ChildNode = nullptr;
-			if (!ActiveNode) {
-				LWELogCritical<256>("exceeded number of XML nodes supported by this implementation.");
-				return false;
-			}
+			if(!LWLogCriticalIf(ActiveNode, "exceeded number of XML nodes supported by this implementation.")) return false;
+
 			LWUTF8Iterator E = C.NextTokens("> ");
-			if (E.AtEnd()) {
-				LWELogCritical<256>("Line {}: Error could not find closing > token.", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)));
-				return false;
-			}
+			if(!LWLogCriticalIf<256>(!E.AtEnd(), "Line {}: Error could not find closing > token.", LWUTF8I::CountLines(LWUTF8I(Source, F)))) return false;
+
 			ActiveNode->SetName(LWUTF8Iterator(C, E));
 			for(C = E.NextWord(true);;C.AdvanceWord(true)) {
 				if (*C == '/') {
-					if (!ActiveNode) {
-						LWELogCritical<256>("Line {}: Error encountered second / before > token.", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)));
-						return false;
-					}
+					if(!LWLogCriticalIf<256>(ActiveNode, "Line {}: Error encountered second / before > token.", LWUTF8I::CountLines(LWUTF8I(Source, F)))) return false;
+
 					ChildNode = ActiveNode;
 					ActiveNode = ActiveNode->m_Parent;
 					++C;
@@ -209,23 +196,16 @@ bool LWEXML::ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterat
 				if (*C == '=') {
 					++C;
 					C.AdvanceWord(true);
-					if (*C == '\"') {
-						++C;
-						E = C.NextToken('\"', false);
-						if (E.AtEnd()) {
-							LWELogCritical<256>("Line {}: Error did not find matching \" token.", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)));
-							return false;
-						}
-						Attr.SetValue(LWUTF8Iterator(C, E));
-						C = E + 1;
-					} else {
-						LWELogCritical<256>("Line {}: Error invalid token found: '{:c}'.", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)), *C);
-						return false;
-					}
+					if(!LWLogCriticalIf<256>(*C=='\"', "Line {}: Error Expected \" token, instead found: '{:c}'.", LWUTF8I::CountLines(LWUTF8I(Source, F)), *C)) return false;
+
+					++C;
+					E = C.NextToken('\"', false);
+					if(!LWLogCriticalIf<256>(!E.AtEnd(), "Line {}: Error did not find matching \" token.", LWUTF8I::CountLines(LWUTF8I(Source, F)))) return false;
+
+					Attr.SetValue(LWUTF8Iterator(C, E));
+					C = E + 1;
 				}
-				if (!ActiveNode->PushAttribute(Attr)) {
-					LWELogCritical<256>("Line {}: Node '{}' has exceeded the amount of attributes this implementation supports.", LWUTF8Iterator::CountLines(LWUTF8Iterator(Source, F)), ActiveNode->GetName());
-				}
+				LWLogCriticalIf<256>(ActiveNode->PushAttribute(Attr), "Line {}: Node '{}' has exceeded the amount of attributes this implementation supports.", LWUTF8I::CountLines(LWUTF8I(Source, F)), ActiveNode->GetName());
 			}
 			P = C+1;
 		}
@@ -242,40 +222,39 @@ bool LWEXML::ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterat
 uint32_t LWEXML::ConstructBuffer(LWEXML &XML, char8_t *Buffer, uint32_t BufferLen, bool Format) {
 	
 	auto TabTo = [](uint32_t Depth, char8_t *Buffer, uint32_t BufferLen, bool Format)->uint32_t {
-		char SpaceBuffer[] = "                                                                ";
 		uint32_t o = 0;
 		if (!Format) return o;
-		o += snprintf((char*)Buffer + o, BufferLen - o, "%.*s", Depth, SpaceBuffer);
+		o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "{: >{}}", "", Depth);
 		return o;
 	};
 	
 	std::function<uint32_t(LWEXMLNode*, uint32_t, char8_t *, uint32_t, bool, bool)> RecursiveOutput;
 	RecursiveOutput = [&RecursiveOutput, &TabTo](LWEXMLNode *Current, uint32_t Depth, char *Buffer, uint32_t BufferLen, bool First, bool Format)->uint32_t {
 		uint32_t o = 0;
-		if (!First && Format) o += snprintf((char*)Buffer + o, BufferLen - o, "\n");
+		if (!First && Format) o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "\n");
 		o += TabTo(Depth, Buffer + o, BufferLen - o, Format);
-		o += snprintf((char*)Buffer + o, BufferLen - o, "<%s", Current->m_Name);
+		o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "<{}", Current->m_Name);
 		for (uint32_t i = 0; i < Current->m_AttributeCount; i++) {
 			LWEXMLAttribute &A = Current->m_Attributes[i];
-			o += snprintf((char*)Buffer + o, BufferLen - o, " %s", A.m_Name);
-			if (!A.GetValue().AtEnd()) o += snprintf((char*)Buffer + o, BufferLen - o, "=\"%s\"", A.m_Value);
+			o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, " {}", A.m_Name);
+			if (!A.GetValue().AtEnd()) o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "=\"{}\"", A.m_Value);
 		}
 		if (!Current->m_FirstChild && !*Current->m_Text) {
-			o += snprintf((char*)Buffer + o, BufferLen - o, " />");
+			o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, " />");
 			return o;
 		}
-		o += snprintf((char*)Buffer + o, BufferLen - o, " >");
+		o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, " >");
 		if (*Current->m_Text) {
-			if(Format) o += snprintf((char*)Buffer + o, BufferLen - o, "\n");
+			if(Format) o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "\n");
 			o += TabTo(Depth + 1, Buffer + o, BufferLen - o, Format);
-			o += snprintf((char*)Buffer + o, BufferLen - o, "%s", Current->m_Text);
+			o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "{}", Current->m_Text);
 		}
 		for (LWEXMLNode *C = Current->m_FirstChild; C; C = C->m_Next) {
 			o += RecursiveOutput(C, Depth + 1, Buffer + o, BufferLen - o, false, Format);
 		}
-		if (Format) o += snprintf((char*)Buffer + o, BufferLen - o, "\n");
+		if (Format) o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "\n");
 		o += TabTo(Depth, Buffer + o, BufferLen - o, Format);
-		o += snprintf((char*)Buffer + o, BufferLen - o, "</%s>", Current->m_Name);
+		o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "</{}>", Current->m_Name);
 
 		return o;
 	};

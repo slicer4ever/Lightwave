@@ -1,6 +1,7 @@
 #include "LWVideo/LWPipeline.h"
 #include "LWCore/LWUnicode.h"
 #include "LWCore/LWCrypto.h"
+#include "LWCore/LWLogger.h"
 #include "LWVideo/LWVideoDriver.h"
 #include <cstdarg>
 
@@ -254,8 +255,7 @@ LWPipeline &LWPipeline::BuildMappings(void) {
 						Found = true;
 						break;
 					}
-					if (!Found) {
-						fmt::print("Input map attribute not found: {:#x}(if an attribute was should not have stripped, check for any misspelling errors in defining input map).\n", VInputs[n].m_NameHash);
+					if(!LWLogCriticalIf<256>(Found, "Input map attribute not found: {:#x}(if an attribute was should not have stripped, check for any misspelling errors in defining input map).\n", VInputs[n].m_NameHash)) {
 						m_InputList[m_InputCount++] = LWShaderInput(VInputs[n].m_NameHash, VInputs[n].GetType(), 0, VInputs[n].GetInstanceFrequency());
 						std::swap(m_InputList[n], m_InputList[m_InputCount - 1]);
 					}

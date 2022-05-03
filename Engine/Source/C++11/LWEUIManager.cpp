@@ -15,7 +15,7 @@
 #include "LWEUI/LWEUIRichLabel.h"
 #include "LWEUI/LWEUITreeList.h"
 #include "LWEGeometry2D.h"
-#include <LWELogger.h>
+#include <LWCore/LWLogger.h>
 #include <map>
 #include <cstdarg>
 #include <iostream>
@@ -534,9 +534,7 @@ bool LWEUIManager::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
 		if (ColorBAttr) ColorB = ParseColor(ColorBAttr);
 		if (FillAttr) {
 			uint32_t FillType = FillAttr->GetValue().AdvanceWord(true).CompareLista(3, FillNames);
-			if (FillType == -1) {
-				LWELogCritical<256>("Material has unknown fill type: '{}'", FillAttr->GetValue());
-			} else FillMode = FillValues[FillType];
+			if(LWLogCriticalIf<256>(FillType!=-1, "Material has unknown fill type: '{}'", FillAttr->GetValue())) FillMode = FillValues[FillType];
 		}
 		if (TexAttr) Tex = Man->GetAssetManager()->GetAsset<LWTexture>(TexAttr->GetValue());
 		if (SubRegionAttr && Tex) {
@@ -561,10 +559,8 @@ bool LWEUIManager::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
 		LWEXMLAttribute *StyleAttr = Node->FindAttribute("Style");
 		if (!StyleAttr) return;
 		auto Iter = StyleMap.find(StyleAttr->GetValue().Hash());
-		if (Iter == StyleMap.end()) {
-			LWELogCritical<256>("could not find stylemap with name: '{}'", StyleAttr->GetValue());
-			return;
-		}
+		if(!LWLogCriticalIf<256>(Iter!=StyleMap.end(), "Could not find stylemap with name: '{}'", StyleAttr->GetValue())) return;
+
 		Node->RemoveAttribute(StyleAttr);
 		LWEXMLNode *N = Iter->second;
 		for (uint32_t i = 0; i < N->m_AttributeCount; i++) {
@@ -612,10 +608,7 @@ bool LWEUIManager::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
 			SrcAttr = Node->FindAttribute("Source");
 			if(!SrcAttr) return;
 		}
-		if (!LWEXML::LoadFile(*X, Man->GetAllocator(), SrcAttr->m_Value, true, Parent, Node)) {
-			LWELogCritical<256>("reading include file: '{}'", SrcAttr->GetValue());
-			return;
-		}
+		LWLogCriticalIf<256>(LWEXML::LoadFile(*X, Man->GetAllocator(), SrcAttr->m_Value, true, Parent, Node), "Failed to include file: '{}'", SrcAttr->GetValue());
 		return;
 	};
 
@@ -674,7 +667,10 @@ LWEUIManager &LWEUIManager::Update(const LWVector2f &Position, const LWVector2f 
 			TextBoxPos.y = std::min<float>(TextBoxPos.y + TI->GetVisibleSize().y - RemainSize.y*0.1f, TextBoxPos.y + TI->GetVisibleSize().y);
 			TI->SetVisiblePosition(TextBoxPos);
 
-			TI->UpdateSelf(*this, Scale, LWVector2f(), LWVector2f(), TI->GetVisiblePosition(), TI->GetVisibleSize(), lCurrentTime);
+			LWVector2f VisPos = TI->GetVisiblePosition();
+			LWVector2f VisSize = TI->GetVisibleSize();
+
+			TI->UpdateSelf(*this, Scale, LWVector2f(), LWVector2f(), VisPos, VisSize, lCurrentTime);
 			OnlyFocusedTIBox = true;
 		}
 	}
@@ -724,7 +720,9 @@ LWEUIManager &LWEUIManager::Draw(LWEUIFrame &Frame, float Scale, uint64_t lCurre
 	if (m_FocusedUI) {
 		LWEUITextInput *TI = dynamic_cast<LWEUITextInput*>(m_FocusedUI);
 		if(TI && m_Window->isVirtualKeyboardPresent()){
-			TI->DrawSelf(*this, Frame, Scale, LWVector2f(), LWVector2f(), TI->GetVisiblePosition(), TI->GetVisibleSize(), lCurrentTime);
+			LWVector2f VisPos = TI->GetVisiblePosition();
+			LWVector2f VisSize = TI->GetVisibleSize();
+			TI->DrawSelf(*this, Frame, Scale, LWVector2f(), LWVector2f(), VisPos, VisSize, lCurrentTime);
 			OnlyFocusedTIBox = true;
 		}
 	}
@@ -954,10 +952,8 @@ bool LWEUIManager::HasNamedUI(const LWUTF8Iterator &Name) {
 
 LWEUI *LWEUIManager::GetNamedUI(const LWUTF8Iterator &Name) {
 	auto Iter = m_NameMap.find(Name.Hash());
-	if (Iter == m_NameMap.end()) {
-		LWELogCritical<256>("could not find ui: '{}'", Name());
-	}
-	return Iter == m_NameMap.end() ? nullptr : Iter->second;
+	if(!LWLogCriticalIf<256>(Iter!=m_NameMap.end(), "Could not find ui: '{}'", Name)) return nullptr;
+	return Iter->second;
 }
 
 LWEUIMaterial *LWEUIManager::InsertMaterial(const LWUTF8Iterator &Name, const LWVector4f &ColorA, const LWVector4f &ColorB, uint32_t FillMode, LWTexture *Texture, const LWVector4f &SubRegion) {

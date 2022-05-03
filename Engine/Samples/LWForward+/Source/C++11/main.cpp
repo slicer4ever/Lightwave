@@ -3,6 +3,9 @@
 #include <LWPlatform/LWThread.h>
 #include <LWPlatform/LWApplication.h>
 #include <LWCore/LWTimer.h>
+#include <LWCore/LWLogger.h>
+
+LWLOG_DEFAULT
 
 void UpdateT(LWThread *T) {
 	App *A = (App*)T->GetUserData();

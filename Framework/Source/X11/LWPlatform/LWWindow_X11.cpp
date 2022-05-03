@@ -1,6 +1,7 @@
 #include "LWPlatform/LWWindow.h"
 #include "LWPlatform/LWInputDevice.h"
 #include "LWCore/LWTimer.h"
+#include "LWCore/LWLogger.h"
 #include <iostream>
 #include <cstdarg>
 
@@ -11,7 +12,7 @@ LWWindow *ClipboardWindow = nullptr;
 bool ClipSet = false;
 
 uint32_t LWWindow::MakeDialog(const LWUTF8Iterator &Text, const LWUTF8Iterator &Header, uint32_t DialogFlags){
-	fmt::print("Dialog: {}: {}\n", Header, Text);
+	LWLogEvent<256>("Dialog: {}: {}\n", Header, Text);
 	return 0;
 }
 
@@ -412,7 +413,7 @@ LWWindow::LWWindow(const LWUTF8 &Title, const LWUTF8 &Name, LWAllocator &Allocat
 				XQueryTree(m_Context.m_Display, m_Context.m_Window, &m_Context.m_Root, &m_Context.m_Parent, &ChildWindows, &ChildWindowCnt);
 				XFree(ChildWindows);
 				if (m_Context.m_Parent != m_Context.m_Root) {
-					if (!XTranslateCoordinates(m_Context.m_Display, m_Context.m_Parent, m_Context.m_Root, Position.x, Position.y, &Pos.x, &Pos.y, &Child)) fmt::print("Error translating window.\n");
+					if (!XTranslateCoordinates(m_Context.m_Display, m_Context.m_Parent, m_Context.m_Root, Position.x, Position.y, &Pos.x, &Pos.y, &Child)) LWLogWarn("Error translating window.");
 				}
 				XMoveWindow(m_Context.m_Display, m_Context.m_Window, Pos.x, Pos.y);
 				m_Flag |= Focused;

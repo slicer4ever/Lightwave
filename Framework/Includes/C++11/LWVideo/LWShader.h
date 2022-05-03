@@ -27,11 +27,11 @@ struct LWShaderInput {
 		dVec4, /*!< \brief type is 4 double's. */
 		Count /*!< \brief total count list for inputs. */
 	};
-	LWBitField32(Type, 4, 0); // \brief bits of flag for the type. */
-	LWBitField32(BindIndex, 4, TypeBitsOffset+4); // \brief bits of flag for BindIndex(which means max of 16 bindable inputs at the moment.)
-	LWBitField32(Offset, 8, BindIndexBitsOffset+4); // \brief bits of flag for offset*4 in the interleaved array.
-	LWBitField32(Length, 8, OffsetBitsOffset+8); // \brief bits of flag for the number of elements in the interleaved array.
-	LWBitField32(InstanceFrequency, 8, LengthBitsOffset+8); // \brief bits of flag for the Instance frequency(how frequently to change per-instance) (if InstanceFrequency is not 0, then this data is expected to come from an external source).
+	LWBitField32(TypeBits, 4, 0); // \brief bits of flag for the type. */
+	LWBitField32(BindIndexBits, 4, TypeBitsOffset+4); // \brief bits of flag for BindIndex(which means max of 16 bindable inputs at the moment.)
+	LWBitField32(OffsetBits, 8, BindIndexBitsOffset+4); // \brief bits of flag for offset*4 in the interleaved array.
+	LWBitField32(LengthBits, 8, OffsetBitsOffset+8); // \brief bits of flag for the number of elements in the interleaved array.
+	LWBitField32(InstanceFrequencyBits, 8, LengthBitsOffset+8); // \brief bits of flag for the Instance frequency(how frequently to change per-instance) (if InstanceFrequency is not 0, then this data is expected to come from an external source).
 
 	/*!< \brief set's the flag bits for the underlying type of the input. */
 	LWShaderInput &SetType(uint32_t lType);
@@ -80,12 +80,12 @@ struct LWShaderInput {
 /*!< \brief shader resource/block's. */
 struct LWShaderResource {
 	static const uint32_t BindingBitCount = 5; /*!< \brief how many bits each stage has for binding's. */
-	LWBitField32(Type, 4, 0);
-	LWBitField32(Length, 16, TypeBitsOffset + 4);
-	LWBitField32(VertexBinding, BindingBitCount, 0);
-	LWBitField32(GeometryBinding, BindingBitCount, VertexBindingBitsOffset + BindingBitCount);
-	LWBitField32(PixelBinding, BindingBitCount, GeometryBindingBitsOffset + BindingBitCount);
-	LWBitField32(ComputeBinding, BindingBitCount, PixelBindingBitsOffset + BindingBitCount);
+	LWBitField32(TypeBits, 4, 0);
+	LWBitField32(LengthBits, 16, TypeBitsOffset + 4);
+	LWBitField32(VertexBindingBits, BindingBitCount, 0);
+	LWBitField32(GeometryBindingBits, BindingBitCount, VertexBindingBitsOffset + BindingBitCount);
+	LWBitField32(PixelBindingBits, BindingBitCount, GeometryBindingBitsOffset + BindingBitCount);
+	LWBitField32(ComputeBindingBits, BindingBitCount, PixelBindingBitsOffset + BindingBitCount);
 
 	static const uint32_t VertexStage = 0x10000000; /*!< \brief flag indicating the resource is apart of the vertex stage. */
 	static const uint32_t GeometryStage = 0x20000000; /*!< \brief flag indicating the resource is apart of the geometry stage. */
@@ -168,15 +168,13 @@ struct LWShaderResource {
 /*!< \brief LWShader is the compiled shader object which is used to create pipelines. */
 class LWShader : public LWVideoResource {
 public:
-	enum{
-		Vertex = 0, /*!< \brief shader is a vertex type. */
-		Geometry = 1, /*!< \brief shader is a vertex type. */
-		Pixel = 2, /*!< \brief shader is a vertex type. */
-		Compute =  3, /*!< \brief shader is a vertex type. */
-		MaxInputs = 32, /*!< \brief max input map size for shader. */
-		MaxResources = 64, /*!< \brief max resource's mappable by a single stage. */
-		MaxBlocks = 64 /*!< \brief max block's mappable by a single stage. */
-	};
+	static const uint32_t Vertex = 0; /*!< \brief shader is a vertex type. */
+	static const uint32_t Geometry = 1; /*!< \brief shader is a vertex type. */
+	static const uint32_t Pixel = 2; /*!< \brief shader is a vertex type. */
+	static const uint32_t Compute =  3; /*!< \brief shader is a vertex type. */
+	static const uint32_t MaxInputs = 32; /*!< \brief max input map size for shader. */
+	static const uint32_t MaxResources = 64; /*!< \brief max resource's mappable by a single stage. */
+	static const uint32_t MaxBlocks = 64; /*!< \brief max block's mappable by a single stage. */
 
 	/*!< \brief generates offset for inputs based on the inputmap provided. returns total size of mapped input. */
 	static uint32_t GenerateInputOffsets(uint32_t Count, LWShaderInput *InputMap);

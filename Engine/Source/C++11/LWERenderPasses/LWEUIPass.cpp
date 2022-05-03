@@ -1,13 +1,14 @@
 #include <LWERenderPasses/LWEUIPass.h>
 #include <LWERenderer.h>
-#include <LWELogger.h>
+#include <LWCore/LWLogger.h>
 #include <LWPlatform/LWWindow.h>
+#include <limits>
+#include <cmath>
 
 //LWEUIPass:
 LWEPass *LWEUIPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer *Renderer, LWEAssetManager *AssetManager, LWAllocator &Allocator) {
 	LWEUIPass *UIPass = Pass ? (LWEUIPass*)Pass : Allocator.Create<LWEUIPass>();
-	if (!LWEPass::ParseXML(Node, UIPass, Renderer, AssetManager, Allocator)) {
-		LWELogCritical<128>("could not create pass '{}'", Node->GetName());
+	if(!LWLogCriticalIf<256>(LWEPass::ParseXML(Node, UIPass, Renderer, AssetManager, Allocator), "Could not create pass: '{}'", Node->GetName())) {
 		if (!Pass) LWAllocator::Destroy(UIPass);
 		return nullptr;
 	}
@@ -67,14 +68,21 @@ void LWEUIPass::DestroyPass(LWVideoDriver *Driver, bool DestroySelf) {
 
 LWEPass &LWEUIPass::InitializeFrame(LWERenderFrame &Frame) {
 	auto UIFrame = Frame.GetFrameData<LWEUIPassFrameData>(m_FrameID);
+	Frame.GetGlobalData().m_PassData[m_PassID].m_PassData[0] = LWVector4f(std::numeric_limits<float>::quiet_NaN());
 	UIFrame->m_UIFrame.m_TextureCount = 0;
 	return *this;
 }
 
 LWEPass &LWEUIPass::PreFinalizeFrame(LWERenderFrame &Frame, LWVideoBuffer *IndirectBufferList[LWEMaxGeometryBuckets], LWVideoBuffer *IDBufferList[LWEMaxGeometryBuckets], LWERenderer *Renderer, LWVideoDriver *Driver) {
-	FinalizePassGlobalData(Frame.GetGlobalData(), m_Propertys, Renderer, Driver, m_PassID);
+	auto &Global = Frame.GetGlobalData();
+	FinalizePassGlobalData(Global, m_Propertys, Renderer, Driver, m_PassID);
 	auto UIFrame = Frame.GetFrameData<LWEUIPassFrameData>(m_FrameID);
 	UIFrame->m_UIFrame.m_Mesh->Finished();
+	LWVector4f Viewport = Global.m_PassData[m_PassID].m_PassData[0];
+	if (std::isnan(Viewport.x)) return *this;
+	LWMatrix4f Ortho = LWMatrix4f::Ortho(Viewport.x, Viewport.x + Viewport.z, Viewport.y, Viewport.y + Viewport.w, 0.0f, 1.0f);
+	Driver->UpdateVideoBuffer(m_UIBuffer, (const uint8_t*)&Ortho, sizeof(LWMatrix4f));
+
 	return *this;
 }
 

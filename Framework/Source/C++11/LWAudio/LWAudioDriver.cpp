@@ -4,6 +4,7 @@
 #include "LWCore/LWAllocator.h"
 #include "LWCore/LWByteBuffer.h"
 #include "LWCore/LWTimer.h"
+#include "LWCore/LWLogger.h"
 #include <algorithm>
 #include <iostream>
 #include "vorbis/codec.h"
@@ -92,7 +93,7 @@ bool LWAudioDriver::Update(uint64_t lCurrentTime, LWWindow *Window) {
 			else if (Type == Event_Mute) Result = ProcessSoundMuteEvent(E.m_Source, Type, Data, Elapsed);
 			else if (Type == Event_Unmute) Result = ProcessSoundUnmuteEvent(E.m_Source, Type, Data, Elapsed);
 			else if (Type == Event_Created) Result = ProcessSoundCreatedEvent(E.m_Source, Type, Data, Elapsed);
-			else fmt::print("Received unknown event for sound: {}\n", Type);
+			else LWLogWarn<64>("Received unknown event for sound: {}", Type);
 		} else {
 			if (Type == Event_Volume) Result = ProcessVolumeEvent(Type, Data, Elapsed);
 			else if (Type == Event_FocusMute) Result = ProcessFocusMuteEvent(Type, Data, Elapsed);
@@ -103,12 +104,9 @@ bool LWAudioDriver::Update(uint64_t lCurrentTime, LWWindow *Window) {
 			else if (Type == Event_Unmute) Result = ProcessUnmuteEvent(Type, Data, Elapsed);
 			else if (Type == Event_ChannelVolume) Result = ProcessVolumeEvent(Type, Data, Elapsed);
 			else if (Type == Event_ListenerChanged) m_Flag |= ListernerPositionChanged;
-			else fmt::print("Received unknown event for audio driver: '{}'\n", Type);
+			else LWLogWarn<64>("Received unknown event for audio driver: {}", Type);
 		}
-		if (!Result) {
-			fmt::print("Failed to process event: {}\n", Type);
-			return false;
-		}
+		if(!LWLogWarnIf<64>(Result, "Failed to process audio event: {}", Type)) return false;
 		m_EventReadPosition++;
 	}
 

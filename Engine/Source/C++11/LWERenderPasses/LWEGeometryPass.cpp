@@ -1,6 +1,6 @@
 #include "LWERenderPasses/LWEGeometryPass.h"
 #include "LWERenderer.h"
-#include "LWELogger.h"
+#include <LWCore/LWLogger.h>
 
 //LWEBucketPropertys:
 bool LWEBucketPropertys::isPrimarySource(void) const {
@@ -8,7 +8,7 @@ bool LWEBucketPropertys::isPrimarySource(void) const {
 }
 
 uint32_t LWEBucketPropertys::GetPassBitID(void) const {
-	return LWBitFieldGet(PassBitID, m_Flags);
+	return LWBitFieldGet(PassBitIDBits, m_Flags);
 }
 
 LWEBucketPropertys::LWEBucketPropertys(const LWEPassPropertys &PassProps, uint32_t BucketFlags, uint32_t PassBitID) : m_PassPropertys(PassProps), m_BucketFlags(BucketFlags), m_Flags((PassBitID << PassBitIDBitsOffset)) {}
@@ -22,23 +22,24 @@ bool LWEGeometryPass::ParseXMLBucketPropertys(LWEXMLNode *Node, LWEBucketPropert
 	LWEXMLAttribute *PassBitIDAttr = Node->FindAttribute("PassBitID");
 	if (OpaqueSortAttr) {
 		uint32_t Sort = OpaqueSortAttr->GetValue().CompareList("ByStates", "FrontToBack", "BackToFront", "None");
-		if (Sort == -1) LWELogWarn<128>("unknown sort for opaque: '{}'", OpaqueSortAttr->GetValue());
-		else BucketProps.m_BucketFlags = LWBitFieldSet(LWEGeometryBucket::OpaqueSort, BucketProps.m_BucketFlags, Sort);;
+		if(LWLogCriticalIf<128>(Sort!=-1, "Unknown sort for opaque: '{}'", OpaqueSortAttr->GetValue()))	{
+			BucketProps.m_BucketFlags = LWBitFieldSet(LWEGeometryBucket::OpaqueSortBits, BucketProps.m_BucketFlags, Sort);
+		}
 	}
 	if (TransparentSortAttr) {
 		uint32_t Sort = TransparentSortAttr->GetValue().CompareList("ByStates", "FrontToBack", "BackToFront", "None");
-		if (Sort == -1) LWELogWarn<128>("unknown sort for Transparent: '{}'", TransparentSortAttr->GetValue());
-		else BucketProps.m_BucketFlags = LWBitFieldSet(LWEGeometryBucket::TransparentSort, BucketProps.m_BucketFlags, Sort);
+		if(LWLogCriticalIf<128>(Sort!=-1, "Unknown sort for Transparent: '{}'", TransparentSortAttr->GetValue())) {
+			BucketProps.m_BucketFlags = LWBitFieldSet(LWEGeometryBucket::TransparentSortBits, BucketProps.m_BucketFlags, Sort);
+		}
 	}
 	if (PrimaryAttr) BucketProps.m_Flags |= LWEBucketPropertys::PrimarySource;
-	if (PassBitIDAttr) BucketProps.m_Flags = LWBitFieldSet(LWEBucketPropertys::PassBitID, BucketProps.m_Flags, atoi(PassBitIDAttr->GetValue().c_str()));
+	if (PassBitIDAttr) BucketProps.m_Flags = LWBitFieldSet(LWEBucketPropertys::PassBitIDBits, BucketProps.m_Flags, atoi(PassBitIDAttr->GetValue().c_str()));
 	return true;
 }
 
 LWEPass *LWEGeometryPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer *Renderer, LWEAssetManager *AssetManager, LWAllocator &Allocator) {
 	LWEGeometryPass *GPass = Pass ? (LWEGeometryPass*)Pass : Allocator.Create<LWEGeometryPass>();
-	if (!LWEPass::ParseXML(Node, GPass, Renderer, AssetManager, Allocator)) {
-		LWELogWarn<256>("could not create pass '{}'", Node->GetName());
+	if(!LWLogCriticalIf<256>(LWEPass::ParseXML(Node, GPass, Renderer, AssetManager, Allocator), "Could not create pass '{}'", Node->GetName())) {
 		if (!Pass) LWAllocator::Destroy(GPass);
 		return nullptr;
 	}
@@ -61,9 +62,9 @@ LWPipeline *LWEGeometryPass::PrepareRendablePipeline(const LWEGeometryRenderable
 	LWPipeline *Pipeline = PreparePipeline(Material, (uint32_t)Rendable.m_BlockBufferNameHash, Driver, Renderer, SubPassIdx+SubPassOffset);;
 	assert(Pipeline != nullptr);
 	if (Rendable.m_DrawCount & LWEGeometryRenderable::BufferVideoBuffer) {
-		LWVideoBuffer *VPBuffer = Renderer->GetVideoBuffer((uint32_t)LWBitFieldGet(LWEGeometryModelBlock::VertexPositionVB, Rendable.m_BlockBufferNameHash));
-		LWVideoBuffer *VABuffer = Renderer->GetVideoBuffer((uint32_t)LWBitFieldGet(LWEGeometryModelBlock::VertexAttributeVB, Rendable.m_BlockBufferNameHash));
-		IndiceBuffer = Renderer->GetVideoBuffer((uint32_t)LWBitFieldGet(LWEGeometryModelBlock::IndiceVB, Rendable.m_BlockBufferNameHash));
+		LWVideoBuffer *VPBuffer = Renderer->GetVideoBuffer((uint32_t)LWBitFieldGet(LWEGeometryModelBlock::VertexPositionVBBits, Rendable.m_BlockBufferNameHash));
+		LWVideoBuffer *VABuffer = Renderer->GetVideoBuffer((uint32_t)LWBitFieldGet(LWEGeometryModelBlock::VertexAttributeVBBits, Rendable.m_BlockBufferNameHash));
+		IndiceBuffer = Renderer->GetVideoBuffer((uint32_t)LWBitFieldGet(LWEGeometryModelBlock::IndiceVBBits, Rendable.m_BlockBufferNameHash));
 		if (!VPBuffer || !VABuffer || !IndiceBuffer) return Pipeline;
 		uint32_t InputCnt = Pipeline->GetInputCount();
 		uint32_t VPSize = VPBuffer->GetTypeSize();

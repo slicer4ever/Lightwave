@@ -3,6 +3,7 @@
 #include <LWCore/LWAllocator.h>
 #include <LWCore/LWByteBuffer.h>
 #include <LWCore/LWTimer.h>
+#include <LWCore/LWLogger.h>
 #include <cstring>
 #include "vorbis/codec.h"
 #include "vorbis/vorbisfile.h"
@@ -73,11 +74,11 @@ LWAudioStream *LWAudioStream::Create(char *Buffer, uint32_t BufferLen, uint32_t 
 		LWByteBuffer ByteBuffer((const int8_t*)Buffer, BufferLen);
 
 		auto ReadToChunk = [](LWByteBuffer &Buffer, uint32_t ChunkID)->uint32_t {
-			while (!Buffer.EndOfBuffer()) {
+			while (!Buffer.IsEndOfReadData()) {
 				uint32_t CID = Buffer.Read<uint32_t>();
 				uint32_t ChunkSize = Buffer.Read<uint32_t>();
 				if (CID == ChunkID) return ChunkSize;
-				Buffer.OffsetPosition(ChunkSize);
+				Buffer.Seek(ChunkSize);
 			}
 			return 0;
 		};
@@ -144,8 +145,7 @@ LWAudioStream *LWAudioStream::Create(char *Buffer, uint32_t BufferLen, uint32_t 
 			int32_t cs = 0;
 			while (o != TotalBufferSize) {
 				int32_t r = (int32_t)ov_read(&Context->m_File, RawBuffer + o, TotalBufferSize - o, 0, 2, 1, &cs);
-				if (r <= 0) {
-					fmt::print("Error reading ogg samples.\n");
+				if(!LWLogCriticalIf(r>0, "Error reading ogg samples.")) {
 					ov_clear(&Context->m_File);
 					LWAllocator::Destroy(RawBuffer);
 					LWAllocator::Destroy(Context);

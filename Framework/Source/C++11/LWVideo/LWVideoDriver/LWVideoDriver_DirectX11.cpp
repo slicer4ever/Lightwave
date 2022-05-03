@@ -6,6 +6,7 @@
 #include "LWCore/LWVector.h"
 #include "LWCore/LWUnicode.h"
 #include "LWCore/LWMath.h"
+#include "LWCore/LWLogger.h"
 #include "LWPlatform/LWWindow.h"
 
 template<class Type>
@@ -164,7 +165,7 @@ LWShader *LWVideoDriver_DirectX11_1::CreateShaderCompiled(uint32_t ShaderType, c
 		else if (Resource.Type == D3D_SIT_UAV_RWTYPED) Resrc.m_Type = LWPipeline::Image;
 		else if (Resource.Type == D3D_SIT_STRUCTURED || Resource.Type == D3D_SIT_BYTEADDRESS) Resrc.m_Type = LWPipeline::TextureBuffer;
 		else if (Resource.Type == D3D_SIT_UAV_RWSTRUCTURED || Resource.Type == D3D_SIT_UAV_RWBYTEADDRESS) Resrc.m_Type = LWPipeline::ImageBuffer;
-		else fmt::print("Error unknown resource: '{}' - {}", Resource.Name, Resource.Type);
+		else LWLogCritical<256>("Error unknown resource: '{}' - {}", Resource.Name, Resource.Type);
 		Context.m_ResourceCount++;
 	}
 	Shdr->Release();
@@ -269,8 +270,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1D(uint32_t TextureState, uin
 	const DXGI_FORMAT Formats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
-		if (SUCCEEDED(Res)) return true;
-		fmt::print("CreateTexture1D Error: '{}': {:#x}\n", FuncName, Res);
+		if (LWLogCriticalIf<256>(SUCCEEDED(Res), "CreateTexture1D Error: '{}': {:#x}\n", FuncName, Res)) return true;
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -310,8 +310,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2D(uint32_t TextureState, uin
 	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
-		if (SUCCEEDED(Res)) return true;
-		fmt::print("CreateTexture2D Error: '{}': {:#x}\n", FuncName, Res);
+		if (LWLogCriticalIf<256>(SUCCEEDED(Res), "CreateTexture2D Error: '{}': {:#x}\n", FuncName, Res)) return true;
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -348,8 +347,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture3D(uint32_t TextureState, uin
 
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
-		if (SUCCEEDED(Res)) return true;
-		fmt::print("CreateTexture3D Error: '{}': {:#x}\n", FuncName, Res);
+		if (LWLogCriticalIf<256>(SUCCEEDED(Res), "CreateTexture3D Error: '{}': {:#x}\n", FuncName, Res)) return true;
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -387,8 +385,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeMap(uint32_t TextureState
 
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
-		if (SUCCEEDED(Res)) return true;
-		fmt::print("CreateTextureCubeMap Error: '{}': {:#x}\n", FuncName, Res);
+		if (LWLogCriticalIf<256>(SUCCEEDED(Res), "CreateTextureCubeMap Error: '{}': {:#x}\n", FuncName, Res)) return true;
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -432,8 +429,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DMS(uint32_t TextureState, u
 	
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
-		if (SUCCEEDED(Res)) return true;
-		fmt::print("CreateTexture2DMS Error: '{}': {:#x}\n", FuncName, Res);
+		if (LWLogCriticalIf<256>(SUCCEEDED(Res), "CreateTexture2DMS Error: '{}': {:#x}\n", FuncName, Res)) return true;
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -458,8 +454,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1DArray(uint32_t TextureState
 
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
-		if (SUCCEEDED(Res)) return true;
-		fmt::print("CreateTexture1DArray Error: '{}': {:#x}\n", FuncName, Res);
+		if (LWLogCriticalIf<256>(SUCCEEDED(Res), "CreateTexture1DArray Error: '{}': {:#x}\n", FuncName, Res)) return true;
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -499,13 +494,12 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture1DArray(uint32_t TextureState
 
 LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Layers, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator) {
 	//PackTypes:                     SRGBA,                            RGBA8,                      RGBA8S,                      RGBA16,                         RGBA16S,                       RGBA32,                        RGBA32S,                       RGBA32F,                        RG8,                    RG8S,                   RG16,                     RG16S,                    RG32,                    RG32S,                   RG32F,                    R8,                   R8S,                  R16,                   R16S,                  R32,                  R32S,                 R32F,                  Depth16,                  Depth24,                           Depth32,                  Depth24Stencil8,                   BC1                    BC_SRGBA                    BC2                    BC2_SRGB                    BC3                    BC3_SRGB,                   BC4                    BC5                    BC6                    BC7                    BC7_SRGB
-	const DXGI_FORMAT Formats[]  = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
+	const DXGI_FORMAT Formats[]  = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,        DXGI_FORMAT_R32_TYPELESS, DXGI_FORMAT_R24G8_TYPELESS,     DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
 	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT,    DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
 	
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
-		if (SUCCEEDED(Res)) return true;
-		fmt::print("CreateTexture2DArray Error: '{}': {:#x}\n", FuncName, Res);
+		if (LWLogCriticalIf<256>(SUCCEEDED(Res), "CreateTexture2DArray Error: '{}': {:#x}\n", FuncName, Res)) return true;
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -553,8 +547,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTextureCubeArray(uint32_t TextureSta
 	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
-		if (SUCCEEDED(Res)) return true;
-		fmt::print("CreateTextureCubeArray Error: '{}': {:#x}\n", FuncName, Res);
+		if (LWLogCriticalIf<256>(SUCCEEDED(Res), "CreateTextureCubeArray Error: '{}': {:#x}\n", FuncName, Res)) return true;
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -599,8 +592,7 @@ LWTexture *LWVideoDriver_DirectX11_1::CreateTexture2DMSArray(uint32_t TextureSta
 	const DXGI_FORMAT VFormats[] = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_R8G8B8A8_SNORM,  DXGI_FORMAT_R16G16B16A16_UINT, DXGI_FORMAT_R16G16B16A16_SINT,  DXGI_FORMAT_R32G32B32A32_UINT, DXGI_FORMAT_R32G32B32A32_SINT, DXGI_FORMAT_R32G32B32A32_FLOAT, DXGI_FORMAT_R8G8_UNORM, DXGI_FORMAT_R8G8_SNORM, DXGI_FORMAT_R16G16_UNORM, DXGI_FORMAT_R16G16_SNORM, DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_SINT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R8_UNORM, DXGI_FORMAT_R8_SNORM, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R16_SNORM, DXGI_FORMAT_R32_UINT, DXGI_FORMAT_R32_SINT, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R16_UNORM, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, DXGI_FORMAT_BC1_UNORM, DXGI_FORMAT_BC1_UNORM_SRGB, DXGI_FORMAT_BC2_UNORM, DXGI_FORMAT_BC2_UNORM_SRGB, DXGI_FORMAT_BC3_UNORM, DXGI_FORMAT_BC3_UNORM_SRGB, DXGI_FORMAT_BC4_UNORM, DXGI_FORMAT_BC5_UNORM, DXGI_FORMAT_BC6H_SF16, DXGI_FORMAT_BC7_UNORM, DXGI_FORMAT_BC7_UNORM_SRGB };
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
-		if (SUCCEEDED(Res)) return true;
-		fmt::print("CreateTexture2DMSArray Error: '{}': {:#x}\n", FuncName, Res);
+		if (LWLogCriticalIf<256>(SUCCEEDED(Res), "CreateTexture2DMSArray Error: '{}': {:#x}\n", FuncName, Res)) return true;
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -628,8 +620,7 @@ LWVideoBuffer *LWVideoDriver_DirectX11_1::CreateVideoBuffer(uint32_t Type, uint3
 	ID3D11Buffer *B = nullptr;
 
 	auto CheckResult = [&B](HRESULT Res, const char *FuncName)->bool {
-		if (SUCCEEDED(Res)) return true;
-		fmt::print("CreateVideoBuffer Error: '{}': {:#x}\n", FuncName, Res);
+		if (LWLogCriticalIf<256>(SUCCEEDED(Res), "CreateVideoBuffer Error: '{}': {:#x}\n", FuncName, Res)) return true;
 		if (B) B->Release();
 		return false;
 	};
@@ -816,8 +807,7 @@ bool LWVideoDriver_DirectX11_1::DownloadTexture2D(LWTexture *Texture, uint32_t M
 	LWDirectX11_1TextureContext &Con = ((LWDirectX11_1Texture*)Texture)->GetContext();
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
-		if (SUCCEEDED(Res)) return true;
-		fmt::print("DownloadTexture2D Error '{}': {:#x}\n", FuncName, Res);
+		if (LWLogCriticalIf<256>(SUCCEEDED(Res), "DownloadTexture2D Error: '{}': {:#x}\n", FuncName, Res)) return true;
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -831,7 +821,7 @@ bool LWVideoDriver_DirectX11_1::DownloadTexture2D(LWTexture *Texture, uint32_t M
 	D3D11_TEXTURE2D_DESC Desc = { (uint32_t)Size.x, (uint32_t)Size.y,
 		0u, 1u, Formats[PackType], { 1u, 0u},
 		D3D11_USAGE_STAGING, 0u, D3D11_CPU_ACCESS_READ,	0u };
-	if (!CheckResult(m_Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, (ID3D11Texture2D**)&Context.m_Texture), "CreateTexture2D")) return nullptr;
+	if (!CheckResult(m_Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, (ID3D11Texture2D**)&Context.m_Texture), "CreateTexture2D")) return false;
 	D3D11_BOX Bx = { 0, 0, 0u, (uint32_t)Size.x, (uint32_t)Size.y, 1u };
 	uint32_t MipCnt = Texture->GetMipmapCount() + 1;
 	m_Context.m_DXDeviceContext->CopySubresourceRegion(Context.m_Texture, 0, 0, 0, 0, Con.m_Texture, MipmapLevel, &Bx);
@@ -871,8 +861,7 @@ bool LWVideoDriver_DirectX11_1::DownloadTexture2DArray(LWTexture *Texture, uint3
 	LWDirectX11_1TextureContext &Con = ((LWDirectX11_1Texture*)Texture)->GetContext();
 	LWDirectX11_1TextureContext Context;
 	auto CheckResult = [&Context](HRESULT Res, const char *FuncName)->bool {
-		if (SUCCEEDED(Res)) return true;
-		fmt::print("DownloadTexture2DArray Error '{}': {:#x}\n", FuncName, Res);
+		if (LWLogCriticalIf<256>(SUCCEEDED(Res), "DownloadTexture2DArray Error: '{}': {:#x}\n", FuncName, Res)) return true;
 		if (Context.m_View) Context.m_View->Release();
 		if (Context.m_Texture) Context.m_Texture->Release();
 		return false;
@@ -886,7 +875,7 @@ bool LWVideoDriver_DirectX11_1::DownloadTexture2DArray(LWTexture *Texture, uint3
 	D3D11_TEXTURE2D_DESC Desc = { (uint32_t)Size.x, (uint32_t)Size.y,
 		0u, 1u, Formats[PackType], { 1u, 0u},
 		D3D11_USAGE_STAGING, 0u, D3D11_CPU_ACCESS_READ,	0u };
-	if (!CheckResult(m_Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, (ID3D11Texture2D**)&Context.m_Texture), "CreateTexture2D")) return nullptr;
+	if (!CheckResult(m_Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, (ID3D11Texture2D**)&Context.m_Texture), "CreateTexture2D")) return false;
 	D3D11_BOX Bx = { 0, 0, 0u, (uint32_t)Size.x, (uint32_t)Size.y, 1u };
 	uint32_t MipCnt = Texture->GetMipmapCount()+1;
 	m_Context.m_DXDeviceContext->CopySubresourceRegion(Context.m_Texture, 0, 0, 0, 0, Con.m_Texture, MipCnt*Layer+MipmapLevel, &Bx);
@@ -924,10 +913,8 @@ bool LWVideoDriver_DirectX11_1::UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, co
 	if (UsageID == LWVideoBuffer::WriteNoOverlap) UpdateType = D3D11_MAP_WRITE_NO_OVERWRITE;
 	D3D11_MAPPED_SUBRESOURCE M;
 	HRESULT Res = m_Context.m_DXDeviceContext->Map(Buf, 0, UpdateType, 0, &M);
-	if (FAILED(Res)) {
-		fmt::print("Error 'Map': {}\n", Res);
-		return false;
-	}
+	if(!LWLogCriticalFunc<256>(Res, S_OK, "Map")) return false;
+
 	std::copy(Buffer, Buffer + Length, (uint8_t*)M.pData+Offset);
 	m_Context.m_DXDeviceContext->Unmap(Buf, 0);
 	return true;
@@ -943,10 +930,8 @@ void *LWVideoDriver_DirectX11_1::MapVideoBuffer(LWVideoBuffer *VideoBuffer, uint
 	if (UsageID == LWVideoBuffer::WriteNoOverlap) UpdateType = D3D11_MAP_WRITE_NO_OVERWRITE;
 	D3D11_MAPPED_SUBRESOURCE M;
 	HRESULT Res = m_Context.m_DXDeviceContext->Map(Buf, 0, UpdateType, 0, &M);
-	if (FAILED(Res)) {
-		fmt::print("Error 'Map': {}\n", Res);
-		return nullptr;
-	}
+	if(!LWLogCriticalFunc<256>(Res, S_OK, "Map")) return nullptr;
+
 	return (void*)((uint8_t*)M.pData + Offset);
 }
 
@@ -1096,7 +1081,7 @@ bool LWVideoDriver_DirectX11_1::SetRasterState(uint64_t Flags, float Bias, float
 			((Flags&LWPipeline::No_ColorA) == 0 ? D3D11_COLOR_WRITE_ENABLE_ALPHA : 0);
 		for (uint32_t i = 1; i < 8; i++) BlendDesc.RenderTarget[i] = BlendDesc.RenderTarget[0];
 		LWDirectX11_1RasterContext RContext;
-		if (FAILED(m_Context.m_DXDevice->CreateRasterizerState1(&RastDesc, &RContext.m_RasterState))) return nullptr;
+		if (FAILED(m_Context.m_DXDevice->CreateRasterizerState1(&RastDesc, &RContext.m_RasterState))) return false;
 		if (FAILED(m_Context.m_DXDevice->CreateDepthStencilState(&DepthDesc, &RContext.m_DepthStencilState))) {
 			RContext.m_RasterState->Release();
 			return false;
@@ -1420,13 +1405,10 @@ ID3D11RenderTargetView *LWDirectX11_1TextureContext::GetRenderTargetView(uint32_
 		Desc.Texture2DMSArray = { Layer, 1 };
 	}
 	HRESULT Res = DriverContext.m_DXDevice->CreateRenderTargetView(m_Texture, &Desc, &View);
-	if (FAILED(Res)) {
-		fmt::print("Error 'CreateRenderTargetView': {:#x}\n", Res);
-		return nullptr;
-	}
+	if(!LWLogCriticalFunc<64>(Res, S_OK, "CreateRenderTargetView")) return nullptr;
+
 	auto ResE = m_RenderTargetViewList.emplace(Hash, View);
-	if (!ResE.second) {
-		fmt::print("Error 'RenderTargetViewList': Hash collision\n");
+	if (!LWLogCriticalIf(ResE.second, "Error 'RenderTargetViewList': Hash collision")) {
 		View->Release();
 		return nullptr;
 	}
@@ -1475,13 +1457,11 @@ ID3D11DepthStencilView *LWDirectX11_1TextureContext::GetDepthStencilView(uint32_
 		Desc.Texture2DMSArray = { Layer, 1 };
 	} else return nullptr;
 	HRESULT Res = DriverContext.m_DXDevice->CreateDepthStencilView(m_Texture, &Desc, &View);
-	if (FAILED(Res)) {
-		fmt::print("Error 'CreateDepthStencilView': {:#x}\n", Res);
-		return nullptr;
-	}
+
+	if (!LWLogCriticalFunc<64>(Res, S_OK, "CreateDepthStencilView")) return nullptr;
+
 	auto ResE = m_DepthStencilViewList.emplace(Hash, View);
-	if (!ResE.second) {
-		fmt::print("Error DepthStencilViewList: Hash collision.\n");
+	if (!LWLogCriticalIf(ResE.second, "Error 'DepthStencilViewList': Hash collision")) {
 		View->Release();
 		return nullptr;
 	}
@@ -1530,14 +1510,11 @@ ID3D11UnorderedAccessView *LWDirectX11_1TextureContext::GetUnorderedAccessView(u
 		Desc.Texture2DArray = { MipmapLevel, Layer, 1 };
 	} else return nullptr;
 	HRESULT Res = DriverContext.m_DXDevice->CreateUnorderedAccessView(m_Texture, &Desc, &View);
-	if (FAILED(Res)) {
-		fmt::print("Error 'CreateUnorderedAccessView': {:#x}\n", Res);
-		assert(false);
-		return nullptr;
-	}
+
+	if (!LWLogCriticalFunc<64>(Res, S_OK, "CreateUnorderedAccessView")) return nullptr;
+
 	auto ResE = m_UnorderedViewList.emplace(Hash, View);
-	if (!ResE.second) {
-		fmt::print("Error UnorderedViewList: Hash Collision.\n");
+	if (!LWLogCriticalIf(ResE.second, "Error 'UnorderedViewList': Hash collision")) {
 		View->Release();
 		return nullptr;
 	}

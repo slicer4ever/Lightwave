@@ -114,9 +114,9 @@ bool LWEPlanePlaneIntersect(const LWVector3<Type> &aPlane, const LWVector3<Type>
 	LWVector2<Type> aPnt = aNrm * aPlane.z;
 	LWVector2<Type> paNrm = aNrm.Perpindicular();
 	Type t;
-	bool Result = RayPlaneIntersect(aPnt, paNrm, bPlane, &t);
+	bool Result = LWERayPlaneIntersect(aPnt, paNrm, bPlane, &t);
 	if (!Result) return false;
-	if (IntersectPnt) *IntersectPnt = aPnt - paNrm * t;
+	if (IntersectPnt) *IntersectPnt = aPnt + paNrm * t;
 	return true;
 }
 

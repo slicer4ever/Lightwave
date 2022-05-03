@@ -437,76 +437,78 @@ int32_t LWByteBuffer::WriteText(const char *Text) {
 	return WriteText((const uint8_t*)Text);
 }
 
-int32_t LWByteBuffer::ReadVariant(uint16_t *Out, const int8_t *Buffer) {
+int32_t LWByteBuffer::ReadVariant(uint16_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
 	uint64_t Val;
-	int32_t r = ReadVariant(Val, Buffer);
+	int32_t r = ReadVariant(Val, Buffer, BufferLast);
 	if (Out) *Out = (uint16_t)Val;
 	return r;
 }
 
-int32_t LWByteBuffer::ReadVariant(int16_t *Out, const int8_t *Buffer) {
+int32_t LWByteBuffer::ReadVariant(int16_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
 	uint64_t Val;
-	int32_t r = ReadVariant(Val, Buffer);
+	int32_t r = ReadVariant(Val, Buffer, BufferLast);
 	if (Out) *Out = (int16_t)Val;
 	return r;
 
 }
 
-int32_t LWByteBuffer::ReadVariant(uint32_t *Out, const int8_t *Buffer) {
+int32_t LWByteBuffer::ReadVariant(uint32_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
 	uint64_t Val;
-	int32_t r = ReadVariant(Val, Buffer);
+	int32_t r = ReadVariant(Val, Buffer, BufferLast);
 	if (Out) *Out = (uint32_t)Val;
 	return r;
-
 }
 
-int32_t LWByteBuffer::ReadVariant(int32_t *Out, const int8_t *Buffer) {
+int32_t LWByteBuffer::ReadVariant(int32_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
 	uint64_t Val;
-	int32_t r = ReadVariant(Val, Buffer);
+	int32_t r = ReadVariant(Val, Buffer, BufferLast);
 	if (Out) *Out = (int32_t)Val;
 	return r;
 }
 
-int32_t LWByteBuffer::ReadVariant(uint64_t *Out, const int8_t *Buffer) {
+int32_t LWByteBuffer::ReadVariant(uint64_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
 	uint64_t Val;
-	int32_t r = ReadVariant(Val, Buffer);
+	int32_t r = ReadVariant(Val, Buffer, BufferLast);
 	if (Out) *Out = Val;
 	return r;
 }
 
-int32_t LWByteBuffer::ReadVariant(int64_t *Out, const int8_t *Buffer) {
+int32_t LWByteBuffer::ReadVariant(int64_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
 	uint64_t Val;
-	int32_t r = ReadVariant(Val, Buffer);
+	int32_t r = ReadVariant(Val, Buffer, BufferLast);
 	if (Out) *Out = (int64_t)Val;
 	return r;
 }
 
-int32_t LWByteBuffer::ReadVariant(uint64_t &Out, const int8_t *Buffer) {
+int32_t LWByteBuffer::ReadVariant(uint64_t &Out, const int8_t *Buffer, const int8_t *BufferLast) {
 	uint64_t n = 0;
 	int32_t o = 0;
+	uint8_t *B = (uint8_t*)Buffer;
+	uint8_t *BL = (uint8_t*)BufferLast;
+
 	Out = 0;
-	for (; (((uint8_t)Buffer[o]) & 0x80) != 0; ++o, n += 7) Out = Out | ((((uint64_t)Buffer[o]) & 0x7F) << n);
-	Out |= (((uint64_t)Buffer[o])&0x7f) << n;
-	return ++o;
+	for (; B+o<BL && (B[o] & 0x80) != 0; n += 7) Out = Out | ((((uint64_t)B[o++]) & 0x7F) << n);
+	if(B+o<BL) Out |= (((uint64_t)B[o++])&0x7f) << n;
+	return o;
 }
 
-int32_t LWByteBuffer::ReadSVariant(int16_t *Out, const int8_t *Buffer) {
+int32_t LWByteBuffer::ReadSVariant(int16_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
 	int16_t Val = 0;
-	int32_t r = ReadVariant(&Val, Buffer);
+	int32_t r = ReadVariant(&Val, Buffer, BufferLast);
 	if (Out) *Out = ((Val >> 1) ^ -(Val & 1));
 	return r;
 }
 
-int32_t LWByteBuffer::ReadSVariant(int32_t *Out, const int8_t *Buffer) {
+int32_t LWByteBuffer::ReadSVariant(int32_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
 	int32_t Val = 0;
-	int32_t r = ReadVariant(&Val, Buffer);
+	int32_t r = ReadVariant(&Val, Buffer, BufferLast);
 	if (Out) *Out = ((Val >> 1) ^ -(Val & 1));
 	return r;
 }
 
-int32_t LWByteBuffer::ReadSVariant(int64_t *Out, const int8_t *Buffer) {
+int32_t LWByteBuffer::ReadSVariant(int64_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
 	int64_t Val = 0;
-	int32_t r = ReadVariant(&Val, Buffer);
+	int32_t r = ReadVariant(&Val, Buffer, BufferLast);
 	if (Out) *Out = ((Val >> 1) ^ -(Val & 1));
 	return r;
 }
@@ -561,32 +563,33 @@ int32_t LWByteBuffer::AlignPosition(uint32_t Alignment, bool Write) {
 	return r;
 }
 
-LWByteBuffer &LWByteBuffer::OffsetPosition(int32_t Offset){
+LWByteBuffer &LWByteBuffer::Seek(int32_t Offset, bool Write){
 	m_Position += Offset;
+	if(Write) m_BytesWritten = std::max<uint32_t>(m_BytesWritten, m_Position);
 	return *this;
 }
 
-int32_t LWByteBuffer::GetBufferSize(void){
+int32_t LWByteBuffer::GetBufferSize(void) const{
 	return m_BufferSize;
 }
 
-int32_t LWByteBuffer::GetBytesWritten(void){
+int32_t LWByteBuffer::GetBytesWritten(void) const{
 	return m_BytesWritten;
 }
 
-int32_t LWByteBuffer::GetPosition(void){
+int32_t LWByteBuffer::GetPosition(void) const{
 	return m_Position;
 }
 
-bool LWByteBuffer::EndOfData(void){
-	return m_Position >= m_BytesWritten;
-}
-
-bool LWByteBuffer::EndOfBuffer(void){
+bool LWByteBuffer::IsEndOfReadData(void) const{
 	return m_Position >= m_BufferSize;
 }
 
-const int8_t *LWByteBuffer::GetReadBuffer(void){
+bool LWByteBuffer::IsEndOfWriteData(void) const {
+	return m_WriteBuffer==nullptr || m_BytesWritten>=m_BufferSize;
+}
+
+const int8_t *LWByteBuffer::GetReadBuffer(void) const{
 	return m_ReadBuffer;
 }
 
@@ -595,5 +598,5 @@ LWByteBuffer::LWByteBuffer(int8_t *Buffer, uint32_t BufferSize, uint8_t Flag) : 
 LWByteBuffer::LWByteBuffer(const int8_t *ReadBuffer, uint32_t BufferSize, uint8_t Flag) : m_ReadBuffer(ReadBuffer), m_BufferSize(BufferSize), m_SelectedFunc((Flag&Network) ? 1 : 0), m_Flag(Flag | ReadOnly){}
 
 LWByteBuffer::~LWByteBuffer(){
-	if (!(m_Flag&BufferNotOwned)) LWAllocator::Destroy(m_WriteBuffer);
+	if (m_Flag&BufferOwned) LWAllocator::Destroy(m_WriteBuffer);
 }

@@ -12,7 +12,7 @@
 
 
 uint32_t LWWindow::MakeDialog(const LWUTF8Iterator &Text, const LWUTF8Iterator &Header, uint32_t DialogFlags){
-	fmt::print("Dialog: {}: {}\n", Header, Text);
+	LWLogEvent<256>("Dialog: {}: {}\n", Header, Text);
 	NDKFlushOutput();
 	return 0;
 }
@@ -365,7 +365,7 @@ bool LWWindow::ProcessWindowMessage(uint32_t Message, void *MessageData, uint64_
 
 	LWNDKEvent *Event = (LWNDKEvent*)MessageData;
 	if(Message==(uint32_t)LWNDKEventCode::Destroy){
-		fmt::print("Termination requested!\n");
+		LWLogEvent("Termination requested!\n");
 		m_Flag |= Terminate; //Since the app terminating also causes the event state to get incremented, we don't have to specify our syncing here.
 		return true;
 	}else if(Message==(uint32_t)LWNDKEventCode::InputQueueCreated){
@@ -464,12 +464,12 @@ LWWindow &LWWindow::Update(uint64_t lCurrentTime) {
 		AInputEvent *IEvent = nullptr;
 		while (AInputQueue_getEvent(m_Context.m_InputQueue, &IEvent) >= 0) {
 			if (AInputQueue_preDispatchEvent(m_Context.m_InputQueue, IEvent) != 0) {
-				fmt::print("preDispatched!\n");
+				LWLogEvent("preDispatched!");
 				continue;
 			}
 			bool Handled = false;
 			for (LWInputDevice *Device = m_FirstDevice; Device && !Handled; Device = Device->GetNext()) Handled = Device->ProcessSystemMessage(0, IEvent, lCurrentTime, this);
-			if (!Handled) fmt::print("Input event not handled.\n");
+			if (!Handled) LWLogEvent("Input event not handled.");
 			AInputQueue_finishEvent(m_Context.m_InputQueue, IEvent, Handled);
 		}
 	}
@@ -643,7 +643,7 @@ LWWindow::LWWindow(const LWUTF8Iterator &Title, const LWUTF8Iterator &Name, LWAl
 		if (DefSensor) {
 			ASensorEventQueue_enableSensor(m_Context.m_SensorQueue, DefSensor);
 			m_AccelerometerDevice = AttachInputDevice(m_Allocator->Create<LWAccelerometer>())->AsAccelerometer();
-		} else fmt::print("No accelerometer sensor detected.\n");
+		} else LWLogWarn("No accelerometer sensor detected.");
 	}
 	if (m_Flag&GyroscopeDevice) {
 		const ASensor *DefSensor = ASensorManager_getDefaultSensor(m_Context.m_SensorManager, ASENSOR_TYPE_GYROSCOPE);
@@ -654,7 +654,7 @@ LWWindow::LWWindow(const LWUTF8Iterator &Title, const LWUTF8Iterator &Name, LWAl
 			ASensorEventQueue_enableSensor(m_Context.m_SensorQueue, DefSensor);
 			m_GyroscopeDevice = AttachInputDevice(m_Allocator->Create<LWGyroscope>(Resolution, (float)Range))->AsGyroscope();
 			Env->DeleteLocalRef(jDefSensor);
-		} else fmt::print("No Gyroscope sensor detected.\n");
+		} else LWLogWarn("No Gyroscope sensor detected.");
 	}
 	Env->DeleteLocalRef(SensorManager);
 	Env->DeleteLocalRef(SensorString);

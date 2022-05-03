@@ -1,11 +1,13 @@
 #include "LWVideo/LWImage.h"
 #include "LWPlatform/LWFileStream.h"
 #include "LWCore/LWByteBuffer.h"
+#include "LWCore/LWLogger.h"
 #include "cmp_core.h"
 #include <png.h>
 #include <cstring>
 #include <cmath>
 #include <algorithm>
+#include <execution>
 
 bool LWImage::LoadImage(LWImage &Image, const LWUTF8Iterator &FilePath, LWAllocator &Allocator,LWFileStream *ExistingStream){
 	uint32_t Result = LWFileStream::IsExtensions(FilePath, "DDS", "dds", "PNG", "png", "TGA", "tga", "ktx2", "KTX2");
@@ -30,7 +32,7 @@ bool LWImage::LoadImageTGA(LWImage &Image, const LWUTF8Iterator &FilePath, LWAll
 	if (!LWFileStream::OpenStream(Stream, FilePath, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, ExistingStream)) return false;
 	uint8_t *MemBuffer = Allocator.Allocate<uint8_t>(Stream.Length());
 	Stream.Read(MemBuffer, Stream.Length());
-	LWByteBuffer Buf = LWByteBuffer((const int8_t*)MemBuffer, Stream.Length(), LWByteBuffer::BufferNotOwned);
+	LWByteBuffer Buf = LWByteBuffer((const int8_t*)MemBuffer, Stream.Length(), 0);
 	bool Result = LoadImageTGA(Image, Buf, Allocator);
 	LWAllocator::Destroy(MemBuffer);
 	return Result;
@@ -108,7 +110,7 @@ bool LWImage::LoadImageTGA(LWImage &Image, LWByteBuffer &Buffer, LWAllocator &Al
 		const uint32_t RGBUnknown = 0xFF;
 		uint32_t PackType = H.m_PerPixelBits == 4 ? RGBA8 : (H.m_PerPixelBits == 3 ? RGB8 : RGBUnknown);
 		if (PackType == RGBUnknown) return false;
-		Buf.OffsetPosition(H.m_ColorMapLength*H.m_ColorMapSize);
+		Buf.Seek(H.m_ColorMapLength*H.m_ColorMapSize);
 		Img = LWImage(LWVector2i((int32_t)H.m_Width, (int32_t)H.m_Height), 1, SRGBA, 0, nullptr, Allocator);
 		uint8_t *Texels = Img.GetTexels(0u);
 		//Offset so that we can reorganize in a forward fashion.
@@ -192,7 +194,7 @@ bool LWImage::LoadImageTGA(LWImage &Image, LWByteBuffer &Buffer, LWAllocator &Al
 		uint8_t Buffer[1024];
 		uint32_t PackType = H.m_PerPixelBits == 4 ? RGBA8 : (H.m_PerPixelBits == 3 ? RGB8 : RGBUnknown);
 		if (PackType == RGBUnknown) return false;
-		Buf.OffsetPosition(H.m_ColorMapLength*H.m_ColorMapSize);
+		Buf.Seek(H.m_ColorMapLength*H.m_ColorMapSize);
 		Img = LWImage(LWVector2i((int32_t)H.m_Width, (int32_t)H.m_Height), 1, SRGBA, 0, nullptr, Allocator);
 		uint8_t *Texels = Img.GetTexels(0u);
 		//Offset so that we can reorganize in a forward fashion.
@@ -226,7 +228,7 @@ bool LWImage::LoadImageTGA(LWImage &Image, LWByteBuffer &Buffer, LWAllocator &Al
 
 	TGA_Header Header;
 	if (!ReadHeader(Buffer, Header)) return false;
-	Buffer.OffsetPosition(Header.m_IDLength);
+	Buffer.Seek(Header.m_IDLength);
 	if (Header.m_ImageType == 1) return ReadColorMappedImage(Buffer, Header, Image, Allocator);
 	else if (Header.m_ImageType == 2) return ReadColorImage(Buffer, Header, Image, Allocator);
 	else if (Header.m_ImageType == 9) return ReadRunLengthColorMappedImage(Buffer, Header, Image, Allocator);
@@ -239,7 +241,7 @@ bool LWImage::LoadImagePNG(LWImage &Image, const LWUTF8Iterator &FilePath, LWAll
 	if (!LWFileStream::OpenStream(Stream, FilePath, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, ExistingStream)) return false;
 	uint8_t *MemBuffer = Allocator.Allocate<uint8_t>(Stream.Length());
 	Stream.Read(MemBuffer, Stream.Length());
-	LWByteBuffer Buf = LWByteBuffer((const int8_t*)MemBuffer, Stream.Length(), LWByteBuffer::BufferNotOwned);
+	LWByteBuffer Buf = LWByteBuffer((const int8_t*)MemBuffer, Stream.Length(), 0);
 	bool Result = LoadImagePNG(Image, Buf, Allocator);
 	LWAllocator::Destroy(MemBuffer);
 	return Result;
@@ -310,7 +312,7 @@ bool LWImage::LoadImageDDS(LWImage &Image, const LWUTF8Iterator &FilePath, LWAll
 	if (!LWFileStream::OpenStream(Stream, FilePath, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, ExistingStream)) return false;
 	uint8_t *MemBuffer = Allocator.Allocate<uint8_t>(Stream.Length());
 	Stream.Read(MemBuffer, Stream.Length());
-	LWByteBuffer Buf = LWByteBuffer((const int8_t*)MemBuffer, Stream.Length(), LWByteBuffer::BufferNotOwned);
+	LWByteBuffer Buf = LWByteBuffer((const int8_t*)MemBuffer, Stream.Length(), 0);
 	bool Result = LoadImageDDS(Image, Buf, Allocator);
 	LWAllocator::Destroy(MemBuffer);
 	return Result;
@@ -385,20 +387,18 @@ bool LWImage::LoadImageDDS(LWImage &Image, LWByteBuffer &Buffer, LWAllocator &Al
 		Header.m_Pitch = Buf.Read<uint32_t>();
 		Header.m_Depth = Buf.Read<uint32_t>();
 		Header.m_MipmapCount = Buf.Read<uint32_t>();
-		Buf.OffsetPosition(sizeof(uint32_t) * 11);
+		Buf.Seek(sizeof(uint32_t) * 11);
 		if (!ReadPixelFormat(Buf, Header.m_PixelFormat)) return false;
 		Header.m_Caps1 = Buf.Read<uint32_t>();
 		Header.m_Caps2 = Buf.Read<uint32_t>();
 		Header.m_Caps3 = Buf.Read<uint32_t>();
 		Header.m_Caps4 = Buf.Read<uint32_t>();
-		Buf.OffsetPosition(sizeof(uint32_t));
+		Buf.Seek(sizeof(uint32_t));
 		return true;
 	};
 	uint32_t Header = Buffer.Read<uint32_t>();
-	if (Header != MagicHeader) {
-		fmt::print("dds has invalid header. {:#x} - {:#x}\n", Header, MagicHeader);
-		return false;
-	}
+	if(!LWLogCriticalIf<64>(Header==MagicHeader, "dds has invalid header. {:#x} - {:#x}", Header, MagicHeader)) return false;
+
 	DDS_Header dHeader;
 	if (!ReadHeader(Buffer, dHeader)) return false;
 	uint32_t PackType = -1;
@@ -466,7 +466,7 @@ bool LWImage::LoadImageDDS(LWImage &Image, LWByteBuffer &Buffer, LWAllocator &Al
 			o += Len;
 		}
 	}
-	Buffer.OffsetPosition(o);
+	Buffer.Seek(o);
 	return true;
 };
 
@@ -475,7 +475,7 @@ bool LWImage::LoadImageKTX2(LWImage &Image, const LWUTF8Iterator &FilePath, LWAl
 	if (!LWFileStream::OpenStream(Stream, FilePath, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, ExistingStream)) return false;
 	uint8_t *MemBuffer = Allocator.Allocate<uint8_t>(Stream.Length());
 	Stream.Read(MemBuffer, Stream.Length());
-	LWByteBuffer Buf = LWByteBuffer((const int8_t*)MemBuffer, Stream.Length(), LWByteBuffer::BufferNotOwned);
+	LWByteBuffer Buf = LWByteBuffer((const int8_t*)MemBuffer, Stream.Length(), 0);
 	bool Result = LoadImageKTX2(Image, Buf, Allocator);
 	LWAllocator::Destroy(MemBuffer);
 	return Result;
@@ -664,11 +664,11 @@ bool LWImage::LoadImageKTX2(LWImage &Image, LWByteBuffer &Buffer, LWAllocator &A
 				if (!KTXImageDesc::Deserialize(GD.m_ImageDescriptors[i], Buf)) return false;
 			}
 			GD.m_Endpoints = Buf.GetReadBuffer() + Buf.GetPosition();
-			Buf.OffsetPosition(GD.m_EndpointLength);
+			Buf.Seek(GD.m_EndpointLength);
 			GD.m_Selectors = Buf.GetReadBuffer() + Buf.GetPosition();
-			Buf.OffsetPosition(GD.m_SelectorLength);
+			Buf.Seek(GD.m_SelectorLength);
 			GD.m_Tables = Buf.GetReadBuffer() + Buf.GetPosition();
-			Buf.OffsetPosition(GD.m_TableLength);
+			Buf.Seek(GD.m_TableLength);
 			GD.m_Extended = Buf.GetReadBuffer() + Buf.GetPosition();
 			return true;
 		};
@@ -712,7 +712,7 @@ bool LWImage::LoadImageKTX2(LWImage &Image, LWByteBuffer &Buffer, LWAllocator &A
 					else if (PackSize == 64) KImg.CopyTexels(TSize, (uint16_t*)Texels, (uint8_t*)WriteBuffer); //16
 					else if (PackSize == 128) KImg.CopyTexels(TSize, (uint32_t*)Texels, (uint8_t*)WriteBuffer); //32 bit rgba format.
 				} else return false;
-				Buffer.OffsetPosition(KImg.m_rgbSliceLength + KImg.m_alphaSliceLength);
+				Buffer.Seek(KImg.m_rgbSliceLength + KImg.m_alphaSliceLength);
 			}
 		}
 	}
@@ -722,17 +722,14 @@ bool LWImage::LoadImageKTX2(LWImage &Image, LWByteBuffer &Buffer, LWAllocator &A
 
 bool LWImage::SaveImagePNG(LWImage &Image, const LWUTF8Iterator &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream) {
 	LWFileStream Stream;
-	if (!LWFileStream::OpenStream(Stream, FilePath, LWFileStream::WriteMode | LWFileStream::BinaryMode, Allocator, ExistingStream)) {
-		fmt::print("Error opening file to save png: '{}'\n", FilePath);
-		return false;
-	}
+	if(!LWLogCriticalIf<256>(LWFileStream::OpenStream(Stream, FilePath, LWFileStream::WriteMode | LWFileStream::BinaryMode, Allocator, ExistingStream), "Error opening file to save png: '{}'", FilePath)) return false;
+
 	LWByteBuffer BB;
 	uint32_t Len = SaveImagePNG(Image, BB);
 	if (!Len) return false;
 	uint8_t *Buf = Allocator.Allocate<uint8_t>(Len);
-	BB = LWByteBuffer((int8_t*)Buf, Len, LWByteBuffer::BufferNotOwned);
-	if (SaveImagePNG(Image, BB)!=Len) {
-		fmt::print("Image changed size.\n");
+	BB = LWByteBuffer((int8_t*)Buf, Len, 0);
+	if(!LWLogCriticalIf(SaveImagePNG(Image, BB)==Len, "Image changed size.")) {
 		LWAllocator::Destroy(Buf);
 		return false;
 	}
@@ -782,17 +779,14 @@ uint32_t LWImage::SaveImagePNG(LWImage &Image, LWByteBuffer &Buf) {
 
 bool LWImage::SaveImageDDS(LWImage &Image, const LWUTF8Iterator &FilePath, LWAllocator &Allocator, LWFileStream *ExistingStream) {
 	LWFileStream Stream;
-	if (!LWFileStream::OpenStream(Stream, FilePath, LWFileStream::WriteMode | LWFileStream::BinaryMode, Allocator, ExistingStream)) {
-		fmt::print("Error opening file to save dds: '{}'\n", FilePath);
-		return false;
-	}
+	if(!LWLogCriticalIf<256>(LWFileStream::OpenStream(Stream, FilePath, LWFileStream::WriteMode | LWFileStream::BinaryMode, Allocator, ExistingStream), "Error opening file to save dds: '{}'", FilePath)) return false;
+
 	LWByteBuffer BB;
 	uint32_t Len = SaveImageDDS(Image, BB);
 	if (!Len) return false;
 	uint8_t *Buf = Allocator.Allocate<uint8_t>(Len);
-	BB = LWByteBuffer((int8_t*)Buf, Len, LWByteBuffer::BufferNotOwned);
-	if (SaveImageDDS(Image, BB) != Len) {
-		fmt::print("Image has changed size.\n");
+	BB = LWByteBuffer((int8_t*)Buf, Len, 0);
+	if(!LWLogCriticalIf(SaveImageDDS(Image, BB) == Len, "Image has changed size.")) {
 		LWAllocator::Destroy(Buf);
 		return false;
 	}
@@ -965,51 +959,57 @@ uint32_t LWImage::SaveImageDDS(LWImage &Image, LWByteBuffer &Buffer) {
 uint32_t LWImage::RGBA8toBC(const LWVector2i &TexelsSize, const uint8_t *InTexels, uint8_t *OutTexels, uint32_t BCFormat) {
 	const uint32_t DXTBlockSize[] = { 8, 8, 16,16, 16,16, 8,8, 16,16, 16,16, 16,16};
 	if (!InTexels) return GetLength2D(TexelsSize, BCFormat);
-
+	uint8_t Array;
 	uint32_t Stride = TexelsSize.x * sizeof(uint32_t);
 	uint32_t dBlockSize = DXTBlockSize[BCFormat - BC1];
 	uint32_t BlocksWidth = TexelsSize.x / 4;
 	uint32_t BlocksHeight = TexelsSize.y / 4;
-
-	for (uint32_t y = 0; y < BlocksHeight; y++) {
-		for (uint32_t x = 0; x < BlocksWidth; x++) {
-			const uint8_t *InBlock = InTexels + (x * 16 + y * 4 * Stride);
-			uint8_t *OutBlock = OutTexels + x * dBlockSize + y * BlocksWidth * dBlockSize;
-			if (BCFormat == BC1)	CompressBlockBC1((const unsigned char*)InBlock, Stride, (unsigned char*)OutBlock);
-			else if (BCFormat == BC2) CompressBlockBC2((const unsigned char*)InBlock, Stride, (unsigned char*)OutBlock);
-			else if (BCFormat == BC3) CompressBlockBC3((const unsigned char*)InBlock, Stride, (unsigned char*)OutBlock);
-		}
-	}
+	std::for_each(
+		std::execution::par_unseq, //Comment out if < C++17
+		&Array, &Array + (BlocksWidth*BlocksHeight), [&BlocksWidth, &BlocksHeight, &Array, &InTexels, &OutTexels, &BCFormat, &Stride, &dBlockSize](uint8_t &pIndex) {
+		uint32_t iIndex = (uint32_t)(uintptr_t)(&pIndex - &Array);
+		uint32_t x = iIndex % BlocksWidth;
+		uint32_t y = iIndex / BlocksWidth;
+		const uint8_t *InBlock = InTexels + (x * 16 + y * 4 * Stride);
+		uint8_t *OutBlock = OutTexels + x * dBlockSize + y * BlocksWidth * dBlockSize;
+		if (BCFormat == BC1)	CompressBlockBC1((const unsigned char*)InBlock, Stride, (unsigned char*)OutBlock);
+		else if (BCFormat == BC2) CompressBlockBC2((const unsigned char*)InBlock, Stride, (unsigned char*)OutBlock);
+		else if (BCFormat == BC3) CompressBlockBC3((const unsigned char*)InBlock, Stride, (unsigned char*)OutBlock);
+	});
 	return BlocksWidth * BlocksHeight * 8;
 }
 
 uint32_t LWImage::BCtoRGBA8(const LWVector2i &TexelsSize, const uint8_t *InTexels, uint8_t *OutTexels, uint32_t BCFormat) {
-	unsigned char TempBlock[64];
 	const uint32_t DXTBlockSize[] = { 8, 8, 16,16, 16,16, 8,8, 16,16, 16,16, 16,16 };
 	if (!InTexels) return TexelsSize.x * TexelsSize.y * 4;
+	uint8_t Array;
 	uint32_t Stride = TexelsSize.x * sizeof(uint32_t);
 	uint32_t dBlockSize = DXTBlockSize[BCFormat - BC1];
 	uint32_t BlocksWidth = TexelsSize.x / 4;
 	uint32_t BlocksHeight = TexelsSize.y / 4;
-	for (uint32_t y = 0; y < BlocksHeight; y++) {
-		for (uint32_t x = 0; x < BlocksWidth; x++) {
-			const uint8_t *InBlock = InTexels + x * dBlockSize + y * BlocksWidth * dBlockSize;
-			uint8_t *OutBlock = OutTexels + (x * 16 + y * 4 * Stride);
-			if (BCFormat == BC1) DecompressBlockBC1((const unsigned char*)InBlock, TempBlock);
-			else if (BCFormat == BC2) DecompressBlockBC2((const unsigned char*)InBlock, TempBlock);
-			else if (BCFormat == BC3) DecompressBlockBC3((const unsigned char*)InBlock, TempBlock);
-			for (uint32_t oy = 0; oy < 4; oy++) {
-				for (uint32_t ox = 0; ox < 4; ox++) {
-					uint8_t *InTexels = TempBlock + ox * 4 + oy * 16;
-					uint8_t *OutTexels = OutBlock + ox * 4 + oy * Stride;
-					OutTexels[0] = InTexels[0];
-					OutTexels[1] = InTexels[1];
-					OutTexels[2] = InTexels[2];
-					OutTexels[3] = InTexels[3];
-				}
+	std::for_each(
+		std::execution::par_unseq, //Comment out if < C++17
+		&Array, &Array + (BlocksWidth * BlocksHeight), [&BlocksWidth, &BlocksHeight, &Array, &InTexels, &OutTexels, &BCFormat, &Stride, &dBlockSize](uint8_t &pIndex) {
+		unsigned char TempBlock[64];
+		uint32_t iIndex = (uint32_t)(uintptr_t)(&pIndex - &Array);
+		uint32_t x = iIndex % BlocksWidth;
+		uint32_t y = iIndex / BlocksWidth;
+		const uint8_t *InBlock = InTexels + x * dBlockSize + y * BlocksWidth * dBlockSize;
+		uint8_t *OutBlock = OutTexels + (x * 16 + y * 4 * Stride);
+		if (BCFormat == BC1) DecompressBlockBC1((const unsigned char*)InBlock, TempBlock);
+		else if (BCFormat == BC2) DecompressBlockBC2((const unsigned char*)InBlock, TempBlock);
+		else if (BCFormat == BC3) DecompressBlockBC3((const unsigned char*)InBlock, TempBlock);
+		for (uint32_t oy = 0; oy < 4; oy++) {
+			for (uint32_t ox = 0; ox < 4; ox++) {
+				uint8_t *InTexels = TempBlock + ox * 4 + oy * 16;
+				uint8_t *OutTexels = OutBlock + ox * 4 + oy * Stride;
+				OutTexels[0] = InTexels[0];
+				OutTexels[1] = InTexels[1];
+				OutTexels[2] = InTexels[2];
+				OutTexels[3] = InTexels[3];
 			}
 		}
-	}
+	});
 	return TexelsSize.x * TexelsSize.y * 4;
 }
 
@@ -1263,7 +1263,7 @@ LWImage &LWImage::Compress(uint32_t BCFormat) {
 	uint32_t TexelCnt = m_MipmapCount + 1;
 	for (uint32_t i = 0; i < ArrayCnt; i++) {
 		for (uint32_t m = 0; m < TexelCnt; m++) {
-			LWVector2i &Size = m == 0 ? m_Size.xy() : GetMipmapSize2D(m-1);
+			LWVector2i Size = m == 0 ? m_Size.xy() : GetMipmapSize2D(m-1);
 			uint32_t Len = GetLength2D(Size, BCFormat);
 			uint8_t *oPixels = m_Texels[m + i * TexelCnt];
 			uint8_t *nPixels = Alloc->Allocate<uint8_t>(Len);
@@ -1286,7 +1286,7 @@ LWImage &LWImage::Decompress(void) {
 	uint32_t TexelCnt = m_MipmapCount + 1;
 	for (uint32_t i = 0; i < ArrayCnt; i++) {
 		for (uint32_t m = 0; m < TexelCnt; m++) {
-			LWVector2i &Size = m == 0 ? m_Size.xy() : GetMipmapSize2D(m-1);
+			LWVector2i Size = m == 0 ? m_Size.xy() : GetMipmapSize2D(m-1);
 			uint32_t Len = GetLength2D(Size, RGBA8);
 			uint8_t *oPixels = m_Texels[m + i * TexelCnt];
 			uint8_t *nPixels = Alloc->Allocate<uint8_t>(Len);

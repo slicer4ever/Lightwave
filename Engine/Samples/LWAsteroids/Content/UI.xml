@@ -1,5 +1,6 @@
 <AssetManager CompiledShaderCache="App:CompiledShaderCache">
 	<Font Name="Arial" Path="App:arial.arfont" />
+	<Font Name="Roboto" Path="App:FiraSans.arfont" />
 	<Shader Type="Vertex" Name="UIVertexShader" Path="FontVertex" InputType="UIVertex" />
 	<Shader Type="Pixel" Name="UIFontShader" Path="FontMSDF" />
 	<Shader Type="Pixel" Name="UITextureShader" Path="UITexture" />
@@ -72,9 +73,10 @@
 		<SubPass Target="EmissiveBlurFBA" Source="MSEmissiveTex" />
 		<SubPass Target="EmissiveBlurFBB" Source="EmissiveBlurFBA:Color" Vertical />
 	</GausianBlurPass>
+	
 	<PPPass Name="Composite">
 		<Pipeline Name="Composite" Default="PPComposite">
-			<Resources ColorTex="MSColorTex" EmissiveTex="MSEmissiveFBB:Color" />
+			<Resources ColorTex="MSColorTex" EmissiveTex="EmissiveBlurFBB:Color" />
 		</Pipeline>
 		<SubPass Pipeline="Composite" />
 	</PPPass>
@@ -86,6 +88,10 @@
 	</UIPass>
 </Renderer>
 <UIManager>
-	<Material Name="White" Color="#FFFFFFFF" />
+	<Material Name="White" Color="#FF" />
 	<Label Name="DebugLbl" Flag="PATL|LATL" Font="Arial" Value="LWAsteroids" />
+	<Label Flag="PABR|LABR" Font="Roboto" Value="Basic Projectile tower. I'm going
+To write a bunch of crap while
+This is going on to see how well
+It works" Scale="0.28" Material="White" />
 </UIManager>

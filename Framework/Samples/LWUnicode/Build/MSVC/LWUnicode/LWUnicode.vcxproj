@@ -98,7 +98,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../../../../Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Dependency/Binarys/$(Configuration)/$(PlatformTarget)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWNetwork.lib;libfmt.lib;Ws2_32.lib;iphlpapi.lib; %(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWNetwork.lib;libfmt.lib;Ws2_32.lib;iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -117,7 +117,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../../../../Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Dependency/Binarys/$(Configuration)/$(PlatformTarget)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWNetwork.lib;libfmt.lib;Ws2_32.lib;iphlpapi.lib; %(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWNetwork.lib;libfmt.lib;Ws2_32.lib;iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -132,7 +132,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../../../../Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Dependency/Binarys/$(Configuration)/$(PlatformTarget)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWNetwork.lib;libfmt.lib;Ws2_32.lib;iphlpapi.lib; %(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWNetwork.lib;libfmt.lib;Ws2_32.lib;iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -151,7 +151,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../../../../Binarys/$(Configuration)/$(PlatformTarget)/;../../../../../../Dependency/Binarys/$(Configuration)/$(PlatformTarget)/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWNetwork.lib;libfmt.lib;Ws2_32.lib;iphlpapi.lib; %(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>LWCore.lib;LWPlatform.lib;LWNetwork.lib;libfmt.lib;Ws2_32.lib;iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

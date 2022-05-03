@@ -77,9 +77,9 @@ public:
 	static const uint32_t Disaabled = 0x1; //Disabled pass's partake in all settings except RenderPass.
 
 	/*!< \brief parse's pass attributes, geometry bucket's also have pass property(they inherit the overall pass's propertys by default). 
-		 ClearColor - color to clear to, excluding will not clear the color of the framebuffer/swapchain.
-		 ClearDepth - depth to clear to, excluding will not clear the depth of the framebuffer/swapchain.
-		 ClearStencil - stencil to clear to, excluding will not clear the stencil of the framebuffer/swapchain.
+		 ClearColor - color to clear to, excluding will not clear the color of the framebuffer/swapchain, if inheriting from a parent's propertys, leaving this value-less will remove the clearcolor flag.
+		 ClearDepth - depth to clear to, excluding will not clear the depth of the framebuffer/swapchain, if inheriting from a parent's propertys, leaving this value-less will remove the cleardepth flag.
+		 ClearStencil - stencil to clear to, excluding will not clear the stencil of the framebuffer/swapchain, if inheriting from a parent's propertys, leaving this value-less will remove the clear stencil flag.
 		 Viewport - x|y|width|height, values for custom viewport to set to, otherwise the viewport of the framebuffer/window will be used.
 		 Target - Named framebuffer target to use for the pass.
 

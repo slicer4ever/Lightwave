@@ -31,7 +31,7 @@ bool LWVideoDriver_Vulkan::DebugResult(const char *ErrorMessage, VkResult Result
 			if (ErrorList[i] == Result) break;
 		}
 		if (i >= ErrorCount) i = UnknownID;
-		if (Verbose) fmt::print("{}: {}\n", ErrorMessage, ErrorNames[i]);
+		LWLogEventv<256>(Verbose, "{}: {}", ErrorMessage, ErrorNames[i]);
 		return false;
 	}
 	return true;

@@ -13,21 +13,19 @@ Defines = -DGLEW_STATIC
 ObjPath = $(Config)/$(PlatformTarget)/
 SrcPath = ../../../Source/
 
-Sources = C++11/LWVideo/LWFrameBuffer.cpp
+Sources = C++11/LWVideo/LWFont.cpp
+Sources += C++11/LWVideo/LWFrameBuffer.cpp
 Sources += C++11/LWVideo/LWImage.cpp
 Sources += C++11/LWVideo/LWMesh.cpp
+Sources += C++11/LWVideo/LWPipeline.cpp
 Sources += C++11/LWVideo/LWShader.cpp
 Sources += C++11/LWVideo/LWTexture.cpp
 Sources += C++11/LWVideo/LWVideoBuffer.cpp
 Sources += C++11/LWVideo/LWVideoDriver.cpp
-Sources += C++11/LWVideo/LWVideoState.cpp
-Sources += C++11/LWVideo/LWFont.cpp
 Sources += C++11/LWVideo/LWVideoDriver/LWVideoDriver_OpenGL3_2.cpp
 Sources += C++11/LWVideo/LWVideoDriver/LWVideoDriver_OpenGL2_1.cpp
 Sources += X11/LWVideo/LWVideoDriver/LWVideoDriver_OpenGL3_2_X11.cpp
 Sources += X11/LWVideo/LWVideoDriver/LWVideoDriver_OpenGL2_1_X11.cpp
-Sources += Null/LWVideo/LWVideoDriver/LWVideoDriver_OpenGLES2_Null.cpp
-Sources += Null/LWVideo/LWVideoDriver/LWVideoDriver_DirectX11_1_Null.cpp
 
 T = $(Sources:.cpp=.o)
 Objs = $(addprefix $(ObjPath),$(T))

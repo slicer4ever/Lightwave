@@ -50,6 +50,8 @@ struct LWEJObject {
 
 	LWEJObject *FindChild(const LWUTF8Iterator &ChildName, LWEJson &J);
 
+	LWEJObject *GetChild(uint32_t i, LWEJson &J);
+
 	LWEJObject &PushChild(LWEJObject *Child, LWAllocator &Allocator);
 
 	LWEJObject &InsertChild(uint32_t Position, LWEJObject *Child, LWAllocator &Allocator);

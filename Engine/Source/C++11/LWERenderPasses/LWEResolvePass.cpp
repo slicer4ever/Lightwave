@@ -1,11 +1,9 @@
 #include "LWERenderPasses/LWEResolvePass.h"
 #include "LWERenderer.h"
-#include "LWELogger.h"
 
 LWEPass *LWEResolvePass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer *Renderer, LWEAssetManager *AssetManager, LWAllocator &Allocator) {
 	LWEResolvePass *RPass = Pass ? (LWEResolvePass*)Pass : Allocator.Create<LWEResolvePass>();
-	if (!LWEPass::ParseXML(Node, RPass, Renderer, AssetManager, Allocator)) {
-		LWELogCritical<256>("could not create pass '{}'", Node->GetName());
+	if(!LWLogCriticalIf<256>(LWEPass::ParseXML(Node, RPass, Renderer, AssetManager, Allocator), "Pass {}: Failed to create.", Node->GetName())) {
 		if (!Pass) LWAllocator::Destroy(RPass);
 		return nullptr;
 	}
@@ -19,10 +17,7 @@ LWEPass *LWEResolvePass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer *
 			RenderID = Renderer->FindNamedFrameBuffer(SplitList[0], false);
 			if (RenderID) {
 				Attachment = SplitCnt == 2 ? SplitList[1].CompareList("Color", "Color1", "Color2", "Color3", "Color4", "Color5", "Depth") : 0;
-				if (Attachment == -1) {
-					LWELogCritical<256>("Framebuffer attachment specifier is incorrectly named: {}", SplitList[1]);
-					return 0;
-				}
+				if(!LWLogCriticalIf<256>(Attachment!=-1, "Framebuffer attachment specifier has unknown name: '{}'", SplitList[1])) return 0;
 				return RenderID | LWEPassResource::FrameBufferBit;
 			}
 		}
@@ -35,23 +30,11 @@ LWEPass *LWEResolvePass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer *
 			LWEXMLAttribute *SourceAttr = C->FindAttribute("Source");
 			LWEXMLAttribute *TargetAttr = C->FindAttribute("Target");
 			LWEXMLAttribute *MipmapLevelAttr = C->FindAttribute("MipmapLevel");
-			if (!SourceAttr) {
-				LWELogCritical<256>("Could not find attribute 'Source' for ResolvePass.");
-				continue;
-			}
-			if (!TargetAttr) {
-				LWELogCritical<256>("Could not find attribute 'Target' for ResolvePass.");
-				continue;
-			}
+			if(!LWLogCriticalIf(SourceAttr, "Could not find attribute 'Source' for ResolvePass.")) continue;
+			if(!LWLogCriticalIf(TargetAttr, "Could not find attribute 'Target' for ResolvePass.")) continue;
 			LWEResolvable Res;
-			if (!(Res.m_SourceID = FindRenderID(SourceAttr->GetValue(), Res.m_SourceAttachment))) {
-				LWELogCritical<256>("Could not find Source '{}'.", SourceAttr->GetValue());
-				continue;
-			}
-			if (!(Res.m_TargetID = FindRenderID(TargetAttr->GetValue(), Res.m_TargetAttachment))) {
-				LWELogCritical<256>("Could not find Target '{}'.", TargetAttr->GetValue());
-				continue;
-			}
+			if(!LWLogCriticalIf<256>((Res.m_SourceID = FindRenderID(SourceAttr->GetValue(), Res.m_SourceAttachment)), "ResolvePass: Could not find Source: '{}'", SourceAttr->GetValue())) continue;
+			if(!LWLogCriticalIf<256>((Res.m_TargetID = FindRenderID(TargetAttr->GetValue(), Res.m_TargetAttachment)), "ResolvePass: Could not find Target: '{}'", TargetAttr->GetValue())) continue;
 			if (MipmapLevelAttr) Res.m_MipLevel = (uint32_t)atoi(MipmapLevelAttr->GetValue().c_str());
 			RPass->PushResolve(Res);
 		}else ParseXMLChild(C, RPass, Renderer, AssetManager, Allocator);

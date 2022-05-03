@@ -1,5 +1,6 @@
 #include "LWVideo/LWVideoDrivers/LWVideoDriver_OpenGL4_5.h"
 #include "LWPlatform/LWWindow.h"
+#include "LWCore/LWLogger.h"
 #include <iostream>
 
 LWVideoDriver_OpenGL4_5 *LWVideoDriver_OpenGL4_5::MakeVideoDriver(LWWindow *Window, uint32_t Type) {
@@ -19,7 +20,7 @@ LWVideoDriver_OpenGL4_5 *LWVideoDriver_OpenGL4_5::MakeVideoDriver(LWWindow *Wind
 		for (; SourceID < SourceCnt && SourceEnums[SourceID] != Source; SourceID++) {}
 		for (; TypeID < TypeCnt && TypeEnums[TypeID] != Type; TypeID++) {}
 		for (; SeverityID < SeverityCnt && SeverityEnums[SeverityID] != Severity; SeverityID++) {}
-		fmt::print("({},{},{},{}): '{}'\n", SourceNames[SourceID], TypeNames[TypeID], SeverityNames[SeverityID], ID, Message);
+		LWLogEvent<256>("({},{},{},{}): '{}'", SourceNames[SourceID], TypeNames[TypeID], SeverityNames[SeverityID], ID, Message);
 		LWVerify(TypeID != 0);
 		return;
 	};

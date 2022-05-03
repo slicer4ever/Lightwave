@@ -3,6 +3,7 @@
 #include "LWPlatform/LWWindow.h"
 #include "LWCore/LWVector.h"
 #include "LWCore/LWMath.h"
+#include "LWCore/LWLogger.h"
 #include "LWVideo/LWImage.h"
 #include "LWVideo/LWFrameBuffer.h"
 #include "LWVideo/LWPipeline.h"
@@ -302,7 +303,7 @@ LWPipeline *LWVideoDriver_OpenGL2_1::CreatePipeline(LWPipeline *Source, LWAlloca
 		*ErrorBuffer = '\0';
 		glGetProgramInfoLog(Context.m_ProgramID, sizeof(ErrorBuffer), &Len, ErrorBuffer);
 		glDeleteProgram(Context.m_ProgramID);
-		fmt::print("Error in pipeline: {}\n", ErrorBuffer);
+		LWLogCritical<1024>("Error in pipeline: {}", ErrorBuffer);
 		return nullptr;
 	}
 	glUseProgram(Context.m_ProgramID);
@@ -337,8 +338,8 @@ LWPipeline *LWVideoDriver_OpenGL2_1::CreatePipeline(LWPipeline *Source, LWAlloca
 			glUniform1i(i, NextTex);
 			ResourceCount++;
 			NextTex++;
-		} else if(!ParseBlockAttribute(NameBuffer, Type, Length, glGetUniformLocation(Context.m_ProgramID, NameBuffer))){
-			fmt::print("Error uniform not accounted for(likely declared outside struct): '{}'\n", NameBuffer);
+		} else if(!ParseBlockAttribute(NameBuffer, Type, Length, glGetUniformLocation(Context.m_ProgramID, NameBuffer))) {
+			LWLogCritical<256>("Error uniform not accounted for(likely declared outside struct): '{}'\n", NameBuffer);
 		}
 	}
 	glUseProgram(ActiveProgramID);

@@ -143,7 +143,7 @@ public:
 	template<class Type>
 	bool Write(Type In) {
 		if (m_BufferPosition + sizeof(Type) > MaxBufferSize) return false;
-		LWByteBuffer B((int8_t*)m_Buffer, MaxBufferSize, LWByteBuffer::Network|LWByteBuffer::BufferNotOwned);
+		LWByteBuffer B((int8_t*)m_Buffer, MaxBufferSize, LWByteBuffer::Network);
 		B.SetPosition(m_BufferPosition);
 		m_BufferPosition+=B.Write(In);
 		m_BufferSize = std::max<uint32_t>(m_BufferSize, m_BufferPosition);
@@ -153,7 +153,7 @@ public:
 	template<class Type>
 	bool Write(Type *In, uint32_t Len) {
 		if (m_BufferPosition + sizeof(Type)*Len > MaxBufferSize) return false;
-		LWByteBuffer B((int8_t*)m_Buffer, MaxBufferSize, LWByteBuffer::Network | LWByteBuffer::BufferNotOwned);
+		LWByteBuffer B((int8_t*)m_Buffer, MaxBufferSize, LWByteBuffer::Network );
 		B.SetPosition(m_BufferPosition);
 		m_BufferPosition += B.Write(Len, In);
 		m_BufferSize = std::max<uint32_t>(m_BufferSize, m_BufferPosition);
@@ -162,7 +162,7 @@ public:
 
 	template<class Type>
 	Type Read() {
-		LWByteBuffer B((int8_t*)m_Buffer, MaxBufferSize, LWByteBuffer::Network | LWByteBuffer::BufferNotOwned);
+		LWByteBuffer B((int8_t*)m_Buffer, MaxBufferSize, LWByteBuffer::Network);
 		Type O = B.Read<Type>(m_BufferPosition);
 		m_BufferPosition += sizeof(Type);
 		return O;
@@ -171,7 +171,7 @@ public:
 	template<class Type>
 	bool Read(Type *Out, uint32_t Len) {
 		if (m_BufferPosition + sizeof(Type)*Len >= MaxBufferSize) return false;
-		LWByteBuffer B((int8_t*)m_Buffer, MaxBufferSize, LWByteBuffer::Network | LWByteBuffer::BufferNotOwned);
+		LWByteBuffer B((int8_t*)m_Buffer, MaxBufferSize, LWByteBuffer::Network);
 		B.Read(Out, Len, m_BufferPosition);
 		m_BufferPosition += sizeof(Type)*Len;
 		return true;

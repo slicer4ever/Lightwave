@@ -5,7 +5,7 @@
 #include "LWETypes.h"
 #include "LWPlatform/LWWindow.h"
 #include "LWEJson.h"
-#include "LWELogger.h"
+#include <LWCore/LWLogger.h>
 #include <LWPlatform/LWFileStream.h>
 #include <algorithm>
 #include <cstdarg>
@@ -40,9 +40,7 @@ LWEUILabel *LWEUILabel::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Ma
 	}else if (ValueSrcAttr) {
 		LWUTF8Iterator Source = ParseComponentAttribute(Buffer, sizeof(Buffer), ValueSrcAttr->GetValue(), ActiveComponent, ActiveComponentNode);
 		if (Localize && Localize->ParseLocalization(SBuffer, sizeof(SBuffer), Source)) Source = LWUTF8Iterator(SBuffer);
-		if (!LWFileStream::OpenStream(Stream, Source, LWFileStream::ReadMode, Allocator)) {
-			LWELogCritical<256>("loading file: '{}'", Source);
-		} else {
+		if(LWLogCriticalIf<256>(LWFileStream::OpenStream(Stream, Source, LWFileStream::ReadMode, Allocator), "Failed to open source file: '{}'", Source)) {
 			Stream.ReadText(Buffer, sizeof(Buffer));
 			Label->SetText(Buffer);
 		}

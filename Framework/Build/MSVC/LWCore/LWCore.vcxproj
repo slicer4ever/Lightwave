@@ -91,6 +91,9 @@
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Precise</FloatingPointModel>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PreprocessToFile>false</PreprocessToFile>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -103,6 +106,9 @@
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Precise</FloatingPointModel>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PreprocessToFile>false</PreprocessToFile>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -113,10 +119,12 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>../../../Includes/C++11/</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Precise</FloatingPointModel>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -131,10 +139,12 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>../../../Includes/C++11/</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Precise</FloatingPointModel>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -153,9 +163,11 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWConcurrent\LWFIFO.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWCrypto.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWGraphemeTable.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWLogger.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWMath.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWMatrix.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWQuaternion.h" />
+    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWRef.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSMatrix.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSMatrix_AVX2_Double.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSMatrix_AVX2_Float.h" />
@@ -166,7 +178,6 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSVector_AVX2_Double.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSVector_AVX_Float.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWSVector_AVX_Int.h" />
-    <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWText.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWTimer.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWTypes.h" />
     <ClInclude Include="..\..\..\Includes\C++11\LWCore\LWUnicode.h" />
@@ -184,7 +195,9 @@
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWByteBuffer.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWByteStream.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWCrypto.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWLogger.cpp" />
     <ClCompile Include="..\..\..\Source\c++11\LWCore\LWMath.cpp" />
+    <ClCompile Include="..\..\..\Source\C++11\LWCore\LWRef.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSMatrix_AVX2_Double.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSMatrix_AVX2_Float.cpp" />
     <ClCompile Include="..\..\..\Source\C++11\LWCore\LWSQuaternion_AVX2_Double.cpp" />

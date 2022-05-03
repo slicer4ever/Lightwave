@@ -3,10 +3,10 @@
 #include <LWCore/LWTypes.h>
 #include <LWPlatform/LWTypes.h>
 #include <LWVideo/LWTypes.h>
+#include <LWCore/LWLogger.h>
 #include <LWEJobQueue.h>
 #include <LWEAsset.h>
 #include <LWEUIManager.h>
-#include <LWELogger.h>
 #include <LWECamera.h>
 #include <LWERenderer.h>
 #include <LWEMesh.h>
@@ -57,10 +57,10 @@ private:
 	LWSVector4f m_LightPos = LWSVector4f(0.0f, 0.0f, 10.0f, 1.0f);
 	LWSVector4f m_LightDir = LWSVector4f(0.0f, 0.0f, -1.0f, 0.0f);
 	std::vector<Model*> m_ModelList;
-	LWELoggerTimeMetrics m_InputMetric;
-	LWELoggerTimeMetrics m_UpdateMetric;
-	LWELoggerTimeMetrics m_FrameMetric;
-	LWELoggerTimeMetrics m_RenderMetric;
+	LWLoggerTimeMetrics m_InputMetric;
+	LWLoggerTimeMetrics m_UpdateMetric;
+	LWLoggerTimeMetrics m_FrameMetric;
+	LWLoggerTimeMetrics m_RenderMetric;
 };
 
 #endif

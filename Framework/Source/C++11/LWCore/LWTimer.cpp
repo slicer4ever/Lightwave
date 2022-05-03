@@ -26,8 +26,32 @@ uint64_t LWTimer::ToMilliSecond(uint64_t Time) {
 	return ms.count();
 }
 
+uint64_t LWTimer::ToMicroSecond(uint64_t Time) {
+	std::chrono::high_resolution_clock::duration c(Time);
+	std::chrono::microseconds ms = std::chrono::duration_cast<std::chrono::microseconds>(c);
+	return ms.count();
+}
+
+uint64_t LWTimer::ToNanoSecond(uint64_t Time) {
+	std::chrono::high_resolution_clock::duration c(Time);
+	std::chrono::nanoseconds ms = std::chrono::duration_cast<std::chrono::nanoseconds>(c);
+	return ms.count();
+}
+
 uint64_t LWTimer::ToHighResolution(uint64_t Time) {
 	std::chrono::milliseconds ms(Time);
+	std::chrono::high_resolution_clock::duration c = std::chrono::duration_cast<std::chrono::high_resolution_clock::duration>(ms);
+	return c.count();
+}
+
+uint64_t LWTimer::ToHighResolutionUS(uint64_t Time) {
+	std::chrono::microseconds ms(Time);
+	std::chrono::high_resolution_clock::duration c = std::chrono::duration_cast<std::chrono::high_resolution_clock::duration>(ms);
+	return c.count();
+}
+
+uint64_t LWTimer::ToHighResolutionNS(uint64_t Time) {
+	std::chrono::nanoseconds ms(Time);
 	std::chrono::high_resolution_clock::duration c = std::chrono::duration_cast<std::chrono::high_resolution_clock::duration>(ms);
 	return c.count();
 }

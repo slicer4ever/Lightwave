@@ -1,7 +1,7 @@
 #include "LWERenderPasses/LWEShadowMapPass.h"
 #include "LWERenderer.h"
 #include "LWECamera.h"
-#include "LWELogger.h"
+#include <LWCore/LWLogger.h>
 
 //LWEShadowMapPass:
 LWEPass *LWEShadowMapPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer *Renderer, LWEAssetManager *AssetManager, LWAllocator &Allocator) {
@@ -21,12 +21,12 @@ LWEPass *LWEShadowMapPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer
 	uint32_t BucketCount = BucketsAttr ? (uint32_t)atoi(BucketsAttr->GetValue().c_str()) : 0;
 	SMPass->SetPassBitID(PassBitID);
 	if (!BucketCount) {
-		LWELogCritical("Shadowmap Pass must contain > 0 'Buckets' attributes.");
+		LWLogCritical("Shadowmap Pass must contain > 0 'Buckets' attributes.");
 		if (!Pass) LWAllocator::Destroy(SMPass);
 		return nullptr;
 	}
 	if (!ArraySizeAttr) {
-		LWELogCritical("Shadowmap pass must specify a 'ArraySize' attribute.");
+		LWLogCritical("Shadowmap pass must specify a 'ArraySize' attribute.");
 		if (!Pass) LWAllocator::Destroy(SMPass);
 		return nullptr;
 	}
@@ -36,8 +36,7 @@ LWEPass *LWEShadowMapPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer
 	LWERenderPendingTexture CubeTex = LWERenderPendingTexture(LWVector2i(), LWERenderTextureProps(LWTexture::MinLinear | LWTexture::MagLinear | LWTexture::CompareModeRefTexture | LWTexture::CompareLessEqual | LWTexture::RenderTarget, LWImage::DEPTH32, LWTexture::TextureCubeMapArray, BucketCount, 0));
 	LWERenderPendingFrameBuffer ArrayFB;
 	LWERenderPendingFrameBuffer CubeFB;
-	if (!Renderer->ParseXMLSizeAttribute(ArraySizeAttr, ArrayTex.m_StaticSize, ArrayTex.m_DynamicSize, ArrayTex.m_NamedDynamic)) {
-		LWELogCritical<256>("Could not parse ArraySize attribute: '{}'", ArraySizeAttr->GetValue());
+	if(!LWLogCriticalIf<256>(Renderer->ParseXMLSizeAttribute(ArraySizeAttr, ArrayTex.m_StaticSize, ArrayTex.m_DynamicSize, ArrayTex.m_NamedDynamic), "Could not parse ArraySize attribute: '{}'", ArraySizeAttr->GetValue())) {
 		if (!Pass) LWAllocator::Destroy(SMPass);
 		return nullptr;
 	}
@@ -49,9 +48,7 @@ LWEPass *LWEShadowMapPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer
 	uint32_t ShadowArrayID = Renderer->PushPendingResource(LWERenderPendingResource(0, LWUTF8I::Fmt<128>("{}TexArray", NameAttr->GetValue()), 0, ArrayTex));
 	uint32_t ShadowArrayFBID = Renderer->PushPendingResource(LWERenderPendingResource(0, 0, ArrayFB));
 	if (CubeSizeAttr) {
-		if (!Renderer->ParseXMLSizeAttribute(CubeSizeAttr, CubeTex.m_StaticSize, CubeTex.m_DynamicSize, CubeTex.m_NamedDynamic)) {
-			LWELogCritical<256>("Could not parse CubeSize attribute: '{}'", CubeSizeAttr->GetValue());
-		} else {
+		if(LWLogCriticalIf<256>(Renderer->ParseXMLSizeAttribute(CubeSizeAttr, CubeTex.m_StaticSize, CubeTex.m_DynamicSize, CubeTex.m_NamedDynamic), "Could not parse CubeSize attribute: '{}'", CubeSizeAttr->GetValue())) {
 			CubeFB.m_DynamicSize = CubeTex.m_DynamicSize;
 			CubeFB.m_StaticSize = CubeTex.m_StaticSize;
 			CubeFB.m_NamedDynamic = CubeTex.m_NamedDynamic;
@@ -78,7 +75,7 @@ uint32_t LWEShadowMapPass::RenderPass(LWERenderFrame &Frame, LWEGeometryRenderab
 		if (!Frame.GetGeometryBucket(i).isInitialized()) continue;
 		if ((m_FBTargetIndex[p] & CubeIndex) != 0) {
 			uint32_t CubeLayer = m_FBTargetIndex[p] & (~(CubeIndex | CubeFaceIndexBits));
-			uint32_t CubeFace = LWBitFieldGet(CubeFaceIndex, m_FBTargetIndex[p]);
+			uint32_t CubeFace = LWBitFieldGet(CubeFaceIndexBits, m_FBTargetIndex[p]);
 			CubeFB->SetCubeAttachment(LWFrameBuffer::Depth, CubeTex, CubeFace, CubeLayer, 0, (void*)(uintptr_t)LWERenderFramebufferTexture::FrameBufferName);
 			m_Propertys.m_TargetFB = m_ShadowCubeFBID;
 		} else {

@@ -53,6 +53,17 @@ public:
 		if (!Mem) return Mem;
 		return new(Mem) Type(std::forward<Args>(Arg)...);
 	}
+
+	/*!< \brief constructs a LWRef object of the specified type.
+	*	 \return a LWRef<Type> object.
+	*/
+	template<class Type, typename... Args>
+	LWRef<Type> CreateRef(Args&&... Arg) {
+		char *Mem = Allocate<char>(sizeof(Type)+sizeof(LWRef_Counter));
+		LWRef_Counter *C = new (Mem) LWRef_Counter(&LWRef_Counter::Destroy<Type>);
+		Type *V = new (Mem + sizeof(LWRef_Counter)) Type(std::forward<Args>(Arg)...);
+		return LWRef<Type>(C, V);
+	}
 	
 	/*! \brief Allocates n objects from the internal allocation buffer.
 		\param Length the number of objects to allocate.

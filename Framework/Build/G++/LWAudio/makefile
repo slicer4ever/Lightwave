@@ -14,8 +14,10 @@ SrcPath = ../../../Source/
 
 Sources = C++11/LWAudio/LWAudioDriver.cpp
 Sources += C++11/LWAudio/LWAudioStream.cpp
+Sources += C++11/LWAudio/LWAudioDriver_OpenAL.cpp
 Sources += C++11/LWAudio/LWSound.cpp
 Sources += X11/LWAudio/LWAudioDriver_X11.cpp
+
 T = $(Sources:.cpp=.o)
 Objs = $(addprefix $(ObjPath),$(T))
 all: Dirs $(Objs)

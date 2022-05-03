@@ -185,7 +185,7 @@ oPixel main(in Pixel p) {
 	Result.Color = Result.Emissive;
 	float AOcclusion = SampleIf(PBROcclussionTex, PBROcclussionSmp, PBROcclussionTexID, ModelData.HasTextureFlag, p.TexCoords[PBROcclussionTexID]).r;
 	float Alpha = p.Transparency;
-	float3 SurfaceNormal = normalize(p.TBN[2]);
+	float3 SurfaceNormal = p.TBN[2];
 	float3 Normal = SampleIf(PBRNormalTex, PBRNormalSmp, PBRNormalTexID, ModelData.HasTextureFlag, p.TexCoords[PBRNormalTexID], float4(0.5f, 0.5f, 1.0f, 0.5f)).xyz*2.0f-1.0f;
 	Normal = normalize(mul(Normal, p.TBN));
 #ifdef DEBUGNORMAL
@@ -374,7 +374,7 @@ void main(void) {
 	oColor = oEmissive;
 	float Alpha = p.Transparency;
 	float AOcclusion = SampleIf(PBROcclussionTex, PBROcclussionTexID, ModelData.HasTextureFlag, p.TexCoords[PBROcclussionTexID]).r;
-	vec3 SurfaceNormal = normalize(p.TBN[2]);
+	vec3 SurfaceNormal = p.TBN[2];
 	vec3 Normal = SampleIf(PBRNormalTex, PBRNormalTexID, ModelData.HasTextureFlag, p.TexCoords[PBRNormalTexID], vec4(0.5f, 0.5f, 1.0f, 0.5f)).xyz*2.0f-1.0f;
 	Normal = normalize(p.TBN*Normal);
 #ifdef DEBUGNORMAL

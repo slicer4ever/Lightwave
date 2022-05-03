@@ -5,6 +5,7 @@
 #include "LWVideo/LWPipeline.h"
 #include "LWCore/LWVector.h"
 #include "LWCore/LWMath.h"
+#include "LWCore/LWLogger.h"
 #include "LWPlatform/LWWindow.h"
 #include <iostream>
 #include <algorithm> 
@@ -23,8 +24,7 @@ LWVideoDriver_DirectX11_1 *LWVideoDriver_DirectX11_1::MakeVideoDriver(LWWindow *
 	if((Type&DebugLayer)!=0) Flag |= D3D11_CREATE_DEVICE_DEBUG;
 
 	auto EvaluateError = [&Context](const LWUTF8Iterator &FunctionName, HRESULT Res)->bool {
-		if (Res == S_OK) return true;
-		fmt::print("Error: '{}': {:#x}\n", FunctionName, Res);
+		if(LWLogCriticalIf<64>(Res==S_OK, "Error: '{}': {:#x}\n", FunctionName, Res)) return true;
 		if (Context.m_DXSwapChain) Context.m_DXSwapChain->Release();
 		if (Context.m_DXDeviceContext) Context.m_DXDeviceContext->Release();
 		if (Context.m_DXDevice) Context.m_DXDevice->Release();
@@ -92,19 +92,21 @@ bool LWVideoDriver_DirectX11_1::Update(void) {
 		if(!m_ActiveFrameBuffer) m_Context.m_DXDeviceContext->OMSetRenderTargets(0, nullptr, nullptr);
 		if(m_Context.m_BackBuffer) m_Context.m_BackBuffer->Release();
 		if(m_Context.m_BackBufferDepthStencilView) m_Context.m_BackBufferDepthStencilView->Release();
-		if (FAILED(m_Context.m_DXSwapChain->ResizeBuffers(0, Size.x, Size.y, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT))) {
-			fmt::print("Error: Failed to resize backbuffer's.\n");
-			return false;
-		}
+		
+		if(!LWLogCriticalIf(m_Context.m_DXSwapChain->ResizeBuffers(0, Size.x, Size.y, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT)==S_OK, "Error: Failed to resize backbuffers.")) return false;
+
 		m_WaitObject = nullptr;
 		m_Context.m_DXSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&TexBackBuffer);
 		m_Context.m_DXDevice->CreateRenderTargetView(TexBackBuffer, &RTV, &m_Context.m_BackBuffer);
 		
 		D3D11_TEXTURE2D_DESC Desc = { (uint32_t)Size.x, (uint32_t)Size.y, 1, 1, DXGI_FORMAT_D24_UNORM_S8_UINT ,{ 1, 0 }, D3D11_USAGE_DEFAULT, D3D11_BIND_DEPTH_STENCIL, 0, 0 };
 		HRESULT Res = m_Context.m_DXDevice->CreateTexture2D(&Desc, nullptr, &DepthStencilBuffer);
-		if (FAILED(Res)) fmt::print("Failed making new depthstencil texture: {:#x}", Res);
+		
+		LWLogCriticalIf<128>(Res==S_OK, "Failed making new depthstencil texture: {:#x}", Res);
+
 		Res = m_Context.m_DXDevice->CreateDepthStencilView(DepthStencilBuffer, nullptr, &m_Context.m_BackBufferDepthStencilView);
-		if (FAILED(Res)) fmt::print("Failed making new depthstencil view: {:#x}", Res);
+		LWLogCriticalIf<128>(Res == S_OK, "Failed making new depthstencil view: {:#x}", Res);
+
 		if(!m_ActiveFrameBuffer) m_Context.m_DXDeviceContext->OMSetRenderTargets(1, &m_Context.m_BackBuffer, m_Context.m_BackBufferDepthStencilView);
 		if(TexBackBuffer) TexBackBuffer->Release();
 		if(DepthStencilBuffer) DepthStencilBuffer->Release();

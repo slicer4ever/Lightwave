@@ -145,10 +145,10 @@ App::App(const LWUTF8Iterator &Path, LWAllocator &Allocator) : m_Allocator(Alloc
 	LWVideoMode Current = LWVideoMode::GetActiveMode();
 	LWVector2i ScreenSize = Current.GetSize();
 	m_Window = m_Allocator.Create<LWWindow>(Title, "LWForward+", m_Allocator, LWWindow::WindowedMode | LWWindow::MouseDevice | LWWindow::KeyboardDevice, ScreenSize / 2 - WndSize / 2, WndSize);
-	uint32_t TargetDriver = LWVideoDriver::DirectX11_1;
+	uint32_t TargetDriver = LWVideoDriver::DirectX11_1 | LWVideoDriver::DebugLayer;
 
 	m_Driver = LWVideoDriver::MakeVideoDriver(m_Window, TargetDriver);
-	if (!m_Driver) {
+	if (!m_Driver) { 
 		m_Flag |= Terminate;
 		return;
 	}

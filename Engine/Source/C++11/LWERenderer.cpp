@@ -4,7 +4,7 @@
 #include <LWCore/LWUnicodeIterator.h>
 #include <LWCore/LWTimer.h>
 #include <LWVideo/LWImage.h>
-#include "LWELogger.h"
+#include <LWCore/LWLogger.h>
 #include "LWERenderPasses/LWEGeometryPass.h"
 #include "LWERenderPasses/LWEShadowMapPass.h"
 #include "LWERenderPasses/LWEPPPass.h"
@@ -37,14 +37,8 @@ bool LWERenderer::ParseXMLSizeAttribute(LWEXMLAttribute *SizeAttribute, LWVector
 bool LWERenderer::ParseXMLFrameBuffer(LWEXMLNode *Node) {
 	LWEXMLAttribute *NameAttr = Node->FindAttribute("Name");
 	LWEXMLAttribute *SizeAttr = Node->FindAttribute("Size");
-	if (!NameAttr) {
-		LWELogCritical<256>("Framebuffer is missing Name attribute.");
-		return true;
-	}
-	if (!SizeAttr) {
-		LWELogCritical<256>("Framebuffer {} is missing Size attribute.", NameAttr->GetValue());
-		return true;
-	}
+	if(!LWLogCriticalIf(NameAttr, "Framebuffer is missing 'Name' attribute.")) return true; //return true as we don't want children nodes processed.
+	if(!LWLogCriticalIf<256>(SizeAttr, "Framebuffer {}: Missing 'Size' attribute.", NameAttr->GetName())) return true;
 
 	auto ParseAttachment = [](LWEXMLAttribute *Attr, LWERenderFramebufferTexture &Attachment, uint32_t Samples) {
 		const uint32_t StateList[]     = { LWTexture::MinNearest,   LWTexture::MagNearest,   LWTexture::WrapSClampToEdge,   LWTexture::WrapTClampToEdge,   LWTexture::WrapRClampToEdge,   LWTexture::CompareNone,   LWTexture::DepthRead,  LWTexture::MinLinear,   LWTexture::MinNearestMipmapNearest,  LWTexture::MinLinearMipmapNearest,   LWTexture::MinNearestMipmapLinear,   LWTexture::MinLinearMipmapLinear,  LWTexture::MagLinear,   LWTexture::WrapSClampToBorder,   LWTexture::WrapSMirroredRepeat,   LWTexture::WrapSRepeat,   LWTexture::WrapTClampToBorder,   LWTexture::WrapTMirroredRepeat,   LWTexture::WrapTRepeat,   LWTexture::WrapRClampToBorder,   LWTexture::WrapRMirroredRepeat,   LWTexture::WrapRRepeat,   LWTexture::CompareModeRefTexture,   LWTexture::CompareNever,   LWTexture::CompareAlways,   LWTexture::CompareLess,   LWTexture::CompareEqual,   LWTexture::CompareLessEqual,   LWTexture::CompareGreater,  LWTexture::CompareGreaterEqual,   LWTexture::CompareNotEqual,   LWTexture::StencilRead,   LWTexture::Anisotropy_None,   LWTexture::Anisotropy_2x,   LWTexture::Anisotropy_4x,   LWTexture::Anisotropy_8x,   LWTexture::Anisotropy_16x,   LWTexture::RenderTarget,   LWTexture::RenderBuffer,   LWTexture::MakeMipmaps };
@@ -64,7 +58,7 @@ bool LWERenderer::ParseXMLFrameBuffer(LWEXMLNode *Node) {
 				for (uint32_t i = 0; i < IterCnt; i++) {
 					uint32_t n = StateIterList[i].NextWord(true).CompareLista(StateCount, StateNames);
 					if (n == -1) {
-						LWELogWarn<256>("unknown state: '{}'", StateIterList[i]);
+						LWLogWarn<256>("unknown state: '{}'", StateIterList[i]);
 					} else State |= StateList[n];
 				}
 			}
@@ -85,7 +79,7 @@ bool LWERenderer::ParseXMLFrameBuffer(LWEXMLNode *Node) {
 					Face = SplitList[3].NextWord(true).CompareList("-X", "+X", "-Y", "+Y", "-Z", "+Z");
 					if (Face == -1) {
 						Face = 0;
-						if (!SplitList[3].AtEnd()) LWELogWarn<256>("unknown face specified: '{}'", SplitList[3]);
+						if (!SplitList[3].AtEnd()) LWLogWarn<256>("unknown face specified: '{}'", SplitList[3]);
 					}
 				}
 				Attachment = LWERenderFramebufferTexture(SplitList[0], (uint32_t)atoi(SplitList[2].NextWord(true).c_str()), (uint32_t)atoi(SplitList[1].NextWord(true).c_str()), Face);
@@ -127,18 +121,10 @@ bool LWERenderer::ParseXMLTexture(LWEXMLNode *Node) {
 	LWEXMLAttribute *NameAttr = Node->FindAttribute("Name");
 	LWEXMLAttribute *SizeAttr = Node->FindAttribute("Size");
 	LWEXMLAttribute *PackTypeAttr = Node->FindAttribute("PackType");
-	if (!NameAttr) {
-		LWELogCritical<256>("{} is missing Name attribute.", Node->GetName());
-		return true;
-	}
-	if (!SizeAttr) {
-		LWELogCritical<256>("{} {} is missing Size attribute.", Node->GetName(), NameAttr->GetName());
-		return true;
-	}
-	if (!PackTypeAttr) {
-		LWELogCritical<256>("{} {} is missing PackType attribute.", Node->GetName(), NameAttr->GetName());
-		return true;
-	}
+	if(!LWLogCriticalIf<256>(NameAttr, "{} is missing 'Name' attribute.", Node->GetName())) return true; //return true as we don't want the parser to parse children nodes.
+	if(!LWLogCriticalIf<256>(SizeAttr, "{} {} is missing 'Size' attribute.", Node->GetName(), NameAttr->GetName())) return true;
+	if(!LWLogCriticalIf<256>(PackTypeAttr, "{} {} is missing 'PackType' attribute.", Node->GetName(), NameAttr->GetName())) return true;
+
 	LWEXMLAttribute *TextureStateAttr = Node->FindAttribute("TextureState");
 	LWEXMLAttribute *LayersAttr = Node->FindAttribute("Layers");
 	LWEXMLAttribute *SamplesAttr = Node->FindAttribute("Samples");
@@ -148,19 +134,15 @@ bool LWERenderer::ParseXMLTexture(LWEXMLNode *Node) {
 	uint32_t Layers = LayersAttr ? (uint32_t)atoi(LayersAttr->GetValue().c_str()) : 0;
 	uint32_t Samples = SamplesAttr ? (uint32_t)atoi(SamplesAttr->GetValue().c_str()) : 4;
 	if ((TexType == LWTexture::Texture2DMS || TexType == LWTexture::Texture2DMSArray) && Samples == 0) {
-		LWELogWarn<256>("{} is a multi-sampled texture with samples set to 0.", Node->GetName());
+		LWLogWarn<256>("{} is a multi-sampled texture with samples set to 0.", Node->GetName());
 	}
-	if (PackType == -1) {
-		LWELogCritical<256>("{} has unknown PackType: {}", NameAttr->GetValue(), PackTypeAttr->GetValue());
-		return true;
-	}
+	if(!LWLogCriticalIf<256>(PackType!=-1, "{} {} has unknown PackType: {}", Node->GetName(), NameAttr->GetValue(), PackTypeAttr->GetValue())) return true;
+
 	if (TextureStateAttr) {
 		uint32_t IterCnt = TextureStateAttr->GetValue().NextWord(true).SplitToken(StateIterList, StateCount, '|');
 		for (uint32_t i = 0; i < IterCnt; i++) {
 			uint32_t n = StateIterList[i].NextWord(true).CompareLista(StateCount, StateNames);
-			if (n == -1) {
-				LWELogCritical<256>("unknown state: '{}'", StateIterList[i]);
-			} else TexState |= StateList[n];
+			if(LWLogCriticalIf<256>(n!=-1, "{} {} has unknown state: '{}'", Node->GetName(), NameAttr->GetValue(), StateIterList[i])) TexState |= StateList[n];
 		}
 	}
 	LWERenderPendingTexture PT = LWERenderPendingTexture(LWVector2i(), LWERenderTextureProps(TexState, PackType, TexType, Layers, Samples));
@@ -175,47 +157,31 @@ bool LWERenderer::ParseXMLVideoBuffer(LWEXMLNode *Node) {
 	LWEXMLAttribute *NameAttr = Node->FindAttribute("Name");
 	LWEXMLAttribute *TypeSizeAttr = Node->FindAttribute("TypeSize");
 	LWEXMLAttribute *CountAttr = Node->FindAttribute("Count");
-	if (!NameAttr) {
-		LWELogCritical<256>("{} is missing Name attribute.", Node->GetName());
-		return true;
-	}
-	if (!TypeSizeAttr) {
-		LWELogCritical<256>("{} is missing TypeSize attribute.", NameAttr->GetValue());
-		return true;
-	}
-	if (!CountAttr) {
-		LWELogCritical<256>("{} is missing Count attribute.", NameAttr->GetValue());
-		return true;
-	}
+	if(!LWLogCriticalIf<256>(NameAttr, "{} is missing 'Name' attribute.", Node->GetName())) return true; //return true so we skip parsing any children attributes.
+	if(!LWLogCriticalIf<256>(TypeSizeAttr, "{} is missing 'TypeSize' attribute.", NameAttr->GetValue())) return true;
+	if(!LWLogCriticalIf<256>(CountAttr, "{} is missing 'Count' attribute.", NameAttr->GetValue())) return true;
+
 	LWEXMLAttribute *UsageAttr = Node->FindAttribute("Usage");
 
 	uint32_t TypeSize = (uint32_t)atoi(TypeSizeAttr->GetValue().c_str());
-	if (!TypeSize) {
-		LWELogCritical<256>("{} has invalid '{}' TypeSize.", NameAttr->GetValue(), TypeSizeAttr->GetValue());
-		return true;
-	}
 	uint32_t Count = (uint32_t)atoi(CountAttr->GetValue().c_str());
-	if (!Count) {
-		LWELogCritical<256>("{} has invalid '{}' Count.", NameAttr->GetValue(), CountAttr->GetValue());
-		return true;
-	}
+
+	if(!LWLogCriticalIf<256>(TypeSize, "{} has invalid '{}' TypeSize.", NameAttr->GetValue(), TypeSizeAttr->GetValue())) return true;
+	if(!LWLogCriticalIf<256>(Count, "{} has invalid '{}' Count.", NameAttr->GetValue(), CountAttr->GetValue())) return true;
 
 	uint32_t UsageType = LWVideoBuffer::Static;
 	if (UsageAttr) UsageType = UsageAttr->GetValue().NextWord(true).CompareList("PersistentMapped", "Static", "WriteDiscardable", "WriteNoOverlap", "Readable", "GPUResource");
-	if (UsageType == -1) {
-		LWELogCritical<256>("{} has invalid '{}' Usage type.", NameAttr->GetValue(), UsageAttr->GetValue());
-		return true;
-	}
+	
+	if(!LWLogCriticalIf<256>(UsageType!=-1, "{} has invalid '{}' Usage Type.", NameAttr->GetValue(), UsageAttr->GetValue())) return true;
+
 	PushPendingResource(LWERenderPendingResource(0, NameAttr->GetValue(), 0, LWERenderPendingBuffer(nullptr, BufferType, UsageType, TypeSize, Count)));
 	return true;
 }
 
 bool LWERenderer::ParseXMLNamedDynamicScalar(LWEXMLNode *Node) {
 	LWEXMLAttribute *NameAttr = Node->FindAttribute("Name");
-	if (!NameAttr) {
-		LWELogCritical<256>("{} must have a Name attribute.", Node->GetName());
-		return true;
-	}
+	if(!LWLogCriticalIf<256>(NameAttr, "{} must have a 'Name' attribute.", Node->GetName())) return true; //return true so the parser skips children.
+
 	LWEXMLAttribute *WidthAttr = Node->FindAttribute("Width");
 	LWEXMLAttribute *HeightAttr = Node->FindAttribute("Height");
 	LWEXMLAttribute *FORCEAttr = Node->FindAttribute("FORCE");
@@ -234,10 +200,8 @@ bool LWERenderer::ParseXMLNamedDynamicScalar(LWEXMLNode *Node) {
 bool LWERenderer::ParseXMLBlockGeometry(LWEXMLNode *Node) {
 	LWEXMLAttribute *NameAttr = Node->FindAttribute("Name");
 	LWEXMLAttribute *TypeAttr = Node->FindAttribute("Type");
-	if (!NameAttr) {
-		LWELogCritical<256>("{} must have a Name attribute.", Node->GetName());
-		return true;
-	}
+
+	if(!LWLogCriticalIf<256>(NameAttr, "{} must have a 'Name' attribute.", Node->GetName())) return true; //return true so the parser skips children.
 
 	auto ParseAttributeMap = [](LWEXMLNode *N, LWShaderInput *Attributes)->uint32_t {
 		//                                                       Float,      Int,        UInt,       Double,     Vec2,       Vec3,       Vec4,       uVec2,      uVec3,      uVec4,      iVec2,      iVec3,      iVec4,      dVec2,      dVec3,      dVec4
@@ -255,10 +219,8 @@ bool LWERenderer::ParseXMLBlockGeometry(LWEXMLNode *Node) {
 			uint32_t TypeHash = TypeIter.Hash();
 			uint32_t T = 0;
 			for (; T < LWShaderInput::Count && TypeNameHashs[T] != TypeHash; T++) {}
-			if (T >= LWShaderInput::Count) {
-				LWELogCritical<256>("unknown type: '{}' for Attribute: '{}'", A.GetValue(), A.GetName());
-				continue;
-			}
+			if(!LWLogCriticalIf<256>(T<LWShaderInput::Count, "Unknown type: '{}' for attributes: '{}'", A.GetValue(), A.GetName())) continue;
+
 			Attributes[AttributeCount++] = LWShaderInput(A.m_Name, T, Length);
 		}
 		return AttributeCount;
@@ -295,10 +257,8 @@ bool LWERenderer::ParseXMLBlockGeometry(LWEXMLNode *Node) {
 	uint32_t PositionLayoutCount = 0;
 	if (TypeAttr) {
 		uint32_t TypeID = TypeAttr->GetValue().CompareList("StaticVertex", "SkeletonVertex");
-		if (TypeID == -1) {
-			LWELogCritical<256>("block {} has unknown type: {}", NameAttr->GetValue(), TypeAttr->GetValue());
-			return true;
-		}
+		if(!LWLogCriticalIf<256>(TypeID!=-1, "Block {} has unknown type: {}", NameAttr->GetValue(), TypeAttr->GetValue())) return true;
+
 		PositionLayoutCount = KnownTypeCounts[TypeID].first;
 		AttributeLayoutCount = KnownTypeCounts[TypeID].second;
 		std::copy(KnownTypePositionMap[TypeID], KnownTypePositionMap[TypeID] + PositionLayoutCount, PositionLayout);
@@ -310,15 +270,13 @@ bool LWERenderer::ParseXMLBlockGeometry(LWEXMLNode *Node) {
 		uint32_t cID = C->GetName().CompareList("PositionMap", "AttributeMap");
 		if (cID == 0) PositionLayoutCount = ParseAttributeMap(C, PositionLayout);
 		else if (cID == 1) AttributeLayoutCount = ParseAttributeMap(C, AttributeLayout);
-		else LWELogWarn<256>("Unknown node: '{}'", C->GetName());
+		else LWLogWarn<256>("Unknown node: '{}'", C->GetName());
 	}
 	if (!PositionLayoutCount) PositionLayout[PositionLayoutCount++] = LWShaderInput("Position", LWShaderInput::Vec4, 1);
 
 	LWERendererBlockGeometry *Geom = CreateBlockedGeometry(NameAttr->GetValue(), PositionLayout, PositionLayoutCount, AttributeLayout, AttributeLayoutCount, LocalAttr != nullptr, VerticesPerBlock, MaxVerticeBlocks, IndicesPerBlock, MaxIndiceBlocks);
-	if (!Geom) {
-		LWELogCritical<256>("{} could not be created.", NameAttr->GetValue());
-		return true;
-	}
+	if(!LWLogCriticalIf<256>(Geom, "Failed to create {}.", NameAttr->GetValue())) return true;
+
 	if (BuildPrimitivesAttr) Geom->BuildAllPrimitives(this);
 	if (DebugAttr) m_DebugGeometry = Geom;
 	return true;
@@ -338,14 +296,10 @@ bool LWERenderer::ParseXML(LWEXMLNode *Node, void *UserData, LWEXML*) {
 		if (ProcessedResource) ProcessPendingResources(-1); //we want to upload immediately as we'll potentially be referencing it by pass's:
 		else {
 			auto Iter = PassMap->find(C->GetName().Hash());
-			if (Iter == PassMap->end()) {
-				LWELogCritical<256>("Unknown render pass '{}'", C->GetName());
-			} else {
+			if(LWLogCriticalIf<256>(Iter!=PassMap->end(), "Unknown render pass: '{}'", C->GetName())) {
 				LWEPass *P = (*Iter).second(C, nullptr, this, m_AssetManager, m_Allocator);
-				if (!P) {
-					LWELogCritical<256>("Failed to create pass '{}'", C->GetName());
-				} else {
-					assert(m_PassList.size() < LWEMaxPasses);
+				if(LWLogCriticalIf<256>(P, "Failed to create pass '{}'", C->GetName())) {
+					assert(m_PassList.size()<LWEMaxPasses);
 					m_PassList.push_back(P);
 				}
 			}
@@ -578,10 +532,7 @@ void LWERenderer::ProcessPendingResources(uint64_t MaxPerFrameTime) {
 
 	auto ProcessBlockGeometryResource = [this](LWERenderPendingResource &Resource, LWERendererPendingBlockGeometry &PGeometry) {
 		auto Iter = m_NamedBlockGeometryMap.find(Resource.m_NameHash);
-		if (Iter == m_NamedBlockGeometryMap.end()) {
-			LWELogCritical<256>("could not find named block geometry with hash {:#x}", Resource.m_NameHash);
-			return;
-		}
+		if(!LWLogCriticalIf<256>(Iter!=m_NamedBlockGeometryMap.end(), "Could not find named block geometry with hash: {:#x}", Resource.m_NameHash)) return;
 		LWERendererBlockGeometry *BGeom = (*Iter).second;
 		if (Resource.isDestroyResource()) {
 			BGeom->Free(Resource.m_ID); 
@@ -609,8 +560,7 @@ void LWERenderer::ProcessPendingResources(uint64_t MaxPerFrameTime) {
 LWERendererBlockGeometry *LWERenderer::CreateBlockedGeometry(const LWUTF8I &Name, LWShaderInput *PositionLayout, uint32_t PositionLayoutCount, LWShaderInput *AttributeLayout, uint32_t AttributeLayoutCount, bool LocalCopy, uint32_t VerticesPerBlock, uint32_t MaxVerticeBlocks, uint32_t IndicesPerBlock, uint32_t MaxIndiceBlocks) {
 	LWERendererBlockGeometry *Geom = m_Allocator.Create<LWERendererBlockGeometry>(m_Driver, m_Allocator, Name.Hash(), PositionLayout, PositionLayoutCount, AttributeLayout, AttributeLayoutCount, LocalCopy, VerticesPerBlock, MaxVerticeBlocks, IndicesPerBlock, MaxIndiceBlocks);
 	auto Res = m_NamedBlockGeometryMap.insert({ Name.Hash(), Geom });
-	if (!Res.second) {
-		LWELogCritical<256>("Geometry block with Name '{}' already exists(or hash collision occurred.)", Name);
+	if(!LWLogCriticalIf<256>(Res.second, "Geometry block with name '{}' already exists(or hash collision occurred.)", Name)) {
 		Geom->Release(m_Driver);
 		LWAllocator::Destroy(Geom);
 		return nullptr;
@@ -621,8 +571,7 @@ LWERendererBlockGeometry *LWERenderer::CreateBlockedGeometry(const LWUTF8I &Name
 LWERendererBlockGeometry *LWERenderer::CreateBlockedGeometry(uint32_t NameHash, LWShaderInput *PositionLayout, uint32_t PositionLayoutCount, LWShaderInput *AttributeLayout, uint32_t AttributeLayoutCount, bool LocalCopy, uint32_t VerticesPerBlock, uint32_t MaxVerticeBlocks, uint32_t IndicesPerBlock, uint32_t MaxIndiceBlocks) {
 	LWERendererBlockGeometry *Geom = m_Allocator.Create<LWERendererBlockGeometry>(m_Driver, m_Allocator, NameHash, PositionLayout, PositionLayoutCount, AttributeLayout, AttributeLayoutCount, LocalCopy, VerticesPerBlock, MaxVerticeBlocks, IndicesPerBlock, MaxIndiceBlocks);
 	auto Res = m_NamedBlockGeometryMap.insert({ NameHash, Geom });
-	if (!Res.second) {
-		LWELogCritical<256>("Geometry block with namehash {:#x} already exists(or hash collision occurred.)", NameHash);
+	if(!LWLogCriticalIf<256>(Res.second, "Geometry block with namehash {:#x} already exists(or hash collision occurred.", NameHash)) {
 		Geom->Release(m_Driver);
 		LWAllocator::Destroy(Geom);
 		return nullptr;
@@ -699,73 +648,49 @@ LWEPass *LWERenderer::GetPass(uint32_t Idx) {
 
 uint32_t LWERenderer::FindNamedFrameBuffer(const LWUTF8Iterator &Name, bool Verbose) {
 	auto Iter = m_NamedFramebufferMap.find(Name.Hash());
-	if (Iter == m_NamedFramebufferMap.end()) {
-		if (Verbose) LWELogCritical<256>("Could not find framebuffer with name: {}", Name);
-		return 0;
-	}
+	if(!LWLogCriticalIfv<256>(Iter!=m_NamedFramebufferMap.end(), Verbose, "Could not find framebuffer with name: {}", Name)) return 0;
 	return (*Iter).second;
 }
 
 uint32_t LWERenderer::FindNamedFrameBuffer(uint32_t NameHash, bool Verbose) {
 	auto Iter = m_NamedFramebufferMap.find(NameHash);
-	if (Iter == m_NamedFramebufferMap.end()) {
-		if (Verbose) LWELogCritical<256>("Could not find framebuffer with namehash: {#x}", NameHash);
-		return 0;
-	}
+	if(!LWLogCriticalIfv<256>(Iter!=m_NamedFramebufferMap.end(), Verbose, "Could not find framebuffer with namehash: {:#x}", NameHash)) return 0;
 	return (*Iter).second;
 }
 
 uint32_t LWERenderer::FindNamedVideoBuffer(const LWUTF8Iterator &Name, bool Verbose) {
 	auto Iter = m_NamedBufferMap.find(Name.Hash());
-	if (Iter == m_NamedBufferMap.end()) {
-		if (Verbose) LWELogCritical<256>("Could not find buffer with name: {}", Name);
-		return 0;
-	}
+	if(!LWLogCriticalIfv<256>(Iter!=m_NamedBufferMap.end(), Verbose, "Could not find buffer with name: {}", Name)) return 0;
 	return (*Iter).second;
 }
 
 uint32_t LWERenderer::FindNamedVideoBuffer(uint32_t NameHash, bool Verbose) {
 	auto Iter = m_NamedBufferMap.find(NameHash);
-	if (Iter == m_NamedBufferMap.end()) {
-		if (Verbose) LWELogCritical<256>("Could not find buffer with namehash: {:#x}", NameHash);
-		return 0;
-	}
+	if(!LWLogCriticalIfv<256>(Iter!=m_NamedBufferMap.end(), Verbose, "Could not find buffer with namehash (:#x}", NameHash)) return 0;
 	return (*Iter).second;
 }
 
 uint32_t LWERenderer::FindNamedTexture(const LWUTF8Iterator &Name, bool Verbose) {
 	auto Iter = m_NamedTextureMap.find(Name.Hash());
-	if (Iter == m_NamedTextureMap.end()) {
-		if(Verbose) LWELogCritical<256>("Could not find texture with name: {}", Name);
-		return 0;
-	}
+	if(!LWLogCriticalIfv<256>(Iter!=m_NamedTextureMap.end(), Verbose, "Could not find texture with name: {}", Name)) return 0;
 	return (*Iter).second;
 }
 
 uint32_t LWERenderer::FindNamedTexture(uint32_t NameHash, bool Verbose) {
 	auto Iter = m_NamedTextureMap.find(NameHash);
-	if (Iter == m_NamedTextureMap.end()) {
-		if(Verbose) LWELogCritical<256>("Could not find named texture with hash: {:#x}", NameHash);
-		return 0;
-	}
+	if(!LWLogCriticalIfv<256>(Iter!=m_NamedTextureMap.end(), Verbose, "Could not find named texture with hash: {:#x}", NameHash)) return 0;
 	return (*Iter).second;
 }
 
 LWERendererBlockGeometry *LWERenderer::FindNamedBlockGeometryMap(const LWUTF8Iterator &Name, bool Verbose) {
 	auto Iter = m_NamedBlockGeometryMap.find(Name.Hash());
-	if (Iter == m_NamedBlockGeometryMap.end()) {
-		if (Verbose) LWELogCritical<256>("Could not find BlockGeometryMap: '{}'", Name);
-		return nullptr;
-	}
+	if(!LWLogCriticalIfv<256>(Iter!=m_NamedBlockGeometryMap.end(), Verbose, "Could not find BlockGeometryMap: '{}'", Name)) return nullptr;
 	return (*Iter).second;
 }
 
 LWERendererBlockGeometry *LWERenderer::FindNamedBlockGeometryMap(uint32_t NameHash, bool Verbose) {
 	auto Iter = m_NamedBlockGeometryMap.find(NameHash);
-	if (Iter == m_NamedBlockGeometryMap.end()) {
-		if (Verbose) LWELogCritical<256>("Could not find BlockGeometryMap: {:#x}", NameHash);
-		return nullptr;
-	}
+	if(!LWLogCriticalIfv<256>(Iter!=m_NamedBlockGeometryMap.end(), Verbose, "Could not find BlockGeometryMap with hash: {:#x}", NameHash)) return nullptr;
 	return (*Iter).second;
 }
 
@@ -774,7 +699,7 @@ LWEPass *LWERenderer::FindNamedPass(const LWUTF8Iterator &Name, bool Verbose) {
 	for (auto &&P : m_PassList) {
 		if (P->GetNameHash() == Hash) return P;
 	}
-	if(Verbose) LWELogCritical<256>("Could not find named with: {}", Name);
+	LWLogCriticalv<256>(Verbose, "Could not find pass named: {}", Name);
 	return nullptr;
 }
 
@@ -782,25 +707,19 @@ LWEPass *LWERenderer::FindNamedPass(uint32_t NameHash, bool Verbose) {
 	for (auto &&P : m_PassList) {
 		if (P->GetNameHash() == NameHash) return P;
 	}
-	if (Verbose) LWELogCritical<256>("Could not find named pass with hash: {:#x}", NameHash);
+	LWLogCriticalv<256>(Verbose, "Could not find pass with hash: {:#x}", NameHash);
 	return nullptr;
 }
 
 const LWERendererDynamicScalar *LWERenderer::FindDynamicScalar(const LWUTF8Iterator &Name, bool Verbose) const {
 	auto Iter = m_NamedDynamicMap.find(Name.Hash());
-	if (Iter == m_NamedDynamicMap.end()) {
-		if (Verbose) LWELogCritical<256>("Could not find named dynamic scalar: {}", Name);
-		return nullptr;
-	}
+	if(!LWLogCriticalIfv<256>(Iter!=m_NamedDynamicMap.end(), Verbose, "Could not find named dynamic scalar: {}", Name)) return nullptr;
 	return &(*Iter).second;
 }
 
 const LWERendererDynamicScalar *LWERenderer::FindDynamicScalar(uint32_t NameHash, bool Verbose) const {
 	auto Iter = m_NamedDynamicMap.find(NameHash);
-	if (Iter == m_NamedDynamicMap.end()) {
-		if (Verbose) LWELogCritical<256>("Could not find named dynamic scalar: {}", NameHash);
-		return nullptr;
-	}
+	if(!LWLogCriticalIfv<256>(Iter!=m_NamedDynamicMap.end(), Verbose, "Could not find named dynamic scaler: {:#x}", NameHash)) return nullptr;
 	return &(*Iter).second;
 }
 
@@ -850,15 +769,15 @@ LWVideoBuffer *LWERenderer::GetFrameLightDataBuffer(void) {
 	return m_FrameLightDataBuffer;
 }
 
-const LWELoggerTimeMetrics &LWERenderer::GetApplyFrameMetric(void) const {
+const LWLoggerTimeMetrics &LWERenderer::GetApplyFrameMetric(void) const {
 	return m_ApplyFrameMetric;
 }
 
-const LWELoggerTimeMetrics &LWERenderer::GetPendingFrameMetric(void) const {
+const LWLoggerTimeMetrics &LWERenderer::GetPendingFrameMetric(void) const {
 	return m_PendingFrameMetric;
 }
 
-const LWELoggerTimeMetrics &LWERenderer::GetRenderFrameMetric(void) const {
+const LWLoggerTimeMetrics &LWERenderer::GetRenderFrameMetric(void) const {
 	return m_RenderFrameMetric;
 }
 
@@ -895,7 +814,7 @@ LWTexture *LWERenderer::CreateTexture(const LWVector2i &TexSize, LWERenderTextur
 	case LWTexture::Texture2DMS: return m_Driver->CreateTexture2DMS(Props.m_TextureState, Props.m_PackType, TexSize, Props.m_Samples, m_Allocator);
 	case LWTexture::Texture2DMSArray: return m_Driver->CreateTexture2DMSArray(Props.m_TextureState, Props.m_PackType, TexSize, Props.m_Samples, Props.m_Layers, m_Allocator);
 	}
-	LWELogCritical<256>("Unknown texture type {}", Props.m_TextureType);
+	LWLogCritical<256>("Unknown texture type {}", Props.m_TextureType);
 	return nullptr;
 }
 
@@ -919,10 +838,8 @@ LWFrameBuffer *LWERenderer::CreateFramebuffer(const LWVector2i &FramebufferSize,
 			if(!Attachment.m_Source) continue;
 			LWVector2i SourceSize = Attachment.m_Source->Get2DSize();
 			if (Attachment.m_Mipmap > 0) SourceSize = LWImage::MipmapSize2D(SourceSize, Attachment.m_Mipmap - 1);
-			if(SourceSize!=FramebufferSize){
-				LWELogCritical<256>("Attachment size({}) is not the same as framebuffer({}).", SourceSize, FramebufferSize);
-				continue;
-			}
+			if(!LWLogCriticalIf<256>(SourceSize==FramebufferSize, "Attachment size({}) is not the same as framebuffer({}).", SourceSize, FramebufferSize)) continue;
+
 			FB->SetCubeAttachment(i, Attachment.m_Source, Attachment.m_Face, Attachment.m_Layer, Attachment.m_Mipmap, (void*)(uintptr_t)FBAttachmentIDBit);
 		} else {
 			LWTexture *Tex = CreateTexture(FramebufferSize, FTex.m_TexProps);
@@ -1075,14 +992,12 @@ uint64_t LWERendererBlockGeometry::Allocate(uint32_t VerticeCount, uint32_t Indi
 	uint32_t IndiceBlocks = (IndiceCount + m_IndicesPerBlock - 1) / m_IndicesPerBlock;
 
 	uint32_t VerticeBlockID = m_VerticeBlocks.Allocate(VerticeBlocks);
-	if (VerticeBlockID == -1) {
-		LWELogCritical<256>("no space remains for vertices in geometry block.");
+	if(!LWLogCriticalIf(VerticeBlockID!=-1, "no space remains for vertices in geometry block.")) {
 		m_AllocateLock.unlock();
 		return NullID;
 	}
 	uint32_t IndiceBlockID = m_IndiceBlocks.Allocate(IndiceBlocks);
-	if (IndiceBlockID == -1) {
-		LWELogCritical<256>("no space remains for indices in indice block.");
+	if(!LWLogCriticalIf(IndiceBlockID!=-1, "no space remains for indices in indice block.")) {
 		m_VerticeBlocks.Free(VerticeBlockID);
 		m_AllocateLock.unlock();
 		return NullID;
@@ -1206,7 +1121,7 @@ uint32_t LWERendererBlockGeometry::FindAttribute(const LWUTF8Iterator &Name, boo
 	for (uint32_t i = 0; i < m_AttributeCount; i++) {
 		if (NameHash == m_AttributeLayout[i].m_NameHash) return i;
 	}
-	if (Verbose) LWELogEvent<256>("Could not find attribute with name: '{}'", Name);
+	if (Verbose) LWLogEvent<256>("Could not find attribute with name: '{}'", Name);
 	return -1;
 }
 
@@ -1214,7 +1129,7 @@ uint32_t LWERendererBlockGeometry::FindAttribute(uint32_t NameHash, bool Verbose
 	for (uint32_t i = 0; i < m_AttributeCount; i++) {
 		if (NameHash == m_AttributeLayout[i].m_NameHash) return i;
 	}
-	if (Verbose) LWELogEvent<256>("Could not find attribute with namehash: '{:#x}'", NameHash);
+	if (Verbose) LWLogEvent<256>("Could not find attribute with namehash: '{:#x}'", NameHash);
 	return -1;
 }
 
@@ -1224,7 +1139,7 @@ uint32_t LWERendererBlockGeometry::FindPositionAttribute(const LWUTF8Iterator &N
 	for (uint32_t i = 0; i < m_PositionCount; i++) {
 		if (NameHash == m_PositionLayout[i].m_NameHash) return i;
 	}
-	if (Verbose) LWELogEvent<256>("Could not find position attribute with name: '{}'", Name);
+	if (Verbose) LWLogEvent<256>("Could not find position attribute with name: '{}'", Name);
 	return -1;
 }
 
@@ -1232,7 +1147,7 @@ uint32_t LWERendererBlockGeometry::FindPositionAttribute(uint32_t NameHash, bool
 	for (uint32_t i = 0; i < m_PositionCount; i++) {
 		if (NameHash == m_PositionLayout[i].m_NameHash) return i;
 	}
-	if (Verbose) LWELogEvent<256>("Could not find position attribute with namehash: '{:#x}'", NameHash);
+	if (Verbose) LWLogEvent<256>("Could not find position attribute with namehash: '{:#x}'", NameHash);
 	return -1;
 }
 
@@ -1720,15 +1635,15 @@ LWERenderPendingTexture::LWERenderPendingTexture(const LWVector2f &DynamicSize, 
 
 //LWEFramebufferTexture:
 uint32_t LWERenderFramebufferTexture::GetNamedMipmap(void) const {
-	return LWBitFieldGet(NamedMipmap, m_NamedFlags);
+	return LWBitFieldGet(NamedMipmapBits, m_NamedFlags);
 }
 
 uint32_t LWERenderFramebufferTexture::GetNamedLayer(void) const {
-	return LWBitFieldGet(NamedLayer, m_NamedFlags);
+	return LWBitFieldGet(NamedLayerBits, m_NamedFlags);
 }
 
 uint32_t LWERenderFramebufferTexture::GetNamedFace(void) const {
-	return LWBitFieldGet(NamedFace, m_NamedFlags);
+	return LWBitFieldGet(NamedFaceBits, m_NamedFlags);
 }
 
 bool LWERenderFramebufferTexture::isFramebufferName(void) const {
@@ -1765,7 +1680,7 @@ bool LWERenderPendingResource::isWriteOverlap(void) const {
 }
 
 uint32_t LWERenderPendingResource::GetType(void) const {
-	return LWBitFieldGet(Type, m_Flag);
+	return LWBitFieldGet(TypeBits, m_Flag);
 }
 
 void LWERenderPendingResource::Finished(void) {

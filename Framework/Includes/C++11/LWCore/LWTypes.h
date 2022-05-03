@@ -24,13 +24,13 @@
 
 /*!< \brief used to define bit+bitsoffset of Name.  Name##Bits is the bit pattern representing the field, Name##BitsOffset represents the bit offset to the patten. */
 #define LWBitField(Type, Name, BitCount, BitOffset) \
-	Type Name##Bits = ((1<<(BitCount))-1)<<(BitOffset); \
-	Type Name##BitsOffset = (BitOffset);
+	Type Name = ((1u<<(BitCount))-1u)<<(BitOffset); \
+	Type Name##Offset = (BitOffset);
 
 /*!< \brief used to define 64 bit+bitsoffset of Name.  Name##Bits is the bit pattern representing the field, Name##BitsOffset represents the bit offset to the patten. */
 #define LWBitField64_(Type, Name, BitCount, BitOffset) \
-	Type Name##Bits = ((1ull<<(BitCount))-1ull)<<(BitOffset); \
-	Type Name##BitsOffset = (BitOffset);
+	Type Name = ((1ull<<(BitCount))-1ull)<<(BitOffset); \
+	Type Name##Offset = (BitOffset);
 
 
 /*!< \brief helper function used to define 32 bit bit+bitsoffset of Name.  Name##Bits is the bit pattern representing the field, Name##BitsOffset represents the bit offset to the patten. */
@@ -44,15 +44,15 @@
 
 /*!< \brief helper macro which get's the stored value from flag of the Named bitfield(as declared by LWBitField). */
 #define LWBitFieldGet(Name, Flag) \
-	(((Flag)&(Name##Bits)) >> (Name##BitsOffset))
+	(((Flag)&(Name)) >> (Name##Offset))
 
 /*!< \brief helper macro which returns a new value of flag with the value set in the named bits for the bit's defined by Name, note that this function does not prevent bit's from overflowing if value is outside the bit range of Name, Use the strict variant if that is a requirment. */
 #define LWBitFieldSet(Name, Flag, Value) \
-	(((Flag)&~(Name##Bits)) | ((Value) << (Name##BitsOffset)))
+	(((Flag)&~(Name)) | ((Value) << (Name##Offset)))
 
 /*!< \brief helper macro which return's a new value of flag with the value set in the named bits, but truncates any bit's which fall outside the range of Name's bits. */
 #define LWBitFieldSetStrict(Name, Flag, Value) \
-	(((Flag)&~(Name##Bits)) | (((Value) << (Name##BitsOffset))&(Name##Bits)))
+	(((Flag)&~(Name)) | (((Value) << (Name##Offset))&(Name)))
 
 
 /*! \defgroup LWCore LWCore
@@ -60,7 +60,7 @@
 	@{
 */
 
-#ifndef char8_t
+#ifndef __cpp_char8_t
 typedef char char8_t;
 #endif
 
@@ -122,6 +122,11 @@ class LWAllocator_LocalCircular;
 class LWAllocator_ConcurrentCircular;
 
 class LWAllocator_LocalHeap;
+
+struct LWRef_Counter;
+
+template<class Type>
+class LWRef;
 
 template<class Type>
 class LWFIFO;

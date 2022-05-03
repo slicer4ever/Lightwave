@@ -227,7 +227,6 @@ bool LWAudioDriver::CreateSoundPlatform(LWSound *Sound) {
 		alSourcei(Context.m_Source, AL_SOURCE_RELATIVE, 1);
 		Sound->SetPan(0.0f).SetVolume(1.0f);
 	}
-	fmt::print("Creating.\n");
 	return true;
 }
 

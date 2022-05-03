@@ -1,6 +1,6 @@
 #include "LWERenderPasses/LWEGausianBlurPass.h"
 #include "LWERenderer.h"
-#include "LWELogger.h"
+#include <LWCore/LWLogger.h>
 
 //LWEGausianPassPropertys
 LWEGausianPassPropertys::LWEGausianPassPropertys(LWEPassResource &Source, bool bHorizontal, float Intensity, float Radius) : m_Source(Source), m_Radius(Radius), m_Intensity(Intensity), m_Horizontal(bHorizontal) {}
@@ -11,8 +11,7 @@ const LWVector4f LWEGausianBlurPass::Kernel = LWVector4f(0.06136f, 0.24477f, 0.3
 
 LWEPass *LWEGausianBlurPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer *Renderer, LWEAssetManager *AssetManager, LWAllocator &Allocator) {
 	LWEGausianBlurPass *GBPass = Pass ? (LWEGausianBlurPass*)Pass : Allocator.Create<LWEGausianBlurPass>();
-	if (!LWEPass::ParseXML(Node, GBPass, Renderer, AssetManager, Allocator)) {
-		LWELogCritical<256>("could not create pass '{}'", Node->GetName());
+	if(!LWLogCriticalIf<256>(LWEPass::ParseXML(Node, GBPass, Renderer, AssetManager, Allocator), "Could not create pass '{}'", Node->GetName())) {
 		if (!Pass) LWAllocator::Destroy(GBPass);
 		return nullptr;
 	}
@@ -25,7 +24,7 @@ LWEPass *LWEGausianBlurPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERender
 	auto ParseSubPass = [&GBPass, &AssetManager, &Renderer, &DefaultRadius, &DefaultIntensity](LWEXMLNode *N)->bool {
 		LWEXMLAttribute *SourceAttr = N->FindAttribute("Source");
 		if (!SourceAttr) {
-			LWELogCritical("Gaussian blur subpass is missing required 'Source' Attribute.");
+			LWLogCritical("Gaussian blur subpass is missing required 'Source' Attribute.");
 			return false;
 		}
 		LWEXMLAttribute *VerticalAttr = N->FindAttribute("Vertical");
@@ -38,10 +37,8 @@ LWEPass *LWEGausianBlurPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERender
 		LWEPassPropertys Props;
 		LWEPassResource SourceResource;
 		if (!LWEPass::ParseXMLPassPropertys(N, Props, Renderer)) return false;
-		if (!LWEPass::ParseXMLPipelineResource(*SourceAttr, SourceResource, AssetManager, Renderer)) {
-			LWELogCritical<256>("Source '{}' could not be found.", SourceAttr->GetValue());
-			return false;
-		}
+		if(!LWLogCriticalIf<256>(LWEPass::ParseXMLPipelineResource(*SourceAttr, SourceResource, AssetManager, Renderer), "Source '{}' could not be found.", SourceAttr->GetValue())) return false;
+
 		SourceResource.m_BindNameHash = LWUTF8Iterator("BlurTex").Hash();
 		GBPass->PushSubPass(Props, LWEGausianPassPropertys(SourceResource, VerticalAttr==nullptr, Intensity, Radius));
 		return true;
@@ -90,10 +87,7 @@ const LWEGausianPassPropertys &LWEGausianBlurPass::GetSubPassGausPropertys(uint3
 
 
 bool LWEGausianBlurPass::PushSubPass(const LWEPassPropertys &SubPass, const LWEGausianPassPropertys &GausProps) {
-	if (m_SubPassCount >= LWEMaxPasses) {
-		LWELogCritical("GaussianBlur has exceeded max subpasses.");
-		return false;
-	}
+	if(!LWLogCriticalIf(m_SubPassCount<LWEMaxPasses, "GaussianBlur has exceeded max subpasses.")) return false;
 	m_SubPassPipeline[m_SubPassCount] = LWUTF8I::EmptyHash;
 	m_SubPassList[m_SubPassCount] = SubPass;
 	m_SubPassGausPropertys[m_SubPassCount] = GausProps;

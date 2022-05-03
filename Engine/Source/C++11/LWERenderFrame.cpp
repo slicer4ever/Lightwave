@@ -1,10 +1,10 @@
 #include <LWCore/LWAllocator.h>
+#include <LWCore/LWLogger.h>
 #include <LWPlatform/LWWindow.h>
 #include "LWERenderFrame.h"
 #include "LWECamera.h"
 #include "LWERenderer.h"
 #include "LWEMesh.h"
-#include "LWELogger.h"
 #include <LWESGeometry3D.h>
 #include <numeric>
 
@@ -34,7 +34,7 @@ bool LWEGeometryModel::isTransparent(void) const {
 }
 
 uint32_t LWEGeometryModel::GetDistanceMode(void) const {
-	return LWBitFieldGet(DistanceMode, m_Flag);
+	return LWBitFieldGet(DistanceModeBits, m_Flag);
 }
 
 LWEGeometryModel::LWEGeometryModel(const LWEGeometryModelBlock &Block, const LWERenderMaterial &Material, uint32_t Flag) : m_Material(Material), m_GeometryBlock(Block), m_Flag(Flag) {}
@@ -78,16 +78,12 @@ bool LWEGeometryBucket::PushModel(uint32_t ModelIndex, uint32_t ModelBlockHash, 
 	else if (DistanceMode == LWEGeometryModel::ForceDrawLast) DisSq = LWEGeometryBucketItem::ForceLastDistance;
 	if (Model.isTransparent()) {
 		uint32_t Index = m_TransparentCount++;
-		if (Index >= LWEMaxBucketSize) {
-			LWELogCritical<256>("Bucket transparent object's has been exhausted.");
-			return false;
-		} else m_TransparentItems[Index] = LWEGeometryBucketItem(ModelIndex, MaterialHash, ModelBlockHash, DisSq);
+		if(!LWLogCriticalIf(Index<LWEMaxBucketSize, "Bucket transparent object's has been exhausted.")) return false;
+		m_TransparentItems[Index] = LWEGeometryBucketItem(ModelIndex, MaterialHash, ModelBlockHash, DisSq);
 	} else {
 		uint32_t Index = m_OpaqueCount++;
-		if (Index >= LWEMaxBucketSize) {
-			LWELogCritical<256>("Bucket opaque object's has been exhausted.");
-			return false;
-		} else m_OpaqueItems[Index] = LWEGeometryBucketItem(ModelIndex, MaterialHash, ModelBlockHash, DisSq);
+		if(!LWLogCriticalIf(Index<LWEMaxBucketSize, "Bucket opaque object's has been exhausted.")) return false;
+		m_OpaqueItems[Index] = LWEGeometryBucketItem(ModelIndex, MaterialHash, ModelBlockHash, DisSq);
 	}
 	return true;
 }
@@ -108,12 +104,12 @@ bool LWEGeometryBucket::ConeInFrustum(const LWSVector4f &Position, const LWSVect
 }
 
 LWEGeometryBucket &LWEGeometryBucket::SetOpaqueSort(uint32_t SortMode) {
-	m_Flag = LWBitFieldSet(OpaqueSort, m_Flag, SortMode);
+	m_Flag = LWBitFieldSet(OpaqueSortBits, m_Flag, SortMode);
 	return *this;
 }
 
 LWEGeometryBucket &LWEGeometryBucket::SetTransparentSort(uint32_t SortMode) {
-	m_Flag = LWBitFieldSet(TransparentSort, m_Flag, SortMode);
+	m_Flag = LWBitFieldSet(TransparentSortBits, m_Flag, SortMode);
 	return *this;
 }
 
@@ -149,7 +145,7 @@ std::pair<uint32_t, uint32_t> LWEGeometryBucket::Finalize(LWERenderer *Renderer,
 				uint32_t Cnt = Block.m_Count;
 				uint32_t Offset = Block.m_Offset;
 				if (!Cnt) {
-					uint32_t IndiceID = LWBitFieldGet(LWEGeometryModelBlock::IndiceVB, Block.m_BufferName);
+					uint32_t IndiceID = LWBitFieldGet(LWEGeometryModelBlock::IndiceVBBits, Block.m_BufferName);
 					LWVideoBuffer *IndiceVB = Renderer->GetVideoBuffer(IndiceID);
 					assert(IndiceVB != nullptr);
 					Cnt = IndiceVB->GetLength();
@@ -207,11 +203,11 @@ bool LWEGeometryBucket::isInitialized(void) const {
 }
 
 uint32_t LWEGeometryBucket::GetTransparentSortMode(void) const {
-	return LWBitFieldGet(TransparentSort, m_Flag);
+	return LWBitFieldGet(TransparentSortBits, m_Flag);
 }
 
 uint32_t LWEGeometryBucket::GetOpaqueSortMode(void) const {
-	return LWBitFieldGet(OpaqueSort, m_Flag);
+	return LWBitFieldGet(OpaqueSortBits, m_Flag);
 }
 
 //LWERenderFrame:
@@ -409,7 +405,10 @@ uint32_t LWERenderFrame::PushModel(const LWEGeometryModel &Model, const LWEGeome
 		if (!Bucket.SphereInFrustum(Position, Radius)) continue;
 		if (Index == -1) {
 			Index = m_ModelCount++;
-			if (Index >= LWEMaxBucketSize) return -1;
+			if (Index >= LWEMaxBucketSize) {
+				if (Index == LWEMaxBucketSize) LWLogCritical("Max model's reached for frame.");
+				return -1;
+			}
 			m_ModelList[Index] = Model;
 			m_ModelData[Index] = Data;
 			MaterialHash = m_ModelList[Index].m_Material.Hash();
@@ -433,7 +432,10 @@ uint32_t LWERenderFrame::PushModel(const LWEGeometryModel &Model, const LWEGeome
 		if (!Bucket.AABBInFrustum(MinBounds, MaxBounds)) continue;
 		if (Index == -1) {
 			Index = m_ModelCount++;
-			if (Index >= LWEMaxBucketSize) return -1;
+			if (Index >= LWEMaxBucketSize) {
+				if (Index == LWEMaxBucketSize) LWLogCritical("Max model's reached for frame.");
+				return -1;
+			}
 			m_ModelList[Index] = Model;
 			m_ModelData[Index] = Data;
 			MaterialHash = m_ModelList[Index].m_Material.Hash();
@@ -455,7 +457,10 @@ bool LWERenderFrame::PushLight(const LWEShaderLightData &Light, bool bIsShadowCa
 		DistanceSq = (PrimaryBucket.m_ViewTransform[3] - Light.m_Position).LengthSquared3();
 	} else if (Light.m_Position.w < 0.0f) bIsShadowCaster = false;
 	uint32_t LightIdx = m_LightCount++;
-	if (LightIdx >= LWEMaxLights) return false;
+	if (LightIdx >= LWEMaxLights) {
+		if (LightIdx == LWEMaxLights) LWLogCritical("Max lights reached for frame.");
+		return false;
+	}
 	m_LightData[LightIdx] = Light;
 	if (bIsShadowCaster) {
 		uint32_t ShadowIdx = m_ShadowCount++;
@@ -505,12 +510,16 @@ uint32_t LWERenderFrame::PushFrameData(LWEPassFrameData *Data) {
 uint32_t LWERenderFrame::NextBoneID(uint32_t BoneCount) {
 	if (!BoneCount) return 0;
 #ifdef LWETHREADEDRENDERFRAME
-	return m_BoneCount.fetch_add(BoneCount);
+	uint32_t ID = m_BoneCount.fetch_add(BoneCount);
 #else
 	uint32_t ID = m_BoneCount;
 	m_BoneCount += BoneCount;
-	return ID;
 #endif
+	if (ID >= LWEMaxBoneCount) {
+		if (ID == LWEMaxBoneCount) LWLogCritical("Reached max bone's in frame.");
+		return 0; //0 so the program won't crash right away, i guess.
+	}
+	return ID;
 }
 
 LWSMatrix4f *LWERenderFrame::GetBoneDataAt(uint32_t ID) {

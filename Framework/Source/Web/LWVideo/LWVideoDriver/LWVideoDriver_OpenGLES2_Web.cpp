@@ -55,7 +55,6 @@ LWVideoDriver_OpenGLES2 *LWVideoDriver_OpenGLES2::MakeVideoDriver(LWWindow *Wind
 		return nullptr;
 	}
 	eglMakeCurrent(ESContext.m_Display, ESContext.m_Surface, ESContext.m_Surface, ESContext.m_Context);
-	fmt::print("Video driver ready!\n");
 	int32_t DefaultFrameBuffer = 0;
 
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &DefaultFrameBuffer);
