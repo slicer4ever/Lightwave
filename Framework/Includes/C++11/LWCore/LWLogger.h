@@ -3,6 +3,7 @@
 #include "LWCore/LWTypes.h"
 #include "LWCore/LWUnicodeIterator.h"
 #include "LWCore/LWAllocators/LWAllocator_Default.h"
+#include <chrono>
 
 #define LWLOG_EVENT 0 /*!< \brief event level log. */
 #define LWLOG_WARN 1 /*!< \brief warning level log. */
