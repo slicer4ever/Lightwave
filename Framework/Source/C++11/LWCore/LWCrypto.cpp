@@ -75,7 +75,7 @@ uint32_t LWCrypto::HashMD5(const char *InBuffer, uint32_t InBufferLen, void *Out
 	o[3] = 0x10325476;
 
 	//Setup last chunk's:
-	uint32_t LastChunk = InBufferLen / 64 * 64;
+	volatile uint32_t LastChunk = InBufferLen / 64 * 64; //marked volatile as for some reason gcc -O3 optimizes this section incorrectly.
 	uint32_t LastByte = InBufferLen - LastChunk;
 	std::copy(InBuffer + LastChunk, InBuffer + InBufferLen, Buffer);
 	Buffer[LastByte] = '\x80';

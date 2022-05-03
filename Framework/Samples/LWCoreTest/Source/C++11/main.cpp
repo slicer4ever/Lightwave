@@ -2834,7 +2834,7 @@ void FreePartitions(uint32_t PartitionCount, uint32_t *PartitionLens, TypeA **AA
 };
 
 template<class Type>
-bool PerformSIMDVec4Test(uint32_t Count, const LWUTF8Iterator &Name, LWAllocator &Allocator) {
+bool PerformSIMDVec4Test(uint32_t Count, const LWUTF8Iterator &Name, LWAllocator &Allocator, bool bIsIntTest) {
 	const uint32_t ColumnSize = 16;
 	const uint32_t LineSize = ColumnSize * 3 + 4;
 	const char Border = '|';
@@ -2862,7 +2862,6 @@ bool PerformSIMDVec4Test(uint32_t Count, const LWUTF8Iterator &Name, LWAllocator
 	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize * 2 + 1, *LWUTF8C_View<32>("{}ms - {}", EqualTime, isEqual));
 	if (!isEqual) return false;
 
-
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Length");
 	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [&FinalLen](LWVector4<Type> &Vec, uint32_t i) { FinalLen += Vec.Length(); })));
@@ -2873,10 +2872,12 @@ bool PerformSIMDVec4Test(uint32_t Count, const LWUTF8Iterator &Name, LWAllocator
 	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [&FinalLen](LWVector4<Type> &Vec, uint32_t i) { FinalLen += Vec.LengthSquared(); })));
 	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [&SFinalLen](LWSVector4<Type> &Vec, uint32_t i) { SFinalLen += Vec.LengthSquared(); })));
 
-	fmt::print("{:-<{}}\n", "", LineSize);
-	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Normalize");
-	fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Vec = Vec.Normalize(); })));
-	fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec = Vec.Normalize(); })));
+	if(!bIsIntTest) {
+		fmt::print("{:-<{}}\n", "", LineSize);
+		fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Normalize");
+		fmt::print("{2:^{1}}{0}", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, Vec4, [](LWVector4<Type> &Vec, uint32_t i) { Vec = Vec.Normalize(); })));
+		fmt::print("{2:^{1}}{0}\n", Border, ColumnSize, *LWUTF8C_View<32>("{}ms", DoWork(PartCnt, PartitionLens, SVec4, [](LWSVector4<Type> &Vec, uint32_t i) { Vec = Vec.Normalize(); })));
+	}
 
 	fmt::print("{:-<{}}\n", "", LineSize);
 	fmt::print("{0}{2:^{1}}{0}", Border, ColumnSize, "Add");
@@ -3056,9 +3057,9 @@ bool PerformSIMDQuatTest(uint32_t Count, const LWUTF8Iterator &Name, LWAllocator
 bool PerformSIMDComparisonTest(uint32_t Count) {
 	LWAllocator_Default DefAlloc;
 	std::cout << "Performing SIMD Comparison Tests: " << Count << std::endl;
-	if (!PerformSIMDVec4Test<float>(Count, "Vector4 Float", DefAlloc)) return false;
-	if (!PerformSIMDVec4Test<double>(Count, "Vector4 Double", DefAlloc)) return false;
-	if (!PerformSIMDVec4Test<int32_t>(Count, "Vector4 Int", DefAlloc)) return false;
+	if (!PerformSIMDVec4Test<float>(Count, "Vector4 Float", DefAlloc, false)) return false;
+	if (!PerformSIMDVec4Test<double>(Count, "Vector4 Double", DefAlloc, false)) return false;
+	if (!PerformSIMDVec4Test<int32_t>(Count, "Vector4 Int", DefAlloc, true)) return false;
 	if (!PerformSIMDMat4Test<float>(Count, "Matrix4 Float", DefAlloc)) return false;
 	if (!PerformSIMDMat4Test<double>(Count, "Matrix4 Double", DefAlloc)) return false;
 	if (!PerformSIMDQuatTest<float>(Count, "Quaternion Float", DefAlloc)) return false;
