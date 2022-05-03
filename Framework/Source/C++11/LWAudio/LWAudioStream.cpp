@@ -3,6 +3,7 @@
 #include <LWCore/LWAllocator.h>
 #include <LWCore/LWByteBuffer.h>
 #include <LWCore/LWTimer.h>
+#include <LWCore/LWLogger.h>
 #include <cstring>
 #include "vorbis/codec.h"
 #include "vorbis/vorbisfile.h"
@@ -15,29 +16,49 @@ struct VorbisContext {
 	uint32_t m_Position;
 };
 
-LWAudioStream *LWAudioStream::Create(const LWText &Filepath, uint32_t Flag, LWAllocator &Allocator) {
-	LWFileStream Stream;
-	uint32_t FormatType[] = { FormatWav, FormatVorbis };
+uint32_t LWAudioStream::GetFormatFromExtension(const LWUTF8Iterator &FilePath) {
+	uint32_t ExtIdx = LWFileStream::IsExtensions(FilePath, "ogg", "OGG", "wav", "WAV");
+	if (ExtIdx < 2) return FormatVorbis;
+	else if (ExtIdx < 4) return FormatWav;
+	return -1;
+}
 
-	uint32_t ExtIdx = LWFileStream::IsExtensions(Filepath, 2, "wav", "ogg");
-	if (ExtIdx == 0xFFFFFFFF) return nullptr;
+LWAudioStream *LWAudioStream::Create(const LWUTF8Iterator &Filepath, uint32_t Flag, LWAllocator &Allocator) {
+	LWFileStream Stream;
+	uint32_t FormatType = GetFormatFromExtension(Filepath);
+	if (FormatType == -1) return nullptr;
 	if (!LWFileStream::OpenStream(Stream, Filepath, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator)) return nullptr;
-	uint32_t Len = Stream.Length();
-	char *Buffer = Allocator.AllocateArray<char>(Len);
-	Stream.Read(Buffer, Len);
-	return Create(Buffer, Len, Flag, FormatType[ExtIdx], Allocator);
+	return Create(Stream, Flag, FormatType, Allocator);
+}
+
+LWAudioStream *LWAudioStream::Create(LWFileStream &Stream, const LWUTF8Iterator &FilePath, uint32_t Flag, LWAllocator &Allocator) {
+	uint32_t FormatType = GetFormatFromExtension(FilePath);
+	if (FormatType == -1) return nullptr;
+	return Create(Stream, Flag, FormatType, Allocator);
+}
+
+LWAudioStream *LWAudioStream::Create(const char *Buffer, uint32_t BufferLen, const LWUTF8Iterator &FilePath, uint32_t Flag, LWAllocator &Allocator) {
+	uint32_t FormatType = GetFormatFromExtension(FilePath);
+	if (FormatType == -1) return nullptr;
+	return Create(Buffer, BufferLen, Flag, FormatType, Allocator);
+}
+
+LWAudioStream *LWAudioStream::Create(char *Buffer, uint32_t BufferLen, const LWUTF8Iterator &FilePath, uint32_t Flag, LWAllocator &Allocator) {
+	uint32_t FormatType = GetFormatFromExtension(FilePath);
+	if (FormatType == -1) return nullptr;
+	return Create(Buffer, BufferLen, Flag, FormatType, Allocator);
 }
 
 LWAudioStream *LWAudioStream::Create(LWFileStream &Stream, uint32_t Flag, uint32_t FormatType, LWAllocator &Allocator) {
 	uint32_t Len = Stream.Length();
-	char *Buffer = Allocator.AllocateArray<char>(Len);
+	char *Buffer = Allocator.Allocate<char>(Len);
 	Stream.Read(Buffer, Len);
 	return Create(Buffer, Len, Flag, FormatType, Allocator);
 }
 
 LWAudioStream *LWAudioStream::Create(const char *Buffer, uint32_t BufferLen, uint32_t Flag, uint32_t FormatType, LWAllocator &Allocator) {
-	char *Buf = Allocator.AllocateArray<char>(BufferLen);
-	memcpy(Buf, Buffer, sizeof(char)*BufferLen);
+	char *Buf = Allocator.Allocate<char>(BufferLen);
+	std::copy(Buffer, Buffer + BufferLen, Buf);
 	return Create(Buf, BufferLen, Flag, FormatType, Allocator);
 }
 
@@ -53,11 +74,11 @@ LWAudioStream *LWAudioStream::Create(char *Buffer, uint32_t BufferLen, uint32_t 
 		LWByteBuffer ByteBuffer((const int8_t*)Buffer, BufferLen);
 
 		auto ReadToChunk = [](LWByteBuffer &Buffer, uint32_t ChunkID)->uint32_t {
-			while (!Buffer.EndOfBuffer()) {
+			while (!Buffer.IsEndOfReadData()) {
 				uint32_t CID = Buffer.Read<uint32_t>();
 				uint32_t ChunkSize = Buffer.Read<uint32_t>();
 				if (CID == ChunkID) return ChunkSize;
-				Buffer.OffsetPosition(ChunkSize);
+				Buffer.Seek(ChunkSize);
 			}
 			return 0;
 		};
@@ -81,11 +102,11 @@ LWAudioStream *LWAudioStream::Create(char *Buffer, uint32_t BufferLen, uint32_t 
 		uint32_t SampleSize = BitsPerSample / 8;
 		uint32_t TotalSamples = DataSize / (SampleSize*Channels);
 		ByteBuffer.Read<char>(Buffer, DataSize);
-		return Allocator.Allocate<LWAudioStream>(nullptr, Buffer, TotalSamples, SampleSize, SamplesPerSec, SampleType, (uint32_t)Channels, FormatRaw);
+		return Allocator.Create<LWAudioStream>(nullptr, Buffer, TotalSamples, SampleSize, SamplesPerSec, SampleType, (uint32_t)Channels, FormatRaw);
 	};
 
 	auto ProcessVorbis = [](char *Buffer, uint32_t BufferLen, uint32_t Flag, LWAllocator &Allocator)->LWAudioStream*{
-		VorbisContext *Context = Allocator.Allocate<VorbisContext>();
+		VorbisContext *Context = Allocator.Create<VorbisContext>();
 		Context->m_Buffer = Buffer;
 		Context->m_BufferLen = BufferLen;
 		Context->m_Position = 0;
@@ -119,13 +140,12 @@ LWAudioStream *LWAudioStream::Create(char *Buffer, uint32_t BufferLen, uint32_t 
 		LWAudioStream *Stream = nullptr;
 		if (Flag&Decompressed) {
 			uint32_t TotalBufferSize = TotalSamples * 2*2;//channels*(sizeof(uint16_t)/8))
-			char *RawBuffer = Allocator.AllocateArray<char>(TotalBufferSize);
+			char *RawBuffer = Allocator.Allocate<char>(TotalBufferSize);
 			uint32_t o = 0;
 			int32_t cs = 0;
 			while (o != TotalBufferSize) {
 				int32_t r = (int32_t)ov_read(&Context->m_File, RawBuffer + o, TotalBufferSize - o, 0, 2, 1, &cs);
-				if (r <= 0) {
-					std::cout << "Error reading ogg samples!" << std::endl;
+				if(!LWLogCriticalIf(r>0, "Error reading ogg samples.")) {
 					ov_clear(&Context->m_File);
 					LWAllocator::Destroy(RawBuffer);
 					LWAllocator::Destroy(Context);
@@ -138,12 +158,12 @@ LWAudioStream *LWAudioStream::Create(char *Buffer, uint32_t BufferLen, uint32_t 
 			ov_clear(&Context->m_File);
 			LWAllocator::Destroy(Context);
 			LWAllocator::Destroy(Buffer);
-			Stream = Allocator.Allocate<LWAudioStream>(nullptr, RawBuffer, TotalSamples, (uint32_t)sizeof(uint16_t), 44100, LinearPCM, 2, FormatRaw);
+			Stream = Allocator.Create<LWAudioStream>(nullptr, RawBuffer, TotalSamples, (uint32_t)sizeof(uint16_t), 44100, LinearPCM, vi->channels, FormatRaw);
 		} else {
-			Stream = Allocator.Allocate<LWAudioStream>(Context, Buffer, TotalSamples, (uint32_t)sizeof(uint16_t), 44100, LinearPCM, 2, FormatVorbis);
+			Stream = Allocator.Create<LWAudioStream>(Context, Buffer, TotalSamples, (uint32_t)sizeof(uint16_t), 44100, LinearPCM, vi->channels, FormatVorbis);
 		}
 		return Stream;
-        //return Allocator.Allocate<LWAudioStream>(Context, Buffer, TotalSamples, sizeof(uint16_t), 44100, LinearPCM, 2, FormatVorbis);
+        //return Allocator.Create<LWAudioStream>(Context, Buffer, TotalSamples, sizeof(uint16_t), 44100, LinearPCM, 2, FormatVorbis);
     };
 
 	LWAudioStream *Stream = nullptr;
@@ -169,7 +189,7 @@ char *LWAudioStream::DecodeSamples(char *Buffer, uint32_t SamplePos, uint32_t Sa
 		while (o != (SampleLen*FrameSize)) {
 			int32_t Ret = (int32_t)ov_read(&Context->m_File, Buffer + o, (SampleLen*FrameSize) - o, 0, 2, 1, &cs);
 			if (Ret <= 0) {
-				std::cout << "Failed: " << Ret << " | " << o << std::endl;
+				//fmt::print("Failed: {} | {}\n", Ret, o);
 				return Buffer;
 			}
 			o += (uint32_t)Ret;

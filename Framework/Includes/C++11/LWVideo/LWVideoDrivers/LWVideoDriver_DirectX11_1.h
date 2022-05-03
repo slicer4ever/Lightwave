@@ -29,13 +29,13 @@ public:
 
 	virtual bool SetFrameBuffer(LWFrameBuffer *FrameBuffer, bool ChangeViewport = false);
 
-	virtual bool SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *VertexBuffer, LWVideoBuffer *IndiceBuffer, uint32_t VerticeStride, uint32_t Offset);
+	virtual bool SetPipeline(LWPipeline *Pipeline, LWPipelineInputStream *InputStream, LWVideoBuffer *IndiceBuffer, LWVideoBuffer *IndirectBuffer);
 
 	virtual bool SetRasterState(uint64_t Flags, float Bias, float SlopedScaleBias);
 
-	virtual LWShader *CreateShader(uint32_t ShaderType, const char *Source, LWAllocator &Allocator, char *CompiledBuffer, char *ErrorBuffer, uint32_t *CompiledBufferLen, uint32_t ErrorBufferLen);
+	virtual LWShader *CreateShader(uint32_t ShaderType, const LWUTF8Iterator &Source, LWAllocator &Allocator, char *CompiledBuffer, char8_t *ErrorBuffer, uint32_t &CompiledBufferLen, uint32_t ErrorBufferLen);
 
-	virtual LWShader *CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledLen, LWAllocator &Allocator, char *ErrorBuffer, uint32_t ErroBufferLen);
+	virtual LWShader *CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledLen, LWAllocator &Allocator, char8_t *ErrorBuffer, uint32_t ErroBufferLen);
 
 	virtual LWTexture *CreateTexture1D(uint32_t TextureState, uint32_t PackType, uint32_t Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator);
 
@@ -61,6 +61,8 @@ public:
 
 	virtual LWFrameBuffer *CreateFrameBuffer(const LWVector2i &Size, LWAllocator &Allocator);
 
+	virtual bool ResolveMSAA(LWTexture *Source, LWTexture *Dest, uint32_t MipLevel = 0);
+
 	virtual bool UpdateTexture(LWTexture *Texture);
 
 	virtual bool UpdateTexture1D(LWTexture *Texture, uint32_t MipmapLevel, void *Texels, uint32_t Position, uint32_t Size);
@@ -77,7 +79,11 @@ public:
 
 	virtual bool UpdateTextureCubeMap(LWTexture *Texture, uint32_t MipmapLevel, uint32_t Face, void *Texels, const LWVector2i &Position, const LWVector2i &Size);
 
-	virtual bool UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const uint8_t *Buffer, uint32_t Length);
+	virtual bool UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const uint8_t *Buffer, uint32_t Length, uint32_t Offset = 0);
+
+	virtual void *MapVideoBuffer(LWVideoBuffer *VideoBuffer, uint32_t Length = 0, uint32_t Offset = 0);
+
+	virtual bool UnmapVideoBuffer(LWVideoBuffer *VideoBuffer);
 
 	virtual bool DownloadTexture1D(LWTexture *Texture, uint32_t MipmapLevel, uint8_t *Buffer);
 
@@ -105,9 +111,11 @@ public:
 
 	virtual LWVideoDriver &DestroyFrameBuffer(LWFrameBuffer *FrameBuffer);
 
-	virtual LWVideoDriver &DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t Offset = 0);
+	virtual LWVideoDriver &DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t Offset = 0);
 
-	virtual LWVideoDriver &DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t InstanceCount = 0, uint32_t Offset = 0);
+	virtual LWVideoDriver &DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t InstanceCount = 0, uint32_t Offset = 0);
+
+	virtual LWVideoDriver &DrawIndirectBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, LWVideoBuffer *IndirectBuffer, uint32_t IndirectCount, uint32_t IndirectOffset = 0);
 
 	virtual LWVideoDriver &Dispatch(LWPipeline *Pipeline, const LWVector3i &GroupDimension);
 
@@ -121,6 +129,7 @@ private:
 	virtual LWVideoDriver &ClonePipeline(LWPipeline *Target, LWPipeline *Source);
 
 	LWDirectX11_1Context m_Context;
+	HANDLE m_WaitObject = nullptr;
 };
 
 /*!< \brief this context is the underlying video context used for a shader object.  the application should never require accessing it directly. */
@@ -128,6 +137,13 @@ struct LWDirectX11_1ShaderResource {
 	uint32_t m_Name = 0;
 	uint32_t m_Type = 0;
 	uint32_t m_Length = 0;
+};
+
+struct LWDirectX11_1ShaderInput {
+	char8_t m_Name[32];
+	uint32_t m_SemanticIndex;
+	uint32_t m_Type;
+	DXGI_FORMAT m_DXFormat;
 };
 
 /*!< \brief this context is the underlying video context used for a shader object. the application should never require accessing it directly.  */
@@ -141,13 +157,14 @@ struct LWDirectX11_1ShaderContext {
 		ID3D11GeometryShader *m_GeometryShader;
 		ID3D11ComputeShader *m_ComputeShader;
 	};
-	ID3D11InputLayout *m_InputLayout = nullptr;
+	char *m_VertexShaderCode = nullptr; //Have to carry this around because CreateInputLayout don't trust me :\ 
 	LWDirectX11_1ShaderResource m_ResourceList[MaxResources];
 	LWDirectX11_1ShaderResource m_BlockList[MaxBlocks];
-	LWDirectX11_1ShaderResource m_InputList[MaxInputs];
+	LWDirectX11_1ShaderInput m_InputList[MaxInputs];
 	uint32_t m_ResourceCount = 0;
 	uint32_t m_BlockCount = 0;
 	uint32_t m_InputCount = 0;
+	uint32_t m_VertexShaderCodeLen = 0;
 };
 
 /*!< \brief this context is the underlying video context used for a video buffer object.  The application should never require accessing it directly, but it is provided here incase the application is specifically targeting the directX api. */

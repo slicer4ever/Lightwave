@@ -19,7 +19,7 @@ LWVideoDriver_OpenGL2_1 *LWVideoDriver_OpenGL2_1::MakeVideoDriver(LWWindow *Wind
 	//[View prepareOpenGL];
 	[WinCon.Window setContentView : View]; 
 
-	return Window->GetAllocator()->Allocate<LWVideoDriver_OpenGL2_1>(Window, Context, 1);
+	return Window->GetAllocator()->Create<LWVideoDriver_OpenGL2_1>(Window, Context, 1);
 }
 
 /*! \brief deallocates and destroys the specified video context, and detaches it from the associated window. */

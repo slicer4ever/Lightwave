@@ -1,0 +1,40 @@
+R"(#module Vertex DirectX11_1
+struct Vertex {
+	float4 Position : POSITION;
+	float4 TexCoord : TEXCOORD;
+};
+struct Pixel {
+	float4 Position : SV_POSITION;
+	float4 TexCoord : TEXCOORD0;
+};
+Pixel main(Vertex In) {
+	Pixel O;
+	O.Position = In.Position;
+	O.TexCoord = In.TexCoord;
+	return O;
+}
+#module Vertex OpenGL3_3 OpenGL4_5
+#version 330
+in vec4 Position;
+in vec4 TexCoord;
+out vec4 pTexCoord;
+void main(void) {
+	gl_Position = Position;
+	pTexCoord = TexCoord;
+}
+#module Vertex OpenGL2_1
+attribute vec4 Position;
+attribute vec4 TexCoord;
+varying vec4 pTexCoord;
+void main(void) {
+	gl_Position = Position;
+	pTexCoord = TexCoord;
+}
+#module Vertex OpenGLES2
+attribute highp vec4 Position;
+attribute lowp vec4 TexCoord;
+varying lowp vec4 pTexCoord;
+void main(void) {
+	gl_Position = Position;
+	pTexCoord = TexCoord;
+})",

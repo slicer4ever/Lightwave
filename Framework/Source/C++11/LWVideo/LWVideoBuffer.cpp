@@ -19,7 +19,7 @@ LWVideoBuffer &LWVideoBuffer::ClearDirty(void) {
 
 uint8_t *LWVideoBuffer::MakeLocalBuffer(void){
 	if (m_LocalBuffer || !m_Allocator) return m_LocalBuffer;
-	m_LocalBuffer = m_Allocator->AllocateArray<uint8_t>(m_TypeSize*m_Length);
+	m_LocalBuffer = m_Allocator->Allocate<uint8_t>(m_TypeSize*m_Length);
 	m_Flag |= (m_LocalBuffer ? LWVideoBuffer::LocalCopy : 0);
 	return m_LocalBuffer;
 }
@@ -84,7 +84,7 @@ LWVideoBuffer::LWVideoBuffer(){}
 LWVideoBuffer::LWVideoBuffer(const uint8_t *Buffer, LWAllocator *Allocator, uint32_t TypeSize, uint32_t Length, uint32_t Flag) : m_Allocator(Allocator), m_TypeSize(TypeSize), m_Length(Length), m_Flag(Flag){
 	if(m_Flag&LocalCopy){
 		if(m_Allocator){
-			m_LocalBuffer = m_Allocator->AllocateArray<uint8_t>(m_TypeSize*m_Length);
+			m_LocalBuffer = m_Allocator->Allocate<uint8_t>(m_TypeSize*m_Length);
 			if (Buffer) std::copy(Buffer, Buffer + (m_TypeSize*Length), m_LocalBuffer);
 		} else m_Flag ^= LocalCopy;
 	}

@@ -1,34 +1,30 @@
 #include "LWCore/LWAllocators/LWAllocator_DefaultDebug.h"
+#include "LWCore/LWAllocator.h"
+#include "LWCore/LWLogger.h"
 #include <iostream>
-#include <cassert>
 
 /*! \cond */
 struct alignas(16) LWAllocatorEnvironmentDebug {
-	alignas(8) void *m_NextAlloc;
+	void *m_NextAlloc;
 	alignas(8) void *m_PrevAlloc;
+	alignas(8) uint32_t m_Size;
 	uint32_t m_AllocID;
-	uint32_t m_Size;
 	alignas(8) LWAllocator *m_Allocator;
 };
 /*! \endcond */
 
 void LWAllocator_DefaultDebug::OutputUnfreedIDs(void) {
-	if (!m_AllocatedBytes) {
-		std::cout << "No leaks detected." << std::endl;
-		return;
-	}
-	if (!m_FirstAllocation) {
-		std::cout << "Leak detected: " << m_AllocatedBytes << " However allocator detector failed." << std::endl;
-		return;
-	}
-	std::cout << "Remaining: " << m_AllocatedBytes << std::endl;
+	uint32_t AllocBytes = m_AllocatedBytes;
+	if(!LWLogEventIf(AllocBytes, "No leaks detected")) return;
+	if(!LWLogEventIf<256>(m_FirstAllocation, "Leak detected: {} However allocator detector failed.", AllocBytes)) return;
+	LWLogEvent<256>("Leak detected: {}", AllocBytes);
 	uint32_t c = 0;
 	LWAllocatorEnvironmentDebug *A = (LWAllocatorEnvironmentDebug*)m_FirstAllocation;
 	for (; A; A = (LWAllocatorEnvironmentDebug*)A->m_NextAlloc) {
-		std::cout << "MemoryID: " << A->m_AllocID << " Allocated: " << A->m_Size << std::endl;
+		LWLogEvent<256>("MemoryID: {} Allocated: {}", A->m_AllocID, A->m_Size);
 		c += (A->m_Size+sizeof(LWAllocatorEnvironmentDebug));
 	}
-	if (c != m_AllocatedBytes) std::cout << "Error, untracked memory lost." << std::endl;
+	LWLogCriticalIf(c== AllocBytes, "Error, untracked memory lost.");
 	return;
 }
 
@@ -44,9 +40,11 @@ LWAllocator_DefaultDebug::~LWAllocator_DefaultDebug() {}
 void *LWAllocator_DefaultDebug::AllocateMemory(uint32_t Length) {
 	void *Memory = AllocateBytes(Length + sizeof(LWAllocatorEnvironmentDebug));
 	if (!Memory) return nullptr;
+	m_Lock.lock();
 	LWAllocatorEnvironmentDebug *Env = (LWAllocatorEnvironmentDebug*)Memory;
-	assert(m_NextID != m_CrashID);
-	Env->m_AllocID = m_NextID++;
+	Env->m_AllocID = m_NextID.fetch_add(1);
+	LWVerify(Env->m_AllocID != m_CrashID);
+
 	Env->m_NextAlloc = m_FirstAllocation;
 	Env->m_PrevAlloc = nullptr;
 	if (m_FirstAllocation) ((LWAllocatorEnvironmentDebug*)m_FirstAllocation)->m_PrevAlloc = Env;
@@ -54,17 +52,22 @@ void *LWAllocator_DefaultDebug::AllocateMemory(uint32_t Length) {
 
 	Env->m_Allocator = this;
 	Env->m_Size = Length;
-	m_AllocatedBytes += (Length + sizeof(LWAllocatorEnvironmentDebug));
+	m_AllocatedBytes.fetch_add(Length + sizeof(LWAllocatorEnvironmentDebug));
+	m_Lock.unlock();
 	return ((int8_t*)Memory) + sizeof(LWAllocatorEnvironmentDebug);
 }
 
 void *LWAllocator_DefaultDebug::DeallocateMemory(void *Memory) {
-	LWAllocatorEnvironmentDebug *Env = (LWAllocatorEnvironmentDebug*)(((int8_t*)Memory) - sizeof(LWAllocatorEnvironmentDebug));
-	
-	if (Env->m_NextAlloc) ((LWAllocatorEnvironmentDebug*)Env->m_NextAlloc)->m_PrevAlloc = Env->m_PrevAlloc;
-	if (Env->m_PrevAlloc) ((LWAllocatorEnvironmentDebug*)Env->m_PrevAlloc)->m_NextAlloc = Env->m_NextAlloc;
-	if (Env == m_FirstAllocation) m_FirstAllocation = Env->m_NextAlloc;
-	m_AllocatedBytes -= (Env->m_Size + sizeof(LWAllocatorEnvironmentDebug));
+	m_Lock.lock();
+	LWAllocatorEnvironmentDebug *Env = LWAllocator::GetEnvironment<LWAllocatorEnvironmentDebug>(Memory);
+	LWAllocatorEnvironmentDebug *NextEnv = (LWAllocatorEnvironmentDebug*)Env->m_NextAlloc;
+	LWAllocatorEnvironmentDebug *PrevEnv = (LWAllocatorEnvironmentDebug*)Env->m_PrevAlloc;
+
+	if (NextEnv) NextEnv->m_PrevAlloc = Env->m_PrevAlloc;
+	if (PrevEnv) PrevEnv->m_NextAlloc = Env->m_NextAlloc;
+	if (Env == m_FirstAllocation) m_FirstAllocation = NextEnv;
+	m_AllocatedBytes.fetch_sub(Env->m_Size + sizeof(LWAllocatorEnvironmentDebug));
+	m_Lock.unlock();
 	return DeallocateBytes(Env);
 }
 

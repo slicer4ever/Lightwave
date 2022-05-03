@@ -21,7 +21,7 @@ struct LWEUITreeEvent {
 struct LWEUITreeItem {
 	static const uint32_t MaxNameSize = 256;
 
-	LWEUITreeItem &SetValue(const LWText &Value, LWFont *Font, float FontScale);
+	LWEUITreeItem &SetValue(const LWUTF8Iterator &Value, LWFont *Font, float FontScale);
 
 	LWEUITreeItem &UpdateTextBounds(LWFont *Font, float FontScale);
 
@@ -29,11 +29,15 @@ struct LWEUITreeItem {
 
 	LWEUIMaterial *GetMaterial(bool isOver, bool isDown, LWEUIMaterial *DefOffMaterial, LWEUIMaterial *DefOverMaterial, LWEUIMaterial *DefDownMaterial);
 
-	LWEUITreeItem(const LWText &Value, void *UserData, LWFont *Font, float FontScale, LWEUIMaterial *OffMaterial = nullptr, LWEUIMaterial *OverMaterial = nullptr, LWEUIMaterial *DownMaterial = nullptr);
+	LWUTF8Iterator GetValue(void) const;
+
+	LWUTF8GraphemeIterator GetValueGrapheme(void) const;
+
+	LWEUITreeItem(const LWUTF8Iterator &Value, void *UserData, LWFont *Font, float FontScale, LWEUIMaterial *OffMaterial = nullptr, LWEUIMaterial *OverMaterial = nullptr, LWEUIMaterial *DownMaterial = nullptr, LWEUIMaterial *FontMaterial = nullptr);
 
 	LWEUITreeItem() = default;
 
-	char m_Value[MaxNameSize];
+	char8_t m_Value[MaxNameSize]="";
 	void *m_UserData = nullptr;
 	LWVector2f m_TextSize;
 	uint32_t m_ParentID = -1;
@@ -44,10 +48,11 @@ struct LWEUITreeItem {
 	LWEUIMaterial *m_OffMaterial = nullptr;
 	LWEUIMaterial *m_OverMaterial = nullptr;
 	LWEUIMaterial *m_DownMaterial = nullptr;
+	LWEUIMaterial *m_FontMaterial = nullptr;
 };
 
 /*!< \brief callback when a tree change event wants to occur(either adding a new branch/leaf, or moving an item to a different branch/leaf, the tree does not do change automatically, instead InsertAt/RemoveAt/MoveTo functions should be called based on the event being passed. */
-typedef std::function<void(LWEUITreeList &, LWEUITreeEvent &, LWEUIManager &UIManager, void *UserData)> LWEUITreeChangeCallback;
+typedef std::function<void(LWEUITreeList &, LWEUITreeEvent &, LWEUIManager &, void *)> LWEUITreeChangeCallback;
 
 class LWEUITreeList : public LWEUI {
 public:
@@ -69,7 +74,7 @@ public:
 		  FontMaterial: Uses the color component of the material for what color to draw the text.
 		  FontScale: the scale to draw the text of each list item at.
 	*/
-	static LWEUITreeList *XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
+	static LWEUITreeList *XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
 
 	virtual LWEUI &UpdateSelf(LWEUIManager &Manager, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime);
 
@@ -77,26 +82,33 @@ public:
 
 	virtual void Destroy(void);
 
-	LWEUITreeList &SetItemValue(uint32_t ID, const LWText &Value);
+	LWEUITreeList &SetItemValue(uint32_t ID, const LWUTF8Iterator &Value);
 
-	LWEUITreeList &SetItemValuef(uint32_t ID, const char *Fmt, ...);
+	/*!< \brief Inserts object at Event location, returns the id of the item. */
+	uint32_t InsertItemAt(const LWUTF8Iterator &Value, void *UserData, const LWEUITreeEvent &Event, LWAllocator &Allocator, LWEUIMaterial *OffMaterial = nullptr, LWEUIMaterial *OverMaterial = nullptr, LWEUIMaterial *DownMaterial = nullptr, LWEUIMaterial *FontMaterial = nullptr);
 
 	/*!< \brief inserts a new leaf to the specified location.  if ParentIdx is -1 then the leaf is added to the root of the list.  If PrevChildIdx==-1 then the item is added to the head of the children for the specified leaf, otherwise it's added after the specified index. 
 		 \return the id for the item inserted.
 	*/
-	uint32_t InsertItemAt(const LWText &Value, void *UserData, uint32_t ParentID, uint32_t PrevID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial = nullptr, LWEUIMaterial *OverMaterial = nullptr, LWEUIMaterial *DownMaterial = nullptr);
+	uint32_t InsertItemAt(const LWUTF8Iterator &Value, void *UserData, uint32_t ParentID, uint32_t PrevID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial = nullptr, LWEUIMaterial *OverMaterial = nullptr, LWEUIMaterial *DownMaterial = nullptr, LWEUIMaterial *FontMaterial = nullptr);
 	
 	/*!< \brief inserts a new leaf as the last child of the parent. */
-	uint32_t InsertChildLast(const LWText &Value, void *UserData, uint32_t ParentID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial = nullptr, LWEUIMaterial *OverMaterial = nullptr, LWEUIMaterial *DownMaterial = nullptr);
+	uint32_t InsertChildLast(const LWUTF8Iterator &Value, void *UserData, uint32_t ParentID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial = nullptr, LWEUIMaterial *OverMaterial = nullptr, LWEUIMaterial *DownMaterial = nullptr, LWEUIMaterial *FontMaterial = nullptr);
 
 	/*!< \brief inserts a new leaf as the first child of the parent. */
-	uint32_t InsertChildFirst(const LWText &Value, void *UserData, uint32_t ParentID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial = nullptr, LWEUIMaterial *OverMaterial = nullptr, LWEUIMaterial *DownMaterial = nullptr);
+	uint32_t InsertChildFirst(const LWUTF8Iterator &Value, void *UserData, uint32_t ParentID, LWAllocator &Allocator, LWEUIMaterial *OffMaterial = nullptr, LWEUIMaterial *OverMaterial = nullptr, LWEUIMaterial *DownMaterial = nullptr, LWEUIMaterial *FontMaterial = nullptr);
 
 	/*!< \brief removes the leaf at the specified location, and any children are also removed. This function does not remove the memory used by this item+children, call Prune if that is necessary. */
 	LWEUITreeList &RemoveItemAt(uint32_t ID);
 
+	/*!< \brief removes the leaf at the event location. */
+	LWEUITreeList &RemoveItemAt(const LWEUITreeEvent &Event);
+
 	/*!< \brief moves child to new location, with it's children in tact. */
 	LWEUITreeList &MoveItemTo(uint32_t SourceID, uint32_t ParentID, uint32_t PrevID);
+
+	/*!< \brief moves Event item to specified location. */
+	LWEUITreeList &MoveItemTo(const LWEUITreeEvent &Event);
 
 	/*!< \brief rebuilds the tree and condenses the list's contents, This function will change the ID's for most of the tree elements. */
 	LWEUITreeList &Prune(LWAllocator &Allocator);
@@ -179,6 +191,8 @@ public:
 	const LWEUITreeItem &GetItem(uint32_t ID) const;
 
 	LWEUITreeList(const LWVector4f &Position, const LWVector4f &Size, uint64_t Flags);
+
+	~LWEUITreeList();
 private:
 	LWEUITreeItem *m_List = nullptr;
 	LWEUITreeItem *m_OldList = nullptr;

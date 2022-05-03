@@ -2,7 +2,7 @@
 #define LWWINDOW_H
 #include "LWCore/LWTypes.h"
 #include "LWCore/LWVector.h"
-#include "LWCore/LWText.h"
+#include "LWCore/LWUnicode.h"
 #include "LWVideo/LWTypes.h"
 #include "LWPlatform/LWPlatform.h"
 #include "LWPlatform/LWTypes.h"
@@ -56,42 +56,39 @@ public:
 	static const uint32_t DialogCancel = 0x8; /*!< \brief provides the dialog an cancel button when creating a dialog. */
 
 	/*! \brief constructs a system dialog for the user, use this only if an error occurs. */
-	static uint32_t MakeDialog(const LWText &Text, const LWText &Header, uint32_t DialogFlags);
+	static uint32_t MakeDialog(const LWUTF8Iterator &Text, const LWUTF8Iterator &Header, uint32_t DialogFlags);
 
 	/*!< \brief constructs the os system's standard save dialog, currently only windows implementation is made at the moment.
-		 \note Filter is a seperated list of terminated strings, the first string is the pattern to match(i.e: *.txt) and the second string is the user friendly name(i.e: Text Files), they are specified like so: "*.txt\0Text Files\0\0" an empty string indicates the end of the filter list. 
+		 \note Filter is a separated list of ':' strings, the first string is the pattern to match(i.e: *.txt) and the second string is the user friendly name(i.e: Text Files), they are specified like so: "*.txt:Text Files\0". 
 		 \return true if the dialog save button was pressed, results are written into Buffer.
 	*/
 
-	static bool MakeSaveFileDialog(const LWText &Filter, char *Buffer, uint32_t BufferLen);
+	static bool MakeSaveFileDialog(const LWUTF8Iterator &Filter, char8_t *Buffer, uint32_t BufferLen);
 
 	/*!< \brief constructs the os system's standard load dialog, currently only windows implementation is made at the moment.
-		 \note Filter is a seperated list of terminated strings, the first string is the pattern to match(i.e: *.txt) and the second string is the user friendly name(i.e: Text Files), they are specified like so: "*.txt\0Text Files\0\0" an empty string indicates the end of the filter list.
+		 \note Filter is a separated list of ':' strings, the first string is the pattern to match(i.e: *.txt) and the second string is the user friendly name(i.e: Text Files), they are specified like so: "*.txt:Text Files\0".
 		 \return true if the dialog save button was pressed, results are written into Buffer.
 	*/
-	static bool MakeLoadFileDialog(const LWText &Filter, char *Buffer, uint32_t BufferLen);
+	static bool MakeLoadFileDialog(const LWUTF8Iterator &FilterText, char8_t *Buffer, uint32_t BufferLen);
 
 	/*!< \brief constructs the os system's standard load dialog with support for multiple items. currently only windows implementation is made the moment.
-		 \note Filter is a seperated list of terminated strings, the first string is the pattern to match(i.e: *.txt) and the second string is the user friendly name(i.e: Text Files), they are specified like so: "*.txt\0Text Files\0\0" an empty string indicates the end of the filter list.
-		\return the number of items selected, 0 if none were selected.
+		 \note Filter is a separated list of ':' strings, the first string is the pattern to match(i.e: *.txt) and the second string is the user friendly name(i.e: Text Files), they are specified like so: "*.txt:Text Files\0".
+		 \return the number of items selected, 0 if none were selected.
 	*/
-	static uint32_t MakeLoadFileMultipleDialog(const LWText &Filter, char **Bufer, uint32_t BufferLen, uint32_t BufferCount);
+	static uint32_t MakeLoadFileMultipleDialog(const LWUTF8Iterator &FilterText, char8_t **Bufer, uint32_t BufferLen, uint32_t BufferCount);
 
 	/*!< \brief writes to the internal clipboard buffer the text specified. 
 		 \return true on success, false on failure.
 	*/
-	static bool WriteClipboardText(const LWText &Text);
+	static bool WriteClipboardText(const LWUTF8Iterator &Text);
 
 	/*!< \brief reads into buffer the internal clipboard buffer. 
 		 \return the number of bytes written into buffer.
 	*/
-	static uint32_t ReadClipboardText(char *Buffer, uint32_t BufferLen);
+	static uint32_t ReadClipboardText(char8_t *Buffer, uint32_t BufferLen);
 
 	/*! \brief Set's the window title. */
-	LWWindow &SetTitle(const LWText &Title);
-
-	/*! \brief set's a formatted string window title. */
-	LWWindow &SetTitlef(const char *Fmt, ...);
+	LWWindow &SetTitle(const LWUTF8Iterator &Title);
 
 	/*! \brief Set's the position of the window. */
 	LWWindow &SetPosition(const LWVector2i &Position);
@@ -131,7 +128,7 @@ public:
     LWWindow &SetKeyboardEditRange(uint32_t CursorPosition, uint32_t EditSize = 0);
 
 	/*!< \brief set's the software keyboard internal text if necessary. */
-	LWWindow &SetKeyboardText(const char *Text);
+	LWWindow &SetKeyboardText(const LWUTF8Iterator &Text);
 
 	/*!< \brief set's the active gamepad device(used for ui selection.) .*/
 	LWWindow &SetActiveGamepad(LWGamePad *Gamepad);
@@ -145,10 +142,10 @@ public:
     /*!< \brief retrieves the text entered into the virtual keyboard. if applicable
 		 \param Buffer the buffer to receive the edit data.
 		 \param BufferLen the size of the buffer.
-         \return the number of characters written into buffer.
+         \return the number of characters that would be written into buffer.
          \note Buffer may be null.
     */
-    uint32_t GetKeyboardText(char *Buffer, uint32_t BufferLen);
+    uint32_t GetKeyboardText(char8_t *Buffer, uint32_t BufferLen);
 
 	/*!< \brief returns the keyboards dimensions, position in xy, and size in wz. */
 	LWVector4f GetKeyboardLayout(void);
@@ -165,10 +162,10 @@ public:
 	LWWindow &Update(uint64_t lCurrentTime);
 
 	/*! \brief returns the current title of the window. */
-	const LWText &GetTitle(void) const;
+	const LWUTF8 &GetTitle(void) const;
 
 	/*! \brief returns the name of the window. */
-	const LWText &GetName(void) const;
+	const LWUTF8 &GetName(void) const;
 
 	/*! \brief returns the position of the window. */
 	LWVector2i GetPosition(void) const;
@@ -239,6 +236,9 @@ public:
 	/*!< \brief returns true if the window is set to be visible or not. */
 	bool isVisible(void) const;
 
+	/*!< \brief returns true if an error occurred during window creation. */
+	bool DidError(void) const;
+
 	/*!< \brief returns true if the on screen keyboard is present. */
 	bool isVirtualKeyboardPresent(void) const;
 
@@ -251,14 +251,14 @@ public:
 		\param Flag the default flag to set the window to(including the requested input's for the window.).
 		\note Allocator is stored for future allocations in the class.
 		*/
-	LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocator, uint32_t Flag = WindowedMode|MouseDevice|KeyboardDevice, const LWVector2i &Position = LWVector2i(100, 100), const LWVector2i &Size = LWVector2i(640, 480));
+	LWWindow(const LWUTF8Iterator &Title, const LWUTF8Iterator &Name, LWAllocator &Allocator, uint32_t Flag = WindowedMode|MouseDevice|KeyboardDevice, const LWVector2i &Position = LWVector2i(100, 100), const LWVector2i &Size = LWVector2i(640, 480));
 
 	/*! \brief destructor for the window. */
 	~LWWindow();
 
 private:
-	LWText m_Title;
-	LWText m_Name;
+	LWUTF8 m_Title;
+	LWUTF8 m_Name;
 	LWWindowContext m_Context;
 	LWAllocator *m_Allocator;
 	LWInputDevice *m_FirstDevice;

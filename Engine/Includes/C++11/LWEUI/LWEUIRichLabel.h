@@ -4,15 +4,16 @@
 #include <unordered_map>
 
 struct LWEUITextStyle {
+	LWUTF8GraphemeIterator m_Iterator;
+	LWUTF8GraphemeIterator m_CallbackCode;
 	LWVector4f m_ColorMult = LWVector4f(1.0f); //Text color multiplier with the LWEUIMaterial ColorA.
 	LWVector4f m_BackgroundColorMult = LWVector4f(0.0f); //Text background color multiplier with the LWEUIMaterial ColorA.
 	LWVector4f m_Bounds = LWVector4f(); //Raw bounds of the text.
 	LWVector4f m_VisibileBounds = LWVector4f(); //Visible bounds of the text.
 	float m_Scale = 1.0f;
-	uint32_t m_Offset = 0;
-	uint32_t m_Length = 0;
 	uint32_t m_CallbackID = -1; //Callback id when the mouse over's/off/presses events.
 	uint64_t m_Flag = 0;
+
 };
 
 typedef std::function<void(LWEUIRichLabel &, LWEUITextStyle &, uint32_t, LWEUIManager &)> LWEUIRichLabelCallback;
@@ -20,6 +21,8 @@ typedef std::function<void(LWEUIRichLabel &, LWEUITextStyle &, uint32_t, LWEUIMa
 class LWEUIRichLabel : public LWEUI {
 public:
 	static const uint32_t MinimumBufferSize = 64;
+	static const uint32_t MaxStyles = 128;
+	static const uint32_t MaxLines = 128;
 
 	/*!< \brief parses an RichLabel, which support different coloring, and sizing of the text, in addition to LWEUI attributes, LWEUIAdvLabel also takes the following attributes:
 		  Font: Named font in AssetManager to use for the label.
@@ -28,7 +31,7 @@ public:
 		  Material: Taking the color component as the default color to draw the text in(Texture component of the material is ignored.)
 		  Scale: How much to scale the font text by.
 	*/
-	static LWEUIRichLabel *XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
+	static LWEUIRichLabel *XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
 
 	virtual LWEUI &UpdateSelf(LWEUIManager &Manager, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime);
 
@@ -49,12 +52,10 @@ public:
 		  [#Hex]Set's the color Multiplier with material for the text color.
 		  [B#Hex]Set's the Background color multiplier for the text color.
 		  [Number]Set's the scale of the text.
-		  [$Number]Registers the text callback id which if a callback is set with that id will call the callback when the mouse goes over/off/presses/released(+right+middle variants).
+		  [$Number:CodeString]Registers the text callback id which if a callback is set with that id will call the callback when the mouse goes over/off/presses/released(+right+middle variants). Adding a :Text will populate the CallbackCode for the callback to use as necessary.
 		  [/]Ends the current callback id.
 	*/
-	LWEUIRichLabel &SetText(const LWText &Text);
-
-	LWEUIRichLabel &SetTextf(const char *Format, ...);
+	LWEUIRichLabel &SetText(const LWUTF8Iterator &Text);
 
 	LWEUIRichLabel &SetFont(LWFont *Font);
 
@@ -76,24 +77,24 @@ public:
 
 	uint32_t GetLineCount(void) const;
 	
-	const char *GetText(void) const;
+	const LWUTF8 &GetText(void) const;
 
-	LWEUIRichLabel(const LWText &Text, LWFont *Font, LWAllocator &Allocator, LWEUIMaterial *Material, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag);
-
-	LWEUIRichLabel();
+	LWEUIRichLabel(const LWUTF8Iterator &Text, LWFont *Font, LWAllocator &Allocator, LWEUIMaterial *Material, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag);
 
 	~LWEUIRichLabel();
 private:
-	std::vector<LWEUITextStyle> m_StyleList;
-	std::vector<LWVector2f> m_LineSizes;
 	std::unordered_map<uint32_t, LWEUIRichLabelCallback> m_CallbackMap;
+	LWEUITextStyle m_StyleList[MaxStyles];
+	LWVector2f m_LineSizes[MaxLines];
 	LWVector2f m_TextSize;
-	char *m_TextBuffer;
-	LWFont *m_Font;
-	LWEUIMaterial *m_Material;
+	LWUTF8 m_Text;
+	LWFont *m_Font = nullptr;
+	LWEUIMaterial *m_Material = nullptr;
 	uint32_t m_BufferLength;
-	float m_FontScale;
-	float m_Overhang;
+	float m_FontScale = 1.0f;
+	float m_Overhang = 0.0f;
+	uint32_t m_StyleCount = 0;
+	uint32_t m_LineCount = 0;
 
 };
 

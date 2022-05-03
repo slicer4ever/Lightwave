@@ -4,6 +4,7 @@
 #include "LWAudio/LWAudioStream.h"
 #include "LWCore/LWAllocator.h"
 #include "LWCore/LWTimer.h"
+#include "LWCore/LWLogger.h"
 #include "LWPlatform/LWFileStream.h"
 
 #include <algorithm>
@@ -28,7 +29,7 @@ public:
 
 bool LWAudioDriver::PreUpdateSoundsPlatform(uint64_t ElapsedTime) {
 	if (!isUpdatingListenerPosition()) return true;
-	LWVector3f Up = m_ListenerMatrix.m_Rows[1].xyz();
+	LWVector3f Up = -m_ListenerMatrix.m_Rows[1].xyz();
 	LWVector3f Fwrd = m_ListenerMatrix.m_Rows[2].xyz();
 	LWVector3f Pos = m_ListenerMatrix.m_Rows[3].xyz();
 	m_Context.m_Listener.OrientFront = X3DAUDIO_VECTOR(Fwrd.x, Fwrd.y, Fwrd.z);
@@ -283,11 +284,8 @@ bool LWAudioDriver::UpdateSoundPlatform(LWSound *Sound, uint64_t ElapsedTime) {
 		char *Samples = Stream->DecodeSamples(Reserve, SliceIdx*SamplesPerSlice, SliceSamples);
 		if (Reserve == Samples) Context.m_ReserveIdx++;
 		XAUDIO2_BUFFER XBuf = { 0, SliceSamples*FrameSize, (BYTE*)Samples, Context.m_SeekSamples, SliceSamples - Context.m_SeekSamples, 0, 0, 0, (void*)(uintptr_t)ReserveIdx };
-		HRESULT Res = Context.m_Source->SubmitSourceBuffer(&XBuf, nullptr);
-		if (FAILED(Res)) {
-			std::cout << "Failed to submit: " << Res << std::endl;
-			return false;
-		}
+		if(!LWLogCriticalFunc<64>(Context.m_Source->SubmitSourceBuffer(&XBuf, nullptr), S_OK, "SubmitSourceBuffer")) return false;
+
 		LoadedSamples += SliceSamples;
 		PreloadedSlices++;
 		LoadedSlices++;

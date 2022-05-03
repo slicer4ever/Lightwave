@@ -14,7 +14,7 @@ public:
 		 MaxScroll: The maximum scroll length.
 		 ScrollSize: The size of the scrollbar relative to the MaxScroll, this is then multiplied by the entire size of the scrollbar to calculate the bar's size.
 	*/
-	static LWEUIScrollBar *XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
+	static LWEUIScrollBar *XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
 
 	virtual LWEUI &UpdateSelf(LWEUIManager &Manager, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime);
 
@@ -60,12 +60,12 @@ public:
 
 	~LWEUIScrollBar();
 private:
-	LWEUIMaterial *m_BarOffMaterial;
-	LWEUIMaterial *m_BarOverMaterial;
-	LWEUIMaterial *m_BarDownMaterial;
-	LWEUIMaterial *m_BackgroundMaterial;
-	float m_InitialScroll;
-	float m_Scroll;
+	LWEUIMaterial *m_BarOffMaterial = nullptr;
+	LWEUIMaterial *m_BarOverMaterial = nullptr;
+	LWEUIMaterial *m_BarDownMaterial = nullptr;
+	LWEUIMaterial *m_BackgroundMaterial = nullptr;
+	float m_InitialScroll = 0.0f;
+	float m_Scroll = 0.0f;
 	float m_MaxScroll;
 	float m_ScrollSize;
 };

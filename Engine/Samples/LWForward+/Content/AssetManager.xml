@@ -1,8 +1,6 @@
 <AssetManager>
-	<ShaderBuilder Path="Font">
-		<Shader Type="Vertex" Name="FontVertexShader" />
-		<Shader Type="Pixel" Name="FontPixelShader" />
-	</ShaderBuilder>
+	<Shader Type="Vertex" Path="FontVertex" Name="FontVertexShader" />
+	<Shader Type="Pixel" Path="FontColor" Name="FontPixelShader" />
 	<ShaderBuilder Path="App:VertexShader.vlws">
 		<InputMap vPosition="Vec4" vTexCoord="Vec4" vTangent="Vec4" vNormal="Vec4" vBoneWeight="Vec4" vBoneIndices="Vec4" />
 		<Shader Type="Vertex" Name="StaticShader" />

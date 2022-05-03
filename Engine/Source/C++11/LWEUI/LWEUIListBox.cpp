@@ -7,24 +7,47 @@
 #include <algorithm>
 #include <iostream>
 
-LWEUIListBox *LWEUIListBox::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
-	char Buffer[256];
-	char SBuffer[1024 * 32];
-	LWAllocator *Allocator = Manager->GetAllocator();
+//LWEUIListBoxItem
+
+LWUTF8Iterator LWEUIListBoxItem::GetName(void) const {
+	return m_Name;
+}
+
+LWEUIMaterial *LWEUIListBoxItem::GetMaterial(bool isOver, bool isDown, LWEUIMaterial *DefOffMaterial, LWEUIMaterial *DefOverMaterial, LWEUIMaterial *DefDownMaterial) {
+	LWEUIMaterial *Mat = m_OffMaterial ? m_OffMaterial : DefOffMaterial;
+	if (isOver) {
+		if (isDown) Mat = m_DownMaterial ? m_DownMaterial : DefDownMaterial;
+		else Mat = m_OverMaterial ? m_OverMaterial : DefOverMaterial;
+	}
+	return Mat;
+}
+
+LWEUIListBoxItem::LWEUIListBoxItem(const LWUTF8Iterator &Name, const LWVector2f &TextSize, float TextUnderHang, void *UserData, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial, LWEUIMaterial *FontMaterial) : m_TextSize(TextSize), m_TextUnderhang(TextUnderHang), m_UserData(UserData), m_OffMaterial(OffMaterial), m_OverMaterial(OverMaterial), m_DownMaterial(DownMaterial), m_FontMaterial(FontMaterial) {
+	Name.Copy(m_Name, sizeof(m_Name));
+}
+
+//LWEUIListBox
+LWEUIListBox *LWEUIListBox::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
+	const uint32_t MaxValues = 64;
+	char Buffer[1024]; //1kb
+	char SBuffer[1024]; //1kb
+	LWUTF8Iterator ValueIterList[MaxValues];
+	LWAllocator &Allocator = Manager->GetAllocator();
 	LWELocalization *Localize = Manager->GetLocalization();
-	LWEUIListBox *ListBox = Allocator->Allocate<LWEUIListBox>(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0.0f, 0.0f, LWVector4f(0.0f), LWVector4f(0.0f), FocusAble);
+	LWEAssetManager *AM = Manager->GetAssetManager();
+	LWEUIListBox *ListBox = Allocator.Create<LWEUIListBox>(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0.0f, 0.0f, LWVector4f(0.0f), LWVector4f(0.0f), FocusAble);
 	LWEUI::XMLParse(ListBox, Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 
-	LWXMLAttribute *OverAttr = FindAttribute(Node, Style, "OverMaterial");
-	LWXMLAttribute *DownAttr = FindAttribute(Node, Style, "DownMaterial");
-	LWXMLAttribute *OffAttr = FindAttribute(Node, Style, "OffMaterial");
-	LWXMLAttribute *BackAttr = FindAttribute(Node, Style, "BackgroundMaterial");
-	LWXMLAttribute *FontAttr = FindAttribute(Node, Style, "Font");
-	LWXMLAttribute *MinimumHeightAttr = FindAttribute(Node, Style, "MinimumHeight");
-	LWXMLAttribute *BorderSizeAttr = FindAttribute(Node, Style, "BorderSize");
-	LWXMLAttribute *ValuesAttr = FindAttribute(Node, Style, "Values");
-	LWXMLAttribute *FontMatAttr = FindAttribute(Node, Style, "FontMaterial");
-	LWXMLAttribute *FontScaleAttr = FindAttribute(Node, Style, "FontScale");
+	LWEXMLAttribute *OverAttr = FindAttribute(Node, Style, "OverMaterial");
+	LWEXMLAttribute *DownAttr = FindAttribute(Node, Style, "DownMaterial");
+	LWEXMLAttribute *OffAttr = FindAttribute(Node, Style, "OffMaterial");
+	LWEXMLAttribute *BackAttr = FindAttribute(Node, Style, "BackgroundMaterial");
+	LWEXMLAttribute *FontAttr = FindAttribute(Node, Style, "Font");
+	LWEXMLAttribute *MinimumHeightAttr = FindAttribute(Node, Style, "MinimumHeight");
+	LWEXMLAttribute *BorderSizeAttr = FindAttribute(Node, Style, "BorderSize");
+	LWEXMLAttribute *ValuesAttr = FindAttribute(Node, Style, "Values");
+	LWEXMLAttribute *FontMatAttr = FindAttribute(Node, Style, "FontMaterial");
+	LWEXMLAttribute *FontScaleAttr = FindAttribute(Node, Style, "FontScale");
 	LWEUIMaterial *OverMat = nullptr;
 	LWEUIMaterial *DownMat = nullptr;
 	LWEUIMaterial *OffMat = nullptr;
@@ -35,54 +58,43 @@ LWEUIListBox *LWEUIListBox::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager
 	float BorderSize = 0.0f;
 
 	if (OverAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), OverAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		OverMat = Manager->GetMaterial(Res);
+		OverMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), OverAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	}
 	if (DownAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), DownAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		DownMat = Manager->GetMaterial(Res);
+		DownMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), DownAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	}
 	if (OffAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), OffAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		OffMat = Manager->GetMaterial(Res);
+		OffMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), OffAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	}
 	if (BackAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), BackAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		BackMat = Manager->GetMaterial(Res);
+		BackMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), BackAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	}
 	if (FontMatAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), FontMatAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		FntMat = Manager->GetMaterial(Res);
+		FntMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), FontMatAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	}
 	if (FontAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), FontAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		Font = Manager->GetAssetManager()->GetAsset<LWFont>(Res);
+		Font = AM->GetAsset<LWFont>(ParseComponentAttribute(Buffer, sizeof(Buffer), FontAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	}
 	if (MinimumHeightAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), MinimumHeightAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		MinHeight = (float)atof(Res);
+		LWUTF8Iterator Value = ParseComponentAttribute(Buffer, sizeof(Buffer), MinimumHeightAttr->GetValue(), ActiveComponent, ActiveComponentNode);
+		MinHeight = (float)atof((const char*)Value());
 	}
 	if (BorderSizeAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), BorderSizeAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		BorderSize = (float)atof(Res);
+		LWUTF8Iterator Value = ParseComponentAttribute(Buffer, sizeof(Buffer), BorderSizeAttr->GetValue(), ActiveComponent, ActiveComponentNode);
+		BorderSize = (float)atof((const char*)Value());
 	}
 	if (FontScaleAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), FontScaleAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		ListBox->SetFontScale((float)atof(Res));
+		LWUTF8Iterator Value = ParseComponentAttribute(Buffer, sizeof(Buffer), FontScaleAttr->GetValue(), ActiveComponent, ActiveComponentNode);
+		ListBox->SetFontScale((float)atof((const char*)Value()));
 	}
 	ListBox->SetOffMaterial(OffMat).SetOverMaterial(OverMat).SetDownMaterial(DownMat).SetBackgroundMaterial(BackMat).SetFontMaterial(FntMat);
 	ListBox->SetFont(Font).SetBorderSize(BorderSize).SetMinimumHeightSize(MinHeight);
 	if (ValuesAttr) {
-		char TempBuffer[LWELISTBOX_MAXLENGTH];
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), ValuesAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		if (Localize) Res = Localize->ParseLocalization(SBuffer, sizeof(SBuffer), Res);
-		for (const char *C = LWText::FirstCharacter(Res); *C;) {
-			C = LWText::CopyToTokens(C, TempBuffer, sizeof(TempBuffer), "|");
-			ListBox->PushItem(TempBuffer, nullptr);
-			if (*C) C++;
-		}
+		LWUTF8Iterator ValueList = ParseComponentAttribute(Buffer, sizeof(Buffer), ValuesAttr->GetValue(), ActiveComponent, ActiveComponentNode);
+		if (Localize && Localize->ParseLocalization(SBuffer, sizeof(SBuffer), ValueList)) ValueList = LWUTF8Iterator(SBuffer);
+		uint32_t ValueCnt = std::min<uint32_t>(ValueList.SplitToken(ValueIterList, MaxValues, '|'), MaxValues);
+		for (uint32_t i = 0; i < ValueCnt; i++) ListBox->PushItem(ValueIterList[i], nullptr);
 	}
-
 	return ListBox;
 }
 
@@ -187,48 +199,27 @@ LWEUI &LWEUIListBox::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float Sc
 	for (uint32_t i = n; i < c; i++) {
 		float CellPos = (float)i*CellHeight - m_Scroll;
 		LWEUIListBoxItem &Item = m_ItemList[i];
-		LWEUIMaterial *Mat = Item.m_OffMaterial?Item.m_OffMaterial:m_OffMaterial;
-		if (i == m_OverItem) {
-			Mat = Item.m_OverMaterial ? Item.m_OverMaterial : m_OverMaterial;
-			if (m_Flag&(MouseLDown | MouseMDown | MouseRDown)) {
-				Mat = Item.m_DownMaterial ? Item.m_DownMaterial : m_DownMaterial;
-			}
-		}
+		LWEUIMaterial *Mat = Item.GetMaterial(i == m_OverItem, (m_Flag & (MouseLDown | MouseMDown | MouseRDown)) != 0, m_OffMaterial, m_OverMaterial, m_DownMaterial);
+		LWEUIMaterial *FntMat = Item.m_FontMaterial ? Item.m_FontMaterial : m_FontMaterial;
 		LWVector2f CellP = LWVector2f(VisiblePos.x, VisiblePos.y + (VisibleSize.y - CellPos - CellHeight));
 		Frame.WriteClippedRect(Mat, CellP, LWVector2f(VisibleSize.x, CellHeight), LWVector4f(VisiblePos, VisibleSize));
 		
 		CellP.y += (CellHeight*0.5f) - (Item.m_TextSize.y*0.5f)*Scale - Item.m_TextUnderhang*Scale;
 		if (m_Flag&LabelRightAligned) CellP.x += VisibleSize.x - Item.m_TextSize.x*Scale;
 		else if (m_Flag&LabelCenterAligned) CellP.x += VisibleSize.x*0.5f - Item.m_TextSize.x*0.5f*Scale;
-		Frame.WriteClippedText(m_FontMaterial, Item.m_Name, m_Font, CellP, m_FontScale*Scale, LWVector4f(VisiblePos, VisibleSize));
+		Frame.WriteClippedText(FntMat, Item.m_Name, m_Font, CellP, m_FontScale*Scale, LWVector4f(VisiblePos, VisibleSize));
 	}
 	return *this;
 }
 
-bool LWEUIListBox::PushItem(const LWText &ItemName, void *UserData, LWEUIMaterial *OffMat, LWEUIMaterial *OverMat, LWEUIMaterial *DownMat) {
+bool LWEUIListBox::PushItem(const LWUTF8Iterator &ItemName, void *UserData, LWEUIMaterial *OffMat, LWEUIMaterial *OverMat, LWEUIMaterial *DownMat, LWEUIMaterial *FontMat) {
 	if (m_ItemCount >= LWELISTBOX_MAXITEMS) return false;
-	strncpy(m_ItemList[m_ItemCount].m_Name, (const char*)ItemName.GetCharacters(), sizeof(char)*LWELISTBOX_MAXITEMS);
-	m_ItemList[m_ItemCount].m_UserData = UserData;
 	LWVector4f BV = LWVector4f();
-	if (m_Font) BV = m_Font->MeasureText(ItemName, m_FontScale);
-	m_ItemList[m_ItemCount].m_TextSize = LWVector2f(BV.z - BV.x, BV.y-BV.w);
-	m_ItemList[m_ItemCount].m_TextUnderhang = BV.w;
-	m_ItemList[m_ItemCount].m_OffMaterial = OffMat;
-	m_ItemList[m_ItemCount].m_OverMaterial = OverMat;
-	m_ItemList[m_ItemCount].m_DownMaterial = DownMat;
-	m_ItemCount++;
+	if (m_Font) BV = m_Font->MeasureText(LWUTF8GraphemeIterator(ItemName), m_FontScale);
+
+	m_ItemList[m_ItemCount++] = LWEUIListBoxItem(ItemName, LWVector2f(BV.z - BV.z, BV.y - BV.w), BV.w, UserData, OffMat, OverMat, DownMat, FontMat);
 	return true;
 }
-
-bool LWEUIListBox::PushItemf(const char *Fmt, void *UserData, LWEUIMaterial *OffMat, LWEUIMaterial *OverMat, LWEUIMaterial *DownMat, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, DownMat);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return PushItem(Buffer, UserData, OffMat, OverMat, DownMat);
-}
-
 
 bool LWEUIListBox::Clear(void) {
 	m_ItemCount = 0;
@@ -239,7 +230,7 @@ bool LWEUIListBox::Clear(void) {
 
 bool LWEUIListBox::RemoveItem(uint32_t i) {
 	if (i >= m_ItemCount) return false;
-	memcpy(m_ItemList + i, m_ItemList + i + 1, sizeof(LWEUIListBox)*(m_ItemCount - i - 1));
+	std::copy(m_ItemList + i + 1, m_ItemList + m_ItemCount, m_ItemList + i);
 	m_ItemCount--;
 	m_OverItem = 0xFFFFFFFF;
 	SetScroll(m_Scroll);
@@ -276,7 +267,8 @@ LWEUIListBox &LWEUIListBox::SetFont(LWFont *Font) {
 	if (m_Font) {
 		for (uint32_t i = 0; i < m_ItemCount; i++) {
 			LWVector4f BV = m_Font->MeasureText(m_ItemList[i].m_Name, m_FontScale);
-			m_ItemList[i].m_TextSize = LWVector2f(BV.z - BV.x, BV.y);
+			m_ItemList[i].m_TextSize = LWVector2f(BV.z - BV.x, BV.y-BV.w);
+			m_ItemList[i].m_TextUnderhang = BV.w;
 		}
 	}
 	return SetScroll(m_Scroll);
@@ -364,6 +356,6 @@ float LWEUIListBox::GetFontScale(void) const {
 	return m_FontScale;
 }
 
-LWEUIListBox::LWEUIListBox(LWEUIMaterial *BackgroundMaterial, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial, LWEUIMaterial *FntMaterial, LWFont *Font, float MinimumHeight, float BorderSize, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : LWEUI(Position, Size, Flag), m_BackgroundMaterial(BackgroundMaterial), m_OffMaterial(OffMaterial), m_DownMaterial(DownMaterial), m_OverMaterial(OverMaterial), m_FontMaterial(FntMaterial), m_Font(Font), m_ItemCount(0), m_OverItem(0xFFFFFFFF), m_MinimumBoxHeight(MinimumHeight), m_BorderSize(BorderSize), m_Scroll(0.0f), m_ScrollAcceleration(0.0f) {}
+LWEUIListBox::LWEUIListBox(LWEUIMaterial *BackgroundMaterial, LWEUIMaterial *OffMaterial, LWEUIMaterial *OverMaterial, LWEUIMaterial *DownMaterial, LWEUIMaterial *FntMaterial, LWFont *Font, float MinimumHeight, float BorderSize, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : LWEUI(Position, Size, Flag), m_BackgroundMaterial(BackgroundMaterial), m_OffMaterial(OffMaterial), m_DownMaterial(DownMaterial), m_OverMaterial(OverMaterial), m_FontMaterial(FntMaterial), m_Font(Font), m_MinimumBoxHeight(MinimumHeight), m_BorderSize(BorderSize) {}
 
 LWEUIListBox::~LWEUIListBox() {}

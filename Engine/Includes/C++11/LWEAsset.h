@@ -1,7 +1,7 @@
 #ifndef LWEASSET_H
 #define LWEASSET_H
 #include <LWCore/LWTypes.h>
-#include <LWCore/LWText.h>
+#include <LWCore/LWUnicode.h>
 #include <LWVideo/LWTypes.h>
 #include <LWAudio/LWTypes.h>
 #include <LWVideo/LWFont.h>
@@ -15,6 +15,31 @@
 #include "LWETypes.h"
 #include "LWEXML.h"
 
+static const uint32_t LWEShaderCount = 18;
+extern const char8_t *LWEShaderSources[LWEShaderCount]; //Defined in LWEAsset.cpp
+static const char8_t LWEShaderNames[LWEShaderCount][32] = {
+	"FontVertex",  "UIVertex", "PP_Vertex", "FontColor", "FontMSDF", "UITexture", "UIColor", "UIYUVTexture", "PP_Texture",
+	"Structures", "Utilitys", "LightUtilitys", "GausianBlurVertex", "GausianBlurPixel", "DepthVertex", "PBRVertex", "PBRPixel", "PP_PBRComposite"
+};
+
+//Mapped input's for built-in types(last one is blank to denote limiter):
+static const char8_t *LWEShaderInputNames[] = { "UIVertex", "TextureVertex", "PBRStaticVertex", "PBRSkeletonVertex", "PBRIndexStaticVertex", "PBRIndexSkeletonVertex", "StaticDepthVertex", "SkeletonDepthVertex", "IndexStaticDepthVertex", "IndexSkeletonDepthVertex" };
+static const uint32_t LWEShaderInputCount = sizeof(LWEShaderInputNames) / sizeof(char8_t*);
+
+static const LWShaderInput LWEShaderInputMapping[LWEShaderInputCount][7] = {
+	{ LWShaderInput("Position", LWShaderInput::Vec4, 1), LWShaderInput("Color", LWShaderInput::Vec4, 1), LWShaderInput("TexCoord", LWShaderInput::Vec4, 1) }, //UIVertex
+	{ LWShaderInput("Position", LWShaderInput::Vec4, 1), LWShaderInput("TexCoord", LWShaderInput::Vec4, 1) }, //TextureVertex
+	{ LWShaderInput("v.Position", LWShaderInput::Vec4, 1), LWShaderInput("v.TexCoord", LWShaderInput::Vec4, 1), LWShaderInput("v.Tangent", LWShaderInput::Vec4, 1), LWShaderInput("v.Normal", LWShaderInput::Vec4, 1) }, //PBRStaticVertex
+	{ LWShaderInput("v.Position", LWShaderInput::Vec4, 1), LWShaderInput("v.BoneWeight", LWShaderInput::Vec4, 1), LWShaderInput("v.BoneIndices", LWShaderInput::iVec4, 1), LWShaderInput("v.TexCoord", LWShaderInput::Vec4, 1), LWShaderInput("v.Tangent", LWShaderInput::Vec4, 1), LWShaderInput("v.Normal", LWShaderInput::Vec4, 1) }, //PBRSkeletonVertex
+	{ LWShaderInput("v.Position", LWShaderInput::Vec4, 1), LWShaderInput("v.TexCoord", LWShaderInput::Vec4, 1), LWShaderInput("v.Tangent", LWShaderInput::Vec4, 1), LWShaderInput("v.Normal", LWShaderInput::Vec4, 1), LWShaderInput("v.ModelIndex", LWShaderInput::UInt, 1, 1) }, //PBRIndexStaticVertex
+	{ LWShaderInput("v.Position", LWShaderInput::Vec4, 1), LWShaderInput("v.BoneWeight", LWShaderInput::Vec4, 1), LWShaderInput("v.BoneIndices", LWShaderInput::iVec4, 1), LWShaderInput("v.TexCoord", LWShaderInput::Vec4, 1), LWShaderInput("v.Tangent", LWShaderInput::Vec4, 1), LWShaderInput("v.Normal", LWShaderInput::Vec4, 1), LWShaderInput("v.ModelIndex", LWShaderInput::UInt, 1, 1) }, //PBRIndexSkeletonVertex
+	{ LWShaderInput("v.Position", LWShaderInput::Vec4, 1) }, //StaticDepthVertex
+	{ LWShaderInput("v.Position", LWShaderInput::Vec4, 1), LWShaderInput("v.BoneWeight", LWShaderInput::Vec4, 1), LWShaderInput("v.BoneIndices", LWShaderInput::iVec4, 1) }, //SkeletonDepthVertex
+	{ LWShaderInput("v.Position", LWShaderInput::Vec4, 1), LWShaderInput("v.ModelIndex", LWShaderInput::UInt, 1, 1) }, //StaticDepthVertex
+	{ LWShaderInput("v.Position", LWShaderInput::Vec4, 1), LWShaderInput("v.BoneWeight", LWShaderInput::Vec4, 1), LWShaderInput("v.BoneIndices", LWShaderInput::iVec4, 1),  LWShaderInput("v.ModelIndex", LWShaderInput::UInt, 1, 1) } //SkeletonDepthVertex
+};
+static const uint32_t LWEShaderInputMapCount[LWEShaderInputCount] = { 3, 2, 4, 6, 5, 7, 1, 3, 2, 4 };
+
 class LWEAsset {
 public:
 	enum {
@@ -27,46 +52,45 @@ public:
 		VideoBuffer
 	};
 
-	LWTexture *AsTexture(void);
-
-	LWFont *AsFont(void);
-
-	LWShader *AsShader(void);
-
-	LWEVideoPlayer *AsVideoPlayer(void);
-
-	LWAudioStream *AsAudioStream(void);
-
-	LWVideoBuffer *AsVideoBuffer(void);
-
-	LWPipeline *AsPipeline(void);
+	template<class Type>
+	Type *As(void) {
+		return (Type*)m_Asset;
+	}
 
 	void *GetAsset(void);
 
-	const char *GetAssetPath(void);
+	LWUTF8Iterator GetAssetPath(void) const;
 
-	uint32_t GetType(void);
+	uint32_t GetType(void) const;
 
-	LWEAsset(uint32_t Type, void *Asset, const char *AssetPath);
+	void Release(LWVideoDriver *Driver);
+
+	LWEAsset(uint32_t Type, void *Asset, const LWUTF8Iterator &AssetPath);
 
 	LWEAsset();
+
 private:
-	char m_AssetPath[256];
-	uint32_t m_Type;
-	void *m_Asset;
+	char8_t m_AssetPath[256]="";
+	uint32_t m_Type = 0;
+	void *m_Asset = nullptr;
 };
 
 class LWEAssetManager {
 public:
 	enum {
-		MaxAssets = 256
+		AssetPoolSize = 256
 	};
+	/*!< \brief parse's children Texture, Shader, VideoBuffer, ShaderBuilder, AudioStream, Video, Pipeline, PipelineBuilder nodes.
+	*	Attribute: CompiledShaderCache, if included any shader that doesn't include the ForceCompile attribute will be compiled for future iterations on platforms that support compiling shaders. */
 	static bool XMLParser(LWEXMLNode *N, void *UserData, LWEXML *XML);
 
 	static bool XMLParseFont(LWEXMLNode *N, LWEAssetManager *AM);
-
+	/*!< \brief add LINEAR no valued-attribute to not have the image by SRGBA formated. */
 	static bool XMLParseTexture(LWEXMLNode *N, LWEAssetManager *AM);
 
+	/*<! \brief Parse's an XML Shader node
+		 \note Special Path parameters that are equal to the above LWEShaderNames will translate to that shader source.  equally doing #include <LWEShaderName> will include that bit of shader source into a file.
+	*/
 	static bool XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM);
 
 	static bool XMLParseVideoBuffer(LWEXMLNode *N, LWEAssetManager *AM);
@@ -79,33 +103,36 @@ public:
 	
 	static bool XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM);
 
-	LWEAsset *GetAsset(const LWText &Name);
+	static bool XMLParsePipelineBuilder(LWEXMLNode *N, LWEAssetManager *AM);
+
+	LWEAssetManager &SetCompiledShaderCache(const LWUTF8Iterator &Path);
+
+	LWEAsset *GetAsset(const LWUTF8Iterator &Name);
 
 	template<class Type>
-	Type *GetAsset(const LWText &Name) {
+	Type *GetAsset(const LWUTF8Iterator &Name) {
 		LWEAsset *A = GetAsset(Name);
 		if (!A) return nullptr;
-		if (typeid(Type) == typeid(LWTexture)) return (A->GetType() == LWEAsset::Texture) ? (Type*)A->GetAsset() : nullptr;
-		else if (typeid(Type) == typeid(LWFont)) return (A->GetType() == LWEAsset::Font) ? (Type*)A->GetAsset() : nullptr;
-		else if (typeid(Type) == typeid(LWShader)) return (A->GetType() == LWEAsset::Shader) ? (Type*)A->GetAsset() : nullptr;
-		else if (typeid(Type) == typeid(LWPipeline)) return (A->GetType() == LWEAsset::Pipeline) ? (Type*)A->GetAsset() : nullptr;
-		else if (typeid(Type) == typeid(LWAudioStream)) return (A->GetType() == LWEAsset::AudioStream) ? (Type*)A->GetAsset() : nullptr;
-		else if (typeid(Type) == typeid(LWEVideoPlayer)) return (A->GetType() == LWEAsset::Video) ? (Type*)A->GetAsset() : nullptr;
-		else if (typeid(Type) == typeid(LWVideoBuffer)) return (A->GetType() == LWEAsset::VideoBuffer) ? (Type*)A->GetAsset() : nullptr;
-		return nullptr;
+		return A->As<Type>();
 	}
 
-	bool InsertAsset(const LWText &Name, void *Asset, uint32_t AssetType, const char *AssetPath);
+	bool InsertAsset(const LWUTF8Iterator &Name, const LWEAsset &A);
 
-	bool InsertAssetReference(const LWText &Name, const LWText &RefName);
+	bool InsertAsset(const LWUTF8Iterator &Name, void *Asset, uint32_t AssetType, const LWUTF8Iterator &AssetPath);
+
+	bool InsertAssetReference(const LWUTF8Iterator &Name, const LWUTF8Iterator &RefName);
+
+	bool HasAsset(const LWUTF8Iterator &Name);
 
 	LWVideoDriver *GetDriver(void);
 
 	LWELocalization *GetLocalization(void);
 
-	LWAllocator *GetAllocator(void);
+	LWAllocator &GetAllocator(void);
 
 	LWEAsset *GetAsset(uint32_t i);
+
+	LWUTF8Iterator GetCompiledShaderCache(void);
 
 	uint32_t GetAssetCount(void);
 
@@ -113,12 +140,14 @@ public:
 
 	~LWEAssetManager();
 private:
-	LWEAsset m_AssetTable[MaxAssets];
+	char8_t m_CompiledShaderCache[256] = {};
+	LWEAsset **m_AssetPools = nullptr;
 	std::map<uint32_t, LWEAsset*> m_AssetMap;
-	LWELocalization *m_Localization;
-	LWVideoDriver *m_Driver;
-	LWAllocator *m_Allocator;
-	uint32_t m_AssetCount;
+	LWAllocator &m_Allocator;
+	LWELocalization *m_Localization = nullptr;
+	LWVideoDriver *m_Driver = nullptr;
+	uint32_t m_AssetCount = 0;
+	uint32_t m_PoolCount = 0;
 };
 
 #endif

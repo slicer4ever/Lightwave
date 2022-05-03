@@ -35,7 +35,7 @@ bool LWAudioDriver::Update(uint64_t lCurrentTime, LWWindow *Window) {
 		std::swap(m_ActiveSoundPool[Idx], m_ActiveSoundPool[m_ActiveSounds - 1]);
 		(*Context->m_PlayerItf)->Destroy(Context->m_PlayerItf);
 		m_ActiveSounds--;
-		std::cout << "Sound Released: " << Idx << std::endl;
+		LWLogEvent<64>("Sound Released: {}", Idx);
 		return;
 	};
 
@@ -254,8 +254,7 @@ LWSound *LWAudioDriver::CreateSound(LWAudioStream *Stream, uint32_t Flags, void 
 	const int32_t InterfaceCnt = 2;
 	const SLInterfaceID SLInterfaces[InterfaceCnt] = { SL_IID_BUFFERQUEUE, SL_IID_VOLUME };
 	const SLboolean SLReqs[InterfaceCnt] = { true, true };
-
-	std::cout << "Format: " << Stream->GetSampleType() << " rate: " << Stream->GetSampleRate() << " Size: " << Stream->GetSampleSize() << " Samples: " << Stream->GetSampleLength() << " Channels: " << Stream->GetChannels() << std::endl;
+	LWLogEvent<256>("Format: {} Rate: {} Size: {} Samples: {} Channels: {}\n", Stream->GetSampleType(), Stream->GetSampleRate(), Stream->GetSampleSize(), Stream->GetSampleLength(), Stream->GetChannels());
 
 	SLDataLocator_AndroidSimpleBufferQueue BufQue = { SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, LWSOUND_RESERVECNT - 1 };
 	SLDataFormat_PCM Format = { SL_DATAFORMAT_PCM, Stream->GetChannels(), Stream->GetSampleRate() * 1000/* milliHerz */, Stream->GetSampleSize() * 8, Stream->GetSampleSize() * 8, 0/*! Stereo channels */, SL_BYTEORDER_LITTLEENDIAN };
@@ -263,27 +262,14 @@ LWSound *LWAudioDriver::CreateSound(LWAudioStream *Stream, uint32_t Flags, void 
 	SLDataSink DataSink = { &DataLoc, nullptr };
 	SLDataSource DataSrc = { &BufQue, &Format };
 
-	if ((*m_Context.m_EngineItf)->CreateAudioPlayer(m_Context.m_EngineItf, &SndCntx->m_PlayerItf, &DataSrc, &DataSink, InterfaceCnt, SLInterfaces, SLReqs) != SL_RESULT_SUCCESS) {
-		std::cout << "Create failed." << std::endl;
-		return nullptr;
-	}
-	bool Success = true;
-	SLuint32 Res = (*SndCntx->m_PlayerItf)->Realize(SndCntx->m_PlayerItf, false);
-	if (Res != SL_RESULT_SUCCESS) {
-		std::cout << "Failed a: " << Res << std::endl;
-		Success = false;
-	} else if ((*SndCntx->m_PlayerItf)->GetInterface(SndCntx->m_PlayerItf, SL_IID_PLAY, &SndCntx->m_PlayItf) != SL_RESULT_SUCCESS) {
-		std::cout << "Failed b" << std::endl;
-		Success = false;
-	} else if ((*SndCntx->m_PlayerItf)->GetInterface(SndCntx->m_PlayerItf, SL_IID_BUFFERQUEUE, &SndCntx->m_BufferQueueItf) != SL_RESULT_SUCCESS){
-		std::cout << "Failed c" << std::endl;
-		Success = false;
-	} else if ((*SndCntx->m_PlayerItf)->GetInterface(SndCntx->m_PlayerItf, SL_IID_VOLUME, &SndCntx->m_VolumeItf) != SL_RESULT_SUCCESS) {
-		std::cout << "Failed d" << std::endl;
-		Success = false;
-	}
-	if (!Success) {
-		std::cout << "Failed to find interface" << std::endl;
+	if(!LWLogCriticalFunc<64>((SLuint32)(*m_Context.m_EngineItf)->CreateAudioPlayer(m_Context.m_EngineItf, &SndCntx->m_PlayerItf, &DataSrc, &DataSink, InterfaceCnt, SLInterfaces, SLReqs), SL_RESULT_SUCCESS, "CreateAudioPlayer")) return nullptr;
+
+	bool bSucceeded = true;
+	if(!LWLogCriticalFunc<64>((*SndCntx->m_PlayerItf)->Realize(SndCntx->m_PlayerItf, false), SL_RESULT_SUCCESS, "Realize")) bSucceeded = false;
+	else if(!LWLogCriticalFunc<64>((*SndCntx->m_PlayerItf)->GetInterface(SndCntx->m_PlayerItf, SL_IID_PLAY, &SndCntx->m_PlayItf), SL_RESULT_SUCCESS, "SL_IID_PLAY")) bSucceeded = false;
+	else if(!LWLogCriticalFunc<64>((*SndCntx->m_PlayerItf)->GetInterface(SndCntx->m_PlayerItf, SL_IID_BUFFERQUEUE, &SndCntx->m_BufferQueueItf), SL_RESULT_SUCCESS, "SL_IID_BUFFERQUEUE")) bSucceeded = false;
+	else if(!LWLogCriticalFunc<64>((*SndCntx->m_PlayerItf)->GetInterface(SndCntx->m_PlayerItf, SL_IID_VOLUME, &SndCntx->m_VolumeItf), SL_RESULT_SUCCESS, "SL_IID_VOLUME")) bSucceeded = false;
+	if(!bSucceeded) {
 		(*SndCntx->m_PlayerItf)->Destroy(SndCntx->m_PlayerItf);
 		return nullptr;
 	}
@@ -296,7 +282,7 @@ LWSound *LWAudioDriver::CreateSound(LWAudioStream *Stream, uint32_t Flags, void 
 	Target->SetFinishCount(0).SetFlag(Flags | LWSound::Dirty);
 	if (m_CallBacks[CallbackCreate]) m_CallBacks[CallbackCreate](Target, this);
 	m_ActiveSounds++;
-	std::cout << "Sound made: " << m_ActiveSounds << std::endl;
+	LWLogEvent<64>("Sound made: {}", m_ActiveSounds);
 	return Target;
 }
 

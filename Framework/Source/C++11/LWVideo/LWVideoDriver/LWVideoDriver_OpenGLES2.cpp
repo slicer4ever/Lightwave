@@ -30,8 +30,6 @@ LWShader *LWVideoDriver_OpenGLES2::CreateShader(const char *VertexModule, const 
 	if (!ParseModule(PixelModule, LWShader::Pixel, LWShader::PixelSlotOffset, PixelBuffer, sizeof(PixelBuffer), nullptr, Blocks + LWSHADER_BLOCKOUTPUT, Blocks + LWSHADER_BLOCKUNIFORM, LWSHADER_MAXBLOCKS - LWSHADER_BLOCKUNIFORM, Resources, LWSHADER_MAXBLOCKVARIABLES, UniformBlockCount, ResourceCount, Allocator)) return nullptr;
 	//Meta-data loaded, and proper source codes generated, let's generate our shader!
 
-	//std::cout << "Vertex:" << std::endl << VertexBuffer << std::endl;
-	//std::cout << "Pixel:" << std::endl << PixelBuffer << std::endl;
 	const char *Modules[3] = { VertexBuffer, nullptr, PixelBuffer };
 	int32_t VideoID = glCreateProgram();
 	uint32_t ModuleIDs[3] = { glCreateShader(GL_VERTEX_SHADER), 0, glCreateShader(GL_FRAGMENT_SHADER) };
@@ -108,7 +106,7 @@ LWShader *LWVideoDriver_OpenGLES2::CreateShader(const char *VertexModule, const 
 		std::cout << "Texture " << i << ": '" << V->m_Name << "' Tag: '" << V->m_Tag << "' Hint: " << V->HintID() << " Type: " << V->TypeID() << " Length: " << V->Length() << " Offset: " << (uintptr_t)V->m_Offset << " Location: " << (uintptr_t)V->m_VideoContext << std::endl;
 	}*/
 
-	return Allocator.Allocate<LWShaderCon<uint32_t>>(VideoID, Blocks, Resources, UniformBlockCount + LWSHADER_BLOCKUNIFORM, ResourceCount);
+	return Allocator.Create<LWShaderCon<uint32_t>>(VideoID, Blocks, Resources, UniformBlockCount + LWSHADER_BLOCKUNIFORM, ResourceCount);
 
 }
 
@@ -186,7 +184,7 @@ LWTexture *LWVideoDriver_OpenGLES2::CreateTexture2D(uint32_t TextureState, uint3
 			}
 		}
 	}
-	return Allocator.Allocate<LWTextureCon<uint32_t>>(VideoID, TextureState, PackType, LWVector3i(Size, 0), LWTexture::Texture2D);
+	return Allocator.Create<LWTextureCon<uint32_t>>(VideoID, TextureState, PackType, LWVector3i(Size, 0), LWTexture::Texture2D);
 
 }
 
@@ -213,7 +211,7 @@ LWTexture *LWVideoDriver_OpenGLES2::CreateTextureCubeMapArray(uint32_t TextureSt
 LWVideoBuffer *LWVideoDriver_OpenGLES2::CreateVideoBuffer(uint32_t Type, uint32_t UsageFlag, uint32_t TypeSize, uint32_t Length, LWAllocator &Allocator, const uint8_t *Buffer) {
 
 	if (Type == LWVideoBuffer::Uniform) {
-		return Allocator.Allocate<LWVideoBufferCon<uint32_t>>(Buffer, &Allocator, TypeSize, Length, UsageFlag | LWVideoBuffer::LocalCopy | LWVideoBuffer::Updated | Type, 0);
+		return Allocator.Create<LWVideoBufferCon<uint32_t>>(Buffer, &Allocator, TypeSize, Length, UsageFlag | LWVideoBuffer::LocalCopy | LWVideoBuffer::Updated | Type, 0);
 	} else {
 		int32_t GTypes[] = { GL_ARRAY_BUFFER, 0, GL_ELEMENT_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER, 0 };
 		uint32_t UsageID = UsageFlag & LWVideoBuffer::UsageFlag;
@@ -225,20 +223,20 @@ LWVideoBuffer *LWVideoDriver_OpenGLES2::CreateVideoBuffer(uint32_t Type, uint32_
 		glGenBuffers(1, &VideoID);
 		glBindBuffer(GTypes[Type], VideoID);
 		glBufferData(GTypes[Type], TypeSize*Length, Buffer, GUsage);
-		return Allocator.Allocate<LWVideoBufferCon<uint32_t>>(Buffer, &Allocator, TypeSize, Length, UsageFlag | Type, VideoID);
+		return Allocator.Create<LWVideoBufferCon<uint32_t>>(Buffer, &Allocator, TypeSize, Length, UsageFlag | Type, VideoID);
 	}
 }
 
 LWVideoState *LWVideoDriver_OpenGLES2::CreateVideoState(uint32_t VideoState, uint32_t SourceBlend, uint32_t DestBlend, uint32_t DepthCompareFunc, LWAllocator &Allocator) {
 	VideoState |= (SourceBlend << LWVideoState::BLEND_SRC_BITOFFSET) | (DestBlend << LWVideoState::BLEND_DST_BITOFFSET) | (DepthCompareFunc << LWVideoState::DEPTH_COMPARE_BITOFFSET);
 
-	return Allocator.Allocate<LWVideoState>(VideoState);
+	return Allocator.Create<LWVideoState>(VideoState);
 }
 
 LWFrameBuffer *LWVideoDriver_OpenGLES2::CreateFrameBuffer(const LWVector2i &Size, LWAllocator &Allocator) {
 	uint32_t VideoID = 0;
 	glGenFramebuffers(1, &VideoID);
-	return Allocator.Allocate<LWFrameBufferCon<uint32_t>>(VideoID, Size);
+	return Allocator.Create<LWFrameBufferCon<uint32_t>>(VideoID, Size);
 }
 
 bool LWVideoDriver_OpenGLES2::UpdateTexture(LWTexture *Texture) {
@@ -321,6 +319,10 @@ bool LWVideoDriver_OpenGLES2::UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, cons
 		std::copy(Buffer, Buffer + Length, Buf->GetLocalBuffer());
 	}
 	return true;
+}
+
+bool LWVideoDriver_OpenGLES2::UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const uint8_t *Buffer, uint32_t TypeSize, uint32_t Stride, uint32_t Count, uint32_t Offset) {
+	return false;
 }
 
 bool LWVideoDriver_OpenGLES2::DownloadTexture1D(LWTexture *Texture, uint32_t MipmapLevel, uint8_t *Buffer) {

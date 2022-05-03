@@ -3,7 +3,7 @@
 #include "LWNetwork/LWPacket.h"
 
 LWPacket *LWPacket::Deserialize(LWByteBuffer *Buffer, uint32_t DeserializeType, LWPacket *Packet, LWAllocator &Allocator, LWPacketManager *){
-	LWPacket *Pack = Packet ? Packet : Allocator.Allocate<LWPacket>(0, nullptr, DeserializeType|LWPacketID, 0);
+	LWPacket *Pack = Packet ? Packet : Allocator.Create<LWPacket>(0, nullptr, DeserializeType|LWPacketID, 0);
 	Pack->SetPacketID(Buffer->Read<uint32_t>());
 	Pack->SetFlag(Buffer->Read<uint32_t>());
 	return Pack;

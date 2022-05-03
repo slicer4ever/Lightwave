@@ -22,7 +22,7 @@ public:
 
 	/*!< \brief deserializes a basic packet object, is also useful for chaining deserialization. 
 		 \param Buffer the byte buffer object to read data from to fill out the packet.
-		 \param DeserializeType the type of object being deserialized, this allows the same deserialization function to be used with multiple types. 
+		 \param DeselrializeType the type of object being deserialized, this allows the same deserialization function to be used with multiple types. 
 		 \param Packet the packet which may or may not have been already allocated, since serialization and deserialization are meant to be used in a inheritance pattern, the current packet to fill out may have already been allocated.
 		 \param Allocator the allocator used to create the packet.
 		 \param Manager the packet manager that is deallocating the packet.
@@ -90,17 +90,19 @@ public:
 	/*!< \brief constructs a simple packet object. */
 	LWPacket(uint32_t PacketID, void *Client, uint32_t Type, uint32_t Flag);
 	
+	LWPacket() = default;
+
 	/*!< \brief destructs a packet object. */
 	virtual ~LWPacket();
 protected:
 	uint64_t m_SendTime = 0;
-	void *m_Client;
-	void *m_Source;
+	void *m_Client = nullptr;
+	void *m_Source = nullptr;
 	LWPacket *m_Next = nullptr;
-	uint32_t m_Type;
-	uint32_t m_PacketID;
+	uint32_t m_Type = 0;
+	uint32_t m_PacketID = 0;
 	uint32_t m_PacketAckID = 0;
-	uint32_t m_Flag;
+	uint32_t m_Flag = 0;
 
 };
 
@@ -108,7 +110,7 @@ template<uint32_t MaxBufferSize>
 class LWPacketGeneric : public LWPacket {
 public:
 	static LWPacketGeneric<MaxBufferSize> *Deserialize(LWByteBuffer *Buffer, uint32_t DeserializeType, LWPacket *Packet, LWAllocator &Allocator, LWPacketManager *Manager) {
-		LWPacketGeneric<MaxBufferSize> *Pack = Packet ? (LWPacketGeneric<MaxBufferSize>*)Packet : Allocator.Allocate<LWPacketGeneric<MaxBufferSize>>(0, nullptr, DeserializeType, 0);
+		LWPacketGeneric<MaxBufferSize> *Pack = Packet ? (LWPacketGeneric<MaxBufferSize>*)Packet : Allocator.Create<LWPacketGeneric<MaxBufferSize>>(0, nullptr, DeserializeType, 0);
 		LWPacket::Deserialize(Buffer, DeserializeType, Pack, Allocator, Manager);
 		uint32_t BufferSize = Buffer->Read<uint32_t>();
 		if (BufferSize > MaxBufferSize) return Pack;
@@ -141,7 +143,7 @@ public:
 	template<class Type>
 	bool Write(Type In) {
 		if (m_BufferPosition + sizeof(Type) > MaxBufferSize) return false;
-		LWByteBuffer B((int8_t*)m_Buffer, MaxBufferSize, LWByteBuffer::Network|LWByteBuffer::BufferNotOwned);
+		LWByteBuffer B((int8_t*)m_Buffer, MaxBufferSize, LWByteBuffer::Network);
 		B.SetPosition(m_BufferPosition);
 		m_BufferPosition+=B.Write(In);
 		m_BufferSize = std::max<uint32_t>(m_BufferSize, m_BufferPosition);
@@ -151,7 +153,7 @@ public:
 	template<class Type>
 	bool Write(Type *In, uint32_t Len) {
 		if (m_BufferPosition + sizeof(Type)*Len > MaxBufferSize) return false;
-		LWByteBuffer B((int8_t*)m_Buffer, MaxBufferSize, LWByteBuffer::Network | LWByteBuffer::BufferNotOwned);
+		LWByteBuffer B((int8_t*)m_Buffer, MaxBufferSize, LWByteBuffer::Network );
 		B.SetPosition(m_BufferPosition);
 		m_BufferPosition += B.Write(Len, In);
 		m_BufferSize = std::max<uint32_t>(m_BufferSize, m_BufferPosition);
@@ -160,7 +162,7 @@ public:
 
 	template<class Type>
 	Type Read() {
-		LWByteBuffer B((int8_t*)m_Buffer, MaxBufferSize, LWByteBuffer::Network | LWByteBuffer::BufferNotOwned);
+		LWByteBuffer B((int8_t*)m_Buffer, MaxBufferSize, LWByteBuffer::Network);
 		Type O = B.Read<Type>(m_BufferPosition);
 		m_BufferPosition += sizeof(Type);
 		return O;
@@ -169,7 +171,7 @@ public:
 	template<class Type>
 	bool Read(Type *Out, uint32_t Len) {
 		if (m_BufferPosition + sizeof(Type)*Len >= MaxBufferSize) return false;
-		LWByteBuffer B((int8_t*)m_Buffer, MaxBufferSize, LWByteBuffer::Network | LWByteBuffer::BufferNotOwned);
+		LWByteBuffer B((int8_t*)m_Buffer, MaxBufferSize, LWByteBuffer::Network);
 		B.Read(Out, Len, m_BufferPosition);
 		m_BufferPosition += sizeof(Type)*Len;
 		return true;
@@ -193,9 +195,11 @@ public:
 
 	LWPacketGeneric(uint32_t PacketID, void *Client, uint32_t Type, uint32_t Flag) : LWPacket(PacketID, Client, Type, Flag), m_BufferSize(0), m_BufferPosition(0) {}
 
+	LWPacketGeneric() = default;
+
 protected:
 	char m_Buffer[MaxBufferSize];
-	uint32_t m_BufferPosition;
-	uint32_t m_BufferSize;
+	uint32_t m_BufferPosition = 0;
+	uint32_t m_BufferSize = 0;
 };
 #endif

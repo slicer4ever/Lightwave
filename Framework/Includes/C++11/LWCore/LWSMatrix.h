@@ -7,29 +7,12 @@
 
 /*!< \brief an accelerated simd matrix4 class, non-implemented or disabled sse functions default to a generic class. */
 template<class Type>
-struct LWSMatrix4 {
+struct alignas(LWSVector4<Type>[4]) LWSMatrix4 {
 	LWSVector4<Type> m_Rows[4];
 
 	/*! \brief returns a mat4 version of the SMatrix. */
 	LWMatrix4<Type> AsMat4(void) const {
 		return LWMatrix4<Type>(m_Rows[0].AsVec4(), m_Rows[1].AsVec4(), m_Rows[2].AsVec4(), m_Rows[3].AsVec4());
-	}
-
-	/*! \brief returns the internal components as a array of data. */
-	Type *AsArray(void) {
-		return m_Rows[0].AsArray();
-	}
-
-	/*! \brief returns the internal components as a const array of data. */
-	const Type *AsArray(void) const {
-		return m_Rows[0].AsArray();
-	}
-
-	/*! \brief set's a row*4+column of the matrix to value. */
-	LWMatrix4<Type> &sRC(uint32_t Row, uint32_t Column, Type Value) {
-		Type *V = AsArray();
-		V[Row * 4 + Column] = Value;
-		return *this;
 	}
 
 	/*!< \brief decomposes 4x4 matrix to get the scalar for each axis.
@@ -53,7 +36,7 @@ struct LWSMatrix4 {
 	}
 
 	LWSMatrix4 TransformInverse(void) const {
-		const Type E = std::numeric_limits<Type>::epsilon();
+		const Type E = (Type)std::numeric_limits<float>::epsilon();
 		//Transpose matrix.
 		LWSMatrix4 T3 = Transpose3x3();
 		LWSVector4<Type> A = T3.m_Rows[0];
@@ -63,6 +46,7 @@ struct LWSMatrix4 {
 		LWSVector4<Type> One = LWSVector4<Type>(1, 1, 1, 0);
 		LWSVector4<Type> Sq = A * A + B * B + C * C;
 		LWSVector4<Type> rSq = (One / Sq).AAAB(One);
+		
 		LWVector4<Type> SqV = Sq.AsVec4();
 		if (SqV.x < E) rSq = rSq.BAAA(One);
 		if (SqV.y < E) rSq = rSq.ABAA(One);
@@ -75,7 +59,7 @@ struct LWSMatrix4 {
 		LWSVector4<Type> Dy = m_Rows[3].yyyw();
 		LWSVector4<Type> Dz = m_Rows[3].zzzw();
 		LWSVector4<Type> D = -(A*Dx + B * Dy + C * Dz);
-		return LWSMatrix4(A, B, C, D.AAAB(m_Rows[3]));
+		return LWSMatrix4(A, B, C, D.xyz1());
 	}
 
 	/*! \brief Returns an copied inverse of this matrix. */
@@ -99,7 +83,6 @@ struct LWSMatrix4 {
 		LWSVector4<Type> CwwBww = C.wwww().AABB(B.wwww());
 		LWSVector4<Type> DzzzCz = D.zzzz().AAAB(C.zzzz());
 		LWSVector4<Type> CyyByy = C.yyyy().AABB(B.yyyy());
-		LWSVector4<Type> DyyCyy = D.yyyy().AABB(C.yyyy());
 		LWSVector4<Type> DyyyCy = D.yyyy().AAAB(C.yyyy());
 		LWSVector4<Type> CxxBxx = C.xxxx().AABB(B.xxxx());
 		LWSVector4<Type> DxxxCx = D.xxxx().AAAB(C.xxxx());
@@ -109,7 +92,7 @@ struct LWSMatrix4 {
 		LWSVector4<Type> A1223_A0223_A0123_A0123 = Cyxxx * Dzzyy - Czzyy * Dyxxx;
 
 		LWSVector4<Type> A2323_A2323_A2313_A2312 = CzzBzz * DwwwCw - CwwBww * DzzzCz;
-		LWSVector4<Type> A1323_A1323_A1313_A1312 = CyyByy * DwwwCw - CwwBww * DyyCyy;
+		LWSVector4<Type> A1323_A1323_A1313_A1312 = CyyByy * DwwwCw - CwwBww * DyyyCy;
 		LWSVector4<Type> A1223_A1223_A1213_A1212 = CyyByy * DzzzCz - CzzBzz * DyyyCy;
 		LWSVector4<Type> A0323_A0323_A0313_A0312 = CxxBxx * DwwwCw - CwwBww * DxxxCx;
 		LWSVector4<Type> A0223_A0223_A0213_A0212 = CxxBxx * DzzzCz - CzzBzz * DxxxCx;
@@ -118,9 +101,8 @@ struct LWSMatrix4 {
 		LWSVector4<Type> MulA = LWSVector4<Type>(1, -1, 1, -1);
 		LWSVector4<Type> MulB = LWSVector4<Type>(-1, 1, -1, 1);
 		LWSVector4<Type> Det = ((A * (B.yxxx() * A2323_A2323_A1323_A1223 - B.zzyy() * A1323_A0323_A0323_A0223 + B.wwwy() * A1223_A0223_A0123_A0123))*MulA).Sum();
-		if (Det.x() <= std::numeric_limits<Type>::epsilon()) Det = LWSVector4<Type>(0, 0, 0, 0);
+		if ((Type)abs(Det.x) <= (Type)std::numeric_limits<float>::epsilon()) Det = LWSVector4<Type>(0, 0, 0, 0);
 		else Det = (Type)1 / Det;
-
 		LWSVector4<Type> ByAyyy = B.yyyy().ABBB(A.yyyy());
 		LWSVector4<Type> BzAzzz = B.zzzz().ABBB(A.zzzz());
 		LWSVector4<Type> BwAwww = B.wwww().ABBB(A.wwww());
@@ -136,10 +118,6 @@ struct LWSMatrix4 {
 	LWSVector4<Type> Column(uint32_t Index) const {
 		return Transpose().m_Rows[Index];
 	};
-
-	LWSVector4<Type> Row(uint32_t Index) const {
-		return m_Rows[Index];
-	}
 
 	/*! \brief returns the transpose of the this matrix. */
 	LWSMatrix4 Transpose(void) const {
@@ -215,6 +193,14 @@ struct LWSMatrix4 {
 		
 		LWSVector4<Type> Mul = LWSVector4<Type>(1, -1, 1, -1);
 		return ((A * (B.yxxx() * A2323_A2323_A1323_A1223 - B.zzyy() * A1323_A0323_A0323_A0223 + B.wwwy() * A1223_A0223_A0123_A0123))*Mul).Sum4();
+	}
+
+	LWSVector4<Type> operator[](uint32_t i) const {
+		return m_Rows[i];
+	}
+
+	LWSVector4<Type> &operator[](uint32_t i) {
+		return m_Rows[i];
 	}
 
 	/*! \cond */
@@ -367,14 +353,44 @@ struct LWSMatrix4 {
 	}
 
 	friend LWSVector4<Type> operator * (const LWSVector4<Type> &Lhs, const LWSMatrix4 &Rhs) {
-		LWSMatrix4 RhsT = Rhs.Transpose();
 		LWSVector4<Type> Lx = Lhs.xxxx();
 		LWSVector4<Type> Ly = Lhs.yyyy();
 		LWSVector4<Type> Lz = Lhs.zzzz();
 		LWSVector4<Type> Lw = Lhs.wwww();
-		return Lx * RhsT.m_Rows[0] + Ly * RhsT.m_Rows[1] + Lz * RhsT.m_Rows[2] + Lw * RhsT.m_Rows[3];
+		return Lx * Rhs.m_Rows[0] + Ly * Rhs.m_Rows[1] + Lz * Rhs.m_Rows[2] + Lw * Rhs.m_Rows[3];
 	}
 	/*! \endcond */
+
+	/*!< \brief returns a matrix from specified euler angles */
+	static LWSMatrix4 FromEuler(Type Pitch, Type Yaw, Type Roll) {
+		Type c1 = (Type)cos(Yaw);
+		Type c2 = (Type)cos(Pitch);
+		Type c3 = (Type)cos(Roll);
+		Type s1 = (Type)sin(Yaw);
+		Type s2 = (Type)sin(Pitch);
+		Type s3 = (Type)sin(Roll);
+		Type s1s2 = s1 * s2;
+		return LWSMatrix4({ c1 * c2, s1 * s3 - c1 * s2 * c3, c1 * s2 * s3 + s1 * c3, (Type)0 },
+			{ s2, c2 * c3, -c2 * s3, (Type)0 },
+			{ -s1 * c2, s1s2 * c3 + c1 * s3, -s1s2 * s3 + c1 * c3, (Type)0 },
+			{ (Type)0, (Type)0, (Type)0, (Type)1 });
+	}
+
+	/*!< \brief returns a matrix from specified euler angles. */
+	static LWSMatrix4 FromEuler(const LWVector3<Type> &Euler) {
+		return FromEuler(Euler.x, Euler.y, Euler.z);
+	}
+
+	/*!< \brief returns euler representation of the matrix.  if the matrix is not an affine transform then this function will return undefined results. */
+	LWVector3<Type> ToEuler(void) const {
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
+		if (m_Rows[1].x > 1.0f - e) {
+			return LWVector3<Type>((Type)LW_PI_2, (Type)atan2(m_Rows[0].z, m_Rows[2].z), (Type)0);
+		} else if (m_Rows[1].x < -1.0f + e) {
+			return LWVector3<Type>((Type)-LW_PI_2, (Type)atan2(m_Rows[0].z, m_Rows[2].z), (Type)0);
+		}
+		return LWVector3<Type>((Type)asin(m_Rows[1].x), (Type)atan2(-m_Rows[2].x, m_Rows[0].x), (Type)atan2(-m_Rows[1].z, m_Rows[1].y));
+	}
 
 	/*! \brief returns a matrix rotated around the x axis.
 		\param Theta the angle to use.
@@ -529,7 +545,7 @@ struct LWSMatrix4 {
 		\param Position the translation to apply.
 	*/
 	static LWSMatrix4 Translation(const LWSVector4<Type> &Position) {
-		return LWSMatrix4({ 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, Position.AAAB(LWSVector4<Type>(1)));
+		return LWSMatrix4({ 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, Position.xyz1());
 	}
 
 	/*!< \brief constructs a rotation matrix from the directional vector which is relative to the supplied up vector.
@@ -664,7 +680,6 @@ struct LWSMatrix4 {
 		m_Rows[1] = (B.yyww().ABAA(A)).AABA(C);
 		m_Rows[2] = (C.ABAA(B.zzzz())).AABA(A);
 		m_Rows[3] = LWSVector4<Type>(0, 0, 0, 1);
-
 	}
 	
 	/*! \brief constructs a 4x4 matrix with each row scaled by the respective scales.
@@ -708,7 +723,7 @@ struct LWSMatrix4 {
 	};
 };
 
-#ifndef LW_NOAVX2
+#ifdef __AVX2__
 #include "LWCore/LWSMatrix_AVX2_Float.h"
 #include "LWCore/LWSMatrix_AVX2_Double.h"
 #endif

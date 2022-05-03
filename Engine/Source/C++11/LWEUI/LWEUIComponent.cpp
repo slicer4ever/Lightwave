@@ -1,27 +1,25 @@
 #include "LWEUI/LWEUIComponent.h"
 #include <LWCore/LWVector.h>
 #include <LWCore/LWTimer.h>
+#include <LWCore/LWLogger.h>
 #include <algorithm>
 #include <iostream>
 
-LWEUIComponent *LWEUIComponent::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode *> &StyleMap, std::map<uint32_t, LWEXMLNode *> &ComponentMap) {
-	char NameBuffer[256];
-	char Buffer[256];
-	uint32_t NameHash = LWText::MakeHash(Node->m_Name);
+LWEUIComponent *LWEUIComponent::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode *> &StyleMap, std::map<uint32_t, LWEXMLNode *> &ComponentMap) {
+	char8_t Buffer[256];
+	char8_t NameBuffer[256]="";
+	uint32_t NameHash = Node->GetName().Hash();
 	auto Iter = ComponentMap.find(NameHash);
-	if (Iter == ComponentMap.end()) {
-		std::cout << "Error unknown node: '" << Node->m_Name << "'" << std::endl;
-		return nullptr;
-	}
+	if(!LWLogCriticalIf<256>(Iter!=ComponentMap.end(), "Unknown node: '{}'", Node->GetName())) return nullptr;
+
 	LWEXMLNode *Component = Iter->second;
-	LWXMLAttribute *NameAttr = Node->FindAttribute("Name");
-	NameBuffer[0] = '\0';
-	const char *ActiveName = NameBuffer;
+	LWEXMLAttribute *NameAttr = Node->FindAttribute("Name");
+	LWUTF8Iterator ActiveName = NameBuffer;
 	if (NameAttr) {
-		if (*ActiveComponentName) snprintf(NameBuffer, sizeof(NameBuffer), "%s.%s", ActiveComponentName, ParseComponentAttribute(Buffer, sizeof(Buffer), NameAttr->m_Value, ActiveComponent, ActiveComponentNode));
-		else ActiveName = ParseComponentAttribute(Buffer, sizeof(Buffer), NameAttr->m_Value, ActiveComponent, ActiveComponentNode);
-	} else if (*ActiveComponentName) ActiveName = ActiveComponentName;
-	LWEUIComponent *Cmp = Manager->GetAllocator()->Allocate<LWEUIComponent>(LWVector4f(0.0f), LWVector4f(0.0f), 0);
+		if (!ActiveComponentName.AtEnd()) snprintf(NameBuffer, sizeof(NameBuffer), "%s.%s", ActiveComponentName(), ParseComponentAttribute(Buffer, sizeof(Buffer), NameAttr->m_Value, ActiveComponent, ActiveComponentNode)());
+		else ActiveName = ParseComponentAttribute(Buffer, sizeof(Buffer), NameAttr->GetValue(), ActiveComponent, ActiveComponentNode);
+	} else if (!ActiveComponentName.AtEnd()) ActiveName = ActiveComponentName;
+	LWEUIComponent *Cmp = Manager->GetAllocator().Create<LWEUIComponent>(LWVector4f(0.0f), LWVector4f(0.0f), 0);
 	for (LWEXMLNode *C = XML->NextNode(nullptr, Component); C; C = XML->NextNode(C, Component, true)) {
 		LWEUI *S = LWEUI::XMLParseSubNodes(Cmp, C, XML, Manager, ActiveName, Component, Node, StyleMap, ComponentMap);
 		if (S) Cmp->PushComponent(S);

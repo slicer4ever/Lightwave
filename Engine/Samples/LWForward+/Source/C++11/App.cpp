@@ -4,6 +4,8 @@
 #include <LWPlatform/LWFileStream.h>
 #include <LWPlatform/LWApplication.h>
 #include <LWVideo/LWFont.h>
+#include <LWCore/LWCrypto.h>
+#include <LWCore/LWUnicode.h>
 #include <LWEXML.h>
 #include <algorithm>
 
@@ -29,7 +31,7 @@ App &App::Update(uint64_t lCurrentTime) {
 	float Deg = fmodf(m_SceneTheta*LW_RADTODEG, 360.0f);
 	if (Deg < 0.0f) Deg += 360.0f;
 	
-	m_DefaultFont->DrawTextmf("Vertices: %d FrameTime: %dms Scale: %.2f Rotation: %.2f", LWVector2f(), 1.0f, LWVector4f(1.0f, 1.0f, 1.0f, 1.0f), &F->m_FontWriter, &LWFontSimpleWriter::WriteGlyph, Vertices, UpdateFreq, m_SceneScale, Deg);
+	m_DefaultFont->DrawTextm(LWUTF8I::Fmt<256>("Vertices: {} FrameTime: {}ms Scale: {:.2} Rotation: {:.2}", Vertices, UpdateFreq, m_SceneScale, Deg), LWVector2f(), 1.0f, LWVector4f(1.0f, 1.0f, 1.0f, 1.0f), &F->m_FontWriter, &LWFontSimpleWriter::WriteGlyph);
 	m_Renderer->EndFrame();
 	m_LastUpdateTime = lCurrentTime;
 	return *this;
@@ -116,7 +118,7 @@ bool App::LoadAssets(void) {
 		return false;
 	}
 	AssetStream.ReadText(Buffer, sizeof(Buffer));
-	m_AssetManager = m_Allocator.Allocate<LWEAssetManager>(m_Driver, nullptr, m_Allocator);
+	m_AssetManager = m_Allocator.Create<LWEAssetManager>(m_Driver, nullptr, m_Allocator);
 	LWEXML X;
 	if (!LWEXML::ParseBuffer(X, m_Allocator, Buffer, true)) {
 		std::cout << "Error parsing xml: 'App:AssetManager.xml'" << std::endl;
@@ -124,7 +126,7 @@ bool App::LoadAssets(void) {
 	}
 	X.PushParser("AssetManager", LWEAssetManager::XMLParser, m_AssetManager);
 	X.Process();
-	m_DefaultFont = m_AssetManager->GetAsset("DefaultFont")->AsFont();
+	m_DefaultFont = m_AssetManager->GetAsset<LWFont>("DefaultFont");
 	return true;
 }
 
@@ -132,26 +134,26 @@ bool App::isTerminate(void) {
 	return (m_Flag&Terminate) != 0;
 }
 
-App::App(const char *Path, LWAllocator &Allocator) : m_Allocator(Allocator) {
-	const char Title[] = "LWWindow Forward+ Sample.";
-	const char *DriverNames[] = LWVIDEODRIVER_NAMES;
-	const char *PlatformNames[] = LWPLATFORM_NAMES;
-	const char *ArchNames[] = LWARCH_NAMES;
+App::App(const LWUTF8Iterator &Path, LWAllocator &Allocator) : m_Allocator(Allocator) {
+	const char8_t Title[] = "LWWindow Forward+ Sample.";
+	const char8_t *DriverNames[] = LWVIDEODRIVER_NAMES;
+	const char8_t *PlatformNames[] = LWPLATFORM_NAMES;
+	const char8_t *ArchNames[] = LWARCH_NAMES;
 	char ScenePath[256];
 
 	LWVector2i WndSize = (LWVector2f(1280.0f, 720.0f)*LWSystemScale()).CastTo<int32_t>();
 	LWVideoMode Current = LWVideoMode::GetActiveMode();
 	LWVector2i ScreenSize = Current.GetSize();
-	m_Window = m_Allocator.Allocate<LWWindow>(Title, "LWForward+", m_Allocator, LWWindow::WindowedMode | LWWindow::MouseDevice | LWWindow::KeyboardDevice, ScreenSize / 2 - WndSize / 2, WndSize);
-	uint32_t TargetDriver = LWVideoDriver::DirectX11_1;
+	m_Window = m_Allocator.Create<LWWindow>(Title, "LWForward+", m_Allocator, LWWindow::WindowedMode | LWWindow::MouseDevice | LWWindow::KeyboardDevice, ScreenSize / 2 - WndSize / 2, WndSize);
+	uint32_t TargetDriver = LWVideoDriver::DirectX11_1 | LWVideoDriver::DebugLayer;
 
 	m_Driver = LWVideoDriver::MakeVideoDriver(m_Window, TargetDriver);
-	if (!m_Driver) {
+	if (!m_Driver) { 
 		m_Flag |= Terminate;
 		return;
 	}
 
-	m_ADriver = m_Allocator.Allocate<LWAudioDriver>(this, m_Allocator, [](LWSound *S, LWAudioDriver *Driver) { if (S->isFinished()) S->Release(); }, nullptr, nullptr);
+	m_ADriver = m_Allocator.Create<LWAudioDriver>(this, m_Allocator, [](LWSound *S, LWAudioDriver *Driver) { if (S->isFinished()) S->Release(); }, nullptr, nullptr);
 	if (!m_ADriver) {
 		m_Flag |= Terminate;
 		return;
@@ -161,11 +163,12 @@ App::App(const char *Path, LWAllocator &Allocator) : m_Allocator(Allocator) {
 		return;
 	}
 
-	m_Renderer = m_Allocator.Allocate<Renderer>(m_Driver, this, m_AssetManager, m_Allocator);
-	m_Window->SetTitlef("%s | %s | %s | %s", Title, DriverNames[m_Driver->GetDriverID()], PlatformNames[LWPLATFORM_ID], ArchNames[LWARCH_ID]);
-	if (Path) strncpy(ScenePath, Path, sizeof(ScenePath));
+	m_Renderer = m_Allocator.Create<Renderer>(m_Driver, this, m_AssetManager, m_Allocator);
+
+	m_Window->SetTitle(LWUTF8I::Fmt<256>("{} | {} | {} | {}", Title, DriverNames[m_Driver->GetDriverID()], PlatformNames[LWPLATFORM_ID], ArchNames[LWARCH_ID]));
+	if (Path.isInitialized()) Path.Copy(ScenePath, sizeof(ScenePath));
 	else {
-		if (!m_Window->MakeLoadFileDialog("*.gltf\0GLTF File\0*.glb\0GLB File\0*.*\0Any File\0", ScenePath, sizeof(ScenePath))) {
+		if (!m_Window->MakeLoadFileDialog("*.glb;*.gltf:GLTF File:*.gltf:GLTF File:*.glb:GLB File:*.*:Any File", ScenePath, sizeof(ScenePath))) {
 			m_Flag |= Terminate;
 			return;
 		}

@@ -8,15 +8,13 @@
 #include <iostream>
 #include "LWEVideoDecoderIVF.h"
 #include "LWEVideoDecoderWEBM.h"
+#include <LWCore/LWLogger.h>
 
 bool LWEVideoPlayer::YUVToRGBA(const uint8_t **YUVArrays, const LWVector3i &YUVStrides, const LWVector2i &ImageSize, uint8_t *Buffer, uint32_t BufferSize) {
 	LWVector2i hSize = ImageSize / 2;
 	uint32_t Stride = 4 * ImageSize.x;
 	
-	if (Stride*ImageSize.y > BufferSize) {
-		std::cout << "Error buffer too small for size." << std::endl;
-		return false;
-	}
+	if(!LWLogCriticalIf<256>(Stride*ImageSize.y <= BufferSize, "Buffer too small for size: {}, expected: {}", Buffer, Stride*ImageSize.y)) return false;
 
 	for(int32_t y=0;y<ImageSize.y;y++){
 		uint8_t *Dst = Buffer + (Stride * y);
@@ -46,12 +44,9 @@ bool LWEVideoPlayer::YUVToRGBA(const uint8_t **YUVArrays, const LWVector3i &YUVS
 	return true;
 }
 
-bool LWEVideoPlayer::OpenVideo(LWEVideoPlayer &Player, LWVideoDriver *Driver, const LWText &Path, bool StartPlaying, uint32_t LoopCnt, void *UserData, std::function<void(LWEVideoPlayer &, void*)> FinishedCallback, float PlaybackSpeed, LWAllocator &Allocator, LWFileStream *Existing) {
+bool LWEVideoPlayer::OpenVideo(LWEVideoPlayer &Player, LWVideoDriver *Driver, const LWUTF8Iterator &Path, bool StartPlaying, uint32_t LoopCnt, void *UserData, std::function<void(LWEVideoPlayer &, void*)> FinishedCallback, float PlaybackSpeed, LWAllocator &Allocator, LWFileStream *Existing) {
 	LWFileStream Stream;
-	if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::BinaryMode | LWFileStream::ReadMode, Allocator, Existing)) {
-		std::cout << "Failed to open video: '" << Path.GetCharacters() << "'" << std::endl;
-		return false;
-	}
+	if(!LWLogCriticalIf<256>(LWFileStream::OpenStream(Stream, Path, LWFileStream::BinaryMode | LWFileStream::ReadMode, Allocator, Existing), "Failed to open video file: '{}'", Path)) return false;
 
 	auto OpenIVF = [](LWEVideoPlayer &Player, LWFileStream &Stream, LWVideoDriver *Driver, uint32_t Flags, uint32_t LoopCnt, void *UserData, std::function<void(LWEVideoPlayer&, void*)> FinishedCallback, float PlaybackSpeed, LWAllocator &Allocator)->bool {
 		Stream.Seek(0, LWFileStream::SeekStart);
@@ -64,9 +59,9 @@ bool LWEVideoPlayer::OpenVideo(LWEVideoPlayer &Player, LWVideoDriver *Driver, co
 	};*/
 	uint32_t Flag = StartPlaying ? PlayRequested : 0;
 	//if (OpenWEBM(Player, Stream, Driver, Flag, LoopCnt, UserData, FinishedCallback, PlaybackSpeed, Allocator)) return true;
+
 	if (OpenIVF(Player, Stream, Driver, Flag, LoopCnt, UserData, FinishedCallback, PlaybackSpeed, Allocator)) return true;
-	std::cout << "Error could not find decoder for: '" << Path.GetCharacters() << "'" << std::endl;
-	return false;
+	return LWLogCritical<256>("could not find decoder for: '{}'", Path);
 }
 
 LWEVideoPlayer &LWEVideoPlayer::Update(uint64_t lCurrentTime) {
@@ -103,7 +98,7 @@ LWEVideoPlayer &LWEVideoPlayer::UpdateTexture(void) {
 	return *this;
 }
 
-LWEVideoPlayer &LWEVideoPlayer::SetFinishedCallback(std::function<void(LWEVideoPlayer &, void *)> Callback, void *UserData) {
+LWEVideoPlayer &LWEVideoPlayer::SetFinishedCallback(LWEVideoFinishedCallback Callback, void *UserData) {
 	m_FinishedCallback = Callback;
 	m_UserData = UserData;
 	return *this;
@@ -207,10 +202,10 @@ uint64_t LWEVideoPlayer::GetTotalPlayTime(void) const {
 	return m_Framerate * m_FrameCount;
 }
 
-LWEVideoPlayer::LWEVideoPlayer(LWVideoDriver *VideoDriver, LWEVideoDecoder *Decoder, const LWVector2i &FrameSize, uint64_t FrameRate, uint32_t FrameCount, uint32_t LoopCnt, uint32_t Flag, void *UserData, std::function<void(LWEVideoPlayer&, void*)> FinishedCallback, float PlaybackSpeed, LWAllocator &Allocator) : m_FinishedCallback(FinishedCallback), m_VideoDriver(VideoDriver), m_Decoder(Decoder), m_LoopCount(LoopCnt), m_FrameSize(FrameSize), m_Framerate(FrameRate), m_LastTime(LWTimer::GetCurrent()), m_UserData(UserData), m_FrameCount(FrameCount), m_PlaybackSpeed(PlaybackSpeed), m_Flag(Flag) {
-	m_Texture = m_VideoDriver->CreateTexture2D(LWTexture::MinLinear | LWTexture::MagLinear, LWImage::R8U, LWVector2i(FrameSize.x, FrameSize.y + FrameSize.y / 2), nullptr, 0, Allocator);
+LWEVideoPlayer::LWEVideoPlayer(LWVideoDriver *VideoDriver, LWEVideoDecoder *Decoder, const LWVector2i &FrameSize, uint64_t FrameRate, uint32_t FrameCount, uint32_t LoopCnt, uint32_t Flag, void *UserData, LWEVideoFinishedCallback FinishedCallback, float PlaybackSpeed, LWAllocator &Allocator) : m_FinishedCallback(FinishedCallback), m_VideoDriver(VideoDriver), m_Decoder(Decoder), m_LoopCount(LoopCnt), m_FrameSize(FrameSize), m_Framerate(FrameRate), m_LastTime(LWTimer::GetCurrent()), m_UserData(UserData), m_FrameCount(FrameCount), m_PlaybackSpeed(PlaybackSpeed), m_Flag(Flag) {
+	m_Texture = m_VideoDriver->CreateTexture2D(LWTexture::MinLinear | LWTexture::MagLinear, LWImage::R8, LWVector2i(FrameSize.x, FrameSize.y + FrameSize.y / 2), nullptr, 0, Allocator);
 	for (uint32_t i = 0; i < MaxCachedFrames; i++) {
-		m_PixelBuffer[i] = Allocator.AllocateArray<uint8_t>(m_FrameSize.x*(m_FrameSize.y + FrameSize.y / 2));
+		m_PixelBuffer[i] = Allocator.Allocate<uint8_t>(m_FrameSize.x*(m_FrameSize.y + FrameSize.y / 2));
 	}
 }
 

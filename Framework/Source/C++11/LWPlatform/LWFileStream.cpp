@@ -1,212 +1,223 @@
 #include "LWPlatform/LWFileStream.h"
 #include "LWCore/LWAllocators/LWAllocator_Default.h"
 #include "LWPlatform/LWPlatform.h"
-#include "LWCore/LWText.h"
+#include "LWPlatform/LWDirectory.h"
+#include "LWCore/LWUnicode.h"
+#include "LWCore/LWLogger.h"
 #include <cstdarg>
 #include <cstdio>
 #include <algorithm>
 #include <iostream>
 
-uint32_t LWFileStream::MakeDirectoryPath(const LWText &FilePath, char *Buffer, uint32_t BufferLen){
-	uint32_t l = 0;
-	const char *F = (const char*)FilePath.GetCharacters();
-	char *B = Buffer;
-	for (const char *C = F; *C; C++){
-		if (Buffer && (uint32_t)(C - F) < BufferLen) *B++ = *C;
-		if (*C == '\\' || *C == '/') l = (uint32_t)(C - F) + 1;
+void LWFileStream::SplitPath(const LWUTF8Iterator &FilePath, LWUTF8Iterator &DirPath, LWUTF8Iterator &FileName, LWUTF8Iterator &Extension) {
+	LWUTF8Iterator C = FilePath;
+	LWUTF8Iterator NameStart;
+	LWUTF8Iterator ExtStart;
+	for (; !C.AtEnd(); ++C) {
+		uint32_t cp = *C;
+		if (cp == '\\' || cp == '/') NameStart = C+1;
+		else if (cp=='.') ExtStart = C;
 	}
-	if (Buffer && l < BufferLen) *(Buffer + l) = '\0';
-	return l + 1;
+	if (NameStart.isInitialized()) DirPath = LWUTF8Iterator(FilePath, NameStart);
+	else NameStart = FilePath;
+	if (ExtStart.isInitialized()) {
+		FileName = LWUTF8Iterator(NameStart, ExtStart);
+		Extension = LWUTF8Iterator(ExtStart + 1, C);
+	} else FileName = LWUTF8Iterator(NameStart, C);
+	return;
 }
 
-uint32_t LWFileStream::MakeRelativePath(const LWText &From, const LWText &To, char *Buffer, uint32_t BufferLen){
-	const char *F = (const char*)From.GetCharacters();
-	const char *T = (const char*)To.GetCharacters();
+void LWFileStream::SplitPath(const LWUTF8Iterator &FilePath, LWUTF8Iterator &DirPath, LWUTF8Iterator &FileName) {
+	LWUTF8Iterator C = FilePath;
+	LWUTF8Iterator NameStart;
+	for (; !C.AtEnd(); ++C) {
+		uint32_t cp = *C;
+		if (cp == '\\' || cp == '/') NameStart = C+1;
+	}
+	if (NameStart.isInitialized()) {
+		DirPath = LWUTF8Iterator(FilePath, NameStart);
+		FileName = LWUTF8Iterator(NameStart, C);
+	} else FileName = LWUTF8Iterator(FilePath, C);
+	return;
+}
+
+uint32_t LWFileStream::MakeRelativePath(const LWUTF8Iterator &From, const LWUTF8Iterator &To, char8_t *Buffer, uint32_t BufferLen){
+	LWUTF8Iterator F = From;
+	LWUTF8Iterator T = To;
+	char8_t *B = Buffer;
+	char8_t *BL = B + std::min<uint32_t>(BufferLen - 1, BufferLen);
 	uint32_t DCount = 0;
+	uint32_t o = 0;
+	LWUTF8Iterator LastTDir = T;
+	LWUTF8Iterator LastFDir = F;
 	//find shared directory:
-	for (; *F && *T; F++, T++){
-		if (!((*F == '\\' || *F == '/') && (*T == '\\' || *T == '/')) && *F != *T) break;
+	for (; !F.AtEnd() && !T.AtEnd(); ++F, ++T) {
+		bool isFDir = *F == '\\' || *F == '/';
+		bool isTDir = *T == '\\' || *T == '/';
+		if (isFDir) LastFDir = F+1;
+		if (isTDir) LastTDir = T+1;
+		if (*F != *T && !(isFDir && isTDir)) break;
 	}
+	F = LastFDir;
+	T = LastTDir;
 	//now find the number of directory that from must go up before reaching the shared directory:
-	for (; *F; F++){
-		if (*F == '\\' || *F == '/') DCount++;
-	}
-	uint32_t Len = 0;
-	for (; DCount; DCount--){
-		if (Buffer && Len + 3 < BufferLen){
-			*Buffer++ = '.';
-			*Buffer++ = '.';
-			*Buffer++ = '/';
-		}
-		Len += 3;
-	}
-	for (; *T; T++, Len++){
-		if (Buffer && Len + 1 < BufferLen) *Buffer++ = *T;
-	}
-	if (Buffer && Len + 1 < BufferLen) *Buffer = '\0';
-	return Len + 1;
-}
-
-uint32_t LWFileStream::MakeFileName(const LWText &FilePath, char *Buffer, uint32_t BufferLen){
-    const char *F = (const char*)FilePath.GetCharacters();
-    const char *P = F;
-    for(;*F;F++) if(*F=='\\' || *F=='/' || *F==':') P=F+1;
-    uint32_t Len = (uint32_t)(F-P);
-    if(Buffer){
-        char *Last = Buffer+BufferLen;
-        char *C = Buffer;
-        for(;*P && C!=Last;) *C++=*P++;
-        if(C!=Last) *C=*P;
-        Buffer[BufferLen-1]='\0';
-    }
-    return Len+1;
-}
-
-bool LWFileStream::PathIsAbsolute(const LWText &FilePath){
-	const char *F = (const char*)FilePath.GetCharacters();
-	return *F == '\\' || *F == '/' || *(F + 1) == ':';
-}
-
-uint32_t LWFileStream::GetExtension(const LWText &FilePath, char *Buffer, uint32_t BufferLen){
-	const char *C = (const char*)FilePath.GetCharacters();
-	const char *E = nullptr;
-	uint32_t Len = 0;
-	for (; *C; C++) if (*C == '.') E = C + 1;
-	if (E){
-		for (; *E; E++, Len++){
-			if (Buffer && Len + 1 < BufferLen) *Buffer++ = *E;
+	for (; !F.AtEnd(); ++F) {
+		if (*F == '\\' || *F == '/') {
+			if (B + 3 < BL) {
+				*B++ = '.'; *B++ = '.'; *B++ = '/';
+			}
+			o += 3;
 		}
 	}
-	if (Buffer && Len + 1 < BufferLen) *Buffer = '\0';
-	return Len;
+
+	//Now append remaining Directors in T.
+	for(;!T.AtEnd();++T){
+		uint32_t r = LWUTF8Iterator::CodePointUnitSize(*T);
+		if (B + r < BL) B += LWUTF8Iterator::EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL-B), *T);
+		o += r;
+	}
+	if (BufferLen) *B = '\0';
+	return o + 1;
 }
 
-bool LWFileStream::IsExtension(const LWText &FilePath, const char *Extension){
-	const char *C = (const char*)FilePath.GetCharacters();
-	const char *E = nullptr;
-	for (; *C; C++) if (*C == '.') E = C + 1;
-	if (!E) return false;
-	for (; *Extension; E++, Extension++) if (tolower(*E) != tolower(*Extension)) return false;
-	return true;
+bool LWFileStream::PathIsAbsolute(const LWUTF8Iterator &FilePath){
+	return *FilePath == '\\' || *FilePath == '/' || *(FilePath + 1) == ':';
 }
 
-uint32_t LWFileStream::IsExtensions(const LWText &FilePath, uint32_t ExtCount, ...){
-	const char *C = (const char*)FilePath.GetCharacters();
-	const char *E = nullptr;
-	for (; *C; C++) if (*C == '.') E = C + 1;
-	if (!E) return 0xFFFFFFFF;
-	va_list lst;
-	va_start(lst, ExtCount);
-	for (uint32_t i = 0; i < ExtCount; i++){
-		const char *Ext = va_arg(lst, const char*);
-		bool Is = true;
-		for (const char *CE = E; *Ext && Is; CE++, Ext++) Is = tolower(*CE) == tolower(*Ext);
-		if (Is){
-			va_end(lst);
-			return i;
+bool LWFileStream::IsExtension(const LWUTF8Iterator &FilePath, const LWUTF8Iterator &Extension) {
+	LWUTF8Iterator Dir, Name, Ext;
+	SplitPath(FilePath, Dir, Name, Ext);
+	if (!Ext.isInitialized()) return false;
+	return Ext.Compare(Extension);
+}
+
+uint32_t LWFileStream::ConcatExtension(const LWUTF8Iterator &FilePath, const LWUTF8Iterator &Extension, char8_t *Buffer, uint32_t BufferLen){
+	LWUTF8Iterator ExtPart;
+	LWUTF8Iterator C = FilePath;
+	char8_t *B = Buffer;
+	char8_t *BL = Buffer + std::min<uint32_t>(BufferLen - 1, BufferLen);
+	uint32_t o = 0;
+	for (; !C.AtEnd(); ++C) {
+		uint32_t r = LWUTF8Iterator::EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL - B), *C);
+		B = std::min<char8_t*>(B + r, BL);
+		if (*C == '.') ExtPart = C+1;
+		o += r;
+	}
+	if (!ExtPart.isInitialized() || !Extension.Compare(ExtPart)) {
+		C = Extension;
+		uint32_t r = LWUTF8Iterator::EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL - B), '.');
+		B = std::min<char8_t*>(B + r, BL);
+		o += r;
+		for (; !C.AtEnd(); ++C) {
+			uint32_t r = LWUTF8Iterator::EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL - B), *C);
+			B = std::min<char8_t*>(B + r, BL);
+			o += r;
 		}
 	}
-	va_end(lst);
-	return 0xFFFFFFFF;
+	if (BufferLen) *B = '\0';
+	return o + 1;
 }
 
-uint32_t LWFileStream::ConcatExtension(const LWText &FilePath, const LWText &Extension, char *Buffer, uint32_t BufferLen){
-	const char *C = (const char*)FilePath.GetCharacters();
-	const char *E = nullptr;
-	uint32_t Len = 0;
-	for (; *C; C++, Len++){
-		if (Buffer && Len + 1 < BufferLen) *Buffer++ = *C;
-		if (*C == '.') E = C + 1;
-	}
-	if (E){
-		const char *Ext = (const char*)Extension.GetCharacters();
-		bool Is = true;
-		for (; *Ext && Is; E++) Is = tolower(*E) == tolower(*(Ext++));
-		if (Is) return Len + 1;
-	}
-	if (Buffer && Len + 1 < BufferLen) *Buffer++ = '.';
-	Len++;
-	for (C = (const char*)Extension.GetCharacters(); *C; C++, Len++){
-		if (Buffer && Len + 1 < BufferLen) *Buffer++ = *C;
-	}
-	if (Buffer && Len + 1 < BufferLen) *Buffer = '\0';
-	Len++;
-	return Len;
-}
-
-bool LWFileStream::ParsePath(const LWText &FilePath, char *Buffer, uint32_t BufferLen, const LWFileStream *ExistingStream){
-	char FolderPath[512] = "";
-	const char *Path = (const char*)FilePath.GetCharacters();
-	const char *PathRes = LWText::CopyToTokens(Path, nullptr, 0, ":");
-	if (*PathRes==':') {
-		if (!std::strncmp("Game:", Path, 5)) {
-			Path = Path + 5;
-			if (!GetFolderPath(Game, FolderPath, sizeof(FolderPath))) return false;
-		} else if (!std::strncmp("Fonts:", Path, 6)) {
-			Path = Path + 6;
-			if (!GetFolderPath(Fonts, FolderPath, sizeof(FolderPath))) return false;
-		} else if (!std::strncmp("App:", Path, 4)) {
-			Path = Path + 4;
-			if (!GetFolderPath(App, FolderPath, sizeof(FolderPath))) return false;
-		} else if (!std::strncmp("User:", Path, 5)) {
-			Path = Path + 5;
-			if (!GetFolderPath(User, FolderPath, sizeof(FolderPath))) return false;
+uint32_t LWFileStream::MakeAbsolutePath(const LWUTF8Iterator &FilePath, char8_t *Buffer, uint32_t BufferLen) {
+	const uint32_t MaxParentDirs = 64;
+	char8_t Temp[512];
+	char8_t *pDirs[MaxParentDirs];
+	uint32_t DirLen = GetWorkingDirectory(Temp, sizeof(Temp)) - 1;
+	uint32_t Len = ParsePath(FilePath, Temp + DirLen, sizeof(Temp) - DirLen);
+	if (!Len) return 0;
+	if (PathIsAbsolute(Temp + DirLen)) std::copy(Temp + DirLen, Temp + DirLen + Len, Temp);
+	char8_t *B = Buffer;
+	char8_t *BL = B + std::min<uint32_t>(BufferLen - 1, BufferLen);
+	uint32_t o = 0;
+	uint32_t p = 0;
+	//Clean up any ../ and ./ in path.
+	for (char8_t *T = Temp; *T; ++T, ++o) {
+		if (*T == '/' || *T == '\\') {
+			if(p<MaxParentDirs) pDirs[p++] = B;
+		} else if (*T == '.') {
+			if (*(T + 1) == '/' || *(T + 1) == '\\') T += 2;
+			if (*(T + 1) == '.' && (*(T + 2) == '/' || *(T + 2) == '\\')) {
+				if (p > 1) B = pDirs[--p - 1];
+				T += 2;
+			}
 		}
-	}else if(ExistingStream && std::strncmp(Path, "/", 1) && std::strncmp(Path, "\\", 1)){
-		snprintf(Buffer, BufferLen, "%s%s", (const char*)ExistingStream->GetDirectoryPath().GetCharacters(), Path);
-		return true;
+		if (B < BL) *B++ = *T;
+	}
+	if (BufferLen) *B = '\0';
+	return o+1;
+}
+
+uint32_t LWFileStream::ParsePath(const LWUTF8Iterator &FilePath, char8_t *Buffer, uint32_t BufferLen, const LWFileStream *ExistingStream){
+	char8_t FolderPath[512]="";
+	LWUTF8Iterator DirPath, NamePath;
+	LWUTF8Iterator C = FilePath.NextToken(':', false);
+	if (!C.AtEnd()) {
+		LWUTF8Iterator FolderIter = LWUTF8Iterator(FilePath, C);
+		uint32_t FolderID = FolderIter.CompareList("Game", "Fonts", "App", "User");
+		if (FolderID != -1) {
+			++C;
+			if (!GetFolderPath(FolderID, FolderPath, sizeof(FolderPath))) return false;
+			return snprintf(Buffer, BufferLen, "%s/%s", FolderPath, *C.c_str<512>()) + 1;
+		} else C = FilePath;
+	} else C = FilePath;
+	if(ExistingStream && !PathIsAbsolute(C)) {
+		SplitPath(ExistingStream->GetFilePath().begin(), DirPath, NamePath);
+		if (DirPath.isInitialized()) return snprintf((char*)Buffer, BufferLen, "%s/%s", *DirPath.c_str<512>(), *C.c_str<512>()) + 1;
 	}
 
-	if (*FolderPath) snprintf(Buffer, BufferLen, "%s/%s", FolderPath, Path);
-	else snprintf(Buffer, BufferLen, "%s", Path);
-	return true;
+	return FilePath.Copy(Buffer, BufferLen);
 }
 
-bool LWFileStream::OpenStream(LWFileStream &Result, const LWText &FilePath, uint32_t Flag, LWAllocator &Allocator, const LWFileStream *ExistingStream){
-	return OpenStream(Result, (const char*)FilePath.GetCharacters(), Flag, Allocator, ExistingStream);
+bool LWFileStream::DelFile(const LWUTF8Iterator &Filepath, bool bVerbose) {
+	char8_t Path[256];
+	ParsePath(Filepath, Path, sizeof(Path));
+	auto Res = remove(Path);
+	return LWLogWarnIfv<256>(Res==0, bVerbose, "Error removing file '{}': {}", Filepath, errno);
 }
 
-bool LWFileStream::OpenStreamf(LWFileStream &Result, const uint8_t *FilePath, uint32_t Flag, LWAllocator &Allocator, const LWFileStream *ExistingStream, ...){
-	char Buffer[512];
-	va_list lst;
-	va_start(lst, ExistingStream);
-	vsnprintf(Buffer, sizeof(Buffer), (const char*)FilePath, lst);
-	va_end(lst);
-	return OpenStream(Result, Buffer, Flag, Allocator, ExistingStream);
+bool LWFileStream::MovFile(const LWUTF8Iterator &SrcFilepath, const LWUTF8Iterator &DstFilepath, bool bVerbose) {
+	char8_t SrcPath[256];
+	char8_t DstPath[256];
+	uint32_t sLen = ParsePath(SrcFilepath, SrcPath, sizeof(SrcPath));
+	uint32_t dLen = ParsePath(DstFilepath, DstPath, sizeof(DstPath));
+
+	LWUTF8Iterator DstDir, DstName;
+	SplitPath(DstPath, DstDir, DstName);
+	if (DstDir.isInitialized()) {
+		if (!LWDirectory::CreateDir(DstDir, nullptr)) return false;
+	}
+	auto Res = rename((const char*)SrcPath, (const char*)DstPath);
+	return LWLogWarnIfv<256>(Res==0, bVerbose, "Error moving file '{}' to '{}': {}", SrcFilepath, DstFilepath, errno);
 }
 
-bool LWFileStream::OpenStreamf(LWFileStream &Result, const char *FilePath, uint32_t Flag, LWAllocator &Allocator, const LWFileStream *ExistingStream, ...){
-	char Buffer[512];
-	va_list lst;
-	va_start(lst, ExistingStream);
-	vsnprintf(Buffer, sizeof(Buffer), FilePath, lst);
-	va_end(lst);
-	return OpenStream(Result, Buffer, Flag, Allocator, ExistingStream);
-}
+bool LWFileStream::CpyFile(const LWUTF8Iterator &SrcFilePath, const LWUTF8Iterator &DstFilePath, LWAllocator &Allocator, bool bVerbose) {
+	char8_t SrcPath[256];
+	char8_t DstPath[256];
+	LWFileStream SrcStream;
+	LWFileStream DstStream;
+	uint32_t sLen = ParsePath(SrcFilePath, SrcPath, sizeof(SrcPath));
+	uint32_t dLen = ParsePath(DstFilePath, DstPath, sizeof(DstPath));
+	LWUTF8Iterator DstDir, DstName;
+	SplitPath(DstFilePath, DstDir, DstName);
+	if (DstDir.isInitialized()) {
+		if (!LWDirectory::CreateDir(DstPath, nullptr)) return false;
+	}
+	if(!LWLogWarnIfv<256>(LWFileStream::OpenStream(SrcStream, SrcPath, LWFileStream::BinaryMode | LWFileStream::ReadMode, Allocator), bVerbose, "Error opening file: '{}'", SrcFilePath)) return false;
+	if(!LWLogWarnIfv<256>(LWFileStream::OpenStream(DstStream, DstPath, LWFileStream::BinaryMode|LWFileStream::WriteMode, Allocator), bVerbose, "Error opening file: '{}'", DstFilePath)) return false;
 
-bool LWFileStream::Exists(const LWText &Filepath) {
-	LWFileStream Stream;
-	LWAllocator_Default Alloc;
-	return OpenStream(Stream, Filepath, LWFileStream::BinaryMode | LWFileStream::ReadMode, Alloc);
-}
-
-bool LWFileStream::DelFile(const LWText &Filepath) {
-	auto Res = remove((const char*)Filepath.GetCharacters());
-	if (Res) std::cout << "Error removing: " << errno << std::endl;
-	return Res == 0;
-}
-
-bool LWFileStream::MovFile(const LWText &SrcFilepath, const LWText &DstFilepath) {
-	auto Res = rename((const char*)SrcFilepath.GetCharacters(), (const char*)DstFilepath.GetCharacters());
-	if (Res) std::cout << "Error moving: " << errno << std::endl;
-	return Res == 0;
+	char *Buffer = Allocator.Allocate<char>(SrcStream.Length());
+	if (!Buffer) return false;
+	bool Result = true;
+	if (SrcStream.Read(Buffer, SrcStream.Length()) != SrcStream.Length()) Result = false;
+	else if (DstStream.Write(Buffer, SrcStream.Length()) != SrcStream.Length()) Result = false;
+	LWAllocator::Destroy(Buffer);
+	return Result;
 }
 
 LWFileStream &LWFileStream::operator =(LWFileStream &&Other){
 	if (m_FileObject) fclose(m_FileObject);
 	m_FileObject = Other.m_FileObject;
 	m_FilePath = std::move(Other.m_FilePath);
-	m_DirPath = std::move(Other.m_DirPath);
 	m_CreateTime = Other.m_CreateTime;
 	m_ModifiedTime = Other.m_ModifiedTime;
 	m_AccessedTime = Other.m_AccessedTime;
@@ -216,25 +227,8 @@ LWFileStream &LWFileStream::operator =(LWFileStream &&Other){
 	return *this;
 }
 
-uint32_t LWFileStream::ReadText(char *Buffer, uint32_t BufferLen) {
-	return ReadText((uint8_t*)Buffer, BufferLen);
-}
-
-uint32_t LWFileStream::ReadTextLine(char *Buffer, uint32_t BufferLen) {
-	return ReadTextLine((uint8_t*)Buffer, BufferLen);
-}
-
 uint32_t LWFileStream::Read(char *Buffer, uint32_t Len) {
 	return Read((uint8_t*)Buffer, Len);
-}
-
-uint32_t LWFileStream::WriteTextf(const char *Format, ...) {
-	char Buffer[512];
-	va_list lst;
-	va_start(lst, Format);
-	vsnprintf(Buffer, sizeof(Buffer), Format, lst);
-	va_end(lst);
-	return WriteText(LWText(Buffer));
 }
 
 uint32_t LWFileStream::Write(const char *Buffer, uint32_t Len) {
@@ -266,17 +260,13 @@ FILE *LWFileStream::GetFileObject(void){
 	return m_FileObject;
 }
 
-const LWText &LWFileStream::GetDirectoryPath(void) const{
-	return m_DirPath;
-}
-
-const LWText &LWFileStream::GetFilePath(void) const{
+const LWUTF8 &LWFileStream::GetFilePath(void) const{
 	return m_FilePath;
 }
 
 LWFileStream::LWFileStream() : m_FileObject(nullptr), m_CreateTime(0), m_ModifiedTime(0), m_AccessedTime(0), m_Length(0), m_Flag(0){}
 
-LWFileStream::LWFileStream(LWFileStream &&Other) : m_FileObject(Other.m_FileObject), m_FilePath(std::move(Other.m_FilePath)), m_DirPath(std::move(Other.m_DirPath)), m_CreateTime(Other.m_CreateTime), m_ModifiedTime(Other.m_ModifiedTime), m_AccessedTime(Other.m_AccessedTime), m_Length(Other.m_Length), m_Flag(Other.m_Flag){
+LWFileStream::LWFileStream(LWFileStream &&Other) : m_FileObject(Other.m_FileObject), m_FilePath(std::move(Other.m_FilePath)), m_CreateTime(Other.m_CreateTime), m_ModifiedTime(Other.m_ModifiedTime), m_AccessedTime(Other.m_AccessedTime), m_Length(Other.m_Length), m_Flag(Other.m_Flag){
 	Other.m_FileObject = nullptr;
 }
 

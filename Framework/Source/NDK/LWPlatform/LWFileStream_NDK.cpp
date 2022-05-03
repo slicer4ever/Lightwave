@@ -8,180 +8,255 @@
 #include <unistd.h>
 #include <algorithm>
 
-uint32_t LWFileStream::MakeAbsolutePath(const LWText &FilePath, char *Buffer, uint32_t BufferLen){
-	const uint32_t LocalBufferSize = 256;
-	char LocalBuffer[LocalBufferSize];
-	char LocalBufferB[LocalBufferSize];
-	char ParsedBuffer[LocalBufferSize];
-	char *LastC = LocalBufferB + LocalBufferSize;
-	if (!LWFileStream::ParsePath(FilePath, ParsedBuffer, LocalBufferSize)) return 0;
-	uint32_t ParseLen = (uint32_t)strlen(ParsedBuffer) + 1;
-	if (LWFileStream::PathIsAbsolute(ParsedBuffer)) {
-		std::memcpy(LocalBuffer, ParsedBuffer, std::min<uint32_t>(LocalBufferSize, ParseLen));
-	} else {
-		uint32_t Length = ((uint32_t)std::strlen(LWAppContext.m_AppDirectory)) + 1;
-		std::memcpy(LocalBuffer, LWAppContext.m_AppDirectory, sizeof(char)*std::min<uint32_t>(Length, LocalBufferSize));
-		uint32_t Len = strlen(LocalBuffer);
-		if (Len != LocalBufferSize) LocalBuffer[Len++] = '/';
-		if (Len != LocalBufferSize) LocalBuffer[Len] = '\0';
-		std::memcpy(LocalBuffer + Len, ParsedBuffer, std::min<uint32_t>(LocalBufferSize - Len, ParseLen));
-	}
-
-	LocalBuffer[LocalBufferSize - 1] = '\0';
-	//Clean up our absolute path!
-	char *Last = LocalBuffer;
-	char *B = LocalBufferB;
-	for (char *L = LocalBuffer; *L && B != LastC; L++) {
-		if (*L == '/' || *L == '\\') {
-			*L = '\0';
-			if (!strcmp(Last, "."))	B -= 2;
-			else if (!strcmp(Last, "..")) {
-				B -= 4;
-				//back pedal until we get to the directory we are going up!
-				for (; B != LocalBufferB && (*B != '\\' || *B != '/'); B--);
-			}
-			Last = L + 1;
-			*L = '/';
-		}
-		*(B++) = *L;
-	}
-	if (B != LastC) *(B++) = '\0';
-	LocalBufferB[LocalBufferSize - 1] = '\0';
-	uint32_t Len = (uint32_t)(B - LocalBufferB);
-	if (Buffer){
-		std::memcpy(Buffer, LocalBufferB, std::min<uint32_t>(Len, BufferLen));
-		Buffer[BufferLen - 1] = '\0';
-	}
-	return Len;
+uint32_t LWFileStream::GetWorkingDirectory(char8_t *Buffer, uint32_t BufferLen) {
+	uint32_t DirLen = (uint32_t)strlen(LWAppContext.m_AppDirectory);
+	char8_t *B = Buffer;
+	char8_t *BL = B + std::min<uint32_t>(BufferLen - 1, BufferLen);
+	uint32_t CopyLen = std::min<uint32_t>(DirLen, (uint32_t)(uintptr_t)(BL - B));
+	std::copy(LWAppContext.m_AppDirectory, LWAppContext.m_AppDirectory + CopyLen, B);
+	B += CopyLen;
+	if (B + 1 < BL) *B++ == '/';
+	if (BufferLen) *B = '\0';
+	return DirLen + 2;
 }
 
-bool LWFileStream::GetFolderPath(uint32_t FolderID, char *Buffer, uint32_t BufferLen){
-	if (FolderID == Fonts) snprintf(Buffer, BufferLen, "/system/fonts"); //Default assumed font path.
-	else if (FolderID == App) snprintf(Buffer, BufferLen, "%c", AssetToken); //Default assumed app data path.
-	else if (FolderID == User || FolderID==Game) snprintf(Buffer, BufferLen, "%s", LWAppContext.m_AppDirectory); //Default assumed program data path.
-	else return false;
-	return true;
+uint32_t LWFileStream::GetFolderPath(uint32_t FolderID, char8_t *Buffer, uint32_t BufferLen){
+	if (FolderID == Fonts) return snprintf((char*)Buffer, BufferLen, "/system/fonts"); //Default assumed font path.
+	else if (FolderID == App) return snprintf((char*)Buffer, BufferLen, "%c", AssetToken); //Default assumed app data path.
+	else if (FolderID == User) return snprintf((char*)Buffer, BufferLen, "%s", LWAppContext.m_AppDirectory);
+	else if (FolderID == Game) return snprintf((char*)Buffer, BufferLen, "%s", LWAppContext.m_AppDirectory);
+	return 0;
 }
 
-bool LWFileStream::OpenStream(LWFileStream &Result, const char *FilePath, uint32_t Flag, LWAllocator &Allocator, const LWFileStream *ExistingStream) {
-	char Buffer[512];
-	char Modes[][4] = { "", "r", "w", "rw", "a", "", "", "", "", "rb", "wb", "rwb" };
-	if (!ParsePath(FilePath, Buffer, sizeof(Buffer), ExistingStream)) return false;
-	if (*Buffer != AssetToken) {
+bool LWFileStream::OpenStream(LWFileStream &Result, const LWUTF8Iterator &FilePath, uint32_t Flag, LWAllocator &Allocator, const LWFileStream *ExistingStream) {
+	char8_t Buffer[512];
+	const char Modes[][4] = { "", "r", "w", "rw", "a", "", "", "", "", "rb", "wb", "rwb" };
+	auto OpenAsset = [&Buffer, &Modes, &Flag, &Result, &Allocator](void)->bool {
+		if (Flag & WriteMode) return false;
+		AAsset *aFile = AAssetManager_open(LWAppContext.m_App->assetManager, Buffer + 1, AASSET_MODE_STREAMING);
+		if (!aFile) return false;
+		Result = LWFileStream((FILE*)aFile, Buffer, Flag | AssetMode, Allocator);
+		return true;
+	};
+
+	auto OpenFile = [&Buffer, &Modes, &Flag, &Result, &Allocator](void)->bool {
 		FILE *pFile = nullptr;
-		pFile = fopen(Buffer, Modes[Flag]);
+		pFile = fopen((const char*)Buffer, Modes[Flag]);
 		if (!pFile) return false;
-		Result = LWFileStream(pFile, LWText(Buffer), Flag, Allocator);
-	}else{
-		if (Flag&WriteMode) return false;
-		//Buffer+2 passing !/ to get to filepath.
-		AAsset *pFIle = AAssetManager_open(LWAppContext.m_App->assetManager, Buffer + 2, AASSET_MODE_STREAMING);
-		if (!pFIle) return false;
-		Result = LWFileStream((FILE*)pFIle, LWText(Buffer), Flag|AssetMode, Allocator);
-	}
-	return true;
+		Result = LWFileStream(pFile, Buffer, Flag, Allocator);
+		return true;
+	};
+
+	if (!ParsePath(FilePath, Buffer, sizeof(Buffer), ExistingStream)) return false;
+
+	if (*Buffer == AssetToken) return OpenAsset();
+	return OpenFile();
 }
 
 uint8_t LWFileStream::ReadByte(void) {
-	uint8_t Result = 0;
-	if (m_Flag&AssetMode) AAsset_read((AAsset*)m_FileObject, &Result, sizeof(uint8_t));
-	else Result = (uint8_t)fgetc(m_FileObject);
-	return Result;
+	typedef uint8_t(*Func_T)(void*);
+
+	//typedef int32_t(*Func_T)(const LWUnicodeIterator<Type> &, int8_t*);
+	auto ReadAsset = [](void *FileObject)->uint8_t {
+		uint8_t Result;
+		AAsset_read((AAsset*)FileObject, &Result, sizeof(uint8_t));
+		return Result;
+	};
+	auto ReadFile = [](void *FileObject)->uint8_t {
+		return (uint8_t)fgetc((FILE*)FileObject);
+	};
+	Func_T Funcs[] = { ReadFile, ReadAsset };
+	return Funcs[(m_Flag & AssetMode) >> AssetFlagBitOffset];
 }
 
-uint32_t LWFileStream::ReadText(uint8_t *Buffer, uint32_t BufferLen) {
-	uint32_t Len = 0;
-	if (m_Flag&AssetMode) Len = (uint32_t)AAsset_read((AAsset*)m_FileObject, Buffer, sizeof(uint8_t)*BufferLen);
-	else Len = (uint32_t)fread(Buffer, sizeof(uint8_t), BufferLen - 1, m_FileObject);
-	Buffer[Len] = '\0';
+uint32_t LWFileStream::ReadText(char8_t *Buffer, uint32_t BufferLen) {
+	typedef uint32_t(*Func_T)(void*, char8_t*, uint32_t);
+	auto ReadAsset = [](void *FileObject, char8_t *Buffer, uint32_t BufferLen) -> uint32_t {
+		return (uint32_t)AAsset_read((AAsset*)m_FileObject, (char*)Buffer, BufferLen);
+	};
+	auto ReadFile = [](void *FileObject, char8_t *Buffer, uint32_t BufferLen) -> uint32_t {
+		return (uint32_t)fread((char*)Buffer, sizeof(uint8_t), BufferLen, (FILE*)FileObject);
+	};
+	Func_T Funcs[] = { ReadFile, ReadAsset };
+	
+	char8_t *B = Buffer;
+	char8_t *BL = Buffer + std::min<uint32_t>(BufferLen - 1, BufferLen);
+	uint32_t Len = Funcs[(m_Flag & AssetMode) >> AssetFlagBitOffset](m_FileObject, Buffer, BufferLen);
+	B = std::min<char8_t>(B + Len, BL);
+	if (BufferLen) *B = '\0';
 	return Len;
 }
 
-uint32_t LWFileStream::ReadTextLine(uint8_t *Buffer, uint32_t BufferLen) {
-	uint32_t Len = 0;
-	*Buffer = '\0';
-	if (m_Flag&AssetMode) {
-		while ((uint32_t)AAsset_read((AAsset*)m_FileObject, Buffer + Len, sizeof(uint8_t)) == 1) {
-			if (Buffer[Len] == '\0' || Buffer[Len] == '\n') {
-				Buffer[Len] = '\0';
-				return Len;
-			}
-			Len++;
+uint32_t LWFileStream::ReadTextLine(char8_t *Buffer, uint32_t BufferLen) {
+	typedef uint32_t(*Func_T)(void*, char8_t*, uint32_t);
+	auto ReadAsset = [](void *FileObject, char8_t *Buffer, uint32_t BufferLen)->uint32_t {
+		//Have to read char by char. 
+		char8_t *B = Buffer;
+		char8_t *BL = Buffer + BufferLen;
+		uint32_t o = 0;
+		for (; B != BL; B++, o++) {
+			if (!AAsset_read((AAsset*)FileObject, B, sizeof(char8_t))) break;
+			if (*B == '\0' || *B == '\n') break;
 		}
-	} else {
-		if (fgets((char*)Buffer, BufferLen, m_FileObject)) {
-			for (; *Buffer;) {
-				if (*Buffer == '\n') *Buffer = '\0';
-				else {
-					Buffer++;
-					Len++;
-				}
+		return o;
+	};
+
+	auto ReadFile = [](void *FileObject, char8_t *Buffer, uint32_t BufferLen)->uint32_t {
+		char8_t *B = Buffer;
+		char8_t *BL = Buffer + BufferLen;
+		uint32_t o = 0;
+		if (fgets((char*)Buffer, BufferLen, (FILE*)FileObject)) {
+			for (; B != BL && *B; ++B, ++o) {
+				if (*B == '\n') break;
 			}
 		}
-	}
-	return Len;
+		return o;
+	};
+	Func_T Funcs[] = { ReadFile, ReadAsset };
+	char8_t *B = Buffer;
+	char8_t *BL = Buffer + std::min<uint32_t>(BufferLen - 1, BufferLen);
+	uint32_t Len = Funcs[(m_Flag & AssetMode) >> AssetFlagBitOffset](m_FileObject, Buffer, BufferLen);
+	B = std::min<char8_t*>(B + Len, B);
+	if (BufferLen) *B = '\0';
+	return Len+1;
 }
 
-uint32_t LWFileStream::Read(uint8_t *Buffer, uint32_t Len) {
-	uint32_t rLen = 0;
-	if (m_Flag&AssetMode) rLen = AAsset_read((AAsset*)m_FileObject, Buffer, sizeof(uint8_t)*Len);
-	else {
-		rLen = (uint32_t)fread(Buffer, sizeof(uint8_t), Len, m_FileObject);
-	}
-	return rLen;
+uint32_t LWFileStream::Read(uint8_t *Buffer, uint32_t BufferLen) {
+	typedef uint32_t(*Func_T)(void*, uint8_t*, uint32_t);
+	auto ReadAsset = [](void *FileObject, uint8_t *Buffer, uint32_t BufferLen) -> uint32_t {
+		return (uint32_t)AAsset_read((AAsset*)FileObject, Buffer, sizeof(uint8_t) * BufferLen);
+	};
+
+	auto ReadFile = [](void *FileObject, uint8_t *Buffer, uint32_t BufferLen) -> uint32_t {
+		return (uint32_t)fread(Buffer, sizeof(uint8_t), BufferLen, (FILE*)FileObject);
+	};
+	Func_T Funcs[] = { ReadFile, ReadAsset };
+	return Funcs[(m_Flag & AssetMode) >> AssetFlagBitOffset](m_FileObject, Buffer, BufferLen);
 }
 
 uint32_t LWFileStream::Write(const uint8_t *Buffer, uint32_t Len) {
-	if (m_Flag&AssetMode) return 0;
-	return (uint32_t)fwrite(Buffer, sizeof(uint8_t), Len, m_FileObject);
+	typedef uint32_t(*Func_T)(void*, const uint8_t*, uint32_t);
+	auto WriteAsset = [](void *FileObject, const uint8_t *Buffer, uint32_t Len) {
+		return 0;
+	};
+
+	auto WriteFile = [](void *FileObject, const uint8_t *Buffer, uint32_t Len) {
+		return (uint32_t)fwrite(Buffer, sizeof(uint8_t), Len, (FILE*)FileObject);
+	};
+	Func_T Funcs[] = { WriteFile, WriteAsset };
+	return Funcs[(m_Flag & AssetMode) >> AssetFlagBitOffset](m_FileObject, Buffer, Len);
 }
 
 LWFileStream &LWFileStream::WriteByte(uint8_t Byte) {
-	if (m_Flag&AssetMode) return *this;
-	fputc((int32_t)Byte, m_FileObject);
+	typedef uint32_t(*Func_T)(void*, uint8_t);
+	auto WriteAsset = [](void *FileObject, uint8_t Byte) {
+		return;
+	};
+	auto WriteFile = [](void *FileObject, uint8_t Byte) {
+		fputc((int32_t)Byte, (FILE*)FileObject);
+		return;
+	};
+
+	Func_T Funcs[] = { WriteFile, WriteAsset }:
+	Funcs[(m_Flag & AssetMode) >> AssetFlagBitOffset](m_FileObject, Byte);
 	return *this;
 }
 
-uint32_t LWFileStream::WriteText(const LWText &Text) {
-	if (m_Flag&AssetMode) return 0;
-	return (uint32_t)fprintf(m_FileObject, "%s", Text.GetCharacters());
+uint32_t LWFileStream::WriteText(const LWUTF8Iterator &Text) {
+	typedef uint32_t(*Func_T)(void*, const LWUTF8Iterator &);
+	auto WriteAsset = [](void *FileObject, const LWUTF8Iterator &Text)->uint32_t {
+		return 0;
+	};
+	auto WriteFile = [](void *FileObject, const LWUTF8Iterator &Text)->uint32_t {
+		auto cText = Text.c_str<1024 * 16>();
+		return (uint32_t)fwrite(*cText, sizeof(char8_t), cText.m_DataLen, (FILE*)FileObject);
+	};
+	Func_T Funcs[] = { WriteFile, WriteAsset };
+	return Funcs[(m_Flag & AssetMode) >> AssetFlagBitOffset](m_FileObject, Text);
 }
 
 LWFileStream &LWFileStream::Seek(int32_t Offset, uint8_t SeekFlag) {
-	if (m_Flag&AssetMode) AAsset_seek((AAsset*)m_FileObject, (off_t)Offset, SeekFlag == SeekStart ? SEEK_SET : (SeekFlag == SeekEnd ? SEEK_END : SEEK_CUR));
-	else fseek(m_FileObject, Offset, SeekFlag == SeekStart ? SEEK_SET : (SeekFlag == SeekEnd ? SEEK_END : SEEK_CUR));
+	typedef void(*Func_T)(void*, int32_t, uint8_t);
+	auto SeekAsset = [](void *FileObject, int32_t Offset, uint8_t SeekFlag) {
+		const uint32_t AssetSeekIDs[] = { SEEK_CUR, SEEK_SET, SEEK_END };
+		AAsset_seek((AAsset*)FileObject, (off_t)Offset, AssetSeekIDs[SeekFlag]);
+		return;
+	};
+	auto SeekFile = [](void *FileObject, int32_t Offset, uint8_t SeekFlag) {
+		const uint32_t FileSeekIDs[] = { SEEK_CUR, SEEK_SET, SEEK_END };
+		fseek((FILE*)FileObject, Offset, FileSeekIDs[SeekFlag]);
+		return;
+	};
+	Func_T Funcs[] = { SeekFile, SeekAsset };
+	Funcs[(m_Flag & AssetMode) >> AssetFlagBitOffset](m_FileObject, Offset, SeekFlag);
 	return *this;
 }
 
 LWFileStream &LWFileStream::Finished(void) {
-	if (m_FileObject) {
-		if (m_Flag&AssetMode) AAsset_close((AAsset*)m_FileObject);
-		else fclose(m_FileObject);
-		m_FileObject = nullptr;
-	}
+	typedef void(*Func_T)(void*);
+	auto CloseAsset = [](void *FileObject) {
+		AAsset_close((AAsset*)FileObject);
+		return;
+	};
+
+	auto CloseFile = [](void *FileObject) {
+		fclose((FILE*)FileObject);
+		return;
+	};
+	Func_T Funcs[] = { CloseFile, CloseAsset };
+	if (!m_FileObject) return *this;
+	Funcs[(m_Flag & AssetMode) >> AssetFlagBitOffset](m_FileObject);
+	m_FileObject = nullptr;
+	return *this;
+}
+
+LWFileStream &LWFileStream::Flush(void) {
+	if (!m_FileObject) return *this;
+	if ((m_Flag & AssetMode) != 0) return *this;
+	fflush(m_FileObject);
 	return *this;
 }
 
 uint32_t LWFileStream::GetPosition(void) const {
-	if (m_Flag&AssetMode) return m_Length-(uint32_t)AAsset_getRemainingLength((AAsset*)m_FileObject);
-	return (uint32_t)ftell(m_FileObject);
-}
+	typedef uint32_t(*Func_T)(void*, uint32_t);
+	auto GetAssetPos = [](void *FileObject, uint32_t Len) -> uint32_t {
+		return Len - (uint32_t)AAsset_getRemainingLength((AAsset*)FileObject);
+	};
+
+	auto GetFilePos = [](void *FileObject, uint32_t) -> uint32_t {
+		return (uint32_t)ftell((FILE*)FileObject);
+	};
+	Func_T Funcs[] = { GetFilePos, GetAssetPos };
+	return Funcs[(m_Flag & AssetMode) >> AssetFlagBitOffset];
+};
 
 bool LWFileStream::EndOfStream(void) const {
-	if (m_Flag&AssetMode) return (uint32_t)AAsset_getRemainingLength((AAsset*)m_FileObject) == 0;
-	return feof(m_FileObject) != 0;
+	typedef bool(*Func_T)(void*);
+	auto AssetEOS = [](void *FileObject) -> bool {
+		return (uint32_t)AAsset_getRemainingLength((AAsset*)FileObject) == 0;
+	};
+
+	auto FileEOS = [](void *FileObject) -> bool {
+		return feof((FILE*)FileObject) != 0;
+	};
+	Func_T Funcs[] = { FileEOS, AssetEOS };
+	return Funcs[(m_Flag & AssetMode) >> AssetFlagBitOffset](m_FileObject);
 }
 
-LWFileStream::LWFileStream(FILE *FileObject, const LWText &FilePath, uint32_t Flag, LWAllocator &Allocator) : m_FileObject(FileObject), m_FilePath(LWText(FilePath.GetCharacters(), Allocator)), m_CreateTime(0), m_ModifiedTime(0), m_AccessedTime(0), m_Length(0), m_Flag(Flag) {
-	char Buffer[512];
-	MakeDirectoryPath(m_FilePath, Buffer, sizeof(Buffer));
-	m_DirPath = LWText(Buffer, Allocator);
-	if (m_FileObject) {
-		if (m_Flag&AssetMode) m_Length = (uint32_t)AAsset_getLength((AAsset*)m_FileObject);
-		else {
-			fseek(m_FileObject, 0, SEEK_END);
-			m_Length = (uint32_t)ftell(m_FileObject);
-			fseek(m_FileObject, 0, SEEK_SET);
-		}
-	}
+LWFileStream::LWFileStream(FILE *FileObject, const LWUTF8Iterator &FilePath, uint32_t Flag, LWAllocator &Allocator) : m_FileObject(FileObject), m_FilePath(FilePath, Allocator), m_CreateTime(0), m_ModifiedTime(0), m_AccessedTime(0), m_Length(0), m_Flag(Flag) {
+	typedef void(*Func_T)(void*, uint32_t&, uint64_t &, uint64_t &, uint64_t &);
+	auto PropertysAsset = [](void *FileObject, uint32_t &Length, uint64_t &CreateTime, uint64_t &ModifiedTime, uint64_t &AccessTime) {
+		Length = (uint32_t)AAsset_getLength((Asset*)FileObject);
+		return;
+	};
+
+	auto PropertysFile = [](void *FileObject, uint32_t &Length, uint64_t &CreateTime, uint64_t &ModifiedTime, uint64_t &AccessTime) {
+		fseek((FILE*)FileObject, 0, SEEK_END);
+		Length = (uint32_t)ftell((FILE*)FileObject);
+		fseek((FILE*)FileObject, 0, SEEK_SET);
+		return;
+	};
+	Func_T Funcs[] = { PropertysFile, PropertysAsset };
+	if (!m_FileObject) return;
+	Funcs[(m_Flag & AssetMode) >> AssetFlagBitOffset](m_FileObject, m_Length, m_CreateTime, m_ModifiedTime, m_AccessedTime);
 }

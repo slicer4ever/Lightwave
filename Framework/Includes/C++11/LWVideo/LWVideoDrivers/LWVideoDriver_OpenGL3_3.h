@@ -4,6 +4,7 @@
 #include "LWPlatform/LWPlatform.h"
 
 #ifdef LWVIDEO_IMPLEMENTED_OPENGL3_3
+#include "LWVideo/LWFrameBuffer.h"
 /*! \cond */
 class LWVideoDriver_OpenGL3_3 : public LWVideoDriver{
 public:
@@ -28,13 +29,13 @@ public:
 
 	virtual bool SetFrameBuffer(LWFrameBuffer *Buffer, bool ChangeViewport = false);
 
-	virtual bool SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *VertexBuffer, LWVideoBuffer *IndiceBuffer, uint32_t VerticeStride, uint32_t Offset);
+	virtual bool SetPipeline(LWPipeline *Pipeline, LWPipelineInputStream *InputStream, LWVideoBuffer *IndiceBuffer, LWVideoBuffer *IndirectBuffer);
 
 	virtual LWVideoDriver &Present(uint32_t SwapInterval);
 
-	virtual LWShader *CreateShader(uint32_t ShaderType, const char *Source, LWAllocator &Allocator, char *CompiledBuffer, char *ErrorBuffer, uint32_t *CompiledBufferLen, uint32_t ErrorBufferLen);
+	virtual LWShader *CreateShader(uint32_t ShaderType, const LWUTF8Iterator &Source, LWAllocator &Allocator, char *CompiledBuffer, char8_t *ErrorBuffer, uint32_t &CompiledBufferLen, uint32_t ErrorBufferLen);
 
-	virtual LWShader *CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledCodeLen, LWAllocator &Allocator, char *ErrorBuffer, uint32_t ErroBufferLen);
+	virtual LWShader *CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledLen, LWAllocator &Allocator, char8_t *ErrorBuffer, uint32_t ErroBufferLen);
 
 	virtual LWTexture *CreateTexture1D(uint32_t TextureState, uint32_t PackType, uint32_t Size, uint8_t **Texels, uint32_t MipmapCnt, LWAllocator &Allocator);
 
@@ -60,6 +61,8 @@ public:
 
 	virtual LWFrameBuffer *CreateFrameBuffer(const LWVector2i &Size, LWAllocator &Allocator);
 
+	virtual bool ResolveMSAA(LWTexture *Source, LWTexture *Dest, uint32_t MipLevel);
+
 	virtual bool UpdateTexture(LWTexture *Texture);
 
 	virtual bool UpdateTexture1D(LWTexture *Texture, uint32_t MipmapLevel, void *Texels, uint32_t Position, uint32_t Size);
@@ -76,7 +79,11 @@ public:
 
 	virtual bool UpdateTextureCubeArray(LWTexture *Texture, uint32_t MipmapLevel, uint32_t Layer, uint32_t Face, void *Texels, const LWVector2i &Position, const LWVector2i &Size);
 
-	virtual bool UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const uint8_t *Buffer, uint32_t Length);
+	virtual bool UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const uint8_t *Buffer, uint32_t Length, uint32_t Offset = 0);
+
+	virtual void *MapVideoBuffer(LWVideoBuffer *VideoBuffer, uint32_t Length = 0, uint32_t Offset = 0);
+
+	virtual bool UnmapVideoBuffer(LWVideoBuffer *VideoBuffer);
 
 	virtual bool DownloadTexture1D(LWTexture *Texture, uint32_t MipmapLevel, uint8_t *Buffer);
 
@@ -104,9 +111,11 @@ public:
 
 	virtual LWVideoDriver &DestroyFrameBuffer(LWFrameBuffer *FrameBuffer);
 
-	virtual LWVideoDriver &DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t Offset = 0);
+	virtual LWVideoDriver &DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t Offset = 0);
 
-	virtual LWVideoDriver &DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t InstanceCount = 0, uint32_t Offset = 0);
+	virtual LWVideoDriver &DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t InstanceCount = 0, uint32_t Offset = 0);
+
+	virtual LWVideoDriver &DrawIndirectBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, LWVideoBuffer *IndirectBuffer, uint32_t IndirectCount, uint32_t IndirectOffset = 0);
 
 	virtual LWVideoDriver &Dispatch(LWPipeline *Pipeline, const LWVector3i &GroupDimension);
 
@@ -121,6 +130,9 @@ protected:
 
 	LWOpenGL3_3Context m_Context;
 	uint32_t m_ActiveDrawCount = 1;
+	uint32_t m_ResolveFBRead = 0;
+	uint32_t m_ResolveFBWrite = 0;
+
 };
 
 
@@ -130,11 +142,17 @@ struct LWOpenGL3_3PipelineContext {
 	uint32_t m_VAOID = 0; /*!< \brief the vertex array object for the pipeline. */
 };
 
+/*!< \brief this context is the underlying framebuffer context used in the opengl 3.3 pipeline.  the application should never require accessing it directly, but it is provided here incase the application is specifically targeting the openGL api. */
+struct LWOpenGL3_3FrameBufferContext {
+	uint32_t m_FBOID = 0;
+	int32_t m_Attached[LWFrameBuffer::Count] = {};
+};
+
 typedef LWPipelineCon<LWOpenGL3_3PipelineContext> LWOpenGL3_3Pipeline;
 typedef LWTextureCon<uint32_t> LWOpenGL3_3Texture;
 typedef LWVideoBufferCon<uint32_t> LWOpenGL3_3Buffer;
 typedef LWShaderCon<uint32_t> LWOpenGL3_3Shader;
-typedef LWFrameBufferCon<uint32_t> LWOpenGL3_3FrameBuffer;
+typedef LWFrameBufferCon<LWOpenGL3_3FrameBufferContext> LWOpenGL3_3FrameBuffer;
 
 
 /*! \endcond */

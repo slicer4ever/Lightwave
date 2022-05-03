@@ -43,6 +43,9 @@ struct LWVertexUI{
 	/*!< \brief constructor for a LWVertexUI object. */
 	LWVertexUI(const LWVector4f &Position, const LWVector4f &Color, const LWVector4f &TexCoord);
 
+	/*!< \brief constructor for LWVertexUI where position is a simd vec4. */
+	LWVertexUI(const LWSVector4f &Position, const LWVector4f &Color, const LWVector4f &TexCoord);
+
 	/*!< \brief default construct for LWVertexUI. */
 	LWVertexUI() = default;
 };
@@ -73,6 +76,9 @@ struct LWVertexPosition{
 
 	/*!< \brief constructs a LWVertexPosition object. */
 	LWVertexPosition(const LWVector4f &Position);
+
+	/*!< \brief constructs a LWVertexPosition object from an LWSVector4f. */
+	LWVertexPosition(const LWSVector4f &Position);
 
 	/*!< \brief default constructor for LWVertexPosition. */
 	LWVertexPosition() = default;
@@ -110,6 +116,9 @@ struct LWVertexColor{
 	/*!< \brief constructs a LWVertexColor object. */
 	LWVertexColor(const LWVector4f &Position, const LWVector4f &Color);
 
+	/*!< \brief constructs a LWVertexColor object with an LWSVector4f position. */
+	LWVertexColor(const LWSVector4f &Position, const LWVector4f &Color);
+
 	/*!< \brief default LWVertexColor constructor. */
 	LWVertexColor() = default;
 };
@@ -133,6 +142,9 @@ struct LWVertexTexture{
 
 	/*!< \brief constructs a vertexTexture. */
 	LWVertexTexture(const LWVector4f &Position, const LWVector4f &TexCoord);
+
+	/*!< \brief constructs a vertexTexture with an LWSVector4f position. */
+	LWVertexTexture(const LWSVector4f &Position, const LWVector4f &TexCoord);
 
 	/*!< \brief default constructor. */
 	LWVertexTexture() = default;

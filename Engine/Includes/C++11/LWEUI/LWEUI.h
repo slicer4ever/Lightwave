@@ -8,6 +8,24 @@ struct LWEUIEvent {
 	void *m_UserData;
 };
 
+class LWEUIButton;
+
+class LWEUIComponent;
+
+class LWEUILabel;
+
+class LWEUIListBox;
+
+class LWEUIRect;
+
+class LWEUIRichLabel;
+
+class LWEUIScrollBar;
+
+class LWEUITextInput;
+
+class LWEUITreeList;
+
 class LWEUI {
 public:
 	enum : uint64_t {
@@ -113,13 +131,13 @@ public:
 
 	};
 
-	static LWVector4f EvaluatePerPixelAttr(const char *Value);
+	static LWVector4f EvaluatePerPixelAttr(const LWUTF8Iterator &Value);
 
-	static LWXMLAttribute *FindAttribute(LWEXMLNode *Node, LWEXMLNode *Style, const LWText &Name);
+	static LWEXMLAttribute *FindAttribute(LWEXMLNode *Node, LWEXMLNode *Style, const LWUTF8Iterator &Name);
 
-	static const char *ParseComponentAttribute(char *Buffer, uint32_t BufferSize, const char *SrcAttribute, LWEXMLNode *Component, LWEXMLNode *ComponentNode);
+	static LWUTF8Iterator ParseComponentAttribute(char8_t *Buffer, uint32_t BufferSize, const LWUTF8Iterator &SrcAttribute, LWEXMLNode *Component, LWEXMLNode *ComponentNode);
 
-	static LWEUI *XMLParseSubNodes(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode *> &StyleMap, std::map<uint32_t, LWEXMLNode *> &ComponentMap);
+	static LWEUI *XMLParseSubNodes(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode *> &StyleMap, std::map<uint32_t, LWEXMLNode *> &ComponentMap);
 
 	/*!< \brief parse an xml node of attributes, supported attributes across all LWEUI elements:
 				Name: an identifiable name for the UI element, which can be accessed through the UIManager->GetNameUI function.
@@ -129,7 +147,7 @@ public:
 				ToolTip: Text tooltip to appear when hovering over the element for half a second(uses the manager's tooltip xml node for decorating).
 				Style: Name of style to use which contains default values for parameters which simplify's decorating ui elements(these attributes will be overridden if found in the xml's node).
 		*/
-	static bool XMLParse(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
+	static bool XMLParse(LWEUI *UI, LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
 
 	static bool PointInside(const LWVector2f &Pnt, float PntSize, const LWVector2f &VisiblePos, const LWVector2f &VisibleSize);
 
@@ -148,10 +166,7 @@ public:
 
 	bool UnregisterEvent(uint32_t EventCode);
 
-	LWEUI &SetTooltip(const LWText &Value, LWAllocator &Allocator);
-
-	//Order is reversed since msvs does not support referenced variables to be passed to va_start.
-	LWEUI &SetTooltipf(LWAllocator &Allocator, const char *Fmt, ...);
+	LWEUI &SetTooltip(const LWUTF8Iterator &Value, LWAllocator &Allocator);
 
 	LWEUI &SetFirstChild(LWEUI *UI);
 
@@ -215,7 +230,7 @@ public:
 
 	bool HasTooltip(void) const;
 
-	const LWText &GetTooltip(void) const;
+	const LWUTF8 &GetTooltip(void) const;
 
 	uint64_t GetOverTime(void) const;
 
@@ -235,19 +250,19 @@ public:
 
 protected:
 	LWEUIEvent m_EventTable[MaxEvents];
-	LWText m_Tooltip;
+	LWUTF8 m_Tooltip;
 	LWVector4f m_Position;
 	LWVector4f m_Size;
 	LWVector4f m_VisibleBounds;
 	LWVector2f m_VisiblePosition;
 	LWVector2f m_VisibleSize;
-	LWEUI *m_FirstChild;
-	LWEUI *m_LastChild;
-	LWEUI *m_Next;
-	LWEUI *m_Parent;
+	LWEUI *m_FirstChild = nullptr;
+	LWEUI *m_LastChild = nullptr;
+	LWEUI *m_Next = nullptr;
+	LWEUI *m_Parent = nullptr;
 	uint64_t m_Flag;
-	uint64_t m_TimeOver;
-	uint32_t m_EventCount;
+	uint64_t m_TimeOver = 0;
+	uint32_t m_EventCount = 0;
 };
 
 #endif

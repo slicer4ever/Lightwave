@@ -2,63 +2,41 @@
 #include "LWPlatform/LWInputDevice.h"
 #include "LWVideo/LWVideoDriver.h"
 #include "LWCore/LWTimer.h"
+#include "LWCore/LWLogger.h"
 #include <iostream>
 
-uint32_t LWWindow::MakeDialog(const LWText &Text, const LWText &Header, uint32_t DialogFlags){
-    std::cout << "No dialog is available for this platform: '" << Text.GetCharacters() << "'" << std::endl;
-    /*
-	uint32_t DFlag = MB_ICONINFORMATION;
-	if (DialogFlags&DialogCancel){
-		if (DialogFlags&DialogOK) DFlag |= MB_OKCANCEL;
-		if (DFlag&(DialogYES | DialogNo)) DFlag |= MB_YESNOCANCEL;
-	}
-	else if (DialogFlags&DialogOK) DFlag |= MB_OK;
-	else if (DialogFlags&(DialogYES | DialogNo)) DFlag |= MB_YESNO;
-	int32_t Result = MessageBox(nullptr, (const char*)Text.GetCharacters(), (const char*)Header.GetCharacters(), DFlag);
-	if (Result == IDCANCEL) return DialogCancel;
-	else if (Result == IDOK)     return DialogOK;
-	else if (Result == IDYES)    return DialogYES;
-	else if (Result == IDNO)     return DialogNo;
-	return 0;
-     */
+uint32_t LWWindow::MakeDialog(const LWUTF8Iterator &Text, const LWText &Header, uint32_t DialogFlags){
+    LWLogEvent<256>("Dialog: {}: {}", Header, Text);
     return 0;
 }
 
-bool LWWindow::MakeSaveFileDialog(const LWText &Filter, char *Buffer, uint32_t BufferLen) {
+bool LWWindow::MakeSaveFileDialog(const LWUTF8Iterator &Filter, char8_t *Buffer, uint32_t BufferLen) {
 	return false;
 }
 
-bool LWWindow::MakeLoadFileDialog(const LWText &Filter, char *Buffer, uint32_t BufferLen) {
+bool LWWindow::MakeLoadFileDialog(const LWUTF8Iterator &Filter, char8_t *Buffer, uint32_t BufferLen) {
 	return false;
 }
 
-uint32_t LWWindow::MakeLoadFileMultipleDialog(const LWText &Filter, char **Bufer, uint32_t BufferLen, uint32_t BufferCount) {
+uint32_t LWWindow::MakeLoadFileMultipleDialog(const LWUTF8Iterator &Filter, char8_t **Bufer, uint32_t BufferLen, uint32_t BufferCount) {
 	return 0;
 }
 
-bool LWWindow::WriteClipboardText(const LWText &Text) {
-	[UIPasteboard generalPasteboard].string = [NSString stringWithUTF8String : (const char*)Text.GetCharacters()];
+bool LWWindow::WriteClipboardText(const LWUTF8Iterator &Text) {
+	[UIPasteboard generalPasteboard].string = [NSString stringWithUTF8String : *Text.c_str<256>()];
 
 	return true;
 }
 
-uint32_t LWWindow::ReadClipboardText(char *Buffer, uint32_t BufferLen) {
-	NSString *Str = [UIPasteboard generalPasteboard].string;
-	strncpy(Buffer, [Str UTF8String], BufferLen);
-	return strlen(Buffer);
+uint32_t LWWindow::ReadClipboardText(char8_t *Buffer, uint32_t BufferLen) {
+    const char *Str = [[UIPasteboard generalPasteboard]UTF8String];
+	strlcpy((char*)Buffer, Str, BufferLen);
+	return strlen(Str)+1;
 }
 
-LWWindow &LWWindow::SetTitle(const LWText &Title){
+LWWindow &LWWindow::SetTitle(const LWUTF8Iterator &Title){
+    m_Title = Title;
 	return *this;
-}
-
-LWWindow &LWWindow::SetTitlef(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetTitle(Buffer);
 }
 
 LWWindow &LWWindow::SetPosition(const LWVector2i &Position){
@@ -69,7 +47,7 @@ LWWindow &LWWindow::SetSize(const LWVector2i &Size){
 	return *this;
 }
 
-LWWindow &LWWindow::SetVisible(bool isVisible){
+LWWindow &LWWindow::SetVisible(bool iVisible){
 	return *this;
 }
 
@@ -81,7 +59,7 @@ LWWindow &LWWindow::SetMousePosition(const LWVector2i &Position){
 	return *this;
 }
 
-LWWindow &LWWindow::SetMouseVisible(bool isVisible){
+LWWindow &LWWindow::SetMouseVisible(bool iVisible){
 	return *this;
 }
 
@@ -130,22 +108,17 @@ LWWindow &LWWindow::GetKeyboardEditRange(uint32_t &CursorPosition, uint32_t &Edi
 
 uint32_t LWWindow::GetKeyboardText(char *Buffer, uint32_t BufferSize){
     const char *UTF8 = LWAppContext.m_KeyboardTextField.text.UTF8String;
-    uint32_t Length = strlen(UTF8)+1;
-    if(Buffer){
-        memcpy(Buffer, UTF8, sizeof(char)*(std::min<uint32_t>(Length, BufferSize)));
-        Buffer[BufferSize-1]='\0';
-    }
-    return Length;
+	if (Buffer) strlcpy(Buffer, UTF8, BufferSize);
+    return (uint32_t)strlen(UTF8)+1;
 }
 
-LWWindow &LWWindow::SetKeyboardText(const char *Text){
+LWWindow &LWWindow::SetKeyboardText(const LWUTF8Iterator &Text){
     //NSString *s = [NSString stringWithCString:Text encoding:NSUTF8StringEncoding];
     //[LWAppContext.m_KeyboardTextField setText:s];
     return *this;
 }
 
 LWVector4f LWWindow::GetKeyboardLayout(void){
-
     float h = LWAppContext.m_KeyboardLayout.size.height*[[UIScreen mainScreen] scale];
     return LWVector4f(0.0f, 0.0f, 0.0f, h);
 }
@@ -232,11 +205,11 @@ LWGamePad *LWWindow::GetActiveGamepadDevice(void) {
 	return m_ActiveGamepad;
 }
 
-const LWText &LWWindow::GetTitle(void) const{
+const LWUTF8 &LWWindow::GetTitle(void) const{
 	return m_Title;
 }
 
-const LWText &LWWindow::GetName(void) const{
+const LWUTF8 &LWWindow::GetName(void) const{
 	return m_Name;
 }
 
@@ -300,11 +273,15 @@ bool LWWindow::isVisible(void) const {
 	return (m_Flag&Visible) != 0;
 }
 
+bool LWWindow::DidError(void) const {
+    return (m_Flag & Error) != 0;
+}
+
 bool LWWindow::isVirtualKeyboardPresent(void) const {
 	return (m_Flag&KeyboardPresent) != 0;
 }
 
-LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocator, uint32_t Flag, const LWVector2i &Position, const LWVector2i &Size) : m_Allocator(&Allocator), m_FirstDevice(nullptr), m_Title(LWText(Title.GetCharacters(), Allocator)), m_Name(LWText(Name.GetCharacters(), Allocator)), m_Position(Position), m_Size(Size), m_Flag(Flag){
+LWWindow::LWWindow(const LWUTF8Iterator &Title, const LWUTF8Iterator &Name, LWAllocator &Allocator, uint32_t Flag, const LWVector2i &Position, const LWVector2i &Size) : m_Allocator(&Allocator), m_FirstDevice(nullptr), m_Title(Title, Allocator), m_Name(Name, Allocator), m_Position(Position), m_Size(Size), m_Flag(Flag){
 	m_MouseDevice = nullptr;
 	m_KeyboardDevice = nullptr;
 	m_TouchDevice = nullptr;
@@ -319,7 +296,7 @@ LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocat
 		LWAppContext.m_Window.rootViewController = VC;
 		UIInterfaceOrientation Direction = [LWAppContext.m_Applicaiton statusBarOrientation];
         m_Size = LWVector2i(WndRect.size.width*Scale, WndRect.size.height*Scale);
-        std::cout << "window: " << WndRect.origin.x << " " << WndRect.origin.y << " " << WndRect.size.width << " " << WndRect.size.height << " " << Scale << std::endl;
+        //std::cout << "window: " << WndRect.origin.x << " " << WndRect.origin.y << " " << WndRect.size.width << " " << WndRect.size.height << " " << Scale << std::endl;
 		m_Flag |= Direction == UIInterfaceOrientation::UIInterfaceOrientationPortrait ? Rotation_0 : (Direction == UIInterfaceOrientation::UIInterfaceOrientationLandscapeLeft ? Rotation_270 : (Direction == UIInterfaceOrientation::UIInterfaceOrientationPortraitUpsideDown ? Rotation_180 : Rotation_90));
 		m_Position = LWVector2i();
 		LWAppContext.m_EventState++;
@@ -328,12 +305,12 @@ LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocat
     }
 	m_Flag ^= Error;
 	if ((m_Flag&Error) == 0) {
-		if (Flag&TouchDevice) m_TouchDevice = AttachInputDevice(Allocator.Allocate<LWTouch>())->AsTouch();
-		if (Flag&KeyboardDevice) m_KeyboardDevice = AttachInputDevice(Allocator.Allocate<LWKeyboard>())->AsKeyboard();
+		if (Flag&TouchDevice) m_TouchDevice = AttachInputDevice(Allocator.Create<LWTouch>())->AsTouch();
+		if (Flag&KeyboardDevice) m_KeyboardDevice = AttachInputDevice(Allocator.Create<LWKeyboard>())->AsKeyboard();
         LWAppContext.m_MotionManager.deviceMotionUpdateInterval = 1.0/60;
         if(Flag&(AccelerometerDevice|GyroscopeDevice) && LWAppContext.m_MotionManager.isDeviceMotionAvailable){
-            if(Flag&AccelerometerDevice) m_AccelerometerDevice = AttachInputDevice(Allocator.Allocate<LWAccelerometer>())->AsAccelerometer();
-            if(Flag&GyroscopeDevice) m_GyroscopeDevice = AttachInputDevice(Allocator.Allocate<LWGyroscope>(1.0f, 1.0f))->AsGyroscope();
+            if(Flag&AccelerometerDevice) m_AccelerometerDevice = AttachInputDevice(Allocator.Create<LWAccelerometer>())->AsAccelerometer();
+            if(Flag&GyroscopeDevice) m_GyroscopeDevice = AttachInputDevice(Allocator.Create<LWGyroscope>(1.0f, 1.0f))->AsGyroscope();
             [LWAppContext.m_MotionManager startDeviceMotionUpdates];
         }
 	}

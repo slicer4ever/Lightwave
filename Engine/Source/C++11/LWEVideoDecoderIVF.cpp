@@ -7,6 +7,7 @@
 #include <LWCore/LWByteBuffer.h>
 #include <LWCore/LWTimer.h>
 #include "LWEVideoPlayer.h"
+#include <LWCore/LWLogger.h>
 
 LWEVideoIVFHeader::LWEVideoIVFHeader(const int8_t *Buffer) {
 	uint32_t o = 0;
@@ -41,7 +42,7 @@ bool LWEVideoDecoderIVF::CreateDecoder(LWEVideoPlayer &Player, LWFileStream &Str
 	vpx_codec_ctx_t Codec;
 	if (vpx_codec_dec_init(&Codec, Decoder, nullptr, 0)) return false;
 
-	LWEVideoDecoderIVF *IVFDecoder = Allocator.Allocate<LWEVideoDecoderIVF>(Stream, Codec, Header.m_FrameCount, Allocator);
+	LWEVideoDecoderIVF *IVFDecoder = Allocator.Create<LWEVideoDecoderIVF>(Stream, Codec, Header.m_FrameCount, Allocator);
 	Player = LWEVideoPlayer(Driver, IVFDecoder, LWVector2i(Header.m_Width, Header.m_Height), LWTimer::GetResolution()*Header.m_TimeDenom / Header.m_TimeNumer, Header.m_FrameCount, LoopCnt, PlayerFlags, Userdata, FinishedCallback, PlaybackSpeed, Allocator);
 	return true;
 }
@@ -50,32 +51,23 @@ uint32_t LWEVideoDecoderIVF::AdvanceFrame(uint8_t *PixelBuffer, const LWVector2i
 	int8_t FrameHeaderBuf[LWE_IVF_FRAME_HDR_SZ];
 	uint32_t Res = m_Stream.Read((char*)FrameHeaderBuf, LWE_IVF_FRAME_HDR_SZ);
 	if (!Res) return Error_OutofFrames;
-	if(Res!=LWE_IVF_FRAME_HDR_SZ){
-		std::cout << "Error occurred while reading frame header." << std::endl;
-		return Error_Decoding;
-	}
+	if(!LWLogCriticalIf(Res==LWE_IVF_FRAME_HDR_SZ, "Header not expected size.")) return Error_Decoding;
+
 	m_FramePositions[m_Frame] = m_Stream.GetPosition() - LWE_IVF_FRAME_HDR_SZ;
 	LWEVideoIVFFrameHeader FrameHeader(FrameHeaderBuf);
 	if (FrameHeader.m_FrameSize > m_FrameBufferSize) {
 		uint8_t *oBuffer = m_FrameBuffer;
-		m_FrameBuffer = m_Allocator.AllocateArray<uint8_t>(FrameHeader.m_FrameSize);
+		m_FrameBuffer = m_Allocator.Allocate<uint8_t>(FrameHeader.m_FrameSize);
 		m_FrameBufferSize = FrameHeader.m_FrameSize;
 		LWAllocator::Destroy(oBuffer);
 	}
-	if (m_Stream.Read(m_FrameBuffer, FrameHeader.m_FrameSize) != FrameHeader.m_FrameSize) {
-		std::cout << "Error occurred while reading frame." << std::endl;
-		return Error_Decoding;
-	}
-	if (vpx_codec_decode(m_Codec, m_FrameBuffer, FrameHeader.m_FrameSize, nullptr, 0)) {
-		std::cout << "Error decoding frame." << std::endl;
-		return Error_Decoding;
-	}
+	if(!LWLogCriticalIf(m_Stream.Read(m_FrameBuffer, FrameHeader.m_FrameSize)==FrameHeader.m_FrameSize, "Stream did not read bytes equal to FrameSize.")) return Error_Decoding;
+	if(!LWLogCriticalIf(vpx_codec_decode(m_Codec, m_FrameBuffer, FrameHeader.m_FrameSize, nullptr, 0)==0, "Decoding Frame failed.")) return Error_Decoding;
+
 	vpx_codec_iter_t ImgIter = nullptr;
 	vpx_image_t *Img = vpx_codec_get_frame(m_Codec, &ImgIter);
-	if (!Img) {
-		std::cout << "Error getting frame." << std::endl;
-		return Error_Decoding;
-	}
+	if(!LWLogCriticalIf(Img, "Failed to get frame.")) return Error_Decoding;
+
 	LWVector2i hSize = FrameSize / 2;
 	for (int32_t y = 0; y < hSize.y; y++) {
 
@@ -110,10 +102,7 @@ bool LWEVideoDecoderIVF::GoToFrame(uint32_t FrameIdx) {
 				}
 				m_Stream.Seek(FramePos, LWFileStream::SeekStart);
 				uint32_t Len = m_Stream.Read((char*)HeaderBuf, LWE_IVF_FRAME_HDR_SZ);
-				if (Len != LWE_IVF_FRAME_HDR_SZ) {
-					std::cout << "Error going to frame." << std::endl;
-					return false;
-				}
+				if(!LWLogCriticalIf(Len==LWE_IVF_FRAME_HDR_SZ, "Stream did not read frame header size.")) return false;
 				LWEVideoIVFFrameHeader Header(HeaderBuf);
 				m_FramePositions[i] = FramePos + LWE_IVF_FRAME_HDR_SZ + Header.m_FrameSize;
 				FramePos = m_FramePositions[i];
@@ -126,8 +115,8 @@ bool LWEVideoDecoderIVF::GoToFrame(uint32_t FrameIdx) {
 }
 
 LWEVideoDecoderIVF::LWEVideoDecoderIVF(LWFileStream &Stream, vpx_codec_ctx &Codec, uint32_t FrameCount, LWAllocator &Allocator) : m_Allocator(Allocator), m_Stream(std::move(Stream)), m_FrameCount(FrameCount) {
-	m_Codec = Allocator.Allocate<vpx_codec_ctx>();
-	m_FramePositions = Allocator.AllocateArray<uint32_t>(m_FrameCount);
+	m_Codec = Allocator.Create<vpx_codec_ctx>();
+	m_FramePositions = Allocator.Allocate<uint32_t>(m_FrameCount);
 	*m_Codec = Codec;
 	std::fill(m_FramePositions, m_FramePositions + m_FrameCount, 0);
 }

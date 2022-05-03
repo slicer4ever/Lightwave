@@ -55,7 +55,7 @@ struct LWQuaternion {
 			D = -D;
 			Res = -Res;
 		}
-		if (D < 1.0f - std::numeric_limits<Type>::epsilon()) {
+		if (D <= 1.0f - std::numeric_limits<Type>::epsilon()) {
 			Type Theta = (Type)acos(D);
 
 			Type sT = (Type)sin(Theta);
@@ -91,6 +91,7 @@ struct LWQuaternion {
 		Type sqz = z * z;
 		Type LenSq = sqx + sqy + sqz + sqw;
 		Type Test = x * y + z * w;
+
 		if (Test > 0.499*LenSq) return LWVector3<Type>(LW_PI_2, (Type)2 * atan2(x, w), 0);
 		if (Test < -0.499*LenSq) return LWVector3<Type>(-LW_PI_2, (Type)-2 * atan2(x, w), 0);
 		Type Yaw = (Type)atan2((Type)2 * y*w - (Type)2 * x*z, sqx - sqy - sqz + sqw);
@@ -103,7 +104,7 @@ struct LWQuaternion {
 	/*!< \brief normalizes the quaternion to unit length, returns the result without affecting this object. */
 	LWQuaternion Normalize(void) const {
 		Type L = x*x + y*y + z*z + w*w;
-		if (L < std::numeric_limits<Type>::epsilon()) L = (Type)0;
+		if (L <= std::numeric_limits<Type>::epsilon()) L = (Type)0;
 		else L = (Type)(1/sqrt(L));
 		return *this*L;
 	}
@@ -174,6 +175,16 @@ struct LWQuaternion {
 		Type dA = u.Dot(v);
 		Type dB = u.Dot(u);
 		return LWVector4<Type>((Type)2 * dA*u + (w*w - dB)*v + (Type)2 * w*u.Cross(v), Pnt.w);
+	}
+
+	/*!< \brief accesses rows of the matrix as if it were an array. */
+	Type operator[](uint32_t i) const {
+		return (&x)[i];
+	}
+
+	/*!< \brief accesses rows of the matrix as if it were an array. */
+	Type &operator[](uint32_t i) {
+		return (&x)[i];
 	}
 
 	bool operator == (const LWQuaternion<Type> &Rhs) const {
@@ -267,7 +278,7 @@ struct LWQuaternion {
 		return LWQuaternion(Lhs / Rhs.w, Lhs / Rhs.x, Lhs / Rhs.y, Lhs / Rhs.z);
 	}
 
-	LWQuaternion(Type w, Type x, Type y, Type z) : w(w), x(x), y(y), z(z){}
+	LWQuaternion(Type w, Type x, Type y, Type z) : x(x), y(y), z(z), w(w){}
 
 	LWQuaternion(const LWMatrix3<Type> &Mat) {
 		LWVector3<Type> R0 = Mat.m_Rows[0];
@@ -323,9 +334,7 @@ struct LWQuaternion {
 	}
 
 	/*!< \brief constructs a unit identity quaternion. */
-	LWQuaternion() : w(1.0f), x(0.0f), y(0.0f), z(0.0f) {}
+	LWQuaternion() : x((Type)0), y((Type)0), z((Type)0), w((Type)1) {}
 
 };
-
-
 #endif

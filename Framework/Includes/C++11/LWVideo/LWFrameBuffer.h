@@ -10,13 +10,14 @@ struct LWFrameBufferAttachment {
 	uint32_t m_Layer = 0; /*!< \brief the texture layer for 2DArray/1DArrays. */
 	uint32_t m_Mipmap = 0; /*!< \brief the texture mipmap layer(0 for base image). */
 	uint32_t m_Face = 0; /*!< \brief the cube map face for the attachment. */
+	void *m_UserData = nullptr; /*!< \brief user defined data for the attachment. */
 
 	/*!< \brief default construct for slot. */
 	LWFrameBufferAttachment() = default;
 };
 
 /*!< \brief LWFrameBuffer is the framebuffer used for all rendering operations. */
-class LWFrameBuffer{
+class LWFrameBuffer : public LWVideoResource{
 public:
 	enum{
 		Color0=0, /*!< \brief first color attachment point. */
@@ -34,13 +35,16 @@ public:
 		 \param Layer for arrayed textures the layer to be bound.
 		 \param Mipmap the mipmap slice to use when bound.
 	*/
-	LWFrameBuffer &SetAttachment(uint32_t AttachmentID, LWTexture *Texture, uint32_t Layer = 0, uint32_t Mipmap = 0);
+	LWFrameBuffer &SetAttachment(uint32_t AttachmentID, LWTexture *Texture, uint32_t Layer = 0, uint32_t Mipmap = 0, void *UserData = nullptr);
 
 	/*!< \brief set's the face of a cubemap texture to the specified attachment point.  note that each cube face must be the same size as the framebuffer object.
 		 \param Layer for array cubemap texture, the layer to be bound.
 		 \param Mipmap the mipmap slice to use when bound.
 	*/
-	LWFrameBuffer &SetCubeAttachment(uint32_t AttachmentID, LWTexture *Texture, uint32_t Face, uint32_t Layer = 0, uint32_t Mipmap = 0);
+	LWFrameBuffer &SetCubeAttachment(uint32_t AttachmentID, LWTexture *Texture, uint32_t Face, uint32_t Layer = 0, uint32_t Mipmap = 0, void *UserData = nullptr);
+
+	/*!< \brief removes all attachment's from framebuffer. */
+	LWFrameBuffer &ClearAttachments(void);
 
 	/*!< \brief returns if the dirty flag is set. */
 	bool isDirty(void) const;

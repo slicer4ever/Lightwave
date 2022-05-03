@@ -25,20 +25,10 @@ struct LWVector4{
 		return LWSVector4<Type>(x, y, z, w);
 	}
 
-	/*! \brief returns an array representation of the underlying data. */
-	Type *AsArray(void) {
-		return &x;
-	}
-
-	/*! \brief returns the internal components as a const array of data. */
-	const Type *AsArray(void) const {
-		return &x;
-	}
-
 	/*! \brief returns a copy of the normalized vector4. */
 	LWVector4<Type> Normalize(void) const{
 		Type L = x*x + y*y + z*z + w*w;
-		if (L <= std::numeric_limits<Type>::epsilon()) L = 0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) L = 0;
 		else L = (Type)1 / (Type)sqrt(L);
 		return LWVector4<Type>(x*L, y*L, z*L, w*L);
 	}
@@ -58,9 +48,19 @@ struct LWVector4{
 		return *this;
 	}
 
+	/*!< \brief checks the sign of each component, and returns +1 for positive sign, and -1 for negative sign components. */
+	LWVector4<Type> Sign(void) const {
+		return LWVector4<Type>((Type)(x < (Type)0 ? -1 : 1), (Type)(y < (Type)0 ? -1 : 1), (Type)(z < (Type)0 ? -1 : 1), (Type)(w < (Type)0 ? -1 : 1));
+	}
+
 	/*!< \brief returns the max element of all vec4 components. */
 	Type Max(void) const {
 		return std::max<Type>(std::max<Type>(std::max<Type>(x, y), z), w);
+	}
+
+	/*!< \brief returns the sum of all components of the vec4. */
+	Type Sum(void) const {
+		return x + y + z + w;
 	}
 
 	/*!< \brief returns the max of each component between this vector4 and A vector4 */
@@ -73,7 +73,7 @@ struct LWVector4{
 	*/
 	Type Length(void) const{
 		Type L = x*x + y*y + z*z + w*w;
-		if (L <= std::numeric_limits<Type>::epsilon()) return 0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) return 0;
 		return (Type)sqrt(L);
 	}
 
@@ -143,32 +143,7 @@ struct LWVector4{
 		return LWVector4<Type>(Diff.x > e ? Value.x : x, Diff.y > e ? Value.y : y, Diff.z > e ? Value.z : z, Diff.w > e ? Value.w : w);
 	}
 
-	/*! \brief set's the x component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector4<Type> &sX(Type v) {
-		x = v;
-		return *this;
-	}
-	
-	/*! \brief set's the y component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector4<Type> &sY(Type v) {
-		y = v;
-		return *this;
-	}
-
-	/*! \brief set's the z component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector4<Type> &sZ(Type v) {
-		z = v;
-		return *this;
-	}
-
-	/*! \brief set's the w component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector4<Type> &sW(Type v) {
-		w = v;
-		return *this;
-	}
-
 	/*! \cond */
-
 	LWVector4<Type> &operator = (const LWVector4<Type> &Rhs){
 		x = Rhs.x;
 		y = Rhs.y;
@@ -249,6 +224,16 @@ struct LWVector4{
 		return LWVector4<Type>(-Rhs.x, -Rhs.y, -Rhs.z, -Rhs.w);
 	}
 
+	/*!< \brief accesses components of the vector as if it were an array. */
+	Type operator[](uint32_t i) const {
+		return (&x)[i];
+	}
+
+	/*!< \brief accesses components of the vector as if it were an array(and can set value directly) */
+	Type &operator[](uint32_t i) {
+		return (&x)[i];
+	}
+
 	/*! \brief returns true if all components are > than rhs components. */
 	bool operator > (const LWVector4<Type> &Rhs) const {
 		return x > Rhs.x && y > Rhs.y && z > Rhs.z && w > Rhs.w;
@@ -270,7 +255,7 @@ struct LWVector4{
 	}
 
 	bool operator == (const LWVector4<Type> &Rhs) const{
-		const Type e = std::numeric_limits<Type>::epsilon();
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
 		return (Type)abs(x - Rhs.x) <= e && (Type)abs(y - Rhs.y) <= e && (Type)abs(z - Rhs.z) <= e && (Type)abs(w - Rhs.w) <= e;
 	}
 
@@ -329,6 +314,76 @@ struct LWVector4{
 
 	friend LWVector4<Type> operator / (Type Lhs, const LWVector4<Type> &Rhs){
 		return LWVector4<Type>(Lhs / Rhs.x, Lhs / Rhs.y, Lhs / Rhs.z, Lhs / Rhs.w);
+	}
+
+	/*!< \brief returns xyz from A, and w from B. */
+	LWVector4<Type> AAAB(const LWVector4<Type> &B) const {
+		return { x, y, z, B.w };
+	}
+
+	/*!< \brief returns xyw from A(this), and z from B. */
+	LWVector4<Type> AABA(const LWVector4<Type> &B) const {
+		return { x, y, B.z, w };
+	}
+
+	/*!< \brief returns xy from A(this), and zw from B. */
+	LWVector4<Type> AABB(const LWVector4<Type> &B) const {
+		return { x, y, B.z, B.w };
+	}
+
+	/*!< \brief returns xzw from A(this), and y from B. */
+	LWVector4<Type> ABAA(const LWVector4<Type> &B) const {
+		return { x, B.y, z, w };
+	}
+
+	/*!< \brief returns xz from A(this), and yw from B. */
+	LWVector4<Type> ABAB(const LWVector4<Type> &B) const {
+		return { x, B.y, z, B.w };
+	}
+
+	/*!< \brief returns xw from A(this), and yz from B. */
+	LWVector4<Type> ABBA(const LWVector4<Type> &B) const {
+		return { x, B.y, B.z, w };
+	}
+
+	/*!< \brief returns x from A(this), and yzw from B. */
+	LWVector4<Type> ABBB(const LWVector4<Type> &B) const {
+		return { x, B.y, B.z, B.w };
+	}
+
+	/*!< \brief returns yzw from A(this), and x from B. */
+	LWVector4<Type> BAAA(const LWVector4<Type> &B) const {
+		return { B.x, y, z, w };
+	}
+
+	/*!< \brief returns yz from A(this), and xw from B. */
+	LWVector4<Type> BAAB(const LWVector4<Type> &B) const {
+		return { B.x, y, z, B.w };
+	}
+
+	/*!< \brief returns yw from A(this), and xz from B. */
+	LWVector4<Type> BABA(const LWVector4<Type> &B) const {
+		return { B.x, y, B.z, w };
+	}
+
+	/*!< \brief returns y from A(this), and xzw from B. */
+	LWVector4<Type> BABB(const LWVector4<Type> &B) const {
+		return { B.x, y, B.z, B.w };
+	}
+
+	/*!< \brief returns zw from A(this), and xy from B. */
+	LWVector4<Type> BBAA(const LWVector4<Type> &B) const {
+		return { B.x, B.y, z, w };
+	}
+
+	/*!< \brief returns z from A(this), and xyw from B. */
+	LWVector4<Type> BBAB(const LWVector4<Type> &B) const {
+		return { B.x, B.y, z, B.w };
+	}
+
+	/*!< \brief returns w from A(this), and xyz from B. */
+	LWVector4<Type> BBBA(const LWVector4<Type> &B) const {
+		return { B.x, B.y, B.z, w };
 	}
 
 	LWVector4<Type> xxxx(void) const {
@@ -437,6 +492,14 @@ struct LWVector4{
 
 	LWVector4<Type> xyzz(void) const {
 		return { x,y,z,z };
+	}
+
+	LWVector4<Type> xyz0(void) const {
+		return { x,y,z,(Type)0 };
+	}
+
+	LWVector4<Type> xyz1(void) const {
+		return { x,y,z,(Type)1 };
 	}
 
 	LWVector4<Type> xywx(void) const {
@@ -1725,22 +1788,17 @@ struct LWVector3{
 	Type y; /*!< \brief y component of the Vector3 */
 	Type z; /*!< \brief z component of the Vector3 */
 
-	/*! \brief returns the internal components as an array of data. */
-	Type *AsArray(void) {
-		return &x;
-	}
-
-	/*! \brief returns the internal components as a const array of data. */
-	const Type *AsArray(void) const {
-		return &x;
-	}
-
 	/*! \brief returns a copy of the normalized vector3. */
 	LWVector3<Type> Normalize(void) const{
 		Type L = x*x + y*y + z*z;
-		if (L <= std::numeric_limits<Type>::epsilon()) L = 0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) L = 0;
 		else L = (Type)1 / sqrt(L);
 		return LWVector3<Type>(x*L, y*L, z*L);
+	}
+
+	/*!< \brief checks the sign of each component, and returns +1 for positive sign, and -1 for negative sign components. */
+	LWVector3<Type> Sign(void) const {
+		return LWVector3<Type>((Type)(x < (Type)0 ? -1 : 1), (Type)(y < (Type)0 ? -1 : 1), (Type)(z < (Type)0 ? -1 : 1));
 	}
 
 	/*!< \brief returns the min of all components of the vec3. */
@@ -1761,6 +1819,11 @@ struct LWVector3{
 	/*!< \brief returns the max of each component between this vector3 and A vector3 */
 	LWVector3<Type> Max(const LWVector3<Type> &A) const {
 		return LWVector3<Type>(std::max<Type>(x, A.x), std::max<Type>(y, A.y), std::max<Type>(z, A.z));
+	}
+
+	/*!< \brief returns the sum of all components of the vec3. */
+	Type Sum(void) const {
+		return x + y + z;
 	}
 
 	/*!< \brief projects Pnt onto this vector and returns the projected result. */
@@ -1792,7 +1855,7 @@ struct LWVector3{
 	*/
 	Type Length(void) const{
 		Type L = x*x + y*y + z*z;
-		if (L <= std::numeric_limits<Type>::epsilon()) return 0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) return 0;
 		return (Type)sqrt(L);
 	}
 
@@ -1862,26 +1925,17 @@ struct LWVector3{
 		return LWVector3<Type>(Diff.x > e ? Value.x : x, Diff.y > e ? Value.y : y, Diff.z > e ? Value.z : z);
 	}
 
-	/*! \brief set's the x component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector3<Type> &sX(Type v) {
-		x = v;
-		return *this;
+	/*!< \brief accesses components of the vector as if it were an array. */
+	Type operator[](uint32_t i) const {
+		return (&x)[i];
 	}
 
-	/*! \brief set's the y component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector3<Type> &sY(Type v) {
-		y = v;
-		return *this;
-	}
-
-	/*! \brief set's the z component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector3<Type> &sZ(Type v) {
-		z = v;
-		return *this;
+	/*!< \brief accesses components of the vector as if it were an array(and can set value directly) */
+	Type &operator[](uint32_t i) {
+		return (&x)[i];
 	}
 
 	/*! \cond */
-
 	LWVector3<Type> &operator = (const LWVector3<Type> &Rhs){
 		x = Rhs.x;
 		y = Rhs.y;
@@ -1974,7 +2028,7 @@ struct LWVector3{
 	}
 
 	bool operator == (const LWVector3<Type> &Rhs) const{
-		const Type e = std::numeric_limits<Type>::epsilon();
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
 		return (Type)abs(x - Rhs.x) <= e && (Type)abs(y - Rhs.y) <= e && (Type)abs(z - Rhs.z) <= e;
 	}
 
@@ -2227,9 +2281,14 @@ struct LWVector2{
 	/*! \brief returns a copy of the normalized vector3. */
 	LWVector2<Type> Normalize(void) const{
 		Type L = x*x + y*y;
-		if (L <= std::numeric_limits<Type>::epsilon()) L = 0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) L = 0;
 		else L = (Type)1 / sqrt(L);
 		return LWVector2<Type>(x*L, y*L);
+	}
+	
+	/*!< \brief checks the sign of each component, and returns +1 for positive sign, and -1 for negative sign components. */
+	LWVector2<Type> Sign(void) const {
+		return LWVector2<Type>((Type)(x < (Type)0 ? -1 : 1), (Type)(y < (Type)0 ? -1 : 1));
 	}
 
 	/*!< \brief returns the min component of the Vec2. */
@@ -2250,6 +2309,11 @@ struct LWVector2{
 	/*!< \brief returns the max of each component between this vector2 and A vector2. */
 	LWVector2<Type> Max(const LWVector2<Type> &A) const {
 		return LWVector2<Type>(std::max<Type>(x, A.x), std::max<Type>(y, A.y));
+	}
+
+	/*!< \brief returns the sum of all components of the vec2. */
+	Type Sum(void) const {
+		return x + y;
 	}
 
 	/*! \brief returns the absolute value of each component. */
@@ -2308,7 +2372,7 @@ struct LWVector2{
 	*/
 	Type Length(void) const{
 		Type L = x*x + y*y;
-		if (L <= std::numeric_limits<Type>::epsilon()) return 0;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) return 0;
 		return (Type)sqrt(L);
 	}
 
@@ -2342,18 +2406,6 @@ struct LWVector2{
 	/*!< \brief rotates a point around the rotation vector. */
 	LWVector2<Type> Rotate(const LWVector2<Type> &Pnt) const{
 		return LWVector2<Type>(Pnt.x*x + Pnt.y*y, Pnt.x*y - Pnt.y*x);
-	}
-
-	/*! \brief set's the x component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector2<Type> &sX(Type v) {
-		x = v;
-		return *this;
-	}
-
-	/*! \brief set's the y component of the vector, this function mostly exists to help support parity between LWSVector and LWVector. */
-	LWVector2<Type> &sY(Type v) {
-		y = v;
-		return *this;
 	}
 
 	/*! \cond */
@@ -2409,6 +2461,16 @@ struct LWVector2{
 		x /= Rhs;
 		y /= Rhs;
 		return *this;
+	}
+
+	/*!< \brief accesses components of the vector as if it were an array. */
+	Type operator[](uint32_t i) const {
+		return (&x)[i];
+	}
+
+	/*!< \brief accesses components of the vector as if it were an array(and can set value directly) */
+	Type &operator[](uint32_t i) {
+		return (&x)[i];
 	}
 
 	friend LWVector2<Type> operator + (const LWVector2<Type> &Rhs){
@@ -2534,5 +2596,6 @@ struct LWVector2{
 
 	LWVector2(Type f = 0) : x(f), y(f){}
 };
+
 /*! @} */
 #endif

@@ -1,0 +1,14 @@
+
+<Component Name="BtnLbl" LblStyle="MenuFnt" BtnStyle="MenuButton">
+	<Button Name="Button" Flag="PAMC|LAMC" Style="{BtnStyle}" Size="x: 100% y: 100%">
+		<Label Name="Label" Flag="PAMC|LAMC" Style="{LblStyle}" Value="{Value}" />
+	</Button>
+</Component>
+
+<Component Name="Toggle" LblStyle="MenuFnt" BtnStyle="MenuButton" ToggledMaterial="Toggled" LockedMaterial="ToggleLocked">
+	<Rect Name="LockedUI" Flag="PAMC|LAMC|Invisible" Material="{ToggleLocked}" Size="x: 100%+1px y: 100%+1px" />
+	<Rect Name="ToggleUI" Flag="PAMC|LAMC|Invisible" Material="{ToggledMaterial}" Size="x: 100% y: 100%+2px" Position="y: 2px" />
+	<Button Name="Button" Flag="PAMC|LAMC" Style="{BtnStyle}" Size="x: 100% y: 100%">
+		<Label Name="Label" Flag="PAMC|LAMC" Style="{LblStyle}" Value="{Value}" />
+	</Button>
+</Component>

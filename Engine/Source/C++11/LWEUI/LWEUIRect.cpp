@@ -4,21 +4,21 @@
 #include <LWPlatform/LWWindow.h>
 #include <LWVideo/LWTexture.h>
 
-LWEUIRect *LWEUIRect::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
+LWEUIRect *LWEUIRect::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
 	char Buffer[256];
 	char SBuffer[1024 * 32];
-	LWAllocator *Allocator = Manager->GetAllocator();
+	LWAllocator &Allocator = Manager->GetAllocator();
 	LWELocalization *Localize = Manager->GetLocalization();
-	LWEUIRect *Rect = Allocator->Allocate<LWEUIRect>(nullptr, LWVector4f(0.0f), LWVector4f(0.0f), 0);
+	LWEUIRect *Rect = Allocator.Create<LWEUIRect>(nullptr, LWVector4f(0.0f), LWVector4f(0.0f), 0);
 	LWEUI::XMLParse(Rect, Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
-	LWXMLAttribute *MatAttr = FindAttribute(Node, Style, "Material");
-	LWXMLAttribute *ThetaAttr = FindAttribute(Node, Style, "Theta");
+	LWEXMLAttribute *MatAttr = FindAttribute(Node, Style, "Material");
+	LWEXMLAttribute *ThetaAttr = FindAttribute(Node, Style, "Theta");
 	LWEUIMaterial *Mat = nullptr;
 	float Theta = 0.0f;
 	if (MatAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), MatAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		if (Localize) Res = Localize->ParseLocalization(SBuffer, sizeof(SBuffer), Res);
-		Mat = Manager->GetMaterial(Res);
+		LWUTF8Iterator Text = ParseComponentAttribute(Buffer, sizeof(Buffer), MatAttr->GetValue(), ActiveComponent, ActiveComponentNode);
+		if (Localize && Localize->ParseLocalization(SBuffer, sizeof(SBuffer), Text)) Text = LWUTF8Iterator(SBuffer);
+		Mat = Manager->GetMaterial(Text);
 	}
 	if(ThetaAttr) Theta = (float)atof(ThetaAttr->m_Value) * LW_DEGTORAD;
 
@@ -75,8 +75,8 @@ float LWEUIRect::GetTheta(void) const {
 	return m_Theta;
 }
 
-LWEUIRect::LWEUIRect(LWEUIMaterial *Material, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : LWEUI(Position, Size, Flag), m_Material(Material), m_Theta(0.0f) {}
+LWEUIRect::LWEUIRect(LWEUIMaterial *Material, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : LWEUI(Position, Size, Flag), m_Material(Material) {}
 
-LWEUIRect::LWEUIRect() : LWEUI(LWVector4f(), LWVector4f(), 0), m_Material(nullptr), m_Theta(0.0f) {}
+LWEUIRect::LWEUIRect() : LWEUI(LWVector4f(), LWVector4f(), 0) {}
 
 LWEUIRect::~LWEUIRect() {}

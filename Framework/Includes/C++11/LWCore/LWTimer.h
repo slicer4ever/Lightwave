@@ -24,8 +24,20 @@ public:
 	/*!< \brief converts from the high resolution timer used internally to millisecond time. */
 	static uint64_t ToMilliSecond(uint64_t Time);
 
+	/*!< \brief converts from the high resolution timer used internally to microsecond time. */
+	static uint64_t ToMicroSecond(uint64_t Time);
+
+	/*!< \brief converts from the high resolution timer used internally to nanosecond time. */
+	static uint64_t ToNanoSecond(uint64_t Time);
+	
 	/*!< \brief converts from millisecond time to the high resolution timer. */
 	static uint64_t ToHighResolution(uint64_t Time);
+
+	/*!< \brief converts from microsecond time to the high resolution timer. */
+	static uint64_t ToHighResolutionUS(uint64_t Time);
+
+	/*!< \brief converts from nanosecond time to the high resolution timer. */
+	static uint64_t ToHighResolutionNS(uint64_t Time);
 
 	/*!< \brief converts from floating point seconds to a high resolution time value. */
 	static uint64_t ToHighResolution(float Time);
@@ -53,6 +65,9 @@ public:
 		\param Current the current time as reported by the GetCurrent method.
 	*/
 	LWTimer &Update(uint64_t Current);
+
+	/*!< \brief returns true if the Completed flag is set. */
+	bool isCompleted(void) const;
 
 	/*! \brief returns the frequency of the timer. */
 	uint64_t GetFrequency(void);

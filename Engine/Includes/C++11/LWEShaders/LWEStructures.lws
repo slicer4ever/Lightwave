@@ -1,0 +1,214 @@
+R"(#module Vertex|Pixel|Compute DirectX11_1
+
+static const uint LWEMaxGeometryBuckets = 16;
+static const uint LWEMaxPasses = 16;
+static const uint LWEMaxBindableTextures = 5;
+static const uint LWEMaxMaterialData = 4;
+
+#ifdef STATICVERTICE
+struct Vertex {
+	float4 Position : POSITION;
+#ifdef PBRVERTICE
+	float4 TexCoord : TEXCOORD;
+	float4 Tangent : TANGENT;
+	float4 Normal : NORMAL;
+#endif
+	int ModelIndex : INSTANCE0;
+};
+#endif
+
+#ifdef SKELETONVERTICE
+struct Vertex {
+	float4 Position : POSITION;
+	float4 BoneWeight : BLENDWEIGHT;
+	int4 BoneIndices : BLENDINDICES;
+#ifdef PBRVERTICE
+	float4 TexCoord : TEXCOORD;
+	float4 Tangent : TANGENT;
+	float4 Normal : NORMAL;
+#endif
+	int ModelIndex : INSTANCE0;
+};
+#endif
+
+#ifdef PBRPIXELDATA
+struct Pixel {
+	float4 Position : SV_POSITION;
+	float4 WPosition : POSITION0;
+#ifdef SHADOWMAP
+	float4 SPosition[LWEMaxGeometryBuckets] : POSITION1;
+#endif
+	float3x3 TBN : NORMAL0;
+	float2 TexCoords[LWEMaxBindableTextures] : TEXCOORD0;
+	float Transparency : Output;
+	int ModelIndex : Output1;
+};
+#endif
+
+#ifdef GLOBALDATA
+struct LWEGeometryBucketData {
+	float4x4 ProjViewTransform;
+	float4x4 ViewTransform;
+	float4 Frustum[6];
+	float4 FrustumPoints[6];
+};
+
+struct LWEPassData {
+	float4 PassData[4];
+	float4 SubPassData[LWEMaxPasses];
+	float4 FrameSize[LWEMaxPasses];
+	int4 GeometryBucketOffset;
+};
+
+cbuffer LWEGlobal{
+	LWEGeometryBucketData BucketList[LWEMaxGeometryBuckets];
+	LWEPassData PassData[LWEMaxPasses];
+	float2 WindowSize;
+	uint LightCount;
+	uint ShadowCount;
+	uint ShadowPassID;
+	float Time;
+	float SinTime;
+};
+
+cbuffer LWEPass{
+	uint PassID;
+	uint SubPassID;
+	uint Pad[2];
+};
+#endif
+
+#ifdef MODELDATA
+struct LWEModelS {
+	float4x4 Transform;
+	float4 MaterialData[LWEMaxMaterialData];
+	float4 SubTextures[LWEMaxBindableTextures];
+	uint HasTextureFlag;
+	uint BoneID;
+	uint Pad[2];
+};
+
+StructuredBuffer<LWEModelS> LWEModel;
+#endif
+
+#ifdef BONEDATA
+StructuredBuffer<float4x4> LWEBone;
+#endif
+
+#ifdef LIGHTDATA
+struct LWELightS {
+	float4 Position;
+	float4 Direction;
+	float4 Color;
+	int4 ShadowIndexs;
+};
+
+StructuredBuffer<LWELightS> LWELights;
+#endif
+
+#module Vertex|Pixel|Compute OpenGL4_5 OpenGL3_3
+const uint LWEMaxGeometryBuckets = 16;
+const uint LWEMaxPasses = 16;
+const uint LWEMaxBindableTextures = 5;
+const uint LWEMaxMaterialData = 4;
+
+#ifdef STATICVERTICE
+struct Vertex {
+	vec4 Position;
+	vec4 TexCoord;
+	vec4 Tangent;
+	vec4 Normal;
+	int ModelIndex;
+};
+#endif
+
+#ifdef SKELETONVERTICE
+struct Vertex {
+	vec4 Position;
+	vec4 BoneWeight;
+	ivec4 BoneIndices;
+	vec4 TexCoord;
+	vec4 Tangent;
+	vec4 Normal;
+	int ModelIndex;
+};
+#endif
+
+#ifdef PBRPIXELDATA
+struct Pixel {
+	vec4 WPosition;
+#ifdef SHADOWMAP
+	vec4 SPosition[LWEMaxGeometryBuckets];
+#endif
+	mat3 TBN;
+	vec2 TexCoords[LWEMaxBindableTextures];
+	float Transparency;
+};
+#endif
+
+#ifdef GLOBALDATA
+struct LWEGeometryBucketData {
+	mat4 ProjViewTransform;
+	mat4 ViewTransform;
+	vec4 Frustum[6];
+	vec4 FrustumPoints[6];
+};
+
+struct LWEPassData {
+	vec4 PassData[4];
+	vec4 SubPassData[LWEMaxPasses];
+	vec4 FrameSize[LWEMaxPasses];
+	ivec4 GeometryBucketOffset;
+};
+
+layout(std140) uniform LWEGlobal{
+	LWEGeometryBucketData BucketList[LWEMaxGeometryBuckets];
+	LWEPassData PassData[LWEMaxPasses];
+	vec2 WindowSize;
+	uint LightCount;
+	uint ShadowCount;
+	uint ShadowPassID;
+	float Time;
+	float SinTime;
+};
+
+layout(std140) uniform LWEPass{
+	uint PassID;
+	uint SubPassID;
+	uint Pad[2];
+};
+#endif
+
+#ifdef MODELDATA
+struct LWEModelS {
+	mat4 Transform;
+	vec4 MaterialData[LWEMaxMaterialData];
+	vec4 SubTextures[LWEMaxBindableTextures];
+	uint HasTextureFlag;
+	uint BoneID;
+	uint Pad[2];
+};
+
+layout(std430, binding=0) buffer LWEModel {
+	LWEModelS LWEModelD[];
+};
+#endif
+
+#ifdef BONEDATA
+layout(std430, binding=1) buffer LWEBone {
+	mat4 LWEBoneD[];
+};
+#endif
+
+#ifdef LIGHTDATA
+struct LWELightS {
+	vec4 Position;
+	vec4 Direction;
+	vec4 Color;
+	ivec4 ShadowIndexs;
+};
+
+layout(std430, binding=2) buffer LWELights {
+	LWELightS LWELightsD[];
+};
+#endif)",

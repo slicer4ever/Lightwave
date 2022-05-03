@@ -30,9 +30,7 @@ bool LWERayAABBIntersect(const LWVector2<Type> &RayStart, const LWVector2<Type> 
 	const Type e = (Type)std::numeric_limits<float>::epsilon();
 	//Use float epsilon instead of double.
 	LWVector2<Type> Dir = RayEnd - RayStart;
-	
-	if ((Type)abs(Dir.x) < e) Dir.x = e;
-	if ((Type)abs(Dir.y) < e) Dir.y = e;
+	Dir = Dir.Abs().Blend_Less(e, e) * Dir.Sign();
 
 	LWVector2<Type> invDir = (Type)1 / Dir;
 
@@ -116,9 +114,9 @@ bool LWEPlanePlaneIntersect(const LWVector3<Type> &aPlane, const LWVector3<Type>
 	LWVector2<Type> aPnt = aNrm * aPlane.z;
 	LWVector2<Type> paNrm = aNrm.Perpindicular();
 	Type t;
-	bool Result = RayPlaneIntersect(aPnt, paNrm, bPlane, &t);
+	bool Result = LWERayPlaneIntersect(aPnt, paNrm, bPlane, &t);
 	if (!Result) return false;
-	if (IntersectPnt) *IntersectPnt = aPnt - paNrm * t;
+	if (IntersectPnt) *IntersectPnt = aPnt + paNrm * t;
 	return true;
 }
 

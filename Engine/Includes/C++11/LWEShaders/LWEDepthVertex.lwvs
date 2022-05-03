@@ -1,0 +1,26 @@
+R"(#module Vertex OpenGL4_5 OpenGL3_3
+#version 440
+#define GLOBALDATA
+#define MODELDATA
+#include "Structures"
+#include "Utilitys"
+#module Vertex DirectX11_1
+
+float4 main(Vertex In) : SV_POSITION {
+	LWEGeometryBucketData GeomBucket = GetGeometryBucket();
+	LWEModelS ModelData = LWEModel[In.ModelIndex];
+	float4x4 Transform = GetTransformMatrix(In, ModelData);
+	return mul(GeomBucket.ProjViewTransform, mul(Transform, In.Position));
+}
+
+#module Vertex OpenGL4_5 OpenGL3_3
+in Vertex v;
+out gl_PerVertex {
+	vec4 gl_Position;
+};
+void main(void) {
+	LWEGeometryBucketData GeomBucket = GetGeometryBucket();
+	LWEModelS ModelData = LWEModelD[v.ModelIndex];
+	mat4 Transform = GetTransformMatrix(v, ModelData);
+	gl_Position = GeomBucket.ProjViewTransform * Transform * v.Position;
+})",

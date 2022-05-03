@@ -9,9 +9,9 @@
 #include <LWCore/LWTimer.h>
 #include <LWPlatform/LWWindow.h>
 
-Scene *Scene::LoadGLTF(const LWText &Path, LWVideoDriver *Driver, LWAllocator &Allocator) {
+Scene *Scene::LoadGLTF(const LWUTF8Iterator &Path, LWVideoDriver *Driver, LWAllocator &Allocator) {
 	LWEGLTFParser P;
-	std::cout << "Loading scene: '" << Path << "'" << std::endl;
+	fmt::print("Loading scene: '{}'\n", Path);
 	if (!LWEGLTFParser::LoadFile(P, Path, Allocator)) {
 		return nullptr;
 	}
@@ -38,8 +38,6 @@ Scene *Scene::LoadGLTF(const LWText &Path, LWVideoDriver *Driver, LWAllocator &A
 		SN.m_ModelID = MapIDToListIndex(MeshList, Node->m_MeshID);
 		SN.m_ParentID = MapIDToListIndex(NodeList, Node->m_ParentID);
 		P.BuildNodeAnimation(SN.m_Animation, NodeID);
-
-
 		if (LightID != -1) { //Animation is not implemented for lights.
 			LWMatrix4f Transform = P.GetNodeWorldTransform(NodeID)*Node->m_TransformMatrix.Inverse();
 			LWVector3f pPos;
@@ -92,12 +90,12 @@ Scene *Scene::LoadGLTF(const LWText &Path, LWVideoDriver *Driver, LWAllocator &A
 
 	LWEGLTFScene *GScene = P.BuildSceneOnlyList(P.GetDefaultSceneID(), NodeList, MeshList, SkinList, LightList, MaterialList, TextureList, ImageList);
 	if (!GScene) {
-		std::cout << "Error no default scene specified." << std::endl;
+		fmt::print("Error no default scene specified.\n");
 		return nullptr;
 	}
-	std::cout << "Scene: " << P.GetDefaultSceneID() << " Materials: " << MaterialList.size() << " Meshs: " << MeshList.size() << " Textures: " << TextureList.size() << " Images: " << ImageList.size() << " Skins: " << SkinList.size() << std::endl;
+	fmt::print("Scene: {} Materials: {} Meshes: {} Textures: {} Images: {} Skins: {}\n", P.GetDefaultSceneID(), MaterialList.size(), MeshList.size(), TextureList.size(), ImageList.size(), SkinList.size());
 
-	Scene *S = Allocator.Allocate<Scene>(Driver);
+	Scene *S = Allocator.Create<Scene>(Driver);
 	for(uint32_t i=0;i<ImageList.size();i++){
 		LWImage Image;
 		LWTexture *Tex = nullptr;
@@ -123,7 +121,7 @@ Scene *Scene::LoadGLTF(const LWText &Path, LWVideoDriver *Driver, LWAllocator &A
 		M.m_SpecularGlossy.m_SpecularGlossyTexture.m_TextureIndex = MapIDToListIndex(TextureList, M.m_SpecularGlossy.m_SpecularGlossyTexture.m_TextureIndex);
 
 		M.m_NormalMapTexture.m_TextureIndex = MapIDToListIndex(TextureList, M.m_NormalMapTexture.m_TextureIndex);
-		M.m_OcclussionTexture.m_TextureIndex = MapIDToListIndex(TextureList, M.m_OcclussionTexture.m_TextureIndex);
+		M.m_OcclusionTexture.m_TextureIndex = MapIDToListIndex(TextureList, M.m_OcclusionTexture.m_TextureIndex);
 		M.m_EmissiveTexture.m_TextureIndex = MapIDToListIndex(TextureList, M.m_EmissiveTexture.m_TextureIndex);
 		S->PushMaterial(M);
 	}
@@ -169,7 +167,7 @@ Scene *Scene::LoadGLTF(const LWText &Path, LWVideoDriver *Driver, LWAllocator &A
 			uint32_t IndexCount = 0;
 			LWVideoBuffer *VBuffer = nullptr;
 			LWVideoBuffer *IBuffer = nullptr;
-			Vertice *V = Allocator.AllocateArray<Vertice>(VertCount);
+			Vertice *V = Allocator.Allocate<Vertice>(VertCount);
 			PosView.ReadValues<float>(&V[0].m_Position.x, sizeof(Vertice), VertCount);
 			if (P.CreateAccessorView(TangentView, GPrim.FindAttributeAccessor(LWEGLTFAttribute::TANGENT))) {
 				TangentView.ReadValues<float>(&V[0].m_Tangent.x, sizeof(Vertice), VertCount);
@@ -188,7 +186,7 @@ Scene *Scene::LoadGLTF(const LWText &Path, LWVideoDriver *Driver, LWAllocator &A
 			}
 			if (P.CreateAccessorView(IdxView, GPrim.m_IndiceID)) {
 				IndexCount = IdxView.m_Count;
-				uint32_t *I = Allocator.AllocateArray<uint32_t>(IndexCount);
+				uint32_t *I = Allocator.Allocate<uint32_t>(IndexCount);
 				IdxView.ReadValues<uint32_t>(I, sizeof(uint32_t), IndexCount);
 				IBuffer = Driver->CreateVideoBuffer<uint32_t>(LWVideoBuffer::Index32, LWVideoBuffer::Static, IndexCount, Allocator, I);
 				LWAllocator::Destroy(I);
@@ -209,7 +207,7 @@ Scene *Scene::LoadGLTF(const LWText &Path, LWVideoDriver *Driver, LWAllocator &A
 			Primitive Prim;
 			Prim.m_AABBMin = AAMin;
 			Prim.m_AABBMax = AAMax;
-			Prim.m_Geometry = Allocator.Allocate<LWMesh<Vertice>>(VBuffer, IBuffer, VertCount, IndexCount);
+			Prim.m_Geometry = Allocator.Create<LWMesh<Vertice>>(VBuffer, IBuffer, VertCount, IndexCount);
 			Prim.m_MaterialID = MapIDToListIndex(MaterialList, GPrim.m_MaterialID);			
 			M.PushPrimitive(Prim);
 		}
@@ -302,7 +300,7 @@ uint32_t Scene::DrawScene(uint64_t lCurrentTime, const LWMatrix4f &SceneTransfor
 		}
 		MatData.m_EmissiveFactor = Mat.m_EmissiveFactor;
 		MatData.m_HasTextureFlag |= SetMaterialTexture(MatInfo.m_NormalTexture, Mat.m_NormalMapTexture.m_TextureIndex, MaterialInfo::NormalTextureBit);
-		MatData.m_HasTextureFlag |= SetMaterialTexture(MatInfo.m_OcclussionTexture, Mat.m_OcclussionTexture.m_TextureIndex, MaterialInfo::OcclussionTextureBit);
+		MatData.m_HasTextureFlag |= SetMaterialTexture(MatInfo.m_OcclussionTexture, Mat.m_OcclusionTexture.m_TextureIndex, MaterialInfo::OcclussionTextureBit);
 		MatData.m_HasTextureFlag |= SetMaterialTexture(MatInfo.m_EmissiveTexture, Mat.m_EmissiveTexture.m_TextureIndex, MaterialInfo::EmissiveTextureBit);
 		
 		MatInfo.m_Opaque = (Mat.m_Flag&LWEGLTFMaterial::AlphaBits)!=LWEGLTFMaterial::AlphaBlend;

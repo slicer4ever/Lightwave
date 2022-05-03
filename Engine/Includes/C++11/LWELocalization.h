@@ -1,7 +1,6 @@
 #ifndef LWELOCALIZATION_H
 #define LWELOCALIZATION_H
 #include <LWCore/LWTypes.h>
-#include <LWCore/LWText.h>
 #include <unordered_map>
 #include "LWETypes.h"
 
@@ -14,14 +13,18 @@ public:
 
 	static bool XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X);
 
-	//Localization replaces [xyz] with the localized string if it exists.
-	char *ParseLocalization(char *Buffer, uint32_t BufferSize, const char *Source);
+	/*! \brief Localization replaces <xyz> with the localized string of xyz it exists.
+		\return size of buffer(including null) to contain the parsed string.
+	*/
+	uint32_t ParseLocalization(char8_t *Buffer, uint32_t BufferSize, const LWUTF8Iterator &Source);
 
 	LWELocalization &SetActiveLocalization(uint32_t LocalizationID);
 
-	bool PushString(const LWText &StringName, const LWText &String, uint32_t LocalizationID);
+	bool PushString(const LWUTF8Iterator &StringName, const LWUTF8Iterator &String, uint32_t LocalizationID);
 
-	const char *LookupString(const LWText &StringName);
+	LWUTF8Iterator Find(const LWUTF8Iterator &StringName);
+
+	LWUTF8Iterator Find(uint32_t StringNameHash);
 
 	LWAllocator &GetAllocator(void);
 
@@ -32,7 +35,7 @@ public:
 	~LWELocalization();
 private:
 	LWAllocator &m_Allocator;
-	std::unordered_map<uint32_t, char*> m_StringMap[LWELocalization::Count];
+	std::unordered_map<uint32_t, char8_t*> m_StringMap[LWELocalization::Count];
 	uint32_t m_ActiveLocalization;
 };
 

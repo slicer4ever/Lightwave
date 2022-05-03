@@ -4,80 +4,50 @@
 #include "LWEAsset.h"
 #include "LWETypes.h"
 #include "LWPlatform/LWWindow.h"
+#include "LWEJson.h"
+#include <LWCore/LWLogger.h>
 #include <LWPlatform/LWFileStream.h>
 #include <algorithm>
 #include <cstdarg>
 #include <iostream>
 
-LWEUILabel *LWEUILabel::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
+LWEUILabel *LWEUILabel::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
 	char Buffer[1024*2]; //max filesize of 2 kilobytes can be read into ValueSrc.
 	char SBuffer[1024 * 2];
 	LWFileStream Stream;
-	LWAllocator *Allocator = Manager->GetAllocator();
+	LWAllocator &Allocator = Manager->GetAllocator();
 	LWELocalization *Localize = Manager->GetLocalization();
-	LWEUILabel *Label = Allocator->Allocate<LWEUILabel>("", nullptr, *Allocator, nullptr, LWVector4f(0.0f), LWVector4f(0.0f), 0);
-
-	auto FormatValue = [](const char *In, char *Buffer, uint32_t BufferLen)->uint32_t {
-		char *BE = Buffer + BufferLen;
-		char *B = Buffer;
-		uint32_t o = 0;
-		for (const char *C = In; B != BE && *C; B++, C++, o++) {
-			if (*C == '\\') {
-				if (*(C + 1) == 'n') {
-					C++;
-					*B = '\n';
-					continue;
-				} else if (*(C + 1) == 't') {
-					C++;
-					*B = '\t';
-					continue;
-				}
-			}
-			*B = *C;
-		}
-		if (B == BE) B--;
-		if (BufferLen) *B = '\0';
-		return o;
-	};
+	LWEAssetManager *AM = Manager->GetAssetManager();
+	LWEUILabel *Label = Allocator.Create<LWEUILabel>("", nullptr, Allocator, nullptr, LWVector4f(0.0f), LWVector4f(0.0f), 0);
 
 	LWEUI::XMLParse(Label, Node, XML, Manager, Style, ActiveComponentName, ActiveComponent, ActiveComponentNode, StyleMap, ComponentMap);
 	
-	LWXMLAttribute *FontAttr = FindAttribute(Node, Style, "Font");
-	LWXMLAttribute *ValueAttr = FindAttribute(Node, Style, "Value");
-	LWXMLAttribute *ValueSrcAttr = FindAttribute(Node, Style, "ValueSrc");
-	LWXMLAttribute *MaterAttr = FindAttribute(Node, Style, "Material");
-	LWXMLAttribute *ScaleAttr = FindAttribute(Node, Style, "Scale");
+	LWEXMLAttribute *FontAttr = FindAttribute(Node, Style, "Font");
+	LWEXMLAttribute *ValueAttr = FindAttribute(Node, Style, "Value");
+	LWEXMLAttribute *ValueSrcAttr = FindAttribute(Node, Style, "ValueSrc");
+	LWEXMLAttribute *MaterAttr = FindAttribute(Node, Style, "Material");
+	LWEXMLAttribute *ScaleAttr = FindAttribute(Node, Style, "Scale");
 	LWFont *Font = nullptr;
 	LWEUIMaterial *Mat = nullptr;
-	if (FontAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), FontAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		Font = Manager->GetAssetManager()->GetAsset<LWFont>(Res);
-	}
-	if (MaterAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), MaterAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		Mat = Manager->GetMaterial(Res);
+	if (FontAttr) Font = AM->GetAsset<LWFont>(ParseComponentAttribute(Buffer, sizeof(Buffer), FontAttr->GetValue(), ActiveComponent, ActiveComponentNode));
+	if (MaterAttr) Mat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), MaterAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	
-	}
 	if (ValueAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), ValueAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		if (Localize) Res = Localize->ParseLocalization(SBuffer, sizeof(SBuffer), Res);
-		FormatValue(Res, Buffer, sizeof(Buffer));
-		Label->SetText(Buffer);
-	
+		LWUTF8Iterator Text = ParseComponentAttribute(Buffer, sizeof(Buffer), ValueAttr->GetValue(), ActiveComponent, ActiveComponentNode);
+		if (Localize && Localize->ParseLocalization(SBuffer, sizeof(SBuffer), Text)) Text = LWUTF8Iterator(SBuffer);
+		LWEJson::UnEscapeString(Text, Buffer, sizeof(Buffer));
+		Label->SetText(LWUTF8Iterator(Buffer));	
 	}else if (ValueSrcAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), ValueSrcAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		if (Localize) Res = Localize->ParseLocalization(SBuffer, sizeof(SBuffer), Res);
-		if (!LWFileStream::OpenStream(Stream, Res, LWFileStream::ReadMode, *Allocator)) {
-			std::cout << "Error loading file: '" << Res << "'" << std::endl;
-		} else {
+		LWUTF8Iterator Source = ParseComponentAttribute(Buffer, sizeof(Buffer), ValueSrcAttr->GetValue(), ActiveComponent, ActiveComponentNode);
+		if (Localize && Localize->ParseLocalization(SBuffer, sizeof(SBuffer), Source)) Source = LWUTF8Iterator(SBuffer);
+		if(LWLogCriticalIf<256>(LWFileStream::OpenStream(Stream, Source, LWFileStream::ReadMode, Allocator), "Failed to open source file: '{}'", Source)) {
 			Stream.ReadText(Buffer, sizeof(Buffer));
 			Label->SetText(Buffer);
-		
 		}
 	}
 	if (ScaleAttr) {
-		const char *Res = ParseComponentAttribute(Buffer, sizeof(Buffer), ScaleAttr->m_Value, ActiveComponent, ActiveComponentNode);
-		Label->SetFontScale((float)atof(Res));
+		LWUTF8Iterator Scale = ParseComponentAttribute(Buffer, sizeof(Buffer), ScaleAttr->GetValue(), ActiveComponent, ActiveComponentNode);
+		Label->SetFontScale((float)atof((const char*)Scale()));
 	}
 	Label->SetFont(Font).SetMaterial(Mat);
 	return Label;
@@ -101,20 +71,21 @@ LWEUI &LWEUILabel::DrawSelf(LWEUIManager &Manager, LWEUIFrame &Frame, float Scal
 	LWVector2f Pos = VisiblePos - LWVector2f(0.0f, m_UnderHang * Scale);
 	if (VertAlign == LabelVCenterAligned) Pos.y += (VisibleSize.y - TSize.y)*0.5f;
 	else if (VertAlign == LabelTopAligned) Pos.y += (VisibleSize.y - TSize.y);
+	LWVector4f Color = m_Material ? m_Material->m_ColorA : LWVector4f(1.0f);
 
-	if (HoriAlign == LabelLeftAligned) m_Font->DrawTextm(m_Text, Pos, m_FontScale*Scale, m_Material->m_ColorA, &Frame, &LWEUIFrame::WriteFontGlyph);
+	if (HoriAlign == LabelLeftAligned) m_Font->DrawTextm(m_Text.beginGrapheme(), Pos, m_FontScale*Scale, Color, &Frame, &LWEUIFrame::WriteFontGlyph);
 	else {
-		const uint8_t *C = m_Text.GetCharacters();
-		const uint8_t *N = LWText::FirstToken(C, '\n');
+		LWUTF8GraphemeIterator C = m_Text.beginGrapheme();
+		LWUTF8GraphemeIterator N = C.NextLine();
 		uint32_t l = 0;
-		for (; C; C = N ? (N + 1) : N, N = N ? (LWText::FirstToken(N + 1, '\n')) : N) {
-			uint32_t Len = N ? (uint32_t)(uintptr_t)(N - C) : 0xFFFFFFFF;
-			LWVector4f LineSize = m_Font->MeasureText(C, Len, m_FontScale*Scale);
+		for(;!C.AtEnd(); C = N, N.AdvanceLine()) {
+			LWUTF8GraphemeIterator Line = LWUTF8GraphemeIterator(C, N);
+			LWVector4f LineSize = m_Font->MeasureText(Line, m_FontScale * Scale);
 			float LS = (LineSize.z - LineSize.x);
-			if (HoriAlign == LabelCenterAligned) Pos.x = (VisiblePos.x + VisibleSize.x*0.5f - LS*0.5f);
+			if (HoriAlign == LabelCenterAligned) Pos.x = (VisiblePos.x + VisibleSize.x * 0.5f - LS * 0.5f);
 			else Pos.x = VisiblePos.x + VisibleSize.x - LS;
-			m_Font->DrawTextm(C, Len, Pos, m_FontScale*Scale, m_Material->m_ColorA, &Frame, &LWEUIFrame::WriteFontGlyph);
-			Pos.y -= m_Font->GetLineSize()*m_FontScale*Scale;
+			m_Font->DrawTextm(Line, Pos, m_FontScale * Scale, Color, &Frame, &LWEUIFrame::WriteFontGlyph);
+			Pos.y -= m_Font->GetLineSize() * m_FontScale * Scale;
 		}
 	}
 	return *this;
@@ -125,24 +96,15 @@ void LWEUILabel::Destroy(void) {
 	return;
 }
 
-LWEUILabel &LWEUILabel::SetText(const LWText &Text) {
-	m_Text.Set(Text.GetCharacters());
+LWEUILabel &LWEUILabel::SetText(const LWUTF8Iterator &Text) {
+	m_Text = Text;
 	return SetFont(m_Font);
-}
-
-LWEUILabel &LWEUILabel::SetTextf(const char *Format, ...) {
-	char Buffer[1024];
-	va_list lst;
-	va_start(lst, Format);
-	vsnprintf(Buffer, sizeof(Buffer), Format, lst);
-	va_end(lst);
-	return SetText(Buffer);
 }
 
 LWEUILabel &LWEUILabel::SetFont(LWFont *Font) {
 	m_Font = Font;
 	if (m_Font) {
-		LWVector4f TextSize = Font->MeasureText(m_Text, m_FontScale);
+		LWVector4f TextSize = Font->MeasureText(m_Text.beginGrapheme(), m_FontScale);
 		m_TextSize = LWVector2f(TextSize.z - TextSize.x, TextSize.y-TextSize.w);
 		if ((m_Flag&NoAutoWidthSize) == 0) m_Size.z = m_TextSize.x;
 		if ((m_Flag&NoAutoHeightSize) == 0) m_Size.w = m_TextSize.y;
@@ -169,7 +131,7 @@ LWEUIMaterial *LWEUILabel::GetMaterial(void) {
 	return m_Material;
 }
 
-const LWText &LWEUILabel::GetText(void) const {
+const LWUTF8 &LWEUILabel::GetText(void) const {
 	return m_Text;
 }
 
@@ -177,10 +139,10 @@ float LWEUILabel::GetFontScale(void) const {
 	return m_FontScale;
 }
 
-LWEUILabel::LWEUILabel(const LWText &Text, LWFont *Font, LWAllocator &Allocator, LWEUIMaterial *Material, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : LWEUI(Position, Size, Flag), m_Text(LWText(Text.GetCharacters(), Allocator)), m_Font(Font), m_Material(Material), m_FontScale(1.0f) {
+LWEUILabel::LWEUILabel(const LWUTF8Iterator &Text, LWFont *Font, LWAllocator &Allocator, LWEUIMaterial *Material, const LWVector4f &Position, const LWVector4f &Size, uint64_t Flag) : LWEUI(Position, Size, Flag), m_Text(Text, Allocator), m_Font(Font), m_Material(Material) {
 	SetFont(Font);
 }
 
-LWEUILabel::LWEUILabel() : LWEUI(LWVector4f(), LWVector4f(), 0), m_Font(nullptr), m_Material(nullptr), m_FontScale(1.0f), m_UnderHang(0.0f){}
+LWEUILabel::LWEUILabel() : LWEUI(LWVector4f(), LWVector4f(), 0) {}
 
 LWEUILabel::~LWEUILabel() {}

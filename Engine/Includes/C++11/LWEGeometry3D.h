@@ -15,19 +15,23 @@ bool LWERayAABBIntersect(const LWVector3<Type> &RayStart, const LWVector3<Type> 
 	LWVector3<Type> e = LWVector3<Type>((Type)std::numeric_limits<float>::epsilon());
 	//Use float's e instead of double as double is too precise.
 	LWVector3<Type> Dir = RayEnd - RayStart;
-	Dir = Dir.Abs().Blend_Less(e, e);
+	Dir = Dir.Abs().Blend_Less(e, e)*Dir.Sign();
 	LWVector3<Type> iDir = (Type)1 / Dir;
-
 	LWVector3<Type> MinBox = (AABBMin - RayStart) * iDir;
 	LWVector3<Type> MaxBox = (AABBMax - RayStart) * iDir;
 
-	Type tmin = MinBox.Min(MaxBox).Max();
-	Type tmax = MaxBox.Max(MinBox).Min();
+	Type tmin = (MinBox.Min(MaxBox)).Max();
+	Type tmax = (MinBox.Max(MaxBox)).Min();
 	if (Min) *Min = tmin;
 	if (Max) *Max = tmax;
 	if (tmax < 0) return false;
 	if (tmin > tmax) return false;
 	return true;
+}
+
+template<class Type>
+bool LWEPointInsideAABB(const LWVector3<Type> &MinBounds, const LWVector3<Type> &MaxBounds, const LWVector3<Type> &Pnt) {
+	return Pnt.x >= MinBounds.x && Pnt.x <= MaxBounds.x && Pnt.y >= MinBounds.y && Pnt.y <= MaxBounds.y && Pnt.z >= MinBounds.z && Pnt.z <= MaxBounds.z;
 }
 	
 template<class Type>
@@ -126,9 +130,9 @@ bool LWEPlanePlanePlaneIntersect(const LWVector4<Type> &aPlane, const LWVector4<
 	LWVector3<Type> tPnt;
 	LWVector3<Type> tDir;
 	Type t;
-	if (!PlanePlaneIntersect(aPlane, bPlane, &tPnt, &tDir)) return false;
-	if (!RayPlaneIntersect(tPnt, tDir, cPlane, &t)) return false;
-	if (IntersectPoint) *IntersectPoint = tPnt - tDir * t;
+	if (!LWEPlanePlaneIntersect(aPlane, bPlane, &tPnt, &tDir)) return false;
+	if (!LWERayPlaneIntersect(tPnt, tDir, cPlane, &t)) return false;
+	if (IntersectPoint) *IntersectPoint = tPnt + tDir * t;
 	return true;
 }
 
@@ -279,6 +283,29 @@ bool LWESphereInFrustum(const LWVector3<Type> &Position, Type Radius, const LWVe
 	Type d5 = Frustum[5].Dot(P);
 	Type m = std::min<Type>(std::min<Type>(std::min<Type>(d0, d1), std::min<Type>(d2, d3)), std::min<Type>(d4, d5));
 	return m >= -Radius;
+}
+
+
+/*!< \brief returns true if the aabb is inside/intersecting the frustum. */
+template<class Type>
+bool LWEAABBInFrustum(const LWVector4<Type> &AABBMin, const LWVector4<Type> &AABBMax, const LWVector4<Type> &FrustumPosition, const LWVector4<Type> *Frustum) {
+	LWVector4<Type> Min = (AABBMin - FrustumPosition).AAAB(LWVector4<Type>((Type)1));
+	LWVector4<Type> Max = (AABBMax - FrustumPosition).AAAB(LWVector4<Type>((Type)1));
+	LWSVector4<Type> Table[8] = { //LUT of all possible Min/Max mix's.
+		Min,
+		Min.AABB(Max),
+		Min.ABAB(Max),
+		Min.ABBB(Max),
+		Min.BAAB(Max),
+		Min.BABB(Max),
+		Min.BBAB(Max),
+		Max };
+	for (uint32_t i = 0; i < 6; i++) {
+		uint32_t LUTIdx = (Frustum[i].x > (Type)0) << 2 | (Frustum[i].y > (Type)0) << 1 | (Frustum[i].z > (Type)0);
+		if (Frustum[i].Dot(Table[LUTIdx]) < (Type)0) return false; //Outside
+		if (Frustum[i].Dot(Table[(~LUTIdx) & 0x7]) <= (Type)0) return true; //Intersection
+	}
+	return true; //All inside.
 }
 
 /*!< \brief returns true if the aabb is inside the frustum, this function turns the aabb into the largest sphere, which will produce some incorrect results. */

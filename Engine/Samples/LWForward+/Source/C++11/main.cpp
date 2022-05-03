@@ -3,6 +3,9 @@
 #include <LWPlatform/LWThread.h>
 #include <LWPlatform/LWApplication.h>
 #include <LWCore/LWTimer.h>
+#include <LWCore/LWLogger.h>
+
+LWLOG_DEFAULT
 
 void UpdateT(LWThread *T) {
 	App *A = (App*)T->GetUserData();
@@ -11,9 +14,10 @@ void UpdateT(LWThread *T) {
 }
 
 
-int LWMain(int argc, char **argv) {
+int LWMain(int argc, LWUTF8Iterator *argv) {
 	LWAllocator_Default DefAlloc;
-	App *A = DefAlloc.Allocate<App>(nullptr, DefAlloc);
+
+	App *A = DefAlloc.Create<App>(LWUTF8Iterator(), DefAlloc);
 	LWThread UThread(UpdateT, A);
 	while (!A->isTerminate()) {
 		uint64_t Current = LWTimer::GetCurrent();

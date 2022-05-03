@@ -1,13 +1,21 @@
 #include "LWVideo/LWFrameBuffer.h"
+#include <cstdarg>
 
-LWFrameBuffer &LWFrameBuffer::SetAttachment(uint32_t AttachmentID, LWTexture *Texture, uint32_t Layer, uint32_t Mipmap){
-	m_Attachments[AttachmentID] = { Texture, Layer, Mipmap, 0 };
+//LWFrameBuffer
+LWFrameBuffer &LWFrameBuffer::SetAttachment(uint32_t AttachmentID, LWTexture *Texture, uint32_t Layer, uint32_t Mipmap, void *UserData){
+	m_Attachments[AttachmentID] = { Texture, Layer, Mipmap, 0, UserData };
 	m_Flag |= LWFrameBuffer::Dirty;
 	return *this;
 }
 
-LWFrameBuffer &LWFrameBuffer::SetCubeAttachment(uint32_t AttachmentID, LWTexture *Texture, uint32_t Face, uint32_t Layer, uint32_t Mipmap) {
-	m_Attachments[AttachmentID] = { Texture, Layer, Mipmap, Face };
+LWFrameBuffer &LWFrameBuffer::SetCubeAttachment(uint32_t AttachmentID, LWTexture *Texture, uint32_t Face, uint32_t Layer, uint32_t Mipmap, void *UserData) {
+	m_Attachments[AttachmentID] = { Texture, Layer, Mipmap, Face, UserData };
+	m_Flag |= LWFrameBuffer::Dirty;
+	return *this;
+}
+
+LWFrameBuffer &LWFrameBuffer::ClearAttachments(void) {
+	for (uint32_t i = 0; i < LWFrameBuffer::Count; i++) m_Attachments[i].m_Source = nullptr;
 	m_Flag |= LWFrameBuffer::Dirty;
 	return *this;
 }

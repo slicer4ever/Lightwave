@@ -20,6 +20,27 @@
 /*!< \brief decodes an encoded floating point number with a specefic range back to a floating point value. (i.e: LWDECODE_FLOAT(50, LW_2PI, 100) would result in LW_PI value.) */
 #define LWDECODE_FLOAT(Value, Range, N) (std::min<float>((((Value)/(float)(N))*(Range)), (Range)))
 
+/*!< \brief circular rotate's value left by n Bits. */
+template<class Type>
+constexpr Type LWRotateLeft(Type Value, Type n) {
+	return (Value << n) | (Value >> (sizeof(Type) * 8 - n));
+}
+
+/*!< \brief circular rotate's value right by n bits. */
+template<class Type>
+constexpr Type LWRotateRight(Type Value, Type n) {
+	return (Value >> n) | (Value << (sizeof(Type) * 8 - n));
+}
+
+/*!< \brief convert's a HSL+Alpha color to RGB+Alpha value. */
+LWVector4f LWHSLAtoRGBA(const LWVector4f &HSLA);
+
+/*!< \brief convert's a RGB+Alpha color to HSL+Alpha value. */
+LWVector4f LWRGBAtoHSLA(const LWVector4f &RGBA);
+
+/*!< \brief interpolate's HSL color from Src to Dst, where p=0 is full Source, and p=1 is full Dst, alpha is linearly interpolated as is. */
+LWVector4f LWHSLAInterpolate(const LWVector4f &Src, const LWVector4f &Dst, float p);
+
 /*!< \brief returns v if it is already a 2n number, or the next 2n number. */
 uint8_t LWNext2N(uint8_t v);
 

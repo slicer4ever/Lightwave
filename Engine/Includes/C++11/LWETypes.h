@@ -8,6 +8,14 @@ class LWEAssetManager;
 
 class LWEUIManager;
 
+class LWERenderer;
+
+class LWERenderFrame;
+
+class LWEMesh;
+
+class LWERenderFrame;
+
 class LWEUI;
 
 class LWEUILabel;

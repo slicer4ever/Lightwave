@@ -1,17 +1,18 @@
 #include "LWPlatform/LWWindow.h"
 #include "LWPlatform/LWInputDevice.h"
+#include "LWCore/LWAllocator.h"
 #include <ShellScalingApi.h>
 #include <LWCore/LWTimer.h>
 #include <iostream>
 
-uint32_t LWWindow::MakeDialog(const LWText &Text, const LWText &Header, uint32_t DialogFlags){
+uint32_t LWWindow::MakeDialog(const LWUTF8Iterator &Text, const LWUTF8Iterator &Header, uint32_t DialogFlags){
 	uint32_t DFlag = MB_ICONINFORMATION;
 	if (DialogFlags&DialogCancel){
 		if (DialogFlags&DialogOK) DFlag |= MB_OKCANCEL;
 		if (DFlag&(DialogYES | DialogNo)) DFlag |= MB_YESNOCANCEL;
 	}else if (DialogFlags&DialogOK) DFlag |= MB_OK;
 	else if (DialogFlags&(DialogYES | DialogNo)) DFlag |= MB_YESNO;
-	int32_t Result = MessageBox(nullptr, (const char*)Text.GetCharacters(), (const char*)Header.GetCharacters(), DFlag);
+	int32_t Result = MessageBox(nullptr, *Text.c_str<256>(), *Header.c_str<256>(), DFlag);
 	if      (Result == IDCANCEL) return DialogCancel;
 	else if (Result == IDOK)     return DialogOK;
 	else if (Result == IDYES)    return DialogYES;
@@ -19,23 +20,22 @@ uint32_t LWWindow::MakeDialog(const LWText &Text, const LWText &Header, uint32_t
 	return 0;
 }
 
-bool LWWindow::MakeSaveFileDialog(const LWText &Filter, char *Buffer, uint32_t BufferLen) {
-	COMDLG_FILTERSPEC Filters[32];
+bool LWWindow::MakeSaveFileDialog(const LWUTF8Iterator &FilterText, char8_t *Buffer, uint32_t BufferLen) {
+	const uint32_t MaxFilters = 32;
+	const uint32_t WBufferLen = 512;
+	COMDLG_FILTERSPEC Filters[MaxFilters];
+	LWUTF8Iterator FilterList[MaxFilters*2];
 	uint32_t FilterCnt = 0;
-	uint16_t WBuffer[256];
+	char16_t WBuffer[WBufferLen];
 	uint32_t o = 0;
 	FILEOPENDIALOGOPTIONS Options = 0;
 	IShellItem *Result;
-	for (const uint8_t *C = LWText::FirstCharacter(Filter.GetCharacters()); C;) {
-		uint32_t ALen = LWText::MakeUTF8To16(C, WBuffer + o, sizeof(WBuffer) / sizeof(uint16_t) - o);
-		C = LWText::FirstCharacter(C + ALen + 1);
-		uint32_t BLen = LWText::MakeUTF8To16(C, WBuffer + o + ALen + 1, sizeof(WBuffer) / sizeof(uint16_t) - (o + ALen + 1));
-		C = LWText::FirstCharacter(C + BLen + 1);
-		Filters[FilterCnt].pszSpec = (const wchar_t*)WBuffer + o;
-		Filters[FilterCnt].pszName = (const wchar_t*)WBuffer + (o + ALen + 1);
-		FilterCnt++;
-		if (FilterCnt == 32) break;
-		o += BLen + ALen + 2;
+	FilterCnt = std::min<uint32_t>(FilterText.SplitToken(FilterList, MaxFilters * 2, ':')/2, MaxFilters);
+	for (uint32_t i = 0; i < FilterCnt; i++) {
+		Filters[i].pszSpec = (const wchar_t*)WBuffer + o;
+		o += FilterList[i * 2 + 0].MakeUTF<char16_t>(WBuffer + o, WBufferLen - o);
+		Filters[i].pszName = (const wchar_t*)WBuffer + o;
+		o += FilterList[i * 2 + 1].MakeUTF<char16_t>(WBuffer + o, WBufferLen - o);
 	}
 	IFileSaveDialog *Dialog;
 	if (FAILED(CoCreateInstance(CLSID_FileSaveDialog, nullptr, CLSCTX_ALL, IID_PPV_ARGS(&Dialog)))) {
@@ -50,31 +50,27 @@ bool LWWindow::MakeSaveFileDialog(const LWText &Filter, char *Buffer, uint32_t B
 	if (!Result) return false;
 	PWSTR ResultStr;
 	Result->GetDisplayName(SIGDN_FILESYSPATH, &ResultStr);
+	if (ResultStr) LWUTF16Iterator((char16_t*)ResultStr).MakeUTF<char8_t>(Buffer, BufferLen);
 	Result->Release();
-	if (!ResultStr) return false;
-	LWText::MakeUTF16To8((uint16_t*)ResultStr, (uint8_t*)Buffer, BufferLen);
-	return true;
+	return ResultStr != nullptr;
 }
 
-bool LWWindow::MakeLoadFileDialog(const LWText &Filter, char *Buffer, uint32_t BufferLen) {
+bool LWWindow::MakeLoadFileDialog(const LWUTF8Iterator &FilterText, char8_t *Buffer, uint32_t BufferLen) {
 	const uint32_t MaxFilters = 32;
-	const uint32_t WBufferSize = 256;
+	const uint32_t WBufferLen = 512;
 	COMDLG_FILTERSPEC Filters[MaxFilters];
+	LWUTF8Iterator FilterList[MaxFilters * 2];
 	uint32_t FilterCnt = 0;
-	uint16_t WBuffer[WBufferSize];
+	char16_t WBuffer[WBufferLen];
 	uint32_t o = 0;
 	FILEOPENDIALOGOPTIONS Options = 0;
 	IShellItem *Result;
-
-	for (const uint8_t *C = LWText::FirstCharacter(Filter.GetCharacters()); C && FilterCnt<MaxFilters;) {
-		uint32_t ALen = LWText::MakeUTF8To16(C, WBuffer + o, WBufferSize - o);
-		C = LWText::FirstCharacter(C + ALen + 1);
-		uint32_t BLen = LWText::MakeUTF8To16(C, WBuffer + o + ALen+1, WBufferSize - (o+ALen+1));
-		C = LWText::FirstCharacter(C + BLen + 1);
-		Filters[FilterCnt].pszSpec = (const wchar_t*)WBuffer + o;
-		Filters[FilterCnt].pszName = (const wchar_t*)WBuffer + (o + ALen + 1);
-		FilterCnt++;
-		o += BLen + ALen+2;
+	FilterCnt = std::min<uint32_t>(FilterText.SplitToken(FilterList, MaxFilters * 2, ':') / 2, MaxFilters);
+	for (uint32_t i = 0; i < FilterCnt; i++) {
+		Filters[i].pszSpec = (const wchar_t*)WBuffer + o;
+		o += FilterList[i * 2 + 0].MakeUTF<char16_t>(WBuffer + o, WBufferLen - o);
+		Filters[i].pszName = (const wchar_t*)WBuffer + o;
+		o += FilterList[i * 2 + 1].MakeUTF<char16_t>(WBuffer + o, WBufferLen - o);
 	}
 	IFileOpenDialog *Dialog;
 	CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL, IID_IFileOpenDialog, (void**)&Dialog);
@@ -88,31 +84,28 @@ bool LWWindow::MakeLoadFileDialog(const LWText &Filter, char *Buffer, uint32_t B
 	Dialog->GetResult(&Result);
 	PWSTR ResultStr;
 	Result->GetDisplayName(SIGDN_FILESYSPATH, &ResultStr);
-	if(ResultStr) LWText::MakeUTF16To8((uint16_t*)ResultStr, (uint8_t*)Buffer, BufferLen);
+	if (ResultStr) LWUTF16Iterator((char16_t*)ResultStr).MakeUTF<char8_t>(Buffer, BufferLen);
 	Result->Release();
 	return ResultStr!=nullptr;
 }
 
 
-uint32_t LWWindow::MakeLoadFileMultipleDialog(const LWText &Filter, char **Bufer, uint32_t BufferLen, uint32_t BufferCount) {
+uint32_t LWWindow::MakeLoadFileMultipleDialog(const LWUTF8Iterator &FilterText, char8_t **Buffer, uint32_t BufferLen, uint32_t BufferCount) {
 	const uint32_t MaxFilters = 32;
-	const uint32_t WBufferSize = 256;
+	const uint32_t WBufferLen = 512;
 	COMDLG_FILTERSPEC Filters[MaxFilters];
+	LWUTF8Iterator FilterList[MaxFilters * 2];
 	uint32_t FilterCnt = 0;
-	uint16_t WBuffer[WBufferSize];
+	char16_t WBuffer[WBufferLen];
 	uint32_t o = 0;
 	FILEOPENDIALOGOPTIONS Options = 0;
 	IShellItemArray *Result;
-
-	for (const uint8_t *C = LWText::FirstCharacter(Filter.GetCharacters()); C && FilterCnt < MaxFilters;) {
-		uint32_t ALen = LWText::MakeUTF8To16(C, WBuffer + o, WBufferSize - o);
-		C = LWText::FirstCharacter(C + ALen + 1);
-		uint32_t BLen = LWText::MakeUTF8To16(C, WBuffer + o + ALen + 1, WBufferSize - (o + ALen + 1));
-		C = LWText::FirstCharacter(C + BLen + 1);
-		Filters[FilterCnt].pszSpec = (const wchar_t*)WBuffer + o;
-		Filters[FilterCnt].pszName = (const wchar_t*)WBuffer + (o + ALen + 1);
-		FilterCnt++;
-		o += BLen + ALen + 2;
+	FilterCnt = std::min<uint32_t>(FilterText.SplitToken(FilterList, MaxFilters * 2, ':') / 2, MaxFilters);
+	for (uint32_t i = 0; i < FilterCnt; i++) {
+		Filters[i].pszSpec = (const wchar_t*)WBuffer + o;
+		o += FilterList[i * 2 + 0].MakeUTF<char16_t>(WBuffer + o, WBufferLen - o);
+		Filters[i].pszName = (const wchar_t*)WBuffer + o;
+		o += FilterList[i * 2 + 1].MakeUTF<char16_t>(WBuffer + o, WBufferLen - o);
 	}
 	IFileOpenDialog *Dialog;
 	CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL, IID_IFileOpenDialog, (void**)&Dialog);
@@ -132,53 +125,42 @@ uint32_t LWWindow::MakeLoadFileMultipleDialog(const LWText &Filter, char **Bufer
 		Result->GetItemAt(i, &pItem);
 		PWSTR ResultStr = nullptr;
 		pItem->GetDisplayName(SIGDN_FILESYSPATH, &ResultStr);
-		if (ResultStr) LWText::MakeUTF16To8((uint16_t*)ResultStr, (uint8_t*)Bufer[i], BufferLen);
+		if (ResultStr) LWUTF16Iterator((char16_t*)ResultStr).MakeUTF<char8_t>(Buffer[i], BufferLen);
 		pItem->Release();
 	}
 	Result->Release();
 	return Cnt;
 }
 
-bool LWWindow::WriteClipboardText(const LWText &Text) {
+bool LWWindow::WriteClipboardText(const LWUTF8Iterator &Text) {
 	if (!OpenClipboard(nullptr)) return false;
 	if (!EmptyClipboard()) return false;
-
-	uint32_t Len = Text.GetLength()+1;
-	HGLOBAL cMem = GlobalAlloc(GMEM_MOVEABLE, Len*sizeof(uint16_t));
-	uint32_t Res = LWText::MakeUTF8To16(Text.GetCharacters(), (uint16_t*)GlobalLock(cMem), Len);
-
-	GlobalUnlock(cMem);
 	
+	uint32_t Len16 = Text.MakeUTF<char16_t>(nullptr, 0);
+	HGLOBAL cMem = GlobalAlloc(GMEM_MOVEABLE, Len16 * sizeof(char16_t));
+	char16_t *Mem = (char16_t*)GlobalLock(cMem);
+	if (Text.MakeUTF<char16_t>(Mem, Len16) != Len16) return false;
+	GlobalUnlock(cMem);
 	if (!SetClipboardData(CF_UNICODETEXT, cMem)) return false;
 	CloseClipboard();
 	return true;
 }
 
-uint32_t LWWindow::ReadClipboardText(char *Buffer, uint32_t BufferLen) {
+uint32_t LWWindow::ReadClipboardText(char8_t *Buffer, uint32_t BufferLen) {
 	if (!OpenClipboard(nullptr)) return 0;
 	HANDLE Res = GetClipboardData(CF_UNICODETEXT);
 	if (!Res) return 0;
-	if (Buffer) *Buffer = '\0';
-	const uint16_t *Data = (const uint16_t*)GlobalLock(Res);
-	uint32_t Len = LWText::MakeUTF16To8(Data, (uint8_t*)Buffer, BufferLen);
+	const char16_t *Data = (const char16_t*)GlobalLock(Res);
+	uint32_t Len = LWUTF16Iterator(Data).MakeUTF<char8_t>(Buffer, BufferLen);
 	GlobalUnlock(Res);
 	CloseClipboard();
 	return Len;
 }
 
-LWWindow &LWWindow::SetTitle(const LWText &Title){
-	m_Title.Set(Title.GetCharacters());
-	SetWindowText(m_Context.m_WND, (const char*)Title.GetCharacters());
+LWWindow &LWWindow::SetTitle(const LWUTF8Iterator &Title){
+	m_Title = Title;
+	SetWindowText(m_Context.m_WND, *Title.c_str<256>());
 	return *this;
-}
-
-LWWindow &LWWindow::SetTitlef(const char *Fmt, ...) {
-	char Buffer[256];
-	va_list lst;
-	va_start(lst, Fmt);
-	vsnprintf(Buffer, sizeof(Buffer), Fmt, lst);
-	va_end(lst);
-	return SetTitle(Buffer);
 }
 
 LWWindow &LWWindow::SetPosition(const LWVector2i &Position){
@@ -187,6 +169,7 @@ LWWindow &LWWindow::SetPosition(const LWVector2i &Position){
 	RECT wRect; //Window rect.
 	GetClientRect(m_Context.m_WND, &cRect);
 	GetWindowRect(m_Context.m_WND, &wRect);
+
 	MoveWindow(m_Context.m_WND, wRect.left + (Position.x - m_Position.x), wRect.top + (Position.y - m_Position.y) , m_Size.x + (wRect.right - wRect.left) - cRect.right, m_Size.y + (wRect.bottom - wRect.top) - cRect.bottom, false);
 	
 	m_Position = Position;
@@ -289,7 +272,7 @@ LWWindow &LWWindow::SetKeyboardEditRange(uint32_t , uint32_t ){
 	return *this;
 }
 
-LWWindow &LWWindow::SetKeyboardText(const char *) {
+LWWindow &LWWindow::SetKeyboardText(const LWUTF8Iterator &) {
 	return *this;
 }
 
@@ -340,8 +323,11 @@ bool LWWindow::ProcessWindowMessage(uint32_t Message, void *MessageParam, uint64
 		RECT wRect;
 		GetClientRect(m_Context.m_WND, &cRect);
 		GetWindowRect(m_Context.m_WND, &wRect);
+		int32_t BorderSize = ((wRect.right - wRect.left) - (cRect.right)) / 2;
+		int32_t TitleSize = (wRect.bottom - wRect.top) - cRect.bottom - BorderSize;
 		LWVector2i NewSize = LWVector2i(cRect.right, cRect.bottom);
-		LWVector2i NewPos = LWVector2i(wRect.left, wRect.top);
+		LWVector2i NewPos = LWVector2i(wRect.left + BorderSize, wRect.top + TitleSize);
+
 		if (m_Size != NewSize) m_Flag |= SizeChanged;
 		if (m_Position != NewPos) m_Flag |= PosChanged;
 		m_Size = NewSize;
@@ -402,11 +388,11 @@ LWGamePad *LWWindow::GetActiveGamepadDevice(void) {
 	return m_ActiveGamepad;
 }
 
-const LWText &LWWindow::GetTitle(void) const{
+const LWUTF8 &LWWindow::GetTitle(void) const{
 	return m_Title;
 }
 
-const LWText &LWWindow::GetName(void) const{
+const LWUTF8 &LWWindow::GetName(void) const{
 	return m_Name;
 }
 
@@ -470,11 +456,15 @@ bool LWWindow::isVisible(void) const {
 	return (m_Flag&Visible) != 0;
 }
 
+bool LWWindow::DidError(void) const {
+	return (m_Flag & Error) != 0;
+}
+
 bool LWWindow::isVirtualKeyboardPresent(void) const {
 	return (m_Flag&KeyboardPresent) != 0;
 }
 
-LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocator, uint32_t Flag, const LWVector2i &Position, const LWVector2i &Size) : m_Title(LWText(Title.GetCharacters(), Allocator)), m_Name(LWText(Name.GetCharacters(), Allocator)), m_Allocator(&Allocator), m_FirstDevice(nullptr), m_Position(Position), m_Size(Size), m_Flag(Flag){
+LWWindow::LWWindow(const LWUTF8Iterator &Title, const LWUTF8Iterator &Name, LWAllocator &Allocator, uint32_t Flag, const LWVector2i &Position, const LWVector2i &Size) : m_Title(Title, Allocator), m_Name(Name, Allocator), m_Allocator(&Allocator), m_FirstDevice(nullptr), m_Position(Position), m_Size(Size), m_Flag(Flag){
 	m_MouseDevice = nullptr;
 	m_KeyboardDevice = nullptr;
 	m_TouchDevice = nullptr;
@@ -492,15 +482,15 @@ LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocat
 		if (Wnd && Wnd->ProcessWindowMessage(m, &M, LWTimer::GetCurrent())) return true;
 		return DefWindowProc(h, m, w, l);
 	};
-	WNDCLASS WndClass = { CS_HREDRAW | CS_VREDRAW | CS_OWNDC, WndCallBack, 0, 0, m_Context.m_Instance, LoadIcon(nullptr, IDI_WINLOGO), LoadCursor(nullptr, IDC_ARROW), nullptr, nullptr, (const char*)m_Name.GetCharacters() };
+	WNDCLASS WndClass = { CS_HREDRAW | CS_VREDRAW | CS_OWNDC, WndCallBack, 0, 0, m_Context.m_Instance, LoadIcon(nullptr, IDI_WINLOGO), LoadCursor(nullptr, IDC_ARROW), nullptr, nullptr, m_Name.c_str() };
 	uint32_t BorderFlag = (m_Flag&Borderless)==0 ? WS_OVERLAPPEDWINDOW : WS_POPUP;
 	uint32_t BorderFlagEx = (m_Flag&Borderless) == 0 ? (WS_EX_APPWINDOW | WS_EX_WINDOWEDGE) : WS_EX_APPWINDOW;
 	SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_SYSTEM_AWARE);
 	RECT WndRect = { m_Position.x, m_Position.y, m_Position.x + m_Size.x, m_Position.y + m_Size.y };
 
-	if (!RegisterClass(&WndClass)) MakeDialog(LWText("Error: 'RegisterClass'"), LWText("ERROR"), DialogOK);
-	else if (!AdjustWindowRectEx(&WndRect, BorderFlag, 0, BorderFlagEx)) MakeDialog(LWText("Error: 'AdjustWindowRectEx'"), LWText("ERROR"), DialogOK);
-	else if ((m_Context.m_WND = CreateWindowEx(BorderFlagEx, (const char*)m_Name.GetCharacters(), (const char*)m_Title.GetCharacters(), WS_CLIPSIBLINGS | WS_CLIPCHILDREN | BorderFlag, WndRect.left, WndRect.top, WndRect.right - WndRect.left, WndRect.bottom - WndRect.top, nullptr, nullptr, m_Context.m_Instance, nullptr)) == nullptr) MakeDialog(LWText("Error: 'CreateWindowEx'"), LWText("ERROR"), DialogOK);
+	if (!RegisterClass(&WndClass)) MakeDialog(u8"Error: 'RegisterClass'", u8"ERROR", DialogOK);
+	else if (!AdjustWindowRectEx(&WndRect, BorderFlag, 0, BorderFlagEx)) MakeDialog(u8"Error: 'AdjustWindowRectEx'", u8"ERROR", DialogOK);
+	else if ((m_Context.m_WND = CreateWindowEx(BorderFlagEx, m_Name.c_str(),  m_Title.c_str(), WS_CLIPSIBLINGS | WS_CLIPCHILDREN | BorderFlag, WndRect.left, WndRect.top, WndRect.right - WndRect.left, WndRect.bottom - WndRect.top, nullptr, nullptr, m_Context.m_Instance, nullptr)) == nullptr) MakeDialog(u8"Error: 'CreateWindowEx'", u8"ERROR", DialogOK);
 	else {
 		SetForegroundWindow(m_Context.m_WND);
 		SetFocus(m_Context.m_WND);
@@ -537,10 +527,10 @@ LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocat
 	}
 
 	if ((m_Flag&Error) == 0) {
-		if (Flag&MouseDevice) m_MouseDevice = AttachInputDevice(Allocator.Allocate<LWMouse>())->AsMouse();
-		if (Flag&KeyboardDevice) m_KeyboardDevice = AttachInputDevice(Allocator.Allocate<LWKeyboard>())->AsKeyboard();
+		if (Flag&MouseDevice) m_MouseDevice = AttachInputDevice(Allocator.Create<LWMouse>())->AsMouse();
+		if (Flag&KeyboardDevice) m_KeyboardDevice = AttachInputDevice(Allocator.Create<LWKeyboard>())->AsKeyboard();
 		if (Flag&GamepadDevice) {
-			for (uint32_t i = 0; i < MAXGAMEPADS; i++) m_GamepadDevice[i] = AttachInputDevice(Allocator.Allocate<LWGamePad>(i))->AsGamepad();
+			for (uint32_t i = 0; i < MAXGAMEPADS; i++) m_GamepadDevice[i] = AttachInputDevice(Allocator.Create<LWGamePad>(i))->AsGamepad();
 			m_ActiveGamepad = m_GamepadDevice[0];
 		}
 	}
@@ -548,7 +538,7 @@ LWWindow::LWWindow(const LWText &Title, const LWText &Name, LWAllocator &Allocat
 
 LWWindow::~LWWindow(){
 	if (m_Context.m_WND) DestroyWindow(m_Context.m_WND);
-	if (m_Context.m_Instance) UnregisterClass((const char*)m_Name.GetCharacters(), m_Context.m_Instance);
+	if (m_Context.m_Instance) UnregisterClass(m_Name.c_str(), m_Context.m_Instance);
 
 	if (m_MouseDevice) LWAllocator::Destroy(m_MouseDevice);
 	if (m_KeyboardDevice) LWAllocator::Destroy(m_KeyboardDevice);

@@ -1,7 +1,7 @@
-#include "LWCore/LWText.h"
 #include "LWCore/LWTimer.h"
 #include "LWCore/LWAllocator.h"
 #include "LWCore/LWAllocators/LWAllocator_Default.h"
+#include "LWCore/LWUnicode.h"
 #include "LWPlatform/LWPlatform.h"
 #include "LWNetwork/LWProtocolManager.h"
 #include "LWNetwork/LWProtocol.h"
@@ -50,32 +50,32 @@ bool TestListen(void) {
 	char BufferB[256];
 	char Errors[][32] = { "None", "Connect", "Address", "Socket", "Bind", "Listen", "GetSock", "GetPeer", "CtrlFlag" };
 	int32_t TelnetConnCount = 0;
-	std::cout << "Initiating TCP telnet test, open for " << TelnetConnCount << " Connections before moving on." << std::endl;
+	fmt::print("Initiating TCP telnet test, open for {} Connection before moving on.\n", TelnetConnCount);
 	LWSocket Listen;
 	int32_t Result = LWSocket::CreateSocket(Listen, 5051, LWSocket::Tcp | LWSocket::Listen, 0);
 	if (Result) {
-		std::cout << "Failed to create socket with error: " << Errors[Result] << " Network: " << LWProtocolManager::GetError() << std::endl;
+		fmt::print("Failed to create socket with error: {} Network error: {}\n", Errors[Result], LWProtocolManager::GetError());
 		return false;
 	}
 	LWSocket::MakeAddress(Listen.GetLocalIP(), Buffer, sizeof(Buffer));
-	std::cout << "Created socket at: " << Buffer << ":" << Listen.GetLocalPort() << " waiting for TCP connections." << std::endl;
+	fmt::print("Created socket at: {}:{} waiting for TCP connections.\n", Buffer, Listen.GetLocalPort());
 
 	for (int32_t i = 0; i < TelnetConnCount; i++) {
 		LWSocket Recv;
 		if (!Listen.Accept(Recv)) {
-			std::cout << "Failed to accept incoming connection." << std::endl;
+			fmt::print("Failed to accept incoming connection.\n");
 			continue;
 		}
 		LWSocket::MakeAddress(Recv.GetRemoteIP(), Buffer, sizeof(Buffer));
-		std::cout << "Accepted socket from: " << Buffer << ":" << Recv.GetRemotePort() << std::endl;
+		fmt::print("Accepted socket from: {}:{}\n", Buffer, Recv.GetRemotePort());
 		char ResponseA[] = "Thank you for contacting LWFramework network test, please say something.\n";
 		Recv.Send(ResponseA, sizeof(ResponseA));
 		Recv.Receive(Buffer, sizeof(Buffer) - 32);
 		snprintf(BufferB, sizeof(BufferB), "You said: %s", Buffer);
-		Recv.Send(BufferB, strlen(BufferB) + 1);
+		Recv.Send(BufferB, (uint32_t)strlen(BufferB) + 1);
 	}
 	Listen.Close();
-	std::cout << "finished TCP Telnet test!" << std::endl;
+	fmt::print("Finished TCP Telnet test.\n");
 	return true;
 }
 
@@ -85,50 +85,49 @@ bool TestUDP(void) {
 	char Errors[][32] = { "None", "Connect", "Address", "Socket", "Bind", "Listen", "GetSock", "GetPeer", "CtrlFlag" };
 	uint32_t RemoteIP = 0;
 	uint16_t RemotePort = 0;
-	
-	std::cout << "Beginning local UDP tests!" << std::endl;
+	fmt::print("Beginning local UDP tests.\n");
 	LWSocket UDPA;
 	LWSocket UDPB;
 	uint32_t Result = LWSocket::CreateSocket(UDPA, 0, 0);
 	if (Result) {
-		std::cout << "Failed to create UDPA socket with error: " << Errors[Result] << " Network: " << LWProtocolManager::GetError() << std::endl;
+		fmt::print("Failed to cread UDP.A socket with error: {} Network error: {}\n", Errors[Result], LWProtocolManager::GetError());
 		return false;
 	}
 	Result = LWSocket::CreateSocket(UDPB, 5052, LWSocket::Udp, 0);
 	if (Result) {
-		std::cout << "Failed to create UDPB socket with error: " << Errors[Result] << " Network: " << LWProtocolManager::GetError() << std::endl;
+		fmt::print("Failed to cread UDP.B socket with error: {} Network error: {}\n", Errors[Result], LWProtocolManager::GetError());
 		return false;
 	}
 	LWSocket::MakeAddress(UDPA.GetLocalIP(), Buffer, sizeof(Buffer));
-	std::cout << "UDPA created at: " << Buffer << ":" << UDPA.GetLocalPort() << std::endl;
+	fmt::print("UDP.A create at: {}:{}\n", Buffer, UDPA.GetLocalPort());
 	LWSocket::MakeAddress(UDPB.GetLocalIP(), Buffer, sizeof(Buffer));
-	std::cout << "UDPB created at: " << Buffer << ":" << UDPB.GetLocalPort() << std::endl;
-	std::cout << "Sending from UDPB to UDPA!" << std::endl;
+	fmt::print("UDP.B create at: {}:{}\n", Buffer, UDPB.GetLocalPort());
+	fmt::print("Sending from UDP.B to UDP.A.\n");
 	char RequestData[] = "Test Data 123ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 	UDPB.Send(RequestData, sizeof(RequestData), LWSocket::LocalIP, UDPA.GetLocalPort());
 	UDPA.Receive(Buffer, sizeof(Buffer), &RemoteIP, &RemotePort);
-	if (LWText(Buffer) != LWText(RequestData)) {
-		std::cout << "Error receiving data from UDPB: " << LWProtocolManager::GetError() << std::endl << "Data received: '" << Buffer << "'" << std::endl;
+	if(!LWUTF8I(Buffer).Compare(RequestData)){
+		fmt::print("Error receiving data from UDPB: {}\nData received: '{}'\n", LWProtocolManager::GetError(), Buffer);
 		return false;
 	}
 	LWSocket::MakeAddress(RemoteIP, BufferB, sizeof(BufferB));
-	std::cout << "Received Data: '" << Buffer << "' From: " << BufferB << ":" << RemotePort << std::endl;
-	std::cout << "Sending from UDPA to UDPB!" << std::endl;
-	UDPA.Send(Buffer, strlen(Buffer) + 1, RemoteIP, RemotePort);
+	fmt::print("Received data: '{}' From: {}:{}\n", Buffer, BufferB, RemotePort);
+	fmt::print("Sending from UDP.A to UDP.B.\n");
+	UDPA.Send(Buffer, (uint32_t)strlen(Buffer) + 1, RemoteIP, RemotePort);
 	Buffer[0] = '\0';//Clear our buffer.
 	UDPB.Receive(Buffer, sizeof(Buffer), &RemoteIP, &RemotePort);
-	if (LWText(Buffer) != LWText(RequestData)) {
-		std::cout << "Error receiving data from UDPA: " << LWProtocolManager::GetError() << std::endl << "Data received: '" << Buffer << "'" << std::endl;
+	if (!LWUTF8I(Buffer).Compare(RequestData)) {
+		fmt::print("Error receiving data from UDP.A: {}\nData received: '{}'\n", LWProtocolManager::GetError(), Buffer);
 		return false;
 	}
 	LWSocket::MakeAddress(RemoteIP, BufferB, sizeof(BufferB));
-	std::cout << "Received Data: '" << Buffer << "' From: " << BufferB << ":" << RemotePort << std::endl;
+	fmt::print("Received Data: '{}' From: {}:{}\n", Buffer, BufferB, RemotePort);
 	uint32_t Error = LWProtocolManager::GetError();
 	if (Error) {
-		std::cout << "Network error detected: " << Error << std::endl;
+		fmt::print("Network error dected: {}\n", Error);
 		return false;
 	}
-	std::cout << "Finished udp test successfully!" << std::endl;
+	fmt::print("Finished udp test successfully.\n");
 	return true;
 }
 
@@ -137,14 +136,14 @@ bool TestHTML(void) {
 	char Buffer[256];
 	char BufferB[256];
 	char Errors[][32] = { "None", "Connect", "Address", "Socket", "Bind", "Listen", "GetSock", "GetPeer", "CtrlFlag" };
-	char HostDomain[] = "google.com";
+	char8_t HostDomain[] = "google.com";
 	const uint32_t IPBufferMaxLen = 32;
 	uint32_t IPBuffer[IPBufferMaxLen];
-	std::cout << "Beginning simple HTTP request." << std::endl;
-	std::cout << "Looking up domain: " << HostDomain << std::endl;
-	uint32_t AddrResult = LWSocket::LookUpAddress(LWText(HostDomain), IPBuffer, IPBufferMaxLen, Buffer, sizeof(Buffer));
-	if (AddrResult == 0xFFFFFFFF) {
-		std::cout << "No results found, potential error: " << LWProtocolManager::GetError() << std::endl;
+	fmt::print("Beginning simple HTTP request.\n");
+	fmt::print("Looking up domain: {}\n", HostDomain);
+	uint32_t AddrResult = LWSocket::LookUpAddress(HostDomain, IPBuffer, IPBufferMaxLen, Buffer, sizeof(Buffer));
+	if (AddrResult == -1) {
+		fmt::print("No results found: {}\n", LWProtocolManager::GetError());
 		return false;
 	}
 	char *B = Buffer;
@@ -154,25 +153,25 @@ bool TestHTML(void) {
 		if (*B != '\0') B += strlen(B) + 2;
 	}
 	LWSocket HSock;
-	uint32_t Result = LWSocket::CreateSocket(HSock, LWText(HostDomain), 80, LWSocket::Tcp, 0);
+	uint32_t Result = LWSocket::CreateSocket(HSock, HostDomain, 80, LWSocket::Tcp, 0);
 	if (Result) {
-		std::cout << "Failed to create HTTP socket with error: " << Errors[Result] << " Network: " << LWProtocolManager::GetError() << std::endl;
+		fmt::print("Failed to create HTTP socket with error: {} Network error: {}\n", Errors[Result], LWProtocolManager::GetError());
 		return 0;
 	}
 	LWSocket::MakeAddress(HSock.GetLocalIP(), Buffer, sizeof(Buffer));
 	LWSocket::MakeAddress(HSock.GetRemoteIP(), BufferB, sizeof(BufferB));
-	std::cout << "Created HTTP Socket at: " << Buffer << ":" << HSock.GetLocalPort() << " To " << BufferB << ":" << HSock.GetRemotePort() << std::endl;
-	char HTTPREQDATA[] = "GET\n";
+	fmt::print("Created HTTP socket at: {}:{} To {}:{}\n", Buffer, HSock.GetLocalPort(), BufferB, HSock.GetRemotePort());
+	char HTTPREQDATA[] = "GET / HTTP 1.1\n\n";
 	HSock.Send(HTTPREQDATA, sizeof(HTTPREQDATA));
 	uint32_t ResLen = HSock.Receive(LargeBuffer, sizeof(LargeBuffer));
 	uint32_t Error = LWProtocolManager::GetError();
 	if (Error) {
-		std::cout << "Network error detected: " << Error << std::endl;
+		fmt::print("Network error detected: {}\n", Error);
 		return false;
 	}
 	ResLen = std::min<uint32_t>(ResLen, sizeof(LargeBuffer) - 1);
 	LargeBuffer[ResLen] = '\0';
-	std::cout << "Received Data:" << std::endl << LargeBuffer << std::endl;
+	fmt::print("Received Data: {}\n{}\n", ResLen, LargeBuffer);
 	return true;
 }
 
@@ -180,29 +179,29 @@ bool TestTelnet(void) {
 	uint32_t TelnetProtocolTime = 0; //30 seconds.
 	char Buffer[256];
 	char Errors[][32] = { "None", "Connect", "Address", "Socket", "Bind", "Listen", "GetSock", "GetPeer", "CtrlFlag" };
-	std::cout << "Beginning telnet concurrent protocol tests for " << TelnetProtocolTime << " seconds" << std::endl;
+	fmt::print("Beginning telnet concurrent protocol tests for {}s.\n", TelnetProtocolTime);
 	LWTelnetProtocol TelProto;
 	LWProtocolManager TelnetProtoManager;
 	TelnetProtoManager.RegisterProtocol(&TelProto, 0);
 	LWSocket Listen;
 	uint32_t Result = LWSocket::CreateSocket(Listen, 5051, LWSocket::Tcp | LWSocket::Listen, 0);
 	if (Result) {
-		std::cout << "Failed to create listening socket: " << Errors[Result] << " Network: " << LWProtocolManager::GetError() << std::endl;
+		fmt::print("Failed to create listening socket: {} Network error: {}\n", Errors[Result], LWProtocolManager::GetError());
 		return false;
 	}
 	LWSocket::MakeAddress(Listen.GetLocalIP(), Buffer, sizeof(Buffer));
-	std::cout << "Created listening socket at: " << Buffer << ":" << Listen.GetLocalPort() << std::endl;
+	fmt::print("Created listening socket at: {}:{}\n", Buffer, Listen.GetLocalPort());
 	TelnetProtoManager.PushSocket(Listen);
 	uint64_t Start = LWTimer::GetCurrent();
 	uint64_t Freq = LWTimer::GetResolution()*TelnetProtocolTime;
 	uint64_t SubFreq = LWTimer::GetResolution() * 5; //5 second interval;
 	while (LWTimer::GetCurrent() < Start + Freq) {
 		if (LWTimer::GetCurrent() > Start + SubFreq) {
-			std::cout << SubFreq / LWTimer::GetResolution() << " Seconds have elapsed." << std::endl;
+			fmt::print("{}s have elapsed.\n", SubFreq / LWTimer::GetResolution());
 			SubFreq += LWTimer::GetResolution() * 5;
 		}
 		if (!TelnetProtoManager.Poll(0)) {
-			std::cout << "Network error on poll: " << LWProtocolManager::GetError() << std::endl;
+			fmt::print("Network error on poll: {}\n", LWProtocolManager::GetError());
 			return false;
 		}
 	}
@@ -215,14 +214,14 @@ bool TestLWPacketManager(LWAllocator &Allocator) {
 
 	uint32_t ProtoManagerTime = 10; //10 second
 	auto Receive = [](LWPacket *Pack, LWPacketManager *) -> bool {
-		std::cout << "Received packet: " << Pack->GetType() << " ID: " << Pack->GetPacketID() << std::endl;
+		fmt::print("Received packet: {} ID: {}\n", Pack->GetType(), Pack->GetPacketID());
 		return false;
 	};
 
 	auto Send = [](LWPacket *Pack, LWPacketManager *Man) -> bool {
 		char Buf[1024];
 		char BufB[1024];
-		std::cout << "Sending packet: " << Pack->GetType() << " ID: " << Pack->GetPacketID() << std::endl;
+		fmt::print("Sending packet: {} ID: {}\n", Pack->GetType(), Pack->GetPacketID());
 		if (Pack->GetFlag()&LWPacket::Ack) {
 			LWPacket AckPack(Pack->GetPacketAckID(), nullptr, LWPacket::PacketAck, 0);
 			uint32_t Len = Man->SerializePacket(&AckPack, Buf, sizeof(Buf));
@@ -235,14 +234,14 @@ bool TestLWPacketManager(LWAllocator &Allocator) {
 		return true;
 	};
 
-	std::cout << "Beginning LWPacketManager tests!" << std::endl;
+	fmt::print("Testing LWPacket Manager.\n");
 	LWPacketManager Manager(1024, Allocator, Allocator, Receive, Send);
 	Manager.RegisterDeserialization(1, LWPacket::Deserialize);
-	LWPacket *Pack = Allocator.Allocate<LWPacket>(10, nullptr, 1, LWPacket::Ack);
+	LWPacket *Pack = Allocator.Create<LWPacket>(10, nullptr, 1, LWPacket::Ack);
 	uint32_t Len = Manager.SerializePacket(Pack, Buffer, sizeof(Buffer));
-	std::cout << "Serialized packet, len: " << Len << std::endl;
+	fmt::print("Serialized packet: {}\n", Len);
 	if (!Manager.ProcessRawData(nullptr, nullptr, Buffer, Len)) {
-		std::cout << "Error processing raw data packet!" << std::endl;
+		fmt::print("Error processing raw data packet.\n");
 	}
 	Manager.PushOutPacket(Pack);
 	uint64_t Start = LWTimer::GetCurrent();
@@ -251,27 +250,27 @@ bool TestLWPacketManager(LWAllocator &Allocator) {
 	while (LWTimer::GetCurrent() < Start + Freq) {
 		Manager.Update(LWTimer::GetCurrent(), LWTimer::GetResolution());
 		if (!Out) {
-			std::cout << "Waiting for any ack packets, only 1 send packet should appear after this line:" << std::endl;
+			fmt::print("Waiting for any ack packets, only 1 send packet should appear after this line:\n");
 			Out = true;
 		}
 	}
-	std::cout << "Finished LWPacketManager tests!" << std::endl;
+	fmt::print("Finished LWPacketManager tests.\n");
 	return true;
 }
 
-int LWMain(int, char **){
+int32_t LWMain(int32_t, LWUTF8Iterator *){
 	LWAllocator_Default Allocator;
-	std::cout << "Initiating Network test." << std::endl;
+	fmt::print("Initiating Network tests.\n");
 	if(!LWProtocolManager::InitateNetwork()){
-		std::cout << "Failed to initialize network." << std::endl;
+		fmt::print("Failed to initialize network.\n");
 		return 0;
 	}
-	if (!TestListen()) std::cout << "Failed Listener test." << std::endl;
-	if (!TestUDP()) std::cout << "Failed udp test." << std::endl;
-	if (!TestHTML()) std::cout << "Failed html test." << std::endl;
-	if (!TestTelnet()) std::cout << "Failed telnet test." << std::endl;
-	if (!TestLWPacketManager(Allocator)) std::cout << "Failed LWPacketManager test." << std::endl;
+	if (!TestListen()) fmt::print("Failed 'TestList'.\n");
+	else if (!TestUDP()) fmt::print("Failed 'TestUDP'.\n");
+	else if (!TestHTML()) fmt::print("Failed 'TestHTML'.\n");
+	else if (!TestTelnet()) fmt::print("Failed 'TestTelnet'.\n");
+	else if (!TestLWPacketManager(Allocator)) fmt::print("Failed 'TestLWPacketManager'.\n");
 	LWProtocolManager::TerminateNetwork();
-	std::cout << "Finished Network test!" << std::endl;
+	fmt::print("Finished Network tests.\n");
 	return 0;
 }

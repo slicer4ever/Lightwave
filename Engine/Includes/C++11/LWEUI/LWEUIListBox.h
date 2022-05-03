@@ -13,6 +13,15 @@ struct LWEUIListBoxItem {
 	LWEUIMaterial *m_OffMaterial;
 	LWEUIMaterial *m_OverMaterial;
 	LWEUIMaterial *m_DownMaterial;
+	LWEUIMaterial *m_FontMaterial;
+
+	LWUTF8Iterator GetName(void) const;
+
+	LWEUIMaterial *GetMaterial(bool isOver, bool isDown, LWEUIMaterial *DefOffMaterial, LWEUIMaterial *DefOverMaterial, LWEUIMaterial *DefDownMaterial);
+
+	LWEUIListBoxItem(const LWUTF8Iterator &Name, const LWVector2f &TextSize, float TextUnderHang = 0.0f, void *UserData = nullptr, LWEUIMaterial *OffMaterial = nullptr, LWEUIMaterial *OverMaterial = nullptr, LWEUIMaterial *DownMaterial = nullptr, LWEUIMaterial *FontMaterial = nullptr);
+
+	LWEUIListBoxItem() = default;
 };
 
 class LWEUIListBox : public LWEUI {
@@ -31,7 +40,7 @@ public:
 		  FontMaterial: Uses the color component of the material for what color to draw the text.
 		  FontScale: the scale to draw the text of each list item at.
 	*/
-	static LWEUIListBox *XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const char *ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
+	static LWEUIListBox *XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
 
 	virtual LWEUI &UpdateSelf(LWEUIManager &Manager, float Scale, const LWVector2f &ParentVisiblePos, const LWVector2f &ParentVisibleSize, LWVector2f &VisiblePos, LWVector2f &VisibleSize, uint64_t lCurrentTime);
 
@@ -39,9 +48,7 @@ public:
 
 	virtual void Destroy(void);
 
-	bool PushItem(const LWText &ItemName, void *UserData, LWEUIMaterial *OffMat = nullptr, LWEUIMaterial *OverMat = nullptr, LWEUIMaterial *DownMat = nullptr);
-
-	bool PushItemf(const char *Fmt, void *UserData, LWEUIMaterial *OffMat, LWEUIMaterial *OverMat, LWEUIMaterial *DownMat, ...);
+	bool PushItem(const LWUTF8Iterator &ItemName, void *UserData, LWEUIMaterial *OffMat = nullptr, LWEUIMaterial *OverMat = nullptr, LWEUIMaterial *DownMat = nullptr, LWEUIMaterial *FontMat = nullptr);
 
 	bool Clear(void);
 
@@ -102,20 +109,20 @@ public:
 	~LWEUIListBox();
 private:
 	LWEUIListBoxItem m_ItemList[LWELISTBOX_MAXITEMS];
-	LWEUIMaterial *m_BackgroundMaterial;
-	LWEUIMaterial *m_OffMaterial;
-	LWEUIMaterial *m_DownMaterial;
-	LWEUIMaterial *m_OverMaterial;
-	LWEUIMaterial *m_FontMaterial;
-	LWFont *m_Font;
-	uint32_t m_ItemCount;
-	uint32_t m_OverItem;
+	LWEUIMaterial *m_BackgroundMaterial = nullptr;
+	LWEUIMaterial *m_OffMaterial = nullptr;
+	LWEUIMaterial *m_DownMaterial = nullptr;
+	LWEUIMaterial *m_OverMaterial = nullptr;
+	LWEUIMaterial *m_FontMaterial = nullptr;
+	LWFont *m_Font = nullptr;
+	uint32_t m_ItemCount = 0;
+	uint32_t m_OverItem = -1;
 	float m_FontScale = 1.0f;
-	float m_MinimumBoxHeight;
-	float m_BorderSize;
-	float m_Scroll;
-	float m_InitScroll;
-	float m_ScrollAcceleration;
+	float m_MinimumBoxHeight = 0.0f;
+	float m_BorderSize = 0.0f;
+	float m_Scroll = 0.0f;
+	float m_InitScroll = 0.0f;
+	float m_ScrollAcceleration = 0.0f;
 };
 
 #endif

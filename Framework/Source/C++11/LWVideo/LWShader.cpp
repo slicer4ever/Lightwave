@@ -1,74 +1,181 @@
 #include "LWVideo/LWShader.h"
-#include "LWCore/LWText.h"
+#include "LWCore/LWUnicode.h"
 #include <cstdarg>
 
-
-LWShaderInput::LWShaderInput(const char *Name, uint32_t Type, uint32_t Length) : m_Type(Type), m_Length(Length) {
-	m_NameHash = LWText::MakeHash(Name);
+//LWShaderInput:
+LWShaderInput &LWShaderInput::SetType(uint32_t lType) {
+	m_Flag = LWBitFieldSet(TypeBits, m_Flag, lType);
+	return *this;
 }
 
-LWShaderInput::LWShaderInput(uint32_t NameHash, uint32_t Type, uint32_t Length) : m_NameHash(NameHash), m_Type(Type), m_Length(Length) {}
-
-uint32_t LWShaderResource::GetTypeID(void) {
-	return (m_Flag&TypeBits) >> TypeBitOffset;
+LWShaderInput &LWShaderInput::SetBindIndex(uint32_t lBindIndex) {
+	m_Flag = LWBitFieldSet(BindIndexBits, m_Flag, lBindIndex);
+	return *this;
 }
 
-uint32_t LWShaderResource::GetLength(void) {
-	return (m_Flag&LengthBits) >> LengthBitOffset;
+LWShaderInput &LWShaderInput::SetOffset(uint32_t lOffset) {
+	assert((lOffset % 4) == 0);
+	lOffset /= 4;
+	m_Flag = LWBitFieldSet(OffsetBits, m_Flag, lOffset);
+	return *this;
 }
 
-LWShaderResource::LWShaderResource(const char *Name, uint32_t Flag, uint32_t Type, uint32_t Length) : m_NameHash(LWText::MakeHash(Name)) {
-	m_Flag = Flag | (Type << TypeBitOffset) | (Length << LengthBitOffset);
+LWShaderInput &LWShaderInput::SetLength(uint32_t lLength) {
+	m_Flag = LWBitFieldSet(LengthBits, m_Flag, lLength);
+	return *this;
 }
 
-LWShaderResource::LWShaderResource(uint32_t NameHash, uint32_t Flag, uint32_t Type, uint32_t Length) : m_NameHash(NameHash) {
-	m_Flag = Flag | (Type << TypeBitOffset) | (Length << LengthBitOffset);
+LWShaderInput &LWShaderInput::SetInstanceFrequency(uint32_t lFrequency) {
+	m_Flag = LWBitFieldSet(InstanceFrequencyBits, m_Flag, lFrequency);
+	return *this;
 }
 
+uint32_t LWShaderInput::GetType(void) const {
+	return LWBitFieldGet(TypeBits, m_Flag);
+}
+
+uint32_t LWShaderInput::GetBindIndex(void) const {
+	return LWBitFieldGet(BindIndexBits, m_Flag);
+}
+
+uint32_t LWShaderInput::GetOffset(void) const {
+	return (uint32_t)LWBitFieldGet(OffsetBits, m_Flag)*4;
+}
+
+uint32_t LWShaderInput::GetLength(void) const {
+	return LWBitFieldGet(LengthBits, m_Flag);
+}
+
+uint32_t LWShaderInput::GetInstanceFrequency(void) const {
+	return LWBitFieldGet(InstanceFrequencyBits, m_Flag);
+}
+
+
+LWShaderInput::LWShaderInput(const LWUTF8Iterator &Name, uint32_t Type, uint32_t Length, uint32_t InstanceFreq) : m_NameHash(Name.Hash()), m_Flag((Type<<TypeBitsOffset) | (Length<<LengthBitsOffset) | (InstanceFreq << InstanceFrequencyBitsOffset)) {}
+
+LWShaderInput::LWShaderInput(uint32_t NameHash, uint32_t Type, uint32_t Length, uint32_t InstanceFreq) : m_NameHash(NameHash), m_Flag((Type<<TypeBitsOffset) | (Length<<LengthBitsOffset) | (InstanceFreq << InstanceFrequencyBitsOffset)) {}
+
+//LWShaderResource:
+LWShaderResource &LWShaderResource::SetStageBinding(uint32_t StageID, uint32_t Idx) {
+	uint32_t StageBits = VertexBindingBits << (StageID * BindingBitCount);
+	m_StageBindings = (m_StageBindings & ~StageBits) | (Idx << (StageID * BindingBitCount));
+	m_Flag |= (VertexStage << StageID);
+	return *this;
+}
+
+LWShaderResource &LWShaderResource::SetVertexStageBinding(uint32_t Idx) {
+	m_StageBindings = LWBitFieldSet(VertexBindingBits, m_StageBindings, Idx);
+	m_Flag |= VertexStage;
+	return *this;
+}
+
+LWShaderResource &LWShaderResource::SetComputeStageBinding(uint32_t Idx) {
+	m_StageBindings = LWBitFieldSet(ComputeBindingBits, m_StageBindings, Idx);
+	m_Flag |= ComputeStage;
+	return *this;
+}
+
+LWShaderResource &LWShaderResource::SetPixelStageBinding(uint32_t Idx) {
+	m_StageBindings = LWBitFieldSet(PixelBindingBits, m_StageBindings, Idx);
+	m_Flag |= PixelStage;
+	return *this;
+}
+
+LWShaderResource &LWShaderResource::SetGeometryStageBinding(uint32_t Idx) {
+	m_StageBindings = LWBitFieldSet(GeometryBindingBits, m_StageBindings, Idx);
+	m_Flag |= GeometryStage;
+	return *this;
+}
+
+uint32_t LWShaderResource::GetTypeID(void) const {
+	return LWBitFieldGet(TypeBits, m_Flag);
+}
+
+uint32_t LWShaderResource::GetLength(void) const {
+	return LWBitFieldGet(LengthBits, m_Flag);
+}
+
+uint32_t LWShaderResource::GetStageBinding(uint32_t StageID) const {
+	uint32_t StageBits = VertexBindingBits << (StageID * BindingBitCount);
+	return (m_StageBindings & StageBits) >> (StageID * BindingBitCount);
+}
+
+uint32_t LWShaderResource::GetVertexStageBinding(void) const {
+	return LWBitFieldGet(VertexBindingBits, m_StageBindings);
+}
+
+uint32_t LWShaderResource::GetComputeStageBinding(void) const {
+	return LWBitFieldGet(ComputeBindingBits, m_StageBindings);
+}
+
+uint32_t LWShaderResource::GetPixelStageBinding(void) const {
+	return LWBitFieldGet(PixelBindingBits, m_StageBindings);
+}
+
+uint32_t LWShaderResource::GetGeometryStageBinding(void) const {
+	return LWBitFieldGet(GeometryBindingBits, m_StageBindings);
+}
+
+bool LWShaderResource::HasStage(uint32_t StageID) const {
+	return (m_Flag & (VertexStage << StageID)) != 0;
+}
+
+bool LWShaderResource::hasVertexStage(void) const {
+	return (m_Flag & VertexStage) != 0;
+}
+
+bool LWShaderResource::hasComputeStage(void) const {
+	return (m_Flag & ComputeStage) != 0;
+}
+
+bool LWShaderResource::hasPixelStage(void) const {
+	return (m_Flag & PixelStage) != 0;
+}
+
+bool LWShaderResource::hasGeometryStage(void) const {
+	return (m_Flag & GeometryStage) != 0;
+}
+
+LWShaderResource::LWShaderResource(const LWUTF8Iterator &Name, uint32_t Type, uint32_t Length) : m_NameHash(Name.Hash()) {
+	m_Flag = (Type << TypeBitsOffset) | (Length << LengthBitsOffset);
+}
+
+LWShaderResource::LWShaderResource(uint32_t NameHash, uint32_t Type, uint32_t Length) : m_NameHash(NameHash) {
+	m_Flag = (Type << TypeBitsOffset) | (Length << LengthBitsOffset);
+}
+
+LWShaderResource::LWShaderResource(uint32_t NameHash, uint32_t Type, uint32_t Length, uint32_t StageID, uint32_t StageBindIdx) : m_NameHash(NameHash) {
+	m_Flag = (Type << TypeBitsOffset) | (Length << LengthBitsOffset);
+	SetStageBinding(StageID, StageBindIdx);
+}
+
+LWShaderResource::LWShaderResource(uint32_t NameHash, uint32_t Type, uint32_t Length, uint32_t StageBindIdx) : m_NameHash(NameHash), m_StageBindings(StageBindIdx) {
+	m_Flag = (Type << TypeBitsOffset) | (Length << LengthBitsOffset);
+}
+
+//LWShader:
 uint32_t LWShader::GenerateInputOffsets(uint32_t Count, LWShaderInput *InputMap) {
 	//	                           Float, UInt, Int, Double, Vec2, Vec3, Vec4, uvec2, uvec3, uvec4, iVec2, iVec3, iVec4, dVec2, dVec3, dVec4
 	const uint32_t TypeSizes[] = { 4,     4,    4,   8,      8,    12,   16,   8,     12,    16,    8,     12,    16,    16,    24,    32 };
 	uint32_t Offset = 0;
 	for (uint32_t i = 0; i < Count; i++) {
-		uint32_t Size = TypeSizes[InputMap[i].m_Type] * InputMap[i].m_Length;
+		uint32_t Size = TypeSizes[InputMap[i].GetType()] * InputMap[i].GetLength();
 		uint32_t Remain = (Offset % 16 == 0 ? 0 : 16 - (Offset % 16));
 		if (Size > Remain) Offset += Remain;
-		InputMap[i].m_Offset = Offset;
+		InputMap[i].SetOffset(Offset);
 		Offset += Size;
 	}
 	return Offset;
 }
 
-LWShader &LWShader::SetInputMap(uint32_t Count, ...) {
-	LWShaderInput InputList[MaxInputs];
-	va_list lst;
-	va_start(lst, Count);
-	for (uint32_t i = 0; i < Count; i++) {
-		const char *Name = va_arg(lst, const char*);
-		uint32_t Type = va_arg(lst, uint32_t);
-		uint32_t Length = va_arg(lst, uint32_t);
-		InputList[i] = LWShaderInput(Name, Type, Length);
-	}
-	return SetInputMap(Count, InputList);
-}
-
-LWShader &LWShader::SetInputMap(uint32_t Count, LWShaderInput *InputMap) {
-	GenerateInputOffsets(Count, InputMap);
+LWShader &LWShader::SetInputMap(uint32_t Count, const LWShaderInput *InputMap) {
 	std::copy(InputMap, InputMap + Count, m_InputMap);
+	GenerateInputOffsets(Count, m_InputMap);
 	m_InputCount = Count;
 	return *this;
 }
 
-LWShader &LWShader::SetResourceMap(uint32_t Count, ...) {
-	uint32_t NameHashs[MaxResources];
-	va_list lst;
-	va_start(lst, Count);
-	for (uint32_t i = 0; i < Count; i++) NameHashs[i] = LWText::MakeHash(va_arg(lst, const char*));
-	va_end(lst);
-	return SetResourceMap(Count, NameHashs);
-}
-
-LWShader &LWShader::SetResourceMap(uint32_t Count, uint32_t *NameHashs) {
+LWShader &LWShader::SetResourceMap(uint32_t Count, const uint32_t *NameHashs) {
 	for (uint32_t i = 0; i < Count; i++) {
 		m_ResourceMap[i].m_NameHash = NameHashs[i];
 	}
@@ -76,16 +183,7 @@ LWShader &LWShader::SetResourceMap(uint32_t Count, uint32_t *NameHashs) {
 	return *this;
 }
 
-LWShader &LWShader::SetBlockMap(uint32_t Count, ...) {
-	uint32_t NameHashs[MaxBlocks];
-	va_list lst;
-	va_start(lst, Count);
-	for (uint32_t i = 0; i < Count; i++) NameHashs[i] = LWText::MakeHash(va_arg(lst, const char*));
-	va_end(lst);
-	return SetBlockMap(Count, NameHashs);
-}
-
-LWShader &LWShader::SetBlockMap(uint32_t Count, uint32_t *NameHashs) {
+LWShader &LWShader::SetBlockMap(uint32_t Count, const uint32_t *NameHashs) {
 	for (uint32_t i = 0; i < Count; i++) {
 		m_BlockMap[i].m_NameHash = NameHashs[i];
 	}
@@ -111,6 +209,39 @@ const LWShaderResource *LWShader::GetBlockMap(void) const {
 
 const LWShaderResource *LWShader::GetResourceMap(void) const {
 	return m_ResourceMap;
+}
+
+const LWShaderInput *LWShader::FindInputMap(const LWUTF8Iterator &Name) const {
+	return FindInputMap(Name.Hash());
+}
+
+const LWShaderInput *LWShader::FindInputMap(uint32_t NameHash) const {
+	for (uint32_t i = 0; i < m_InputCount; i++) {
+		if (m_InputMap[i].m_NameHash == NameHash) return &m_InputMap[i];
+	}
+	return nullptr;
+}
+
+const LWShaderResource *LWShader::FindResourceMap(const LWUTF8Iterator &Name) const {
+	return FindResourceMap(Name.Hash());
+}
+
+const LWShaderResource *LWShader::FindResourceMap(uint32_t NameHash) const {
+	for (uint32_t i = 0; i < m_ResourceCount; i++) {
+		if (m_ResourceMap[i].m_NameHash == NameHash) return &m_ResourceMap[i];
+	}
+	return nullptr;
+}
+
+const LWShaderResource *LWShader::FindBlockMap(const LWUTF8Iterator &Name) const {
+	return FindBlockMap(Name.Hash());
+}
+
+const LWShaderResource *LWShader::FindBlockMap(uint32_t NameHash) const {
+	for (uint32_t i = 0; i < m_BlockCount; i++) {
+		if (m_BlockMap[i].m_NameHash == NameHash) return &m_BlockMap[i];
+	}
+	return nullptr;
 }
 
 uint32_t LWShader::GetInputCount(void) const{

@@ -94,7 +94,7 @@ bool LWRunLoop(std::function<bool(void*)> LoopFunc, uint64_t Frequency, void* Us
     CGRect Screen = [UIScreen mainScreen].bounds;
 	CGFloat Scale = [[UIScreen mainScreen] scale];
     LWAppContext.m_Window = [[LWIOSWindow alloc] init];//Allocate the window context that can be used by the app.
-    std::cout << "Main screen: " << Screen.size.width << " " << Screen.size.height << " Scale: " << Scale << std::endl;
+    //std::cout << "Main screen: " << Screen.size.width << " " << Screen.size.height << " Scale: " << Scale << std::endl;
 	CADisplayLink *DisplayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(update:)];
     [DisplayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
     NSNotificationCenter *DefCenter = [NSNotificationCenter defaultCenter];
@@ -174,13 +174,13 @@ bool LWRunLoop(std::function<bool(void*)> LoopFunc, uint64_t Frequency, void* Us
     
 @implementation LWUITextField
 -(BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string{
-    std::cout << "Changed: '" << [string UTF8String] << "' Len: " <<  [string length] << std::endl;
+    //std::cout << "Changed: '" << [string UTF8String] << "' Len: " <<  [string length] << std::endl;
     if(string.length>0){
-        const char *UTF8 = [string UTF8String];
-        for(const char *C = LWText::FirstCharacter(UTF8); C; C = LWText::Next(C)){
+        LWUTF8Iterator C = LWUTF8Iterator((const char8_t*)[string UTF8String]);
+        for(;!C.AtEnd();++C) {
             LWIOSEvent e;
             e.m_EventCode = LWIOSEventCode::CharEvent;
-            e.m_TouchPoints[0].x = LWText::GetCharacter(C);
+            e.m_TouchPoints[0].x =*C;
             LWAppContext.m_EventLoop.Push(e);
         }
     }else{
@@ -200,15 +200,15 @@ int main(int argc, char **argv){
     }
 }
 
-bool LWExecute(const char *BinaryPath, const char *Parameters) {
+bool LWExecute(const LWUTF8Iterator &BinaryPath, const LWUTF8Iterator &Parameters) {
 	return false;
 }
 
-bool LWEmail(const char *SrcEmail, const char *TargetEmail, const char *Subject, const char *Body, const char *SMTPServer, const char *SMTPUsername, const char *SMTPPassword){
+bool LWEmail(const LWUTF8Iterator &SrcEmail, const LWUTF8Iterator &TargetEmail, const LWUTF8Iterator &Subject, const LWUTF8Iterator &Body, const LWUTF8Iterator &SMTPServer, const LWUTF8Iterator &SMTPUsername, const LWUTF8Iterator &SMTPPassword){
 	return false;
 }
 
-bool LWBrowser(const char *URL) {
+bool LWBrowser(const LWUTF8Iterator &URL) {
 	return false;
 }
 

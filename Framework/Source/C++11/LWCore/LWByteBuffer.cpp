@@ -1,6 +1,5 @@
 #include "LWCore/LWByteBuffer.h"
 #include "LWCore/LWAllocator.h"
-#include "LWCore/LWText.h"
 #include <stdint.h>
 #include <cmath>
 #include <cstring>
@@ -276,125 +275,154 @@ double LWByteBuffer::MakeLittle(double Value){
 	return f;
 }
 
+int32_t LWByteBuffer::VariantLength(uint16_t Value) {
+	if (Value >= 0x4000) return 3;
+	if (Value >= 0x80) return 2;
+	return 1;
+}
+
+int32_t LWByteBuffer::VariantLength(int16_t Value) {
+	return VariantLength((uint64_t)Value);
+}
+
+int32_t LWByteBuffer::VariantLength(uint32_t Value) {
+	if (Value >= 0x10000000) return 5;
+	if (Value >= 0x200000) return 4;
+	if (Value >= 0x4000) return 3;
+	if (Value >= 0x80) return 2;
+	return 1;
+}
+
+int32_t LWByteBuffer::VariantLength(int32_t Value) {
+	return VariantLength((uint64_t)Value);
+}
+
+int32_t LWByteBuffer::VariantLength(uint64_t Value) {
+	if (Value >= 0x8000000000000000) return 10;
+	if (Value >= 0x100000000000000) return 9;
+	if (Value >= 0x2000000000000) return 8;
+	if (Value >= 0x40000000000) return 7;
+	if (Value >= 0x800000000) return 6;
+	if (Value >= 0x10000000) return 5;
+	if (Value >= 0x200000) return 4;
+	if (Value >= 0x4000) return 3;
+	if (Value >= 0x80) return 2;
+	return 1;
+}
+
+int32_t LWByteBuffer::VariantLength(int64_t Value) {
+	return VariantLength((uint64_t)Value);
+}
+
+int32_t LWByteBuffer::SVariantLength(int16_t Value) {
+	return VariantLength((uint16_t)((Value << 1) ^ (Value >> 15)));
+}
+
+int32_t LWByteBuffer::SVariantLength(int32_t Value) {
+	return VariantLength((uint32_t)((Value << 1) ^ (Value >> 31)));
+}
+
+int32_t LWByteBuffer::SVariantLength(int64_t Value) {
+	return VariantLength((uint64_t)((Value << 1) ^ (Value >> 63)));
+}
+
+int32_t LWByteBuffer::WriteVariant(uint16_t Value, int8_t *Buffer, int32_t MinBytes) {
+	int32_t o = 0;
+	for (; Value >= 0x80 || (o+1)<MinBytes; Value >>= 7, ++o) {
+		if (Buffer) Buffer[o] = (uint8_t)Value | 0x80;
+	}
+	if (Buffer) Buffer[o] = (uint8_t)Value;
+	return ++o;
+}
+
+int32_t LWByteBuffer::WriteVariant(int16_t Value, int8_t *Buffer, int32_t MinBytes) {
+	return WriteVariant((uint64_t)Value, Buffer, MinBytes);
+}
+
+int32_t LWByteBuffer::WriteVariant(uint32_t Value, int8_t *Buffer, int32_t MinBytes) {
+	int32_t o = 0;
+	for (; Value >= 0x80 || (o+1)<MinBytes; Value >>= 7, ++o) {
+		if (Buffer) Buffer[o] = (uint8_t)Value | 0x80;
+	}
+	if (Buffer) Buffer[o] = (uint8_t)Value;
+	return ++o;
+}
+
+int32_t LWByteBuffer::WriteVariant(int32_t Value, int8_t *Buffer, int32_t MinBytes) {
+	return WriteVariant((uint64_t)Value, Buffer, MinBytes);
+}
+
+int32_t LWByteBuffer::WriteVariant(uint64_t Value, int8_t *Buffer, int32_t MinBytes) {
+	int32_t o = 0;
+	for (; Value >= 0x80 || (o+1)<MinBytes; Value >>= 7, ++o) {
+		if (Buffer) Buffer[o] = (uint8_t)Value | 0x80;
+	}
+	if (Buffer) Buffer[o] = (uint8_t)Value;
+	return ++o;
+}
+
+int32_t LWByteBuffer::WriteSVariant(int16_t Value, int8_t *Buffer, int32_t MinBytes) {
+	return WriteVariant((uint16_t)((Value << 1) ^ (Value >> 15)), Buffer, MinBytes);
+}
+
+int32_t LWByteBuffer::WriteSVariant(int32_t Value, int8_t *Buffer, int32_t MinBytes) {
+	return WriteVariant((uint32_t)((Value << 1) ^ (Value >> 31)), Buffer, MinBytes);
+}
+
+int32_t LWByteBuffer::WriteSVariant(int64_t Value, int8_t *Buffer, int32_t MinBytes) {
+	return WriteVariant((uint64_t)((Value << 1) ^ (Value >> 63)), Buffer, MinBytes);
+}
 
 int32_t LWByteBuffer::WritePointer(void *Value, int8_t *Buffer){
 	if(Buffer) *(void**)Buffer = Value;
 	return sizeof(void*);
 }
 
-int32_t LWByteBuffer::WriteUTF8(const uint8_t *Text, int8_t *Buffer){
-	uint32_t Len = (uint32_t)std::strlen((const char*)Text);
-	uint32_t Pad = Len & 1; //Pad for arm processors to be div by 2 or 4.
-	uint32_t o = LWByteBuffer::Write<uint16_t>((uint16_t)Len+Pad, Buffer);
-	o += LWByteBuffer::Write<uint8_t>(Len, Text, Buffer?Buffer + o:Buffer);
-	if (Pad) o += LWByteBuffer::Write<uint8_t>('\0', Buffer?Buffer+o:Buffer);
-	return o;
-}
-
-int32_t LWByteBuffer::WriteUTF8(const char *Text, int8_t *Buffer){
-	return WriteUTF8((const uint8_t*)Text, Buffer);
+int32_t LWByteBuffer::WriteStorage(int32_t Len, int8_t *&Buffer) {
+	Buffer = nullptr;
+	if (m_Position + Len > m_BufferSize) return Len;
+	Buffer = m_WriteBuffer + m_Position;
+	m_Position += Len;
+	m_BytesWritten += Len;
+	return Len;
 }
 
 int32_t LWByteBuffer::WriteText(const uint8_t *Text, int8_t *Buffer) {
-	uint32_t c = 0;
-	if (Buffer) {
-		for (; Text[c]; c++) Buffer[c] = Text[c];
-		Buffer[c] = Text[c];
-	} else {
-		for (; Text[c]; c++) {}
+	const uint8_t *P = Text;
+	uint32_t o = 0;
+	for (; *P; ++P, o++)
+		if (Buffer) *Buffer++ = *P;
+	if (Buffer) *Buffer++ = 0;
+	o++;
+	if (o & 1) {
+		if (Buffer) *Buffer++ = 0;
+		o++;
 	}
-	c++;
-	return c;
+	return o;
 }
 
 int32_t LWByteBuffer::WriteText(const char *Text, int8_t *Buffer) {
 	return WriteText((const uint8_t*)Text, Buffer);
 }
 
-int32_t LWByteBuffer::WriteNetworkUTF8(const uint8_t *Text, int8_t *Buffer){
-	uint32_t Len = (uint32_t)std::strlen((const char*)Text);
-	uint32_t Pad = Len & 1; //Pad for arm processors to be div by 2 or 4.
-	uint32_t o = LWByteBuffer::WriteNetwork<uint16_t>((uint16_t)(Len+Pad), Buffer);
-	o += LWByteBuffer::WriteNetwork<uint8_t>(Len, Text, Buffer?Buffer + o:Buffer);
-	if (Pad) o += LWByteBuffer::WriteNetwork<uint8_t>('\0', Buffer ? Buffer + o : Buffer);
-	return o;
-}
-
-int32_t LWByteBuffer::WriteNetworkUTF8(const char *Text, int8_t *Buffer){
-	return WriteNetworkUTF8((const uint8_t*)Text, Buffer);
-}
-
-int32_t LWByteBuffer::ReadUTF8(uint8_t *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen){
-	uint32_t o = 0;
-	uint16_t Len = 0;
-	if (BufferLen < sizeof(uint16_t)) return 0;
-	o += LWByteBuffer::Read<uint16_t>(&Len, Buffer);
-	Len = std::min<uint32_t>(Len, (BufferLen - sizeof(uint16_t)));
-	if (Out && OutLen > 0){
-		uint32_t OLen = Len >= OutLen ? OutLen - 1 : Len;
-		o += LWByteBuffer::Read<uint8_t>(Out, OLen, Buffer+o);
-		*(Out + OLen) = '\0';
-	}
-	return sizeof(uint16_t)+Len;
-}
-
-int32_t LWByteBuffer::ReadUTF8(char *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen){
-	return ReadUTF8((uint8_t*)Out, OutLen, Buffer, BufferLen);
-}
-
 int32_t LWByteBuffer::ReadText(uint8_t *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen) {
-	uint32_t c = 0;
-	const int8_t *L = Buffer + BufferLen;
-	if (Out) {
-		Out[0] = '\0'; //In case nothing to write to.
-		for (; Buffer[c] && (Buffer+c)!=L; c++) {
-			if (c < OutLen) Out[c] = Buffer[c];
-		}
-		if (c < OutLen) {
-			Out[c] = Buffer[c];
-			if (c == OutLen - 1) Out[c] = '\0';
-		}
-	} else {
-		for (; Buffer[c] && (Buffer+c)!=L; c++) {}
+	uint32_t o = 0;
+	uint8_t *oP = Out;
+	uint8_t *oL = oP + std::min<uint32_t>(OutLen - 1, OutLen);
+	const int8_t *bP = Buffer;
+	const int8_t *bL = Buffer + BufferLen;
+	for (; bP != bL && *bP; ++bP) {
+		if (oP < oL) *oP++ = *bP;
+		o++;
 	}
-	c++;
-	return c;
+	if (OutLen) *oP = '\0';
+	o++;
+	if (o & 1) o++; //Remove padding if it was added.
+	return o;
 }
 
 int32_t LWByteBuffer::ReadText(char *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen) {
 	return ReadText((uint8_t*)Out, OutLen, Buffer, BufferLen);
-}
-
-int32_t LWByteBuffer::ReadNetworkUTF8(uint8_t *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen){
-	uint32_t o = 0;
-	uint16_t Len = 0;
-	if (BufferLen < sizeof(uint16_t)) return 0;
-	o += LWByteBuffer::ReadNetwork<uint16_t>(&Len, Buffer);
-	Len = std::min<uint32_t>(Len, BufferLen - sizeof(uint16_t));
-	if (Out && OutLen > 0){
-		uint32_t OLen = Len >= OutLen ? OutLen - 1 : Len;
-		o += LWByteBuffer::Read<uint8_t>(Out, OLen, Buffer + o);
-		*(Out + OLen) = '\0';
-	}
-	return sizeof(uint16_t)+Len;
-}
-
-int32_t LWByteBuffer::ReadNetworkUTF8(char *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen){
-	return ReadNetworkUTF8((uint8_t*)Out, OutLen, Buffer, BufferLen);
-}
-
-int32_t LWByteBuffer::WriteUTF8(const uint8_t *Text){
-	typedef int32_t(*Func_T)(const uint8_t *, int8_t*);
-	Func_T Funcs[] = { LWByteBuffer::WriteUTF8, LWByteBuffer::WriteNetworkUTF8 };
-	int32_t Length = Funcs[m_SelectedFunc](Text, nullptr);
-	if (m_Position + Length > m_BufferSize) return Length;
-	m_Position += Funcs[m_SelectedFunc](Text, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
-	m_BytesWritten += Length;
-	return Length;
-}
-
-int32_t LWByteBuffer::WriteUTF8(const char *Text){
-	return WriteUTF8((const uint8_t*)Text);
 }
 
 int32_t LWByteBuffer::WriteText(const uint8_t *Text) {
@@ -409,27 +437,85 @@ int32_t LWByteBuffer::WriteText(const char *Text) {
 	return WriteText((const uint8_t*)Text);
 }
 
-int32_t LWByteBuffer::ReadUTF8(uint8_t *Out, uint32_t OutLen){
-	typedef int32_t(*Func_T)(uint8_t *, uint32_t, const int8_t*, const uint32_t);
-	Func_T Funcs[] = { LWByteBuffer::ReadUTF8, LWByteBuffer::ReadNetworkUTF8 };
-	int32_t Length = Funcs[m_SelectedFunc](Out, OutLen, m_ReadBuffer + m_Position, (uint32_t)(m_BufferSize-m_Position));
-	m_Position += Length;
-	return Length;
+int32_t LWByteBuffer::ReadVariant(uint16_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
+	uint64_t Val;
+	int32_t r = ReadVariant(Val, Buffer, BufferLast);
+	if (Out) *Out = (uint16_t)Val;
+	return r;
 }
 
-int32_t LWByteBuffer::ReadUTF8(char *Out, uint32_t OutLen){
-	return ReadUTF8((uint8_t*)Out, OutLen);
+int32_t LWByteBuffer::ReadVariant(int16_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
+	uint64_t Val;
+	int32_t r = ReadVariant(Val, Buffer, BufferLast);
+	if (Out) *Out = (int16_t)Val;
+	return r;
+
 }
 
-int32_t LWByteBuffer::ReadUTF8(uint8_t *Out, uint32_t OutLen, int32_t Position){
-	typedef int32_t(*Func_T)(uint8_t *, uint32_t, const int8_t*, const uint32_t);
-	Func_T Funcs[] = { LWByteBuffer::ReadUTF8, LWByteBuffer::ReadNetworkUTF8 };
-	int32_t Length = Funcs[m_SelectedFunc](Out, OutLen, m_ReadBuffer + Position, (uint32_t)(m_BufferSize-Position));
-	return Length;
+int32_t LWByteBuffer::ReadVariant(uint32_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
+	uint64_t Val;
+	int32_t r = ReadVariant(Val, Buffer, BufferLast);
+	if (Out) *Out = (uint32_t)Val;
+	return r;
 }
 
-int32_t LWByteBuffer::ReadUTF8(char *Out, uint32_t OutLen, int32_t Position){
-	return ReadUTF8((uint8_t*)Out, OutLen, Position);
+int32_t LWByteBuffer::ReadVariant(int32_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
+	uint64_t Val;
+	int32_t r = ReadVariant(Val, Buffer, BufferLast);
+	if (Out) *Out = (int32_t)Val;
+	return r;
+}
+
+int32_t LWByteBuffer::ReadVariant(uint64_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
+	uint64_t Val;
+	int32_t r = ReadVariant(Val, Buffer, BufferLast);
+	if (Out) *Out = Val;
+	return r;
+}
+
+int32_t LWByteBuffer::ReadVariant(int64_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
+	uint64_t Val;
+	int32_t r = ReadVariant(Val, Buffer, BufferLast);
+	if (Out) *Out = (int64_t)Val;
+	return r;
+}
+
+int32_t LWByteBuffer::ReadVariant(uint64_t &Out, const int8_t *Buffer, const int8_t *BufferLast) {
+	uint64_t n = 0;
+	int32_t o = 0;
+	uint8_t *B = (uint8_t*)Buffer;
+	uint8_t *BL = (uint8_t*)BufferLast;
+
+	Out = 0;
+	for (; B+o<BL && (B[o] & 0x80) != 0; n += 7) Out = Out | ((((uint64_t)B[o++]) & 0x7F) << n);
+	if(B+o<BL) Out |= (((uint64_t)B[o++])&0x7f) << n;
+	return o;
+}
+
+int32_t LWByteBuffer::ReadSVariant(int16_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
+	int16_t Val = 0;
+	int32_t r = ReadVariant(&Val, Buffer, BufferLast);
+	if (Out) *Out = ((Val >> 1) ^ -(Val & 1));
+	return r;
+}
+
+int32_t LWByteBuffer::ReadSVariant(int32_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
+	int32_t Val = 0;
+	int32_t r = ReadVariant(&Val, Buffer, BufferLast);
+	if (Out) *Out = ((Val >> 1) ^ -(Val & 1));
+	return r;
+}
+
+int32_t LWByteBuffer::ReadSVariant(int64_t *Out, const int8_t *Buffer, const int8_t *BufferLast) {
+	int64_t Val = 0;
+	int32_t r = ReadVariant(&Val, Buffer, BufferLast);
+	if (Out) *Out = ((Val >> 1) ^ -(Val & 1));
+	return r;
+}
+
+int32_t LWByteBuffer::ReadPointer(void **Value, int8_t *Buffer) {
+	if (Value) *Value = *(void**)Buffer;
+	return sizeof(void*);
 }
 
 int32_t LWByteBuffer::ReadText(uint8_t *Out, uint32_t OutLen) {
@@ -443,11 +529,20 @@ int32_t LWByteBuffer::ReadText(char *Out, uint32_t OutLen) {
 }
 
 int32_t LWByteBuffer::ReadText(uint8_t *Out, uint32_t OutLen, int32_t Position) {
+	if (Position >= m_BufferSize) return 0;
 	return LWByteBuffer::ReadText(Out, OutLen, m_ReadBuffer + Position, (uint32_t)(m_BufferSize-Position));
 }
 
 int32_t LWByteBuffer::ReadText(char *Out, uint32_t OutLen, int32_t Position) {
 	return ReadText((uint8_t*)Out, OutLen, Position);
+}
+
+int32_t LWByteBuffer::WritePointer(void *Value) {
+	int32_t Len = sizeof(void*);
+	if (m_Position + Len > m_BufferSize) return Len;
+	m_Position += WritePointer(Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+	m_BytesWritten += Len;
+	return Len;
 }
 
 LWByteBuffer &LWByteBuffer::SetBytesWritten(uint32_t BytesWritten){
@@ -460,43 +555,41 @@ LWByteBuffer &LWByteBuffer::SetPosition(int32_t Position){
 	return *this;
 }
 
-LWByteBuffer &LWByteBuffer::AlignPosition(uint32_t Alignment, bool Write) {
-	if (Alignment < 2) return *this;
-	uint32_t r = (m_Position & (Alignment - 1));
-	if (r) {
-		r = Alignment - r;
-		m_Position += r;
-		if (Write) m_BytesWritten += r;
-	}
-	return *this;
+int32_t LWByteBuffer::AlignPosition(uint32_t Alignment, bool Write) {
+	int32_t r = Alignment - (m_Position & (Alignment - 1));
+	if (m_Position + r > m_BufferSize) return r;
+	m_Position += r;
+	if (Write) m_BytesWritten += r;
+	return r;
 }
 
-LWByteBuffer &LWByteBuffer::OffsetPosition(int32_t Offset){
+LWByteBuffer &LWByteBuffer::Seek(int32_t Offset, bool Write){
 	m_Position += Offset;
+	if(Write) m_BytesWritten = std::max<uint32_t>(m_BytesWritten, m_Position);
 	return *this;
 }
 
-int32_t LWByteBuffer::GetBufferSize(void){
+int32_t LWByteBuffer::GetBufferSize(void) const{
 	return m_BufferSize;
 }
 
-int32_t LWByteBuffer::GetBytesWritten(void){
+int32_t LWByteBuffer::GetBytesWritten(void) const{
 	return m_BytesWritten;
 }
 
-int32_t LWByteBuffer::GetPosition(void){
+int32_t LWByteBuffer::GetPosition(void) const{
 	return m_Position;
 }
 
-bool LWByteBuffer::EndOfData(void){
-	return m_Position >= m_BytesWritten;
-}
-
-bool LWByteBuffer::EndOfBuffer(void){
+bool LWByteBuffer::IsEndOfReadData(void) const{
 	return m_Position >= m_BufferSize;
 }
 
-const int8_t *LWByteBuffer::GetReadBuffer(void){
+bool LWByteBuffer::IsEndOfWriteData(void) const {
+	return m_WriteBuffer==nullptr || m_BytesWritten>=m_BufferSize;
+}
+
+const int8_t *LWByteBuffer::GetReadBuffer(void) const{
 	return m_ReadBuffer;
 }
 
@@ -505,5 +598,5 @@ LWByteBuffer::LWByteBuffer(int8_t *Buffer, uint32_t BufferSize, uint8_t Flag) : 
 LWByteBuffer::LWByteBuffer(const int8_t *ReadBuffer, uint32_t BufferSize, uint8_t Flag) : m_ReadBuffer(ReadBuffer), m_BufferSize(BufferSize), m_SelectedFunc((Flag&Network) ? 1 : 0), m_Flag(Flag | ReadOnly){}
 
 LWByteBuffer::~LWByteBuffer(){
-	if (!(m_Flag&BufferNotOwned)) LWAllocator::Destroy(m_WriteBuffer);
+	if (m_Flag&BufferOwned) LWAllocator::Destroy(m_WriteBuffer);
 }

@@ -22,7 +22,7 @@ LWVideoDriver_OpenGL3_3 *LWVideoDriver_OpenGL3_3::MakeVideoDriver(LWWindow *Wind
 	int32_t UniformBlockSize = 0;
 	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &UniformBlockSize);
 
-	return Window->GetAllocator()->Allocate<LWVideoDriver_OpenGL3_3>(Window, Context, (uint32_t)UniformBlockSize);
+	return Window->GetAllocator()->Create<LWVideoDriver_OpenGL3_3>(Window, Context, (uint32_t)UniformBlockSize);
 } 
 
 /*! \brief deallocates and destroys the specified video context, and detaches it from the associated window. */

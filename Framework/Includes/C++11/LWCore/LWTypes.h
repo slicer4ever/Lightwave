@@ -1,19 +1,70 @@
 #ifndef LWCORETYPES_H
 #define LWCORETYPES_H
 #include <cstdint>
+#include <cassert>
+
+//Add libfmt support.
+#ifdef _MSC_VER
+#ifndef _HAS_EXCEPTIONS
+#define _HAS_EXCEPTIONS 0 //Because subsystem:Windows only supports 4096 characters, libfmt will throw an exception when such an issue is encountered, this ideally prevents it during release(and debug builds should be set to console mode, however if not then a debug build will assert).
+#endif
+#include "../../../../Dependency/libfmt/include/fmt/format.h"
+#include "../../../../Dependency/libfmt/include/fmt/chrono.h"
+#include "../../../../Dependency/libfmt/include/fmt/ostream.h"
+#else
+#include <fmt/format.h>
+#endif
+
+/*!< \brief assert's in debug builds, but still keeps expression in non debug builds for simpler one-liners used by lightwave. */
+#ifndef NDEBUG
+#define LWVerify(x) assert(x)
+#else
+#define LWVerify(x) ((void)(x))
+#endif
+
+/*!< \brief used to define bit+bitsoffset of Name.  Name##Bits is the bit pattern representing the field, Name##BitsOffset represents the bit offset to the patten. */
+#define LWBitField(Type, Name, BitCount, BitOffset) \
+	Type Name = ((1u<<(BitCount))-1u)<<(BitOffset); \
+	Type Name##Offset = (BitOffset);
+
+/*!< \brief used to define 64 bit+bitsoffset of Name.  Name##Bits is the bit pattern representing the field, Name##BitsOffset represents the bit offset to the patten. */
+#define LWBitField64_(Type, Name, BitCount, BitOffset) \
+	Type Name = ((1ull<<(BitCount))-1ull)<<(BitOffset); \
+	Type Name##Offset = (BitOffset);
+
+
+/*!< \brief helper function used to define 32 bit bit+bitsoffset of Name.  Name##Bits is the bit pattern representing the field, Name##BitsOffset represents the bit offset to the patten. */
+#define LWBitField32(Name, BitCount, BitOffset) LWBitField(static const uint32_t, Name, (BitCount), (BitOffset))
+
+/*!< \brief helper function used to define 16 bit bit+bitsoffset of Name.  Name##Bits is the bit pattern representing the field, Name##BitsOffset represents the bit offset to the patten. */
+#define LWBitField16(Name, BitCount, BitOffset) LWBitField(static const uint16_t, Name, (BitCount), (BitOffset))
+
+/*!< \brief helper function used to define 64 bit bit+bitsoffset of Name.  Name##Bits is the bit pattern representing the field, Name##BitsOffset represents the bit offset to the patten. */
+#define LWBitField64(Name, BitCount, BitOffset) LWBitField64_(static const uint64_t, Name, (BitCount), (BitOffset))
+
+/*!< \brief helper macro which get's the stored value from flag of the Named bitfield(as declared by LWBitField). */
+#define LWBitFieldGet(Name, Flag) \
+	(((Flag)&(Name)) >> (Name##Offset))
+
+/*!< \brief helper macro which returns a new value of flag with the value set in the named bits for the bit's defined by Name, note that this function does not prevent bit's from overflowing if value is outside the bit range of Name, Use the strict variant if that is a requirment. */
+#define LWBitFieldSet(Name, Flag, Value) \
+	(((Flag)&~(Name)) | ((Value) << (Name##Offset)))
+
+/*!< \brief helper macro which return's a new value of flag with the value set in the named bits, but truncates any bit's which fall outside the range of Name's bits. */
+#define LWBitFieldSetStrict(Name, Flag, Value) \
+	(((Flag)&~(Name)) | (((Value) << (Name##Offset))&(Name)))
+
+
 /*! \defgroup LWCore LWCore
 	\brief the core of the entire framework that is built upon these classes.
 	@{
 */
 
-#define LWMOD_EQL 0 /*!< \brief mod value to pass to ModFunc that sets A to B. */
-#define LWMOD_OR  1 /*!< \brief mod value to pass to ModFunc that or's A with B. */
-#define LWMOD_XOR 2 /*!< \brief mod value to pass to ModFunc that xor's A with B. */
-#define LWMOD_AND 3 /*!< \brief mod value to pass to ModFunc that and's A with B. */
-#define LWMOD_NOT 4 /*!< \brief mod value to pass to ModFunc that A does not have any B bits. */
+#ifndef __cpp_char8_t
+typedef char char8_t;
+#endif
 
-/*! \brief mods A with B depending on the function specefied. */
-#define LWMOD(A, B, ModFunc) switch(ModFunc){ case LWMOD_EQL: A = B; break; case LWMOD_OR: A|=B; break; case LWMOD_XOR: A^=B; break; case LWMOD_AND: A&=B; break; case LWMOD_NOT: A&=~B; break }; 
+class LWAllocator;
 
 class LWByteBuffer;
 
@@ -21,7 +72,14 @@ class LWByteStream;
 
 class LWFileStream;
 
-class LWText;
+template<class Type>
+class LWUnicode;
+
+template<class Type>
+class LWUnicodeIterator;
+
+template<class Type>
+class LWUnicodeGraphemeIterator;
 
 class LWTimer;
 
@@ -65,11 +123,36 @@ class LWAllocator_ConcurrentCircular;
 
 class LWAllocator_LocalHeap;
 
+struct LWRef_Counter;
+
+template<class Type>
+class LWRef;
+
 template<class Type>
 class LWFIFO;
 
 template<class Type, uint32_t MaxElements>
 class LWConcurrentFIFO;
+
+typedef LWUnicode<char8_t> LWUTF8;
+typedef LWUnicode<char16_t> LWUTF16;
+typedef LWUnicode<char32_t> LWUTF32;
+
+typedef LWUnicodeIterator<char8_t> LWUTF8Iterator;
+typedef LWUnicodeIterator<char16_t> LWUTF16Iterator;
+typedef LWUnicodeIterator<char32_t> LWUTF32Iterator;
+
+typedef LWUnicodeGraphemeIterator<char8_t> LWUTF8GraphemeIterator;
+typedef LWUnicodeGraphemeIterator<char16_t> LWUTF16GraphemeIterator;
+typedef LWUnicodeGraphemeIterator<char32_t> LWUTF32GraphemeIterator;
+
+typedef LWUTF8Iterator LWUTF8I; //Shorthand for utf8 iterator.
+typedef LWUTF16Iterator LWUTF16I;
+typedef LWUTF32Iterator LWUTF32I;
+
+typedef LWUTF8GraphemeIterator LWUTF8GI; //Shorthand for utf8 grapheme iterator;
+typedef LWUTF16GraphemeIterator LWUTF16GI;
+typedef LWUTF32GraphemeIterator LWUTF32GI;
 
 /*!< \brief defined double version of the quaternion class. */
 typedef LWQuaternion<double> LWQuaterniond;

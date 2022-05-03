@@ -1,10 +1,8 @@
 #include "LWPlatform/LWApplication.h"
 #include "LWPlatform/LWPlatform.h"
-#include <LWCore/LWText.h>
+#include <LWCore/LWUnicode.h>
 #include <LWCore/LWTimer.h>
 #include <ShellScalingApi.h>
-
-
 
 void *LWSignal_UserData[LWSignal_Unknown];
 LWSignalHandlerFunc LWSignal_Funcs[LWSignal_Unknown];
@@ -13,7 +11,6 @@ extern "C" {
 	__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
-
 
 bool LWSignal_Handler(int32_t Signal) {
 	uint32_t LWSignalIDs[5] = { LWSignal_CtrlC, LWSignal_Break, LWSignal_Close, LWSignal_Logoff, LWSignal_Shutdown };
@@ -26,6 +23,11 @@ bool LWSignal_Handler(int32_t Signal) {
 
 //Application entry points and other data is managed here.
 int main(int argc, char **argv){
+	const uint32_t MaxIterList = 32;
+	LWUTF8Iterator IterList[MaxIterList];
+	uint32_t Cnt = std::min<uint32_t>(argc, MaxIterList);
+	for (uint32_t i = 0; i < Cnt; i++) IterList[i] = LWUTF8Iterator((const char8_t*)argv[i]);
+
 	std::fill(LWSignal_UserData, LWSignal_UserData + LWSignal_Unknown, nullptr);
 	std::fill(LWSignal_Funcs, LWSignal_Funcs + LWSignal_Unknown, nullptr);
 	HWND ConsoleWnd = GetConsoleWindow();
@@ -33,47 +35,26 @@ int main(int argc, char **argv){
 
 	SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
 	SetConsoleCtrlHandler((PHANDLER_ROUTINE)LWSignal_Handler, true);
-	return LWMain(argc, argv);
+	return LWMain(Cnt, IterList);
 }
 
 //The WinMain entry point for when the application is a windows subsystem, immediately call the applications entry point. */
 int __stdcall WinMain(HINSTANCE, HINSTANCE, LPSTR, int CmdCnt){
 	const uint32_t MaxResults = 32;
-	const uint32_t BufferLen = 1024;
-	char Buffer[BufferLen];
-	char *Results[MaxResults];
-	char *Command = GetCommandLine();
-	uint32_t CmndCnt = 0;
-	uint32_t o = 0;
-	for (char *C = LWText::NextWord(Command, true); o<BufferLen && C && CmndCnt<MaxResults; C = LWText::NextWord(C, true)) {
-		char *P = C;
-		if (*C == '\"') {
-			C = LWText::CopyToTokens(P + 1, Buffer + o, BufferLen - o, "\"");
-			Results[CmndCnt++] = Buffer + o;
-			o += (uint32_t)(uintptr_t)(C - (P + 1)) + 1;
-			C = LWText::FirstToken(C, ' ');
-			continue;
-		}
-		if (*C == '\'') {
-			C = LWText::CopyToTokens(P + 1, Buffer + o, BufferLen - o, "\'");
-			Results[CmndCnt++] = Buffer + o;
-			o += (uint32_t)(uintptr_t)(C - (P + 1)) + 1;
-			C = LWText::FirstToken(C, ' ');
-			continue;
-
-		}
-		C = LWText::CopyToTokens(C, Buffer + o, BufferLen - o, " ");
-		Results[CmndCnt++] = Buffer + o;
-		o += (uint32_t)(uintptr_t)(C - P) + 1;
-	}
-	//for (uint32_t i = 0; i < CmndCnt; i++) std::cout << i << ": " << Results[i] << std::endl;
+	LWUTF8Iterator ResultList[MaxResults];
+	uint32_t CmndCnt = LWDecodeCommandLineArguments(LWUTF8Iterator((const char8_t*)GetCommandLine()), ResultList, MaxResults);
 
 	std::fill(LWSignal_UserData, LWSignal_UserData + LWSignal_Unknown, nullptr);
 	std::fill(LWSignal_Funcs, LWSignal_Funcs + LWSignal_Unknown, nullptr);
 	SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
 	SetConsoleCtrlHandler((PHANDLER_ROUTINE)LWSignal_Handler, true);
+	HWND ConsoleWnd = GetConsoleWindow();
+	if (!ConsoleWnd) { //redirect all outputs to null:
+		freopen("NUL:", "w", stdout);
+		freopen("NUL:", "w", stderr);
 
-	return LWMain(CmndCnt, Results);
+	}
+	return LWMain(0, nullptr);
 }
 
 void LWRegisterSignal(LWSignalHandlerFunc Handler, uint32_t Signal, void *UserData){
@@ -95,28 +76,25 @@ bool LWRunLoop(std::function<bool(void*)> LoopFunc, uint64_t Frequency, void* Us
 	return true;
 }
 
-bool LWExecute(const char *BinaryPath, const char *Parameters) {
-	HINSTANCE I = ShellExecute(NULL, "OPEN", BinaryPath, Parameters, nullptr, SW_SHOWDEFAULT);
+bool LWExecute(const LWUTF8Iterator &BinaryPath, const LWUTF8Iterator &Parameters) {
+	HINSTANCE I = ShellExecute(NULL, "OPEN", *BinaryPath.c_str<256>(), *Parameters.c_str<256>(), nullptr, SW_SHOWDEFAULT);
 	return I !=  nullptr;
 }
 
-bool LWEmail(const char *SrcEmail, const char *TargetEmail, const char *Subject, const char *Body, const char *SMTPServer, const char *SMTPUsername, const char *SMTPPassword){
-	char Buffer[1024 * 16];
-	snprintf(Buffer, sizeof(Buffer),
-		"$S = New-Object Net.Mail.MailMessage('%s', '%s', '%s', '%s');"
+bool LWEmail(const LWUTF8Iterator &SrcEmail, const LWUTF8Iterator &TargetEmail, const LWUTF8Iterator &Subject, const LWUTF8Iterator &Body, const LWUTF8Iterator &SMTPServer, const LWUTF8Iterator &SMTPUsername, const LWUTF8Iterator &SMTPPassword){
+	auto Mail = LWUTF8I::Fmt<1024*16>(
+		"$S = New-Object Net.Mail.MailMessage('{}', '{}', '{}', '{}');"
 		"$S.IsBodyHTML = $true;"
-		"$SC = New-Object Net.Mail.SmtpClient('%s', 587);"
+		"$SC = New-Object Net.Mail.SmtpClient('{}', 587);"
 		"$SC.EnableSSL=$true;"
-		"$SC.Credentials = New-Object Net.NetworkCredential('%s', '%s');"
-		"$SC.Send($S);",
-		SrcEmail, TargetEmail, Subject, Body, SMTPServer, SMTPUsername, SMTPPassword);
-
-	HINSTANCE I = ShellExecute(NULL, "OPEN", "powershell", Buffer, nullptr, SW_HIDE);
+		"$SC.Credentials = New-Object Net.NetworkCredential('{}', '{}');"
+		"$SC.Send($S);", SrcEmail, TargetEmail, Subject, SMTPServer, SMTPUsername, SMTPPassword);
+	HINSTANCE I = ShellExecute(NULL, "OPEN", "powershell", *Mail, nullptr, SW_HIDE);
 	return I != nullptr;
 }
 
-bool LWBrowser(const char *URL) {
-	HINSTANCE I = ShellExecute(NULL, "OPEN", URL, nullptr, nullptr, SW_SHOW);
+bool LWBrowser(const LWUTF8Iterator &URL) {
+	HINSTANCE I = ShellExecute(NULL, "OPEN", *URL.c_str<256>(), nullptr, nullptr, SW_SHOW);
 	return I!=nullptr;
 }
 

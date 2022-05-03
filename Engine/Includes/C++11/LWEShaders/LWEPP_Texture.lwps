@@ -1,0 +1,30 @@
+R"(#module Pixel DirectX11_1
+struct Pixel {
+	float4 Position : SV_POSITION;
+	float4 TexCoord : TEXCOORD0;
+};
+Texture2D Tex;
+SamplerState TexSampler;
+float4 main(Pixel In) : SV_TARGET{
+	return Tex.Sample(TexSampler, In.TexCoord.xy);
+}
+#module Pixel OpenGL3_3 OpenGL4_5
+#version 330
+uniform sampler2D Tex;
+in vec4 pTexCoord;
+out vec4 p_Color;
+void main(void) {
+	p_Color = texture(Tex, pTexCoord.xy);
+}
+#module Pixel OpenGL2_1
+uniform sampler2D Tex;
+varying vec4 pTexCoord;
+void main(void) {
+	gl_FragColor = texture2D(Tex, pTexCoord.xy);
+}
+#module Pixel OpenGLES2
+uniform sampler2D Tex;
+varying lowp vec4 pTexCoord;
+void main(void) {
+	gl_FragColor = texture2D(Tex, pTexCoord.xy);
+})",

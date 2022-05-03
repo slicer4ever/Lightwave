@@ -16,6 +16,10 @@ uint32_t LWVideoMode::GetFlag(void) const{
 	return m_Flag;
 }
 
+bool LWVideoMode::isInterlaced(void) const {
+	return (m_Flag & Interlaced) != 0;
+}
+
 uint32_t LWVideoMode::GetColorMode(void) const{
 	return (m_Flag&(Colored32Bit | Colored16Bit | Colored8Bit | Colored4Bit));
 }

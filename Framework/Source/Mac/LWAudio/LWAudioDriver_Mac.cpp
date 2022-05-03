@@ -100,11 +100,7 @@ bool LWAudioDriver::Update(uint64_t lCurrentTime, LWWindow *Window) {
             ABuf->mAudioDataByteSize = SliceSamples*FrameSize-SeekSamples*FrameSize;
 			Context->m_ReserveIdx++;
             AudioStreamPacketDescription Desc = { SeekSamples*FrameSize, 0, (SliceSamples*FrameSize) - SeekSamples*FrameSize};
-			OSStatus Err = AudioQueueEnqueueBuffer(Context->m_Queue, ABuf, 1, &Desc);
-			if (Err) {
-				std::cout << "Error enqueuing: " << Err << std::endl;
-			}
-
+			LWLogCriticalFunc((int32_t)AudioQueueEnqueueBuffer(Context->m_Queue, ABuf, 1, &Desc), 0, "AudioQueueEnqueueBuffer");
 
 			LoadedSamples += SliceSamples;
 			PreloadedSlices++;
@@ -167,17 +163,9 @@ LWSound *LWAudioDriver::CreateSound(LWAudioStream *Stream, uint32_t Flags, void 
 										Stream->GetChannels(),
 										Stream->GetSampleSize() * 8,
 										0 };
-	OSStatus Err = AudioQueueNewOutput(&Desc, AudioQueueCallback, nullptr, nullptr, nullptr, 0, &SndCntx->m_Queue);
-	if (Err) {
-		std::cout << "Error making audio: " << (int32_t)Err << std::endl;
-		return nullptr;
-	}
+	if(!LWLogCriticalFunc((int32_t)AudioQueueNewOutput(&Desc, AudioQueueCallback, nullptr, nullptr, nullptr, 0, &SndCntx->m_Queue), 0, "AudioQueueNewOutput")) return nullptr;
 	for (uint32_t i = 0; i < LWSOUND_RESERVECNT; i++) {
-		Err = AudioQueueAllocateBuffer(SndCntx->m_Queue, LWSOUND_RESERVEBUFFERSIZE, &SndCntx->m_QueueBuffers[i]);
-		if (Err) {
-			std::cout << "Error making buffer: " << (int32_t)Err << std::endl;
-			return nullptr;
-		} //else std::cout << "Buffer Size: " << SndCntx->m_QueueBuffers[i]->mAudioDataBytesCapacity << std::endl;
+		if(!LWLogCriticalFunc((int32_t)AudioQueueAllocateBuffer(SndCntx->m_Queue, LWSOUND_RESERVEBUFFERSIZE, &SndCntx->m_QueueBuffers[i]), 0, "AudioQueueAllocateBuffer")) return nullptr;
 	}
 
 	Target->SetUserData(UserData).SetAudioStream(Stream).SetVolume(Volume).SetPan(Pan).SetPitch(Pitch);

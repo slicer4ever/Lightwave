@@ -1,0 +1,97 @@
+<AssetManager CompiledShaderCache="App:CompiledShaderCache">
+	<Font Name="Arial" Path="App:arial.arfont" />
+	<Font Name="Roboto" Path="App:FiraSans.arfont" />
+	<Shader Type="Vertex" Name="UIVertexShader" Path="FontVertex" InputType="UIVertex" />
+	<Shader Type="Pixel" Name="UIFontShader" Path="FontMSDF" />
+	<Shader Type="Pixel" Name="UITextureShader" Path="UITexture" />
+	<Shader Type="Pixel" Name="UIColorShader" Path="UIColor" />
+	<Shader Type="Vertex" Name="PPVertexShader" Path="PP_Vertex" InputType="TextureVertex" />
+	<Shader Type="Pixel" Name="PPTextureShader" Path="PP_Texture" />
+	<Shader Type="Pixel" Name="PPPBRCompositeShader" Path="PP_PBRComposite" />
+	<Shader Type="Vertex" Name="GausianVertexShader" Path="GausianBlurVertex" InputType="TextureVertex" />
+	<Shader Type="Pixel" Name="GausianPixelShader" Path="GausianBlurPixel" />
+
+	<ShaderBuilder Path="PBRVertex">
+		<Shader Type="Vertex" Name="PBRStaticVertice" InputType="PBRIndexStaticVertex" STATICVERTICE SHADOWMAP />
+		<Shader Type="Vertex" Name="PBRSkeletonVertice" InputType="PBRIndexSkeletonVertex" SKELETONVERTICE BONEDATA SHADOWMAP />
+	</ShaderBuilder>
+	<ShaderBuilder Path="DepthVertex">
+		<Shader Type="Vertex" Name="StaticDepthShader" InputType="IndexStaticDepthVertex" STATICVERTICE />
+		<Shader Type="Vertex" Name="SkeletonDepthShader" InputType="IndexSkeletonDepthVertex" SKELETONVERTICE BONEDATA />
+	</ShaderBuilder>
+	<ShaderBuilder Path="PBRPixel">
+		<Shader Type="Pixel" Name="PBRPixelUnlit" PBRUNLIT SHADOWMAP />
+		<Shader Type="Pixel" Name="PBRPixelMR" PBRMETALLICROUGHNESS SHADOWMAP />
+		<Shader Type="Pixel" Name="PBRPixelSG" PBRSPECULARGLOSSINESS SHADOWMAP />
+	</ShaderBuilder>
+	<VideoBuffer Name="UIUniformBlock" Type="Uniform" Usage="WriteDiscardable" TypeSize="64" Length="1" />
+	<Pipeline Name="UIPipeline" Vertex="UIVertexShader" Pixel="UIFontShader" Flags="Blending" CullMode="CW" SourceBlendMode="SrcAlpha" DestBlendMode="OneMinusSrcAlpha" />	
+	<PipelineBuilder Flags="DepthTest|Blending" CullMode="CW" DepthCompare="LessEqual" SourceBlendMode="SrcAlpha" DestBlendMode="OneMinusSrcAlpha" >
+		<Pipeline Name="PBRUnlit_Static" Vertex="PBRStaticVertice" Pixel="PBRPixelUnlit" />
+		<Pipeline Name="PBRMR_Static" Vertex="PBRStaticVertice" Pixel="PBRPixelMR" />
+		<Pipeline Name="PBRSG_Static" Vertex="PBRStaticVertice" Pixel="PBRPixelSG" />
+		<Pipeline Name="PBRUnlit_Skeleton" Vertex="PBRSkeletonVertice" Pixel="PBRPixelUnlit" />
+		<Pipeline Name="PBRMR_Skeleton" Vertex="PBRSkeletonVertice" Pixel="PBRPixelMR" />
+		<Pipeline Name="PBRSG_Skeleton" Vertex="PBRSkeletonVertice" Pixel="PBRPixelSG" />
+	</PipelineBuilder>
+	<PipelineBuilder Flags="DepthTest" CullMode="CW" DepthCompare="LessEqual">
+		<Pipeline Name="ShadowMap_Static" Vertex="StaticDepthShader" />
+		<Pipeline Name="ShadowMap_Skeleton" Vertex="SkeletonDepthShader" />
+	</PipelineBuilder>
+	<PipelineBuilder CullMode="CW">
+		<Pipeline Name="PPComposite" Vertex="PPVertexShader" Pixel="PPPBRCompositeShader" />
+		<Pipeline Name="PPGausianBlur" Vertex="GausianVertexShader" Pixel="GausianPixelShader" />
+	</PipelineBuilder>
+</AssetManager>
+<Renderer>
+	<FrameBuffer Name="GeometryFB" Size="100%|100%" Samples="4" Color="SRGBA:MinLinear|MagLinear" Color1="SRGBA:MinLinear|MagLinear" Depth="DEPTH32" />
+	<Texture2D Name="MSColorTex" Size="100%|100%" TextureState="MinLinear|MagLinear" PackType="SRGBA" />
+	<Texture2D Name="MSEmissiveTex" Size="100%|100%" TextureState="MinLinear|MagLinear" PackType="SRGBA" />
+	<FrameBuffer Name="EmissiveBlurFBA" Size="50%|50%" Color="SRGBA:MinLinear|MagLinear" />
+	<FrameBuffer Name="EmissiveBlurFBB" Size="50%|50%" Color="SRGBA:MinLinear|MagLinear" />
+	<BlockGeometry Name="StaticGeom" Type="StaticVertex" MaxVerticeBlocks="8096" MaxIndiceBlocks="8096" BuildPrimitives />
+	<BlockGeometry Name="SkeletonGeom" Type="SkeletonVertex" MaxVerticeBlocks="8096" MaxIndiceBlocks="8096" BuildPrimitives Debug />
+	<ShadowMapPass Name="ShadowMapPass" Buckets="4" ArraySize="2048 | 2048" PassBitID="1">
+		<Pipeline StaticGeom="ShadowMap_Static" SkeletonGeom="ShadowMap_Skeleton" />
+	</ShadowMapPass>
+	<GeometryPass Name="PBRPass" Target="GeometryFB" ClearColor="#ff" ClearDepth="1.0" PassBitID="0" >
+		<Pipeline Name="PBRUnlit" StaticGeom="PBRUnlit_Static" SkeletonGeom="PBRUnlit_Skeleton" />
+		<Pipeline Name="PBRMR" StaticGeom="PBRMR_Static" SkeletonGeom="PBRMR_Skeleton">
+			<Resources LWEShadowDepthTex="ShadowMapPassTexArray" />
+		</Pipeline>
+		<Pipeline Name="PBRSG" StaticGeom="PBRSG_Static" SkeletonGeom="PBRSG_Skeleton">
+			<Resources LWEShadowDepthTex="ShadowMapPassTexArray" />
+		</Pipeline>
+		<Pipeline Name="Debug" StaticGeom="PBRUnlit_Static" SkeletonGeom="PBRUnlit_Skeleton" />
+		<Bucket Primary />
+	</GeometryPass>
+	<ResolvePass Name="Resolve">
+		<Resolve Source="GeometryFB:Color" Target="MSColorTex" />
+		<Resolve Source="GeometryFB:Color1" Target="MSEmissiveTex" />
+	</ResolvePass>
+	<GausianBlurPass Name="EmissiveBlur" Default="PPGausianBlur" >
+		<SubPass Target="EmissiveBlurFBA" Source="MSEmissiveTex" />
+		<SubPass Target="EmissiveBlurFBB" Source="EmissiveBlurFBA:Color" Vertical />
+	</GausianBlurPass>
+	
+	<PPPass Name="Composite">
+		<Pipeline Name="Composite" Default="PPComposite">
+			<Resources ColorTex="MSColorTex" EmissiveTex="EmissiveBlurFBB:Color" />
+		</Pipeline>
+		<SubPass Pipeline="Composite" />
+	</PPPass>
+	<UIPass Name="UIPass">
+		<Pipeline Default="UIPipeline">
+			<Blocks UIUniform="UIUniformBlock" />
+		</Pipeline>
+		<UIShaders Color="UIColorShader" Texture="UITextureShader" Font="UIFontShader" />
+	</UIPass>
+</Renderer>
+<UIManager>
+	<Material Name="White" Color="#FF" />
+	<Label Name="DebugLbl" Flag="PATL|LATL" Font="Arial" Value="LWAsteroids" />
+	<Label Flag="PABR|LABR" Font="Roboto" Value="Basic Projectile tower. I'm going
+To write a bunch of crap while
+This is going on to see how well
+It works" Scale="0.28" Material="White" />
+</UIManager>

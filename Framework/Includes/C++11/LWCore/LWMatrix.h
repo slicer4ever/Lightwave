@@ -12,7 +12,7 @@
 
 /*!	\brief LWMatrix4 is a 4x4 row-major matrix object. */
 template<class Type>
-struct LWMatrix4{
+struct LWMatrix4 {
 	LWVector4<Type> m_Rows[4]; /*!< The 4x4 matrix in row-major order. */
 
 	/*!< \brief returns the simd matrix4 of this matrix. */
@@ -20,19 +20,9 @@ struct LWMatrix4{
 		return LWSMatrix4<Type>(m_Rows[0].AsSVec4(), m_Rows[1].AsSVec4(), m_Rows[2].AsSVec4(), m_Rows[3].AsSVec4());
 	}
 
-	/*! \brief returns the internal components as a array of data. */
-	Type *AsArray(void) {
-		return &m_Rows[0].x;
-	}
-
-	/*! \brief returns the internal components as a const array of data. */
-	const Type *AsArray(void) const {
-		return &m_Rows[0].x;
-	}
-
 	/*!< \brief returns the inverse of an transformation only matrix, if the matrix is more complex then this function will return incorrect results. */
 	LWMatrix4 TransformInverse(void) const {
-		const Type E = std::numeric_limits<Type>::epsilon();
+		const Type E = (Type)std::numeric_limits<float>::epsilon();
 		//Transpose matrix.
 		LWVector3<Type> A = LWVector3<Type>(m_Rows[0].x, m_Rows[1].x, m_Rows[2].x);
 		LWVector3<Type> B = LWVector3<Type>(m_Rows[0].y, m_Rows[1].y, m_Rows[2].y);
@@ -47,17 +37,12 @@ struct LWMatrix4{
 		B *= rsizeSq;
 		C *= rsizeSq;
 
-		LWVector3<Type> D = -LWVector3<Type>(A*m_Rows[3].x + B*m_Rows[3].y + C*m_Rows[3].z);
+		LWVector3<Type> D = -LWVector3<Type>(A * m_Rows[3].x + B * m_Rows[3].y + C * m_Rows[3].z);
 		return LWMatrix4({ A, 0 }, { B, 0 }, { C, 0 }, { D ,1 });
 	}
 
-	/*! \brief writes into Result the transform inverse of the matrix. */
-	void TransformInverse(LWMatrix4 &Result) const {
-		Result = TransformInverse();
-	}
-
 	/*! \brief Returns an copied inverse of this matrix for general matrix's. */
-	LWMatrix4 Inverse(void) const{
+	LWMatrix4 Inverse(void) const {
 		//Found from: https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
 		LWVector4<Type> A = m_Rows[0];
 		LWVector4<Type> B = m_Rows[1];
@@ -93,27 +78,27 @@ struct LWMatrix4{
 			A.w * (B.x * A1223 - B.y * A0223 + B.y * A0123);
 		Det = abs(Det) <= std::numeric_limits<Type>::epsilon() ? (Type)0 : (Type)1 / Det;
 
-		
-		Type Ax =  B.y * A2323 - B.z * A1323 + B.w * A1223;  // (m.m11 * A2323 - m.m12 * A1323 + m.m13 * A1223)
-		Type Ay =-(A.y * A2323 - A.z * A1323 + A.w * A1223); //-(m.m01 * A2323 - m.m02 * A1323 + m.m03 * A1223)
-		Type Az =  A.y * A2313 - A.z * A1313 + A.w * A1213;  // (m.m01 * A2313 - m.m02 * A1313 + m.m03 * A1213)
-		Type Aw =-(A.y * A2312 - A.z * A1312 + A.w * A1212); //-(m.m01 * A2312 - m.m02 * A1312 + m.m03 * A1212)
 
-		Type Bx =-(B.x * A2323 - B.z * A0323 + B.w * A0223); //-(m.m10 * A2323 - m.m12 * A0323 + m.m13 * A0223)
-		Type By =  A.x * A2323 - A.z * A0323 + A.w * A0223;  // (m.m00 * A2323 - m.m02 * A0323 + m.m03 * A0223)
-		Type Bz =-(A.x * A2313 - A.z * A0313 + A.w * A0213); //-(m.m00 * A2313 - m.m02 * A0313 + m.m03 * A0213);
-		Type Bw =  A.x * A2312 - A.z * A0312 + A.w * A0212;  // (m.m00 * A2312 - m.m02 * A0312 + m.m03 * A0212)
+		Type Ax = B.y * A2323 - B.z * A1323 + B.w * A1223;  // (m.m11 * A2323 - m.m12 * A1323 + m.m13 * A1223)
+		Type Ay = -(A.y * A2323 - A.z * A1323 + A.w * A1223); //-(m.m01 * A2323 - m.m02 * A1323 + m.m03 * A1223)
+		Type Az = A.y * A2313 - A.z * A1313 + A.w * A1213;  // (m.m01 * A2313 - m.m02 * A1313 + m.m03 * A1213)
+		Type Aw = -(A.y * A2312 - A.z * A1312 + A.w * A1212); //-(m.m01 * A2312 - m.m02 * A1312 + m.m03 * A1212)
 
-		Type Cx =  B.x * A1323 - B.y * A0323 + B.w * A0123;  // (m.m10 * A1323 - m.m11 * A0323 + m.m13 * A0123)
-		Type Cy =-(A.x * A1323 - A.y * A0323 + A.w * A0123); //-(m.m00 * A1323 - m.m01 * A0323 + m.m03 * A0123)
-		Type Cz =  A.x * A1313 - A.y * A0313 + A.w * A0113;  // (m.m00 * A1313 - m.m01 * A0313 + m.m03 * A0113),
-		Type Cw =-(A.x * A1312 - A.y * A0312 + A.w * A0112); //-(m.m00 * A1312 - m.m01 * A0312 + m.m03 * A0112),
-		
-		Type Dx =-(B.x * A1223 - B.y * A0223 + B.z * A0123); //-(m.m10 * A1223 - m.m11 * A0223 + m.m12 * A0123)
-		Type Dy =  A.x * A1223 - A.y * A0223 + A.z * A0123;  // (m.m00 * A1223 - m.m01 * A0223 + m.m02 * A0123)
-		Type Dz =-(A.x * A1213 - A.y * A0213 + A.z * A0113); //-(m.m00 * A1213 - m.m01 * A0213 + m.m02 * A0113)
-		Type Dw =  A.x * A1212 - A.y * A0212 + A.z * A0112;  // (m.m00 * A1212 - m.m01 * A0212 + m.m02 * A0112)
-		return LWMatrix4({ Ax, Ay, Az, Aw }, { Bx, By, Bz, Bw }, { Cx, Cy, Cz, Cw }, { Dx, Dy, Dz, Dw })*Det;
+		Type Bx = -(B.x * A2323 - B.z * A0323 + B.w * A0223); //-(m.m10 * A2323 - m.m12 * A0323 + m.m13 * A0223)
+		Type By = A.x * A2323 - A.z * A0323 + A.w * A0223;  // (m.m00 * A2323 - m.m02 * A0323 + m.m03 * A0223)
+		Type Bz = -(A.x * A2313 - A.z * A0313 + A.w * A0213); //-(m.m00 * A2313 - m.m02 * A0313 + m.m03 * A0213);
+		Type Bw = A.x * A2312 - A.z * A0312 + A.w * A0212;  // (m.m00 * A2312 - m.m02 * A0312 + m.m03 * A0212)
+
+		Type Cx = B.x * A1323 - B.y * A0323 + B.w * A0123;  // (m.m10 * A1323 - m.m11 * A0323 + m.m13 * A0123)
+		Type Cy = -(A.x * A1323 - A.y * A0323 + A.w * A0123); //-(m.m00 * A1323 - m.m01 * A0323 + m.m03 * A0123)
+		Type Cz = A.x * A1313 - A.y * A0313 + A.w * A0113;  // (m.m00 * A1313 - m.m01 * A0313 + m.m03 * A0113),
+		Type Cw = -(A.x * A1312 - A.y * A0312 + A.w * A0112); //-(m.m00 * A1312 - m.m01 * A0312 + m.m03 * A0112),
+
+		Type Dx = -(B.x * A1223 - B.y * A0223 + B.z * A0123); //-(m.m10 * A1223 - m.m11 * A0223 + m.m12 * A0123)
+		Type Dy = A.x * A1223 - A.y * A0223 + A.z * A0123;  // (m.m00 * A1223 - m.m01 * A0223 + m.m02 * A0123)
+		Type Dz = -(A.x * A1213 - A.y * A0213 + A.z * A0113); //-(m.m00 * A1213 - m.m01 * A0213 + m.m02 * A0113)
+		Type Dw = A.x * A1212 - A.y * A0212 + A.z * A0112;  // (m.m00 * A1212 - m.m01 * A0212 + m.m02 * A0112)
+		return LWMatrix4({ Ax, Ay, Az, Aw }, { Bx, By, Bz, Bw }, { Cx, Cy, Cz, Cw }, { Dx, Dy, Dz, Dw }) * Det;
 
 	}
 
@@ -123,27 +108,9 @@ struct LWMatrix4{
 		return LWVector4<Type>(Arry[Index], Arry[Index + 4], Arry[Index + 8], Arry[Index + 12]);
 	};
 
-	/*! \brief returns the specified row of the matrix(this function exists for parody to LWSMatrix4's row function.) */
-	LWVector4<Type> Row(uint32_t Index) const {
-		return m_Rows[Index];
-	}
-
-	/*! \brief set's a value of the matrix at row*4+Column position, this function exists for parody to LWSMatrix4's sRC function.) */
-	LWMatrix4 &sRC(uint32_t Row, uint32_t Column, Type Value) {
-		Type *Arry = &m_Rows[0].x;
-		Arry[Row * 4 + Column] = Value;
-		return *this;
-	}
-
 	/*! \brief returns the transpose of the this matrix. */
-	LWMatrix4 Transpose(void) const{
+	LWMatrix4 Transpose(void) const {
 		return LWMatrix4(LWVector4<Type>(m_Rows[0].x, m_Rows[1].x, m_Rows[2].x, m_Rows[3].x), LWVector4<Type>(m_Rows[0].y, m_Rows[1].y, m_Rows[2].y, m_Rows[3].y), LWVector4<Type>(m_Rows[0].z, m_Rows[1].z, m_Rows[2].z, m_Rows[3].z), LWVector4<Type>(m_Rows[0].w, m_Rows[1].w, m_Rows[2].w, m_Rows[3].w));
-	}
-
-	/*! \brief writes into Result the transpose of this matrix. */
-	void Transpose(LWMatrix4 &Result) const {
-		Result = Transpose();
-		return;
 	}
 
 	/*!< \brief returns the upper left 3x3 matrix transposed only. */
@@ -154,25 +121,13 @@ struct LWMatrix4{
 			m_Rows[3]);
 	}
 
-	/*! \brief writes into result the upper left 3x3 matrix transpose of this matrix. */
-	void Transpose3x3(LWMatrix4 &Result) const {
-		Result = Transpose3x3();
-		return;
-	}
-
 	/*!< \brief returns the upper left 2x2 matrix transposed only. */
 	LWMatrix4 Transpose2x2(void) const {
 		return LWMatrix4(LWVector4<Type>(m_Rows[0].x, m_Rows[1].x, m_Rows[0].z, m_Rows[0].w),
 			LWVector4<Type>(m_Rows[0].y, m_Rows[1].y, m_Rows[1].z, m_Rows[1].w), m_Rows[2], m_Rows[3]);
 	}
 
-	/*!< \brief writes into result the upper left 2x3 matrix transpose of this matrix. */
-	void Transpose2x2(LWMatrix4 &Result) const {
-		Result = Transpose2x2();
-		return;
-	}
-	
-	/*!< \brief decomposes 4x4 matrix to get the scalar for each axis. 
+	/*!< \brief decomposes 4x4 matrix to get the scalar for each axis.
 		 \param Transpose will transpose the 3x3 rotation+scale matrix before calculating the scale/rotation. */
 	LWVector3<Type> DecomposeScale(bool Transpose3x3) const {
 		LWVector3<Type> R0 = LWVector3<Type>(m_Rows[0].x, m_Rows[0].y, m_Rows[0].z);
@@ -199,13 +154,13 @@ struct LWMatrix4{
 		}
 		Scale = LWVector3<Type>(R0.Length(), R1.Length(), R2.Length());
 		LWVector3<Type> iScale = 1.0 / Scale;
-		Rotation = LWQuaternion<Type>(LWMatrix3<Type>(R0*iScale.x, R1*iScale.y, R2*iScale.z));
+		Rotation = LWQuaternion<Type>(LWMatrix3<Type>(R0 * iScale.x, R1 * iScale.y, R2 * iScale.z));
 		Translation = LWVector3<Type>(m_Rows[3].x, m_Rows[3].y, m_Rows[3].z);
 		return;
 	}
 
 	/*! \brief calculates the determinant of this matrix. */
-	Type Determinant(void) const{
+	Type Determinant(void) const {
 		//Found from: https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
 		LWVector4<Type> A = m_Rows[0];
 		LWVector4<Type> B = m_Rows[1];
@@ -225,8 +180,18 @@ struct LWMatrix4{
 			A.w * (B.x * A1223 - B.y * A0223 + B.y * A0123);
 	}
 
+	/*!< \brief accesses rows of the matrix as if it were an array. */
+	LWVector4<Type> operator[](uint32_t i) const {
+		return m_Rows[i];
+	}
+
+	/*!< \brief accesses rows of the matrix as if it were an array. */
+	LWVector4<Type> &operator[](uint32_t i) {
+		return m_Rows[i];
+	}
+
 	/*! \cond */
-	LWMatrix4 &operator = (const LWMatrix4 &Rhs){
+	LWMatrix4 &operator = (const LWMatrix4 &Rhs) {
 		m_Rows[0] = Rhs.m_Rows[0];
 		m_Rows[1] = Rhs.m_Rows[1];
 		m_Rows[2] = Rhs.m_Rows[2];
@@ -234,7 +199,7 @@ struct LWMatrix4{
 		return *this;
 	}
 
-	LWMatrix4 &operator+= (const LWMatrix4 &Rhs){
+	LWMatrix4 &operator+= (const LWMatrix4 &Rhs) {
 		m_Rows[0] += Rhs.m_Rows[0];
 		m_Rows[1] += Rhs.m_Rows[1];
 		m_Rows[2] += Rhs.m_Rows[2];
@@ -242,7 +207,7 @@ struct LWMatrix4{
 		return *this;
 	}
 
-	LWMatrix4 &operator-= (const LWMatrix4 &Rhs){
+	LWMatrix4 &operator-= (const LWMatrix4 &Rhs) {
 		m_Rows[0] -= Rhs.m_Rows[0];
 		m_Rows[1] -= Rhs.m_Rows[1];
 		m_Rows[2] -= Rhs.m_Rows[2];
@@ -250,23 +215,23 @@ struct LWMatrix4{
 		return *this;
 	}
 
-	LWMatrix4 &operator*= (const LWMatrix4 &Rhs){
-		Type Ax = m_Rows[0].x*Rhs.m_Rows[0].x + m_Rows[0].y*Rhs.m_Rows[1].x + m_Rows[0].z*Rhs.m_Rows[2].x + m_Rows[0].w*Rhs.m_Rows[3].x;
-		Type Ay = m_Rows[0].x*Rhs.m_Rows[0].y + m_Rows[0].y*Rhs.m_Rows[1].y + m_Rows[0].z*Rhs.m_Rows[2].y + m_Rows[0].w*Rhs.m_Rows[3].y;
-		Type Az = m_Rows[0].x*Rhs.m_Rows[0].z + m_Rows[0].y*Rhs.m_Rows[1].z + m_Rows[0].z*Rhs.m_Rows[2].z + m_Rows[0].w*Rhs.m_Rows[3].z;
-		Type Aw = m_Rows[0].x*Rhs.m_Rows[0].w + m_Rows[0].y*Rhs.m_Rows[1].w + m_Rows[0].z*Rhs.m_Rows[2].w + m_Rows[0].w*Rhs.m_Rows[3].w;
-		Type Bx = m_Rows[1].x*Rhs.m_Rows[0].x + m_Rows[1].y*Rhs.m_Rows[1].x + m_Rows[1].z*Rhs.m_Rows[2].x + m_Rows[1].w*Rhs.m_Rows[3].x;
-		Type By = m_Rows[1].x*Rhs.m_Rows[0].y + m_Rows[1].y*Rhs.m_Rows[1].y + m_Rows[1].z*Rhs.m_Rows[2].y + m_Rows[1].w*Rhs.m_Rows[3].y;
-		Type Bz = m_Rows[1].x*Rhs.m_Rows[0].z + m_Rows[1].y*Rhs.m_Rows[1].z + m_Rows[1].z*Rhs.m_Rows[2].z + m_Rows[1].w*Rhs.m_Rows[3].z;
-		Type Bw = m_Rows[1].x*Rhs.m_Rows[0].w + m_Rows[1].y*Rhs.m_Rows[1].w + m_Rows[1].z*Rhs.m_Rows[2].w + m_Rows[1].w*Rhs.m_Rows[3].w;
-		Type Cx = m_Rows[2].x*Rhs.m_Rows[0].x + m_Rows[2].y*Rhs.m_Rows[1].x + m_Rows[2].z*Rhs.m_Rows[2].x + m_Rows[2].w*Rhs.m_Rows[3].x;
-		Type Cy = m_Rows[2].x*Rhs.m_Rows[0].y + m_Rows[2].y*Rhs.m_Rows[1].y + m_Rows[2].z*Rhs.m_Rows[2].y + m_Rows[2].w*Rhs.m_Rows[3].y;
-		Type Cz = m_Rows[2].x*Rhs.m_Rows[0].z + m_Rows[2].y*Rhs.m_Rows[1].z + m_Rows[2].z*Rhs.m_Rows[2].z + m_Rows[2].w*Rhs.m_Rows[3].z;
-		Type Cw = m_Rows[2].x*Rhs.m_Rows[0].w + m_Rows[2].y*Rhs.m_Rows[1].w + m_Rows[2].z*Rhs.m_Rows[2].w + m_Rows[2].w*Rhs.m_Rows[3].w;
-		Type Dx = m_Rows[3].x*Rhs.m_Rows[0].x + m_Rows[3].y*Rhs.m_Rows[1].x + m_Rows[3].z*Rhs.m_Rows[2].x + m_Rows[3].w*Rhs.m_Rows[3].x;
-		Type Dy = m_Rows[3].x*Rhs.m_Rows[0].y + m_Rows[3].y*Rhs.m_Rows[1].y + m_Rows[3].z*Rhs.m_Rows[2].y + m_Rows[3].w*Rhs.m_Rows[3].y;
-		Type Dz = m_Rows[3].x*Rhs.m_Rows[0].z + m_Rows[3].y*Rhs.m_Rows[1].z + m_Rows[3].z*Rhs.m_Rows[2].z + m_Rows[3].w*Rhs.m_Rows[3].z;
-		Type Dw = m_Rows[3].x*Rhs.m_Rows[0].w + m_Rows[3].y*Rhs.m_Rows[1].w + m_Rows[3].z*Rhs.m_Rows[2].w + m_Rows[3].w*Rhs.m_Rows[3].w;
+	LWMatrix4 &operator*= (const LWMatrix4 &Rhs) {
+		Type Ax = m_Rows[0].x * Rhs.m_Rows[0].x + m_Rows[0].y * Rhs.m_Rows[1].x + m_Rows[0].z * Rhs.m_Rows[2].x + m_Rows[0].w * Rhs.m_Rows[3].x;
+		Type Ay = m_Rows[0].x * Rhs.m_Rows[0].y + m_Rows[0].y * Rhs.m_Rows[1].y + m_Rows[0].z * Rhs.m_Rows[2].y + m_Rows[0].w * Rhs.m_Rows[3].y;
+		Type Az = m_Rows[0].x * Rhs.m_Rows[0].z + m_Rows[0].y * Rhs.m_Rows[1].z + m_Rows[0].z * Rhs.m_Rows[2].z + m_Rows[0].w * Rhs.m_Rows[3].z;
+		Type Aw = m_Rows[0].x * Rhs.m_Rows[0].w + m_Rows[0].y * Rhs.m_Rows[1].w + m_Rows[0].z * Rhs.m_Rows[2].w + m_Rows[0].w * Rhs.m_Rows[3].w;
+		Type Bx = m_Rows[1].x * Rhs.m_Rows[0].x + m_Rows[1].y * Rhs.m_Rows[1].x + m_Rows[1].z * Rhs.m_Rows[2].x + m_Rows[1].w * Rhs.m_Rows[3].x;
+		Type By = m_Rows[1].x * Rhs.m_Rows[0].y + m_Rows[1].y * Rhs.m_Rows[1].y + m_Rows[1].z * Rhs.m_Rows[2].y + m_Rows[1].w * Rhs.m_Rows[3].y;
+		Type Bz = m_Rows[1].x * Rhs.m_Rows[0].z + m_Rows[1].y * Rhs.m_Rows[1].z + m_Rows[1].z * Rhs.m_Rows[2].z + m_Rows[1].w * Rhs.m_Rows[3].z;
+		Type Bw = m_Rows[1].x * Rhs.m_Rows[0].w + m_Rows[1].y * Rhs.m_Rows[1].w + m_Rows[1].z * Rhs.m_Rows[2].w + m_Rows[1].w * Rhs.m_Rows[3].w;
+		Type Cx = m_Rows[2].x * Rhs.m_Rows[0].x + m_Rows[2].y * Rhs.m_Rows[1].x + m_Rows[2].z * Rhs.m_Rows[2].x + m_Rows[2].w * Rhs.m_Rows[3].x;
+		Type Cy = m_Rows[2].x * Rhs.m_Rows[0].y + m_Rows[2].y * Rhs.m_Rows[1].y + m_Rows[2].z * Rhs.m_Rows[2].y + m_Rows[2].w * Rhs.m_Rows[3].y;
+		Type Cz = m_Rows[2].x * Rhs.m_Rows[0].z + m_Rows[2].y * Rhs.m_Rows[1].z + m_Rows[2].z * Rhs.m_Rows[2].z + m_Rows[2].w * Rhs.m_Rows[3].z;
+		Type Cw = m_Rows[2].x * Rhs.m_Rows[0].w + m_Rows[2].y * Rhs.m_Rows[1].w + m_Rows[2].z * Rhs.m_Rows[2].w + m_Rows[2].w * Rhs.m_Rows[3].w;
+		Type Dx = m_Rows[3].x * Rhs.m_Rows[0].x + m_Rows[3].y * Rhs.m_Rows[1].x + m_Rows[3].z * Rhs.m_Rows[2].x + m_Rows[3].w * Rhs.m_Rows[3].x;
+		Type Dy = m_Rows[3].x * Rhs.m_Rows[0].y + m_Rows[3].y * Rhs.m_Rows[1].y + m_Rows[3].z * Rhs.m_Rows[2].y + m_Rows[3].w * Rhs.m_Rows[3].y;
+		Type Dz = m_Rows[3].x * Rhs.m_Rows[0].z + m_Rows[3].y * Rhs.m_Rows[1].z + m_Rows[3].z * Rhs.m_Rows[2].z + m_Rows[3].w * Rhs.m_Rows[3].z;
+		Type Dw = m_Rows[3].x * Rhs.m_Rows[0].w + m_Rows[3].y * Rhs.m_Rows[1].w + m_Rows[3].z * Rhs.m_Rows[2].w + m_Rows[3].w * Rhs.m_Rows[3].w;
 		m_Rows[0] = LWVector4<Type>(Ax, Ay, Az, Aw);
 		m_Rows[1] = LWVector4<Type>(Bx, By, Bz, Bw);
 		m_Rows[2] = LWVector4<Type>(Cx, Cy, Cz, Cw);
@@ -274,7 +239,7 @@ struct LWMatrix4{
 		return *this;
 	}
 
-	LWMatrix4 &operator *=(Type Rhs){
+	LWMatrix4 &operator *=(Type Rhs) {
 		m_Rows[0] *= Rhs;
 		m_Rows[1] *= Rhs;
 		m_Rows[2] *= Rhs;
@@ -282,7 +247,7 @@ struct LWMatrix4{
 		return *this;
 	}
 
-	LWMatrix4 &operator /=(Type Rhs){
+	LWMatrix4 &operator /=(Type Rhs) {
 		m_Rows[0] /= Rhs;
 		m_Rows[1] /= Rhs;
 		m_Rows[2] /= Rhs;
@@ -290,11 +255,11 @@ struct LWMatrix4{
 		return *this;
 	}
 
-	bool operator == (const LWMatrix4 &Rhs) const{
+	bool operator == (const LWMatrix4 &Rhs) const {
 		return m_Rows[0] == Rhs.m_Rows[0] && m_Rows[1] == Rhs.m_Rows[1] && m_Rows[2] == Rhs.m_Rows[2] && m_Rows[3] == Rhs.m_Rows[3];
 	}
 
-	bool operator != (const LWMatrix4 &Rhs) const{
+	bool operator != (const LWMatrix4 &Rhs) const {
 		return !(*this == Rhs);
 	}
 
@@ -307,89 +272,121 @@ struct LWMatrix4{
 		return o;
 	}
 
-	friend LWMatrix4 operator + (const LWMatrix4 &Lhs, const LWMatrix4 &Rhs){
+	friend LWMatrix4 operator + (const LWMatrix4 &Lhs, const LWMatrix4 &Rhs) {
 		return LWMatrix4(Lhs.m_Rows[0] + Rhs.m_Rows[0], Lhs.m_Rows[1] + Rhs.m_Rows[1], Lhs.m_Rows[2] + Rhs.m_Rows[2], Lhs.m_Rows[3] + Rhs.m_Rows[3]);
 	}
 
-	friend LWMatrix4 operator - (const LWMatrix4 &Lhs, const LWMatrix4 &Rhs){
+	friend LWMatrix4 operator - (const LWMatrix4 &Lhs, const LWMatrix4 &Rhs) {
 		return LWMatrix4(Lhs.m_Rows[0] - Rhs.m_Rows[0], Lhs.m_Rows[1] - Rhs.m_Rows[1], Lhs.m_Rows[2] - Rhs.m_Rows[2], Lhs.m_Rows[3] - Rhs.m_Rows[3]);
 	}
 
 	friend LWMatrix4 operator * (const LWMatrix4 &Lhs, const LWMatrix4 &Rhs) {
-		Type Ax = Lhs.m_Rows[0].x*Rhs.m_Rows[0].x + Lhs.m_Rows[0].y*Rhs.m_Rows[1].x + Lhs.m_Rows[0].z*Rhs.m_Rows[2].x + Lhs.m_Rows[0].w*Rhs.m_Rows[3].x;
-		Type Ay = Lhs.m_Rows[0].x*Rhs.m_Rows[0].y + Lhs.m_Rows[0].y*Rhs.m_Rows[1].y + Lhs.m_Rows[0].z*Rhs.m_Rows[2].y + Lhs.m_Rows[0].w*Rhs.m_Rows[3].y;
-		Type Az = Lhs.m_Rows[0].x*Rhs.m_Rows[0].z + Lhs.m_Rows[0].y*Rhs.m_Rows[1].z + Lhs.m_Rows[0].z*Rhs.m_Rows[2].z + Lhs.m_Rows[0].w*Rhs.m_Rows[3].z;
-		Type Aw = Lhs.m_Rows[0].x*Rhs.m_Rows[0].w + Lhs.m_Rows[0].y*Rhs.m_Rows[1].w + Lhs.m_Rows[0].z*Rhs.m_Rows[2].w + Lhs.m_Rows[0].w*Rhs.m_Rows[3].w;
-		Type Bx = Lhs.m_Rows[1].x*Rhs.m_Rows[0].x + Lhs.m_Rows[1].y*Rhs.m_Rows[1].x + Lhs.m_Rows[1].z*Rhs.m_Rows[2].x + Lhs.m_Rows[1].w*Rhs.m_Rows[3].x;
-		Type By = Lhs.m_Rows[1].x*Rhs.m_Rows[0].y + Lhs.m_Rows[1].y*Rhs.m_Rows[1].y + Lhs.m_Rows[1].z*Rhs.m_Rows[2].y + Lhs.m_Rows[1].w*Rhs.m_Rows[3].y;
-		Type Bz = Lhs.m_Rows[1].x*Rhs.m_Rows[0].z + Lhs.m_Rows[1].y*Rhs.m_Rows[1].z + Lhs.m_Rows[1].z*Rhs.m_Rows[2].z + Lhs.m_Rows[1].w*Rhs.m_Rows[3].z;
-		Type Bw = Lhs.m_Rows[1].x*Rhs.m_Rows[0].w + Lhs.m_Rows[1].y*Rhs.m_Rows[1].w + Lhs.m_Rows[1].z*Rhs.m_Rows[2].w + Lhs.m_Rows[1].w*Rhs.m_Rows[3].w;
-		Type Cx = Lhs.m_Rows[2].x*Rhs.m_Rows[0].x + Lhs.m_Rows[2].y*Rhs.m_Rows[1].x + Lhs.m_Rows[2].z*Rhs.m_Rows[2].x + Lhs.m_Rows[2].w*Rhs.m_Rows[3].x;
-		Type Cy = Lhs.m_Rows[2].x*Rhs.m_Rows[0].y + Lhs.m_Rows[2].y*Rhs.m_Rows[1].y + Lhs.m_Rows[2].z*Rhs.m_Rows[2].y + Lhs.m_Rows[2].w*Rhs.m_Rows[3].y;
-		Type Cz = Lhs.m_Rows[2].x*Rhs.m_Rows[0].z + Lhs.m_Rows[2].y*Rhs.m_Rows[1].z + Lhs.m_Rows[2].z*Rhs.m_Rows[2].z + Lhs.m_Rows[2].w*Rhs.m_Rows[3].z;
-		Type Cw = Lhs.m_Rows[2].x*Rhs.m_Rows[0].w + Lhs.m_Rows[2].y*Rhs.m_Rows[1].w + Lhs.m_Rows[2].z*Rhs.m_Rows[2].w + Lhs.m_Rows[2].w*Rhs.m_Rows[3].w;
-		Type Dx = Lhs.m_Rows[3].x*Rhs.m_Rows[0].x + Lhs.m_Rows[3].y*Rhs.m_Rows[1].x + Lhs.m_Rows[3].z*Rhs.m_Rows[2].x + Lhs.m_Rows[3].w*Rhs.m_Rows[3].x;
-		Type Dy = Lhs.m_Rows[3].x*Rhs.m_Rows[0].y + Lhs.m_Rows[3].y*Rhs.m_Rows[1].y + Lhs.m_Rows[3].z*Rhs.m_Rows[2].y + Lhs.m_Rows[3].w*Rhs.m_Rows[3].y;
-		Type Dz = Lhs.m_Rows[3].x*Rhs.m_Rows[0].z + Lhs.m_Rows[3].y*Rhs.m_Rows[1].z + Lhs.m_Rows[3].z*Rhs.m_Rows[2].z + Lhs.m_Rows[3].w*Rhs.m_Rows[3].z;
-		Type Dw = Lhs.m_Rows[3].x*Rhs.m_Rows[0].w + Lhs.m_Rows[3].y*Rhs.m_Rows[1].w + Lhs.m_Rows[3].z*Rhs.m_Rows[2].w + Lhs.m_Rows[3].w*Rhs.m_Rows[3].w;
+		Type Ax = Lhs.m_Rows[0].x * Rhs.m_Rows[0].x + Lhs.m_Rows[0].y * Rhs.m_Rows[1].x + Lhs.m_Rows[0].z * Rhs.m_Rows[2].x + Lhs.m_Rows[0].w * Rhs.m_Rows[3].x;
+		Type Ay = Lhs.m_Rows[0].x * Rhs.m_Rows[0].y + Lhs.m_Rows[0].y * Rhs.m_Rows[1].y + Lhs.m_Rows[0].z * Rhs.m_Rows[2].y + Lhs.m_Rows[0].w * Rhs.m_Rows[3].y;
+		Type Az = Lhs.m_Rows[0].x * Rhs.m_Rows[0].z + Lhs.m_Rows[0].y * Rhs.m_Rows[1].z + Lhs.m_Rows[0].z * Rhs.m_Rows[2].z + Lhs.m_Rows[0].w * Rhs.m_Rows[3].z;
+		Type Aw = Lhs.m_Rows[0].x * Rhs.m_Rows[0].w + Lhs.m_Rows[0].y * Rhs.m_Rows[1].w + Lhs.m_Rows[0].z * Rhs.m_Rows[2].w + Lhs.m_Rows[0].w * Rhs.m_Rows[3].w;
+		Type Bx = Lhs.m_Rows[1].x * Rhs.m_Rows[0].x + Lhs.m_Rows[1].y * Rhs.m_Rows[1].x + Lhs.m_Rows[1].z * Rhs.m_Rows[2].x + Lhs.m_Rows[1].w * Rhs.m_Rows[3].x;
+		Type By = Lhs.m_Rows[1].x * Rhs.m_Rows[0].y + Lhs.m_Rows[1].y * Rhs.m_Rows[1].y + Lhs.m_Rows[1].z * Rhs.m_Rows[2].y + Lhs.m_Rows[1].w * Rhs.m_Rows[3].y;
+		Type Bz = Lhs.m_Rows[1].x * Rhs.m_Rows[0].z + Lhs.m_Rows[1].y * Rhs.m_Rows[1].z + Lhs.m_Rows[1].z * Rhs.m_Rows[2].z + Lhs.m_Rows[1].w * Rhs.m_Rows[3].z;
+		Type Bw = Lhs.m_Rows[1].x * Rhs.m_Rows[0].w + Lhs.m_Rows[1].y * Rhs.m_Rows[1].w + Lhs.m_Rows[1].z * Rhs.m_Rows[2].w + Lhs.m_Rows[1].w * Rhs.m_Rows[3].w;
+		Type Cx = Lhs.m_Rows[2].x * Rhs.m_Rows[0].x + Lhs.m_Rows[2].y * Rhs.m_Rows[1].x + Lhs.m_Rows[2].z * Rhs.m_Rows[2].x + Lhs.m_Rows[2].w * Rhs.m_Rows[3].x;
+		Type Cy = Lhs.m_Rows[2].x * Rhs.m_Rows[0].y + Lhs.m_Rows[2].y * Rhs.m_Rows[1].y + Lhs.m_Rows[2].z * Rhs.m_Rows[2].y + Lhs.m_Rows[2].w * Rhs.m_Rows[3].y;
+		Type Cz = Lhs.m_Rows[2].x * Rhs.m_Rows[0].z + Lhs.m_Rows[2].y * Rhs.m_Rows[1].z + Lhs.m_Rows[2].z * Rhs.m_Rows[2].z + Lhs.m_Rows[2].w * Rhs.m_Rows[3].z;
+		Type Cw = Lhs.m_Rows[2].x * Rhs.m_Rows[0].w + Lhs.m_Rows[2].y * Rhs.m_Rows[1].w + Lhs.m_Rows[2].z * Rhs.m_Rows[2].w + Lhs.m_Rows[2].w * Rhs.m_Rows[3].w;
+		Type Dx = Lhs.m_Rows[3].x * Rhs.m_Rows[0].x + Lhs.m_Rows[3].y * Rhs.m_Rows[1].x + Lhs.m_Rows[3].z * Rhs.m_Rows[2].x + Lhs.m_Rows[3].w * Rhs.m_Rows[3].x;
+		Type Dy = Lhs.m_Rows[3].x * Rhs.m_Rows[0].y + Lhs.m_Rows[3].y * Rhs.m_Rows[1].y + Lhs.m_Rows[3].z * Rhs.m_Rows[2].y + Lhs.m_Rows[3].w * Rhs.m_Rows[3].y;
+		Type Dz = Lhs.m_Rows[3].x * Rhs.m_Rows[0].z + Lhs.m_Rows[3].y * Rhs.m_Rows[1].z + Lhs.m_Rows[3].z * Rhs.m_Rows[2].z + Lhs.m_Rows[3].w * Rhs.m_Rows[3].z;
+		Type Dw = Lhs.m_Rows[3].x * Rhs.m_Rows[0].w + Lhs.m_Rows[3].y * Rhs.m_Rows[1].w + Lhs.m_Rows[3].z * Rhs.m_Rows[2].w + Lhs.m_Rows[3].w * Rhs.m_Rows[3].w;
 		return LWMatrix4(LWVector4<Type>(Ax, Ay, Az, Aw), LWVector4<Type>(Bx, By, Bz, Bw), LWVector4<Type>(Cx, Cy, Cz, Cw), LWVector4<Type>(Dx, Dy, Dz, Dw));
 	}
 
-	friend LWMatrix4 operator * (const LWMatrix4 &Lhs, Type Rhs){
+	friend LWMatrix4 operator * (const LWMatrix4 &Lhs, Type Rhs) {
 		return LWMatrix4(Lhs.m_Rows[0] * Rhs, Lhs.m_Rows[1] * Rhs, Lhs.m_Rows[2] * Rhs, Lhs.m_Rows[3] * Rhs);
 	}
 
-	friend LWMatrix4 operator * (Type Lhs, const LWMatrix4 &Rhs){
-		return LWMatrix4(Lhs*Rhs.m_Rows[0], Lhs*Rhs.m_Rows[1], Lhs*Rhs.m_Rows[2], Lhs*Rhs.m_Rows[3]);
+	friend LWMatrix4 operator * (Type Lhs, const LWMatrix4 &Rhs) {
+		return LWMatrix4(Lhs * Rhs.m_Rows[0], Lhs * Rhs.m_Rows[1], Lhs * Rhs.m_Rows[2], Lhs * Rhs.m_Rows[3]);
 	}
 
-	friend LWMatrix4 operator / (const LWMatrix4 &Lhs, Type Rhs){
+	friend LWMatrix4 operator / (const LWMatrix4 &Lhs, Type Rhs) {
 		return LWMatrix4(Lhs.m_Rows[0] / Rhs, Lhs.m_Rows[1] / Rhs, Lhs.m_Rows[2] / Rhs, Lhs.m_Rows[3] / Rhs);
 	}
 
-	friend LWMatrix4 operator / (Type Lhs, const LWMatrix4 &Rhs){
+	friend LWMatrix4 operator / (Type Lhs, const LWMatrix4 &Rhs) {
 		return LWMatrix4(Lhs / Rhs.m_Rows[0], Lhs / Rhs.m_Rows[1], Lhs / Rhs.m_Rows[2], Lhs / Rhs.m_Rows[3]);
 	}
 
-	friend LWVector4<Type> operator * (const LWMatrix4 &Lhs, const LWVector4<Type> &Rhs){
+	friend LWVector4<Type> operator * (const LWMatrix4 &Lhs, const LWVector4<Type> &Rhs) {
 		return LWVector4<Type>(
-			Lhs.m_Rows[0].x*Rhs.x + Lhs.m_Rows[1].x*Rhs.y + Lhs.m_Rows[2].x*Rhs.z + Lhs.m_Rows[3].x*Rhs.w,
-			Lhs.m_Rows[0].y*Rhs.x + Lhs.m_Rows[1].y*Rhs.y + Lhs.m_Rows[2].y*Rhs.z + Lhs.m_Rows[3].y*Rhs.w,
-			Lhs.m_Rows[0].z*Rhs.x + Lhs.m_Rows[1].z*Rhs.y + Lhs.m_Rows[2].z*Rhs.z + Lhs.m_Rows[3].z*Rhs.w,
-			Lhs.m_Rows[0].w*Rhs.x + Lhs.m_Rows[1].w*Rhs.y + Lhs.m_Rows[2].w*Rhs.z + Lhs.m_Rows[3].w*Rhs.w);
+			Lhs.m_Rows[0].x * Rhs.x + Lhs.m_Rows[1].x * Rhs.y + Lhs.m_Rows[2].x * Rhs.z + Lhs.m_Rows[3].x * Rhs.w,
+			Lhs.m_Rows[0].y * Rhs.x + Lhs.m_Rows[1].y * Rhs.y + Lhs.m_Rows[2].y * Rhs.z + Lhs.m_Rows[3].y * Rhs.w,
+			Lhs.m_Rows[0].z * Rhs.x + Lhs.m_Rows[1].z * Rhs.y + Lhs.m_Rows[2].z * Rhs.z + Lhs.m_Rows[3].z * Rhs.w,
+			Lhs.m_Rows[0].w * Rhs.x + Lhs.m_Rows[1].w * Rhs.y + Lhs.m_Rows[2].w * Rhs.z + Lhs.m_Rows[3].w * Rhs.w);
 	}
 
-	friend LWVector4<Type> operator * (const LWVector4<Type> &Lhs, const LWMatrix4 &Rhs){
+	friend LWVector4<Type> operator * (const LWVector4<Type> &Lhs, const LWMatrix4 &Rhs) {
 		return LWVector4<Type>(
-			Lhs.x*Rhs.m_Rows[0].x + Lhs.y*Rhs.m_Rows[1].x + Lhs.z*Rhs.m_Rows[2].x + Lhs.w*Rhs.m_Rows[3].x,
-			Lhs.x*Rhs.m_Rows[0].y + Lhs.y*Rhs.m_Rows[1].y + Lhs.z*Rhs.m_Rows[2].y + Lhs.w*Rhs.m_Rows[3].y,
-			Lhs.x*Rhs.m_Rows[0].z + Lhs.y*Rhs.m_Rows[1].z + Lhs.z*Rhs.m_Rows[2].z + Lhs.w*Rhs.m_Rows[3].z,
-			Lhs.x*Rhs.m_Rows[0].w + Lhs.y*Rhs.m_Rows[1].w + Lhs.z*Rhs.m_Rows[2].w + Lhs.w*Rhs.m_Rows[3].w);
+			Lhs.x * Rhs.m_Rows[0].x + Lhs.y * Rhs.m_Rows[1].x + Lhs.z * Rhs.m_Rows[2].x + Lhs.w * Rhs.m_Rows[3].x,
+			Lhs.x * Rhs.m_Rows[0].y + Lhs.y * Rhs.m_Rows[1].y + Lhs.z * Rhs.m_Rows[2].y + Lhs.w * Rhs.m_Rows[3].y,
+			Lhs.x * Rhs.m_Rows[0].z + Lhs.y * Rhs.m_Rows[1].z + Lhs.z * Rhs.m_Rows[2].z + Lhs.w * Rhs.m_Rows[3].z,
+			Lhs.x * Rhs.m_Rows[0].w + Lhs.y * Rhs.m_Rows[1].w + Lhs.z * Rhs.m_Rows[2].w + Lhs.w * Rhs.m_Rows[3].w);
 	}
 
-	friend LWVector3<Type> operator * (const LWMatrix4 &Lhs, const LWVector3<Type> &Rhs){
+	friend LWVector3<Type> operator * (const LWMatrix4 &Lhs, const LWVector3<Type> &Rhs) {
 		return LWVector3<Type>(
-			Lhs.m_Rows[0].x*Rhs.x + Lhs.m_Rows[1].x*Rhs.y + Lhs.m_Rows[2].x*Rhs.z + Lhs.m_Rows[3].x,
-			Lhs.m_Rows[0].y*Rhs.x + Lhs.m_Rows[1].y*Rhs.y + Lhs.m_Rows[2].y*Rhs.z + Lhs.m_Rows[3].y,
-			Lhs.m_Rows[0].z*Rhs.x + Lhs.m_Rows[1].z*Rhs.y + Lhs.m_Rows[2].z*Rhs.z + Lhs.m_Rows[3].z);
+			Lhs.m_Rows[0].x * Rhs.x + Lhs.m_Rows[1].x * Rhs.y + Lhs.m_Rows[2].x * Rhs.z + Lhs.m_Rows[3].x,
+			Lhs.m_Rows[0].y * Rhs.x + Lhs.m_Rows[1].y * Rhs.y + Lhs.m_Rows[2].y * Rhs.z + Lhs.m_Rows[3].y,
+			Lhs.m_Rows[0].z * Rhs.x + Lhs.m_Rows[1].z * Rhs.y + Lhs.m_Rows[2].z * Rhs.z + Lhs.m_Rows[3].z);
 	}
 
-	friend LWVector3<Type> operator * (const LWVector3<Type> &Lhs, const LWMatrix4 &Rhs){
-		return LWVector3<Type>(Lhs.x*Rhs.m_Rows[0].x + Lhs.y*Rhs.m_Rows[1].x + Lhs.z*Rhs.m_Rows[2].x + Rhs.m_Rows[3].x,
-			Lhs.x*Rhs.m_Rows[0].y + Lhs.y*Rhs.m_Rows[1].y + Lhs.z*Rhs.m_Rows[2].y + Rhs.m_Rows[3].y,
-			Lhs.x*Rhs.m_Rows[0].z + Lhs.y*Rhs.m_Rows[1].z + Lhs.z*Rhs.m_Rows[2].z + Rhs.m_Rows[3].z);
+	friend LWVector3<Type> operator * (const LWVector3<Type> &Lhs, const LWMatrix4 &Rhs) {
+		return LWVector3<Type>(Lhs.x * Rhs.m_Rows[0].x + Lhs.y * Rhs.m_Rows[1].x + Lhs.z * Rhs.m_Rows[2].x + Rhs.m_Rows[3].x,
+			Lhs.x * Rhs.m_Rows[0].y + Lhs.y * Rhs.m_Rows[1].y + Lhs.z * Rhs.m_Rows[2].y + Rhs.m_Rows[3].y,
+			Lhs.x * Rhs.m_Rows[0].z + Lhs.y * Rhs.m_Rows[1].z + Lhs.z * Rhs.m_Rows[2].z + Rhs.m_Rows[3].z);
 	}
 
-	friend LWVector2<Type> operator * (const LWMatrix4 &Lhs, const LWVector2<Type> &Rhs){
-		return LWVector2<Type>(Lhs.m_Rows[0].x*Rhs.x + Lhs.m_Rows[1].x*Rhs.y + Lhs.m_Rows[3].x,
-			Lhs.m_Rows[0].y*Rhs.x + Lhs.m_Rows[1].y*Rhs.y + Lhs.m_Rows[3].y);
+	friend LWVector2<Type> operator * (const LWMatrix4 &Lhs, const LWVector2<Type> &Rhs) {
+		return LWVector2<Type>(Lhs.m_Rows[0].x * Rhs.x + Lhs.m_Rows[1].x * Rhs.y + Lhs.m_Rows[3].x,
+			Lhs.m_Rows[0].y * Rhs.x + Lhs.m_Rows[1].y * Rhs.y + Lhs.m_Rows[3].y);
 	}
 
-	friend LWVector2<Type> operator * (const LWVector2<Type> &Lhs, const LWMatrix4 &Rhs){
-		return LWVector2<Type>(Lhs.x*Rhs.m_Rows[0].x + Lhs.y*Rhs.m_Rows[1].x + Rhs.m_Rows[3].x,
-			Lhs.x*Rhs.m_Rows[0].y + Lhs.y*Rhs.m_Rows[1].y + Rhs.m_Rows[3].y);
+	friend LWVector2<Type> operator * (const LWVector2<Type> &Lhs, const LWMatrix4 &Rhs) {
+		return LWVector2<Type>(Lhs.x * Rhs.m_Rows[0].x + Lhs.y * Rhs.m_Rows[1].x + Rhs.m_Rows[3].x,
+			Lhs.x * Rhs.m_Rows[0].y + Lhs.y * Rhs.m_Rows[1].y + Rhs.m_Rows[3].y);
 	}
 	/*! \endcond */
+
+	/*!< \brief returns a matrix from specified euler angles
+	*/
+	static LWMatrix4 FromEuler(Type Pitch, Type Yaw, Type Roll) {
+		Type c1 = (Type)cos(Yaw);
+		Type c2 = (Type)cos(Pitch);
+		Type c3 = (Type)cos(Roll);
+		Type s1 = (Type)sin(Yaw);
+		Type s2 = (Type)sin(Pitch);
+		Type s3 = (Type)sin(Roll);
+		Type s1s2 = s1*s2;
+		return LWMatrix4({ c1 * c2, s1 * s3 - c1 * s2 * c3, c1 * s2 * s3 + s1 * c3, (Type)0 },
+			{ s2, c2 * c3, -c2 * s3, (Type)0 },
+			{ -s1 * c2, s1s2 * c3 + c1 * s3, -s1s2 * s3 + c1 * c3, (Type)0 },
+			{ (Type)0, (Type)0, (Type)0, (Type)1 });
+	}
+
+	/*!< \brief returns a matrix from specified euler angles. */
+	static LWMatrix4 FromEuler(const LWVector3<Type> &Euler) {
+		return FromEuler(Euler.x, Euler.y, Euler.z);
+	}
+
+	/*!< \brief returns euler representation of the matrix.  if the matrix is not an affine transform then this function will return undefined results. */
+	LWVector3<Type> ToEuler(void) const {
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
+		if (m_Rows[1].x > 1.0f - e) {
+			return LWVector3<Type>((Type)LW_PI_2, (Type)atan2(m_Rows[0].z, m_Rows[2].z), (Type)0);
+		} else if (m_Rows[1].x < -1.0f + e) {
+			return LWVector3<Type>((Type)-LW_PI_2, (Type)atan2(m_Rows[0].z, m_Rows[2].z), (Type)0);
+		}
+		return LWVector3<Type>((Type)asin(m_Rows[1].x), (Type)atan2(-m_Rows[2].x, m_Rows[0].x), (Type)atan2(-m_Rows[1].z, m_Rows[1].y));
+	}
 
 	/*! \brief returns a matrix rotated around the x axis.
 		\param Theta the angle to use.
@@ -403,34 +400,16 @@ struct LWMatrix4{
 						 { 0, 0, 0, 1 });
 	}
 
-	/*! \brief writes into Result a matrix rotated around the x axis.
-		\param Theta the angle to use.
-		\param Result the matrix to receive the result.
-		*/
-	static void RotationX(Type Theta, LWMatrix4 &Result){
-		Result = RotationX(Theta);
-		return;
-	}
-
-
 	/*! \brief returns a matrix rotated around the y axis.
 		\param Theta the angle to use.
 		*/
-	static LWMatrix4 RotationY(Type Theta){
+	static LWMatrix4 RotationY(Type Theta) {
 		Type S = sin(Theta);
 		Type C = cos(Theta);
 		return LWMatrix4({ C, 0, S, 0 },
 						 { 0, 1, 0, 0 },
 						 {-S, 0, C, 0 },
 						 { 0, 0, 0, 1 });
-	}
-	/*! \brief writes into Result a matrix rotated around the y axis.
-		\param Theta the angle to use.
-		\param Result the matrix to receive the result.
-		*/
-	static void RotationY(Type Theta, LWMatrix4 &Result){
-		Result = RotationY(Theta);
-		return;
 	}
 
 	/*! \brief returns a matrix rotated around the z axis.
@@ -444,14 +423,6 @@ struct LWMatrix4{
 						 { 0, 0, 1, 0},
 						 { 0, 0, 0, 1});
 	}
-	/*! \brief returns a matrix rotated around the z axis.
-		\param Theta the angle to use.
-		\param Result the matrix to receive the result.
-		*/
-	static void RotationZ(Type Theta, LWMatrix4 &Result){
-		Result = RotationZ(Theta);
-		return;
-	}
 
 	/*! \brief returns a matrix rotated both around the x and y axis in that order.
 		\param ThetaX the x-axis angle.
@@ -459,16 +430,6 @@ struct LWMatrix4{
 		*/
 	static LWMatrix4 RotationXY(Type ThetaX, Type ThetaY){
 		return RotationX(ThetaX)*RotationY(ThetaY);
-	}
-
-	/*! \brief writes into result a matrix rotated around the x and y axis in that order.
-		\param ThetaX the x-axis angle.
-		\param ThetaY the y-axis angle.
-		\param Result the matrix to receive the result.
-		*/
-	static void RotationXY(Type ThetaX, Type ThetaY, LWMatrix4 &Result){
-		Result = RotationXY(ThetaX, ThetaY);
-		return;
 	}
 
 	/*! \brief returns a matrix rotated both around the x and z axis.
@@ -479,16 +440,6 @@ struct LWMatrix4{
 		return RotationX(ThetaX)*RotationZ(ThetaZ);
 	}
 
-	/*! \brief writes into result a matrix rotated around the x and z axis in that order.
-		\param ThetaX the x-axis angle.
-		\param ThetaZ the z-axis angle.
-		\param Result the matrix to receive the result.
-		*/
-	static void RotationXZ(Type ThetaX, Type ThetaZ, LWMatrix4 &Result){
-		Result = RotationXZ(ThetaX, ThetaZ);
-		return;
-	}
-
 	/*! \brief returns a matrix rotated both around the y and x axis in that order.
 		\param ThetaY the y-axis angle.
 		\param ThetaX the x-axis angle.
@@ -497,32 +448,12 @@ struct LWMatrix4{
 		return RotationY(ThetaY)*RotationX(ThetaX);
 	}
 
-	/*! \brief writes into result a matrix rotated both around the y and x axis in that order.
-		\param ThetaY the y-axis angle.
-		\param ThetaX the z-axis angle.
-		\param Result the matrix to receive the result.
-		*/
-	static void RotationYX(Type ThetaY, Type ThetaX, LWMatrix4 &Result){
-		Result = RotationYX(ThetaY, ThetaX);
-		return;
-	}
-
 	/*! \brief returns a matrix rotated both around the y and z axis in that order.
 		\param ThetaY the y-axis angle.
 		\param ThetaZ the z-axis angle.
 		*/
 	static LWMatrix4 RotationYZ(Type ThetaY, Type ThetaZ){
 		return RotationY(ThetaY)*RotationZ(ThetaZ);
-	}
-
-	/*! \brief writes into result a matrix rotated both around the y and z axis in that order.
-		\param ThetaY the y-axis angle.
-		\param ThetaZ the z-axis angle.
-		\param Result the matrix to receive the result.
-		*/
-	static void RotationYZ(Type ThetaY, Type ThetaZ, LWMatrix4 &Result){
-		Result = RotationYZ(ThetaY, ThetaZ);
-		return;
 	}
 
 	/*! \brief returns a matrix rotated both around the z and x axis in that order.
@@ -534,32 +465,12 @@ struct LWMatrix4{
 		return RotationZ(ThetaZ)*RotationX(ThetaX);
 	}
 
-	/*! \brief writes into result a matrix rotated both around the z and x axis in that order.
-		\param ThetaZ the z-axis angle.
-		\param ThetaX the x-axis angle.
-		\param Result the matrix to receive the result.
-		*/
-	static void RotationZX(Type ThetaZ, Type ThetaX, LWMatrix4 &Result){
-		Result = RotationZX(ThetaZ, ThetaX);
-		return;
-	}
-
 	/*! \brief returns a matrix rotated both around the z and y axis in that order.
 		\param ThetaZ the z-axis angle.
 		\param ThetaY the y-axis angle.
 		*/
 	static LWMatrix4 RotationZY(Type ThetaZ, Type ThetaY){
 		return RotationZ(ThetaZ)*RotationY(ThetaY);
-	}
-
-	/*! \brief writes into result a matrix rotated both around the z and y axis in that order.
-		\param ThetaZ the z-axis angle.
-		\param ThetaY the y-axis angle.
-		\param Result the matrix to receive the result.
-		*/
-	static void RotationZY(Type ThetaZ, Type ThetaY, LWMatrix4 &Result){
-		Result = RotationZY(ThetaZ, ThetaY);
-		return;
 	}
 
 	/*! \brief returns a matrix rotated around the x, y, and z axis in that order.
@@ -571,17 +482,6 @@ struct LWMatrix4{
 		return RotationX(ThetaX)*RotationY(ThetaY)*RotationZ(ThetaZ);
 	}
 
-	/*! \brief writes into result a matrix rotated around the x, y, and z axis in that order.
-		\param ThetaX the x-axis angle.
-		\param ThetaY the y-axis angle.
-		\param ThetaZ the z-axis angle.
-		\param Result the matrix to receive the result.
-		*/
-	static void RotationXYZ(Type ThetaX, Type ThetaY, Type ThetaZ, LWMatrix4 &Result){
-		Result = RotationXYZ(ThetaX, ThetaY, ThetaZ);
-		return;
-	}
-
 	/*! \brief returns a matrix rotated around the x, z, and y axis in that order.
 		\param ThetaX the x-axis angle.
 		\param ThetaZ the z-axis angle.
@@ -589,17 +489,6 @@ struct LWMatrix4{
 		*/
 	static LWMatrix4 RotationXZY(Type ThetaX, Type ThetaZ, Type ThetaY){
 		return RotationX(ThetaX)*RotationZ(ThetaZ)*RotationY(ThetaY);
-	}
-
-	/*! \brief writes into result a matrix rotated around the x, z, and y axis in that order.
-		\param ThetaX the x-axis angle.
-		\param ThetaZ the z-axis angle.
-		\param ThetaY the y-axis angle.
-		\param Result the matrix to receive the result.
-		*/
-	static void RotationXZY(Type ThetaX, Type ThetaZ, Type ThetaY, LWMatrix4 &Result){
-		Result = RotationXZY(ThetaX, ThetaZ, ThetaY);
-		return;
 	}
 
 	/*! \brief returns a matrix rotated around the y, x, and z axis in that order.
@@ -611,17 +500,6 @@ struct LWMatrix4{
 		return RotationY(ThetaY)*RotationX(ThetaX)*RotationZ(ThetaZ);
 	}
 
-	/*! \brief writes into result a matrix rotated around the y, x, and z axis in that order.
-		\param ThetaY the y-axis angle.
-		\param ThetaX the x-axis angle.
-		\param ThetaZ the z-axis angle.
-		\param Result the matrix to receive the result.
-		*/
-	static void RotationYXZ(Type ThetaY, Type ThetaX, Type ThetaZ, LWMatrix4 &Result){
-		Result = RotationYXZ(ThetaY, ThetaX, ThetaZ);
-		return;
-	}
-
 	/*! \brief returns a matrix rotated around the y, z, and x axis in that order.
 		\param ThetaY the y-axis angle.
 		\param ThetaZ the z-axis angle.
@@ -629,17 +507,6 @@ struct LWMatrix4{
 		*/
 	static LWMatrix4 RotationYZX(Type ThetaY, Type ThetaZ, Type ThetaX){
 		return RotationY(ThetaY)*RotationZ(ThetaZ)*RotationX(ThetaX);
-	}
-
-	/*! \brief writes into result a matrix rotated around the y, z, and x axis in that order.
-		\param ThetaY the y-axis angle.
-		\param ThetaZ the z-axis angle.
-		\param ThetaX the x-axis angle.
-		\param Result the matrix to receive the result.
-		*/
-	static void RotationYZX(Type ThetaY, Type ThetaZ, Type ThetaX, LWMatrix4 &Result){
-		Result = RotationYZX(ThetaY, ThetaZ, ThetaX);
-		return;
 	}
 
 	/*! \brief returns a matrix rotated around the z, x, and y axis in that order.
@@ -651,17 +518,6 @@ struct LWMatrix4{
 		return RotationZ(ThetaZ)*RotationX(ThetaX)*RotationY(ThetaY);
 	}
 
-	/*! \brief writes into result a matrix rotated around the z, x, and y axis in that order.
-		\param ThetaZ the z-axis angle.
-		\param ThetaX the x-axis angle.
-		\param ThetaY the y-axis angle.
-		\param Result the matrix to receive the result.
-		*/
-	static void RotationZXY(Type ThetaZ, Type ThetaX, Type ThetaY, LWMatrix4 &Result){
-		Result = RotationZXY(ThetaZ, ThetaX, ThetaY);
-		return;
-	}
-
 	/*! \brief returns a matrix rotated around the z, y, and x axis in that order.
 		\param ThetaZ the z-axis angle.
 		\param ThetaY the y-axis angle.
@@ -669,17 +525,6 @@ struct LWMatrix4{
 		*/
 	static LWMatrix4 RotationZYX(Type ThetaZ, Type ThetaY, Type ThetaX){
 		return RotationZ(ThetaZ)*RotationY(ThetaY)*RotationX(ThetaX);
-	}
-
-	/*! \brief writes into result a matrix rotated around the z, y, and x axis in that order.
-		\param ThetaZ the z-axis angle.
-		\param ThetaY the y-axis angle.
-		\param ThetaX the x-axis angle.
-		\param Result the matrix to receive the result.
-		*/
-	static void RotationZYX(Type ThetaZ, Type ThetaY, Type ThetaX, LWMatrix4 &Result){
-		Result = RotationZYX(ThetaZ, ThetaY, ThetaX);
-		return;
 	}
 
 	/*! \brief returns a matrix translated along the x, y, and z axis.
@@ -691,32 +536,11 @@ struct LWMatrix4{
 		return Translation({ x, y, z });
 	}
 
-	/*! \brief writes into result a matrix translated along the x, y, and z axis.
-		\param x the x axis to translate along.
-		\param y the y axis to translate along.
-		\param z the z axis to translate along.
-		\param Result the matrix to receive the result.
-		*/
-	static void Translation(Type x, Type y, Type z, LWMatrix4 &Result){
-		Result = Translation(x, y, z);
-	}
-
 	/*! \brief returns a matrix translated along the x, y, and z axis in the position vector3.
 		\param Position the translation to apply.
 	*/
 	static LWMatrix4 Translation(const LWVector3<Type> &Position){
 		return LWMatrix4({ 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { Position, 1 });
-	}
-
-
-	/*! \brief writes into a matrix translated along the x, y, and z axis in the position vector3.
-		\param Position the translation to apply.
-		\param Result the matrix to receive the result.
-	*/
-
-	static void Translation(const LWVector3<Type> &Position, LWMatrix4 &Result){
-		Result = Translation(Position);
-		return;
 	}
 
 	/*!< \brief constructs a rotation matrix from the directional vector which is relative to the supplied up vector.
@@ -733,16 +557,6 @@ struct LWMatrix4{
 		{ 0.0f, 0.0f, 0.0f, 1.0f });
 	}
 
-	/*!< \brief constructs a rotation matrix from the directional vector which is relative to the supplied up vector. stores the new matrix into result.
-		 \param Direction the normalized directional vector.
-		 \param Up the normalized up vector.
-		 \param Result the matrix to receive the result.
-	*/
-	static void Rotation(const LWVector3<Type> &Direction, const LWVector3<Type> &Up, LWMatrix4<Type> &Result) {
-		Result = Rotation(Direction, Up);
-		return;
-	}
-
 	/*! \brief returns a camera's perspective matrix.
 		\param FoV the Field of View angle that is multiplied by the aspect.
 		\param Aspect the ratio of the views width/height.
@@ -755,18 +569,6 @@ struct LWMatrix4{
 						 { 0,          F, 0,                            0 }, 
 						 { 0,          0, (Far + Near) / (Near - Far), -1 }, 
 						 { 0,          0, (Type)2.0*Far*Near / (Near - Far),  0 });
-	}
-
-	/*! \brief writes into result a camera's perspective matrix.
-		\param FoV the Field of View angle that is multipled by the aspect.
-		\param Aspect the ratio of the views width/height.
-		\param Near the near plane of the camera.
-		\param Far the far plane of the camera.
-		\param Result the matrix to receive the result.
-		*/
-	static void Pespective(Type FoV, Type Aspect, Type Near, Type Far, LWMatrix4 &Result){
-		Result = Perspective(FoV, Aspect, Near, Far);
-		return;
 	}
 
 	/*! \brief returns a camera's boxed orthographic matrix for d3d11+metal NDC's where z range is 0-1.
@@ -785,21 +587,6 @@ struct LWMatrix4{
 			{ -(Right + Left) / (Right - Left), -(Top + Bottom) / (Top - Bottom), Near*sDepth, 1 });
 	}
 
-	/*! \brief writes into result a camera's boxed orthographic matrix for d3d11+metal NDC's(z range of 0-1).
-		\param Left the left side of the camera's view.
-		\param Right the right side of the camera's view.
-		\param Bottom the bottom side of the camera's view.
-		\param Top the top side of the camera's view.
-		\param Near the camera's near plane.
-		\param Far the camera's far plane.
-		\param Result the matrix to receive the result.
-		*/
-	static void OrthoDX(Type Left, Type Right, Type Bottom, Type Top, Type Near, Type Far, LWMatrix4 &Result) {
-		Result = OrthoDX(Left, Right, Bottom, Top, Near, Far);
-		return;
-	}
-
-
 	/*! \brief returns a camera's boxed orthographic matrix for openGL NDC's(z range of -1-1).
 		\param Left the left side of the camera's view.
 		\param Right the right side of the camera's view.
@@ -814,35 +601,6 @@ struct LWMatrix4{
 						 { 0, 2 / (Top - Bottom), 0, 0 },
 						 { 0, 0, -2/(Far-Near), 0 },
 						 { -(Right + Left) / (Right - Left), -(Top + Bottom) / (Top - Bottom), -(Near+Far)/(Far-Near), 1 });
-	}
-
-	/*! \brief writes into result a camera's boxed orthographic matrix for openGL NDC's(z range of -1-1).
-		\param Left the left side of the camera's view.
-		\param Right the right side of the camera's view.
-		\param Bottom the bottom side of the camera's view.
-		\param Top the top side of the camera's view.
-		\param Near the camera's near plane.
-		\param Far the camera's far plane.
-		\param Result the matrix to receive the result.
-		*/
-	static void OrthoGL(Type Left, Type Right, Type Bottom, Type Top, Type Near, Type Far, LWMatrix4 &Result){
-		Result = OrthoGL(Left, Right, Bottom, Top, Near, Far);
-		return;
-	}
-
-	/*! \brief writes into result a camera's boxed orthographic matrix depending on if LWMatrix4_UseDXOrtho is set to true or not
-		\param Left the left side of the camera's view.
-		\param Right the right side of the camera's view.
-		\param Bottom the bottom side of the camera's view.
-		\param Top the top side of the camera's view.
-		\param Near the camera's near plane.
-		\param Far the camera's far plane.
-		\param Result the matrix to receive the result.
-		\note the value of LWMatrix4_UseDXOrtho is changed when a video driver is created, if for some odd reason multiple video drivers are being used concurrently, you should not rely on this function.
-		*/
-	static void Ortho(Type Left, Type Right, Type Bottom, Type Top, Type Near, Type Far, LWMatrix4 &Result) {
-		Result = Ortho(Left, Right, Bottom, Top, Near, Far);
-		return;
 	}
 
 	/*! \brief returns a camera's boxed orthographic matrix depending on if LWMatrix4_UseDXOrtho is set to true or not
@@ -875,19 +633,6 @@ struct LWMatrix4{
 						 { 0, 0, -(Far + Near) / (Far - Near), -1 },
 						 { 0, 0, -2 * Far*Near / (Far - Near), 0 });
 	}
-	/*! \brief writes into result a frustum camera matrix.
-		\param Left the left side of the camera's view.
-		\param Right the right side of the camera's view.
-		\param Bottom the bottom side of the camera's view.
-		\param Top the top side of the camera's view.
-		\param Near the camera's near plane.
-		\param Far the camera's far plane.
-		\param Result the matrix to receive the result.
-		*/
-	static void Frustum(Type Left, Type Right, Type Bottom, Type Top, Type Near, Type Far, LWMatrix4 &Result){
-		Result = Frustum(Left, Right, Bottom, Top, Near, Far);
-		return;
-	}
 
 	/*! \brief generates a view matrix for looking at a specific target.
 		\param Position the position of the viewing agent.
@@ -899,17 +644,6 @@ struct LWMatrix4{
 		LWVector3<Type> Rght = Fwrd.Cross(Up).Normalize();
 		LWVector3<Type> U = Rght.Cross(Fwrd);
 		return LWMatrix4({ Rght, 0 }, { U, 0 }, { -Fwrd, 0 }, { Position, 1 });
-	}
-
-	/*! \brief writes into result a view matrix for looking at a specific target.
-		\param Position the position of the viewing agent.
-		\param Target the target to look at.
-		\param Up the up matrix to work off of.
-		\param Result the matrix to receive the result.
-	*/
-	static void LookAt(const LWVector3<Type> &Position, const LWVector3<Type> &Target, const LWVector3<Type> &Up, LWMatrix4 &Result){
-		Result = LookAt(Position, Target, Up);
-		return;
 	}
 
 	/*!< \brief constructs a 4x4 rotational matrix from the specified quaternion. */
@@ -963,10 +697,10 @@ struct LWMatrix4{
 		Type zz = Q.z*Q.z;
 		Type zw = Q.z*Q.w;
 
-		m_Rows[0] = { (Type)(1 - 2 * (yy + zz)), (Type)(2 * (xy - zw)), (Type)(2 * (xz + yw)), (Type)0 }*Scale.x;
-		m_Rows[1] = { (Type)2 * (xy + zw), (Type)(1 - 2 * (xx + zz)), (Type)(2 * (yz - xw)), 0 }*Scale.y;
-		m_Rows[2] = { (Type)(2 * (xz - yw)), (Type)(2 * (yz + xw)), (Type)(1 - 2 * (xx + yy)), (Type)0 }*Scale.z;
-		m_Rows[3] = { (Type)Pos.x, (Type)Pos.y, (Type)Pos.z, (Type)1 };
+		m_Rows[0] = LWVector4<Type>((Type)(1 - 2 * (yy + zz)), (Type)(2 * (xy - zw)), (Type)(2 * (xz + yw)), (Type)0)*Scale.x;
+		m_Rows[1] = LWVector4<Type>((Type)2 * (xy + zw), (Type)(1 - 2 * (xx + zz)), (Type)(2 * (yz - xw)), 0)*Scale.y;
+		m_Rows[2] = LWVector4<Type>((Type)(2 * (xz - yw)), (Type)(2 * (yz + xw)), (Type)(1 - 2 * (xx + yy)), (Type)0)*Scale.z;
+		m_Rows[3] = LWVector4<Type>((Type)Pos.x, (Type)Pos.y, (Type)Pos.z, (Type)1 );
 	};
 };
 
@@ -977,29 +711,16 @@ template<class Type>
 struct LWMatrix3{
 	LWVector3<Type> m_Rows[3]; /*!< The 4x4 matrix in row-major order. */
 
-
 	/*!< \brief returns the specified column of the matrix. */
 	LWVector3<Type> Column(uint32_t Index) const {
 		const Type *Arry = &m_Rows[0].x;
 		return LWVector3<Type>(Arry[Index], Arry[Index + 3], Arry[Index + 6]);
 	};
 
-	/*! \brief returns the specified row of the matrix(this function exists for parody to LWSMatrix4's row function.) */
-	LWVector3<Type> Row(uint32_t Index) const {
-		return m_Rows[Index];
-	}
-
-	/*! \brief set's a value of the matrix at row*3+Column position, this function exists for parody to LWSMatrix4's sRC function.) */
-	LWMatrix3 &sRC(uint32_t Row, uint32_t Column, Type Value) {
-		Type *Arry = &m_Rows[0].x;
-		Arry[Row * 3 + Column] = Value;
-		return *this;
-	}
-
 	/*! \brief Returns an copied inverse of this matrix. */
 	LWMatrix3 Inverse(void) const{
 		Type D = Determinant();
-		if (abs(D) <= std::numeric_limits<Type>::epsilon()) return LWMatrix3();
+		if (abs(D) <= (Type)std::numeric_limits<float>::epsilon()) return LWMatrix3();
 		LWMatrix3 Result;
 		Result.m_Rows[0] = LWVector3<Type>(m_Rows[1].y*m_Rows[2].z - m_Rows[1].z*m_Rows[2].x, m_Rows[0].z*m_Rows[2].y - m_Rows[0].y*m_Rows[2].z, m_Rows[0].y*m_Rows[1].z - m_Rows[0].z*m_Rows[1].y)*D;
 		Result.m_Rows[1] = LWVector3<Type>(m_Rows[1].z*m_Rows[2].x - m_Rows[1].x*m_Rows[2].z, m_Rows[0].x*m_Rows[2].z - m_Rows[0].z*m_Rows[2].x, m_Rows[0].z*m_Rows[1].x - m_Rows[0].x*m_Rows[1].z)*D;
@@ -1007,21 +728,9 @@ struct LWMatrix3{
 		return Result;
 	}
 
-	/*! \brief writes into Result the inverse of the matrix. */
-	void Inverse(LWMatrix3 &Result) const{
-		Result = Inverse();
-		return;
-	}
-
 	/*! \brief returns the transpose of the this matrix. */
 	LWMatrix3 Transpose(void) const{
 		return LWMatrix3({ m_Rows[0].x, m_Rows[1].x, m_Rows[2].x }, { m_Rows[0].y, m_Rows[1].y, m_Rows[2].y }, { m_Rows[0].z, m_Rows[1].z, m_Rows[2].z });
-	}
-
-	/*! \brief writes into Result the transpose of this matrix. */
-	void Transpose(LWMatrix3 &Result) const{
-		Result = Transpose();
-		return;
 	}
 
 	/*!< \brief returns the upper left 2x2 matrix transposed only. */
@@ -1030,15 +739,19 @@ struct LWMatrix3{
 			LWVector3<Type>(m_Rows[0].y, m_Rows[1].y, m_Rows[1].z));
 	}
 
-	/*!< \brief writes into result the upper left 2x3 matrix transpose of this matrix. */
-	void Transpose2x2(LWMatrix3 &Result) const {
-		Result = Transpose2x2();
-		return;
-	}
-
 	/*! \brief calculates the determinant of this matrix. */
 	Type Determinant(void) const{
 		return m_Rows[0].x*m_Rows[1].y*m_Rows[2].z + m_Rows[0].y*m_Rows[1].z*m_Rows[2].x - m_Rows[0].x*m_Rows[1].z*m_Rows[2].y - m_Rows[0].y*m_Rows[1].x*m_Rows[2].z - m_Rows[0].z*m_Rows[1].y*m_Rows[2].x;
+	}
+
+	/*!< \brief accesses rows of the matrix as if it were an array. */
+	LWVector3<Type> operator[](uint32_t i) const {
+		return m_Rows[i];
+	}
+
+	/*!< \brief accesses rows of the matrix as if it were an array. */
+	LWVector3<Type> &operator[](uint32_t i) {
+		return m_Rows[i];
 	}
 
 	/*! \cond */
@@ -1169,6 +882,38 @@ struct LWMatrix3{
 	}
 	/*! \endcond */
 
+
+	/*!< \brief returns a matrix from specified euler angles
+	*/
+	static LWMatrix3 FromEuler(Type Pitch, Type Yaw, Type Roll) {
+		Type c1 = (Type)cos(Yaw);
+		Type c2 = (Type)cos(Pitch);
+		Type c3 = (Type)cos(Roll);
+		Type s1 = (Type)sin(Yaw);
+		Type s2 = (Type)sin(Pitch);
+		Type s3 = (Type)sin(Roll);
+		Type s1s2 = s1 * s2;
+		return LWMatrix3({ c1 * c2, s1 * s3 - c1 * s2 * c3, c1 * s2 * s3 + s1 * c3 },
+			{ s2, c2 * c3, -c2 * s3 },
+			{ -s1 * c2, s1s2 * c3 + c1 * s3, -s1s2 * s3 + c1 * c3 });
+	}
+
+	/*!< \brief returns a matrix from the specified euler angles. */
+	static LWMatrix3 FromEuler(const LWVector3<Type> &Euler) {
+		return FromEuler(Euler.x, Euler.y, Euler.z);
+	}
+
+	/*!< \brief returns Euler representation of the matrix.  if the matrix is not an affine transform then this function will return undefined results. */
+	LWVector3<Type> ToEuler(void) const {
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
+		if (m_Rows[1].x > 1.0f - e) {
+			return LWVector3<Type>((Type)LW_PI_2, (Type)atan2(m_Rows[0].z, m_Rows[2].z), (Type)0);
+		} else if (m_Rows[1].x < -1.0f + e) {
+			return LWVector3<Type>((Type)-LW_PI_2, (Type)atan2(m_Rows[0].z, m_Rows[2].z), (Type)0);
+		}
+		return LWVector3<Type>((Type)asin(m_Rows[1].x), (Type)atan2(-m_Rows[2].x, m_Rows[0].x), (Type)atan2(-m_Rows[1].z, m_Rows[1].y));
+	}
+
 	/*! \brief returns a matrix rotated around the x axis.
 	\param Theta the angle to use.
 	*/
@@ -1179,15 +924,6 @@ struct LWMatrix3{
 		{ 0, C, -S },
 		{ 0, S, C });
 	}
-	/*! \brief writes into Result a matrix rotated around the x axis.
-	\param Theta the angle to use.
-	\param Result the matrix to receive the result.
-	*/
-	static void RotationX(Type Theta, LWMatrix3 &Result){
-		Result = RotationX(Theta);
-		return;
-	}
-
 
 	/*! \brief returns a matrix rotated around the y axis.
 	\param Theta the angle to use.
@@ -1198,14 +934,6 @@ struct LWMatrix3{
 		return LWMatrix3({ C, 0, S },
 		{ 0, 1, 0 },
 		{ -S, 0, C });
-	}
-	/*! \brief writes into Result a matrix rotated around the y axis.
-	\param Theta the angle to use.
-	\param Result the matrix to receive the result.
-	*/
-	static void RotationY(Type Theta, LWMatrix3 &Result){
-		Result = RotationY(Theta);
-		return;
 	}
 
 	/*! \brief returns a matrix rotated around the z axis.
@@ -1219,31 +947,12 @@ struct LWMatrix3{
 		{ 0, 0, 1 });
 	}
 
-	/*! \brief returns a matrix rotated around the z axis.
-	\param Theta the angle to use.
-	\param Result the matrix to receive the result.
-	*/
-	static void RotationZ(Type Theta, LWMatrix3 &Result){
-		Result = RotationZ(Theta);
-		return;
-	}
-
 	/*! \brief returns a matrix rotated both around the x and y axis in that order.
 	\param ThetaX the x-axis angle.
 	\param ThetaY the y-axis angle.
 	*/
 	static LWMatrix3 RotationXY(Type ThetaX, Type ThetaY){
 		return RotationX(ThetaX)*RotationY(ThetaY);
-	}
-
-	/*! \brief writes into result a matrix rotated around the x and y axis in that order.
-	\param ThetaX the x-axis angle.
-	\param ThetaY the y-axis angle.
-	\param Result the matrix to receive the result.
-	*/
-	static void RotationXY(Type ThetaX, Type ThetaY, LWMatrix3 &Result){
-		Result = RotationXY(ThetaX, ThetaY);
-		return;
 	}
 
 	/*! \brief returns a matrix rotated both around the x and z axis.
@@ -1254,16 +963,6 @@ struct LWMatrix3{
 		return RotationX(ThetaX)*RotationZ(ThetaZ);
 	}
 
-	/*! \brief writes into result a matrix rotated around the x and z axis in that order.
-	\param ThetaX the x-axis angle.
-	\param ThetaZ the z-axis angle.
-	\param Result the matrix to receive the result.
-	*/
-	static void RotationXZ(Type ThetaX, Type ThetaZ, LWMatrix3 &Result){
-		Result = RotationXZ(ThetaX, ThetaZ);
-		return;
-	}
-
 	/*! \brief returns a matrix rotated both around the y and x axis in that order.
 	\param ThetaY the y-axis angle.
 	\param ThetaX the x-axis angle.
@@ -1272,32 +971,12 @@ struct LWMatrix3{
 		return RotationY(ThetaY)*RotationX(ThetaX);
 	}
 
-	/*! \brief writes into result a matrix rotated both around the y and x axis in that order.
-	\param ThetaY the y-axis angle.
-	\param ThetaX the z-axis angle.
-	\param Result the matrix to receive the result.
-	*/
-	static void RotationYX(Type ThetaY, Type ThetaX, LWMatrix3 &Result){
-		Result = RotationYX(ThetaY, ThetaX);
-		return;
-	}
-
 	/*! \brief returns a matrix rotated both around the y and z axis in that order.
 	\param ThetaY the y-axis angle.
 	\param ThetaZ the z-axis angle.
 	*/
 	static LWMatrix3 RotationYZ(Type ThetaY, Type ThetaZ){
 		return RotationY(ThetaY)*RotationZ(ThetaZ);
-	}
-
-	/*! \brief writes into result a matrix rotated both around the y and z axis in that order.
-	\param ThetaY the y-axis angle.
-	\param ThetaZ the z-axis angle.
-	\param Result the matrix to receive the result.
-	*/
-	static void RotationYZ(Type ThetaY, Type ThetaZ, LWMatrix3 &Result){
-		Result = RotationYZ(ThetaY, ThetaZ);
-		return;
 	}
 
 	/*! \brief returns a matrix rotated both around the z and x axis in that order.
@@ -1309,32 +988,12 @@ struct LWMatrix3{
 		return RotationZ(ThetaZ)*RotationX(ThetaX);
 	}
 
-	/*! \brief writes into result a matrix rotated both around the z and x axis in that order.
-	\param ThetaZ the z-axis angle.
-	\param ThetaX the x-axis angle.
-	\param Result the matrix to receive the result.
-	*/
-	static void RotationZX(Type ThetaZ, Type ThetaX, LWMatrix3 &Result){
-		Result = RotationZX(ThetaZ, ThetaX);
-		return;
-	}
-
 	/*! \brief returns a matrix rotated both around the z and y axis in that order.
 	\param ThetaZ the z-axis angle.
 	\param ThetaY the y-axis angle.
 	*/
 	static LWMatrix3 RotationZY(Type ThetaZ, Type ThetaY){
 		return RotationZ(ThetaZ)*RotationY(ThetaY);
-	}
-
-	/*! \brief writes into result a matrix rotated both around the z and y axis in that order.
-	\param ThetaZ the z-axis angle.
-	\param ThetaY the y-axis angle.
-	\param Result the matrix to receive the result.
-	*/
-	static void RotationZY(Type ThetaZ, Type ThetaY, LWMatrix3 &Result){
-		Result = RotationZY(ThetaZ, ThetaY);
-		return;
 	}
 
 	/*! \brief returns a matrix rotated around the x, y, and z axis in that order.
@@ -1346,17 +1005,6 @@ struct LWMatrix3{
 		return RotationX(ThetaX)*RotationY(ThetaY)*RotationZ(ThetaZ);
 	}
 
-	/*! \brief writes into result a matrix rotated around the x, y, and z axis in that order.
-	\param ThetaX the x-axis angle.
-	\param ThetaY the y-axis angle.
-	\param ThetaZ the z-axis angle.
-	\param Result the matrix to receive the result.
-	*/
-	static void RotationXYZ(Type ThetaX, Type ThetaY, Type ThetaZ, LWMatrix3 &Result){
-		Result = RotationXYZ(ThetaX, ThetaY, ThetaZ);
-		return;
-	}
-
 	/*! \brief returns a matrix rotated around the x, z, and y axis in that order.
 	\param ThetaX the x-axis angle.
 	\param ThetaZ the z-axis angle.
@@ -1364,17 +1012,6 @@ struct LWMatrix3{
 	*/
 	static LWMatrix3 RotationXZY(Type ThetaX, Type ThetaZ, Type ThetaY){
 		return RotationX(ThetaX)*RotationZ(ThetaZ)*RotationY(ThetaY);
-	}
-
-	/*! \brief writes into result a matrix rotated around the x, z, and y axis in that order.
-	\param ThetaX the x-axis angle.
-	\param ThetaZ the z-axis angle.
-	\param ThetaY the y-axis angle.
-	\param Result the matrix to receive the result.
-	*/
-	static void RotationXZY(Type ThetaX, Type ThetaZ, Type ThetaY, LWMatrix3 &Result){
-		Result = RotationXZY(ThetaX, ThetaZ, ThetaY);
-		return;
 	}
 
 	/*! \brief returns a matrix rotated around the y, x, and z axis in that order.
@@ -1386,17 +1023,6 @@ struct LWMatrix3{
 		return RotationY(ThetaY)*RotationX(ThetaX)*RotationZ(ThetaZ);
 	}
 
-	/*! \brief writes into result a matrix rotated around the y, x, and z axis in that order.
-	\param ThetaY the y-axis angle.
-	\param ThetaX the x-axis angle.
-	\param ThetaZ the z-axis angle.
-	\param Result the matrix to receive the result.
-	*/
-	static void RotationYXZ(Type ThetaY, Type ThetaX, Type ThetaZ, LWMatrix3 &Result){
-		Result = RotationYXZ(ThetaY, ThetaX, ThetaZ);
-		return;
-	}
-
 	/*! \brief returns a matrix rotated around the y, z, and x axis in that order.
 	\param ThetaY the y-axis angle.
 	\param ThetaZ the z-axis angle.
@@ -1404,17 +1030,6 @@ struct LWMatrix3{
 	*/
 	static LWMatrix3 RotationYZX(Type ThetaY, Type ThetaZ, Type ThetaX){
 		return RotationY(ThetaY)*RotationZ(ThetaZ)*RotationX(ThetaX);
-	}
-
-	/*! \brief writes into result a matrix rotated around the y, z, and x axis in that order.
-	\param ThetaY the y-axis angle.
-	\param ThetaZ the z-axis angle.
-	\param ThetaX the x-axis angle.
-	\param Result the matrix to receive the result.
-	*/
-	static void RotationYZX(Type ThetaY, Type ThetaZ, Type ThetaX, LWMatrix3 &Result){
-		Result = RotationYZX(ThetaY, ThetaZ, ThetaX);
-		return;
 	}
 
 	/*! \brief returns a matrix rotated around the z, x, and y axis in that order.
@@ -1426,17 +1041,6 @@ struct LWMatrix3{
 		return RotationZ(ThetaZ)*RotationX(ThetaX)*RotationY(ThetaY);
 	}
 
-	/*! \brief writes into result a matrix rotated around the z, x, and y axis in that order.
-	\param ThetaZ the z-axis angle.
-	\param ThetaX the x-axis angle.
-	\param ThetaY the y-axis angle.
-	\param Result the matrix to receive the result.
-	*/
-	static void RotationZXY(Type ThetaZ, Type ThetaX, Type ThetaY, LWMatrix3 &Result){
-		Result = RotationZXY(ThetaZ, ThetaX, ThetaY);
-		return;
-	}
-
 	/*! \brief returns a matrix rotated around the z, y, and x axis in that order.
 	\param ThetaZ the z-axis angle.
 	\param ThetaY the y-axis angle.
@@ -1444,16 +1048,6 @@ struct LWMatrix3{
 	*/
 	static LWMatrix3 RotationZYX(Type ThetaZ, Type ThetaY, Type ThetaX){
 		return RotationZ(ThetaZ)*RotationY(ThetaY)*RotationX(ThetaX);
-	}
-
-	/*! \brief writes into result a matrix rotated around the z, y, and x axis in that order.
-	\param ThetaZ the z-axis angle.
-	\param ThetaY the y-axis angle.
-	\param ThetaX the x-axis angle.
-	\param Result the matrix to receive the result.
-	*/
-	static void RotationZYX(Type ThetaZ, Type ThetaY, Type ThetaX, LWMatrix3 &Result){
-		Result = RotationZYX(ThetaZ, ThetaY, ThetaX);
 	}
 
 	/*!< \brief constructs a rotation matrix from the directional vector which is relative to the supplied up vector.
@@ -1469,32 +1063,12 @@ struct LWMatrix3{
 		{ Direction.x, Direction.y, Direction.z});
 	}
 
-	/*!< \brief constructs a rotation matrix from the directional vector which is relative to the supplied up vector. stores the new matrix into result.
-	\param Direction the normalized directional vector.
-	\param Up the normalized up vector.
-	\param Result the matrix to receive the result.
-	*/
-	static void Rotation(const LWVector3<Type> &Direction, const LWVector3<Type> &Up, LWMatrix4<Type> &Result) {
-		Result = Rotation(Direction, Up);
-		return;
-	}
-
 	/*! \brief returns a matrix translated along the x, and y axis.
 	\param x the x axis to translate along.
 	\param y the y axis to translate along.
 	*/
 	static LWMatrix3 Translation(Type x, Type y){
 		return LWMatrix3({ 1, 0, 0 }, { 0, 1, 0 }, { x, y, 1 });
-	}
-
-	/*! \brief writes into result a matrix translated along the x, and y axis.
-	\param x the x axis to translate along.
-	\param y the y axis to translate along.
-	\param Result the matrix to receive the result.
-	*/
-	static void Translation(Type x, Type y, LWMatrix3 &Result){
-		Result = Translation(x, y);
-		return;
 	}
 	
 	/*!< \brief constructs a 3x3 rotational matrix from the specified quaternion. */
@@ -1544,30 +1118,11 @@ struct LWMatrix2{
 		return LWVector2<Type>(Arry[Index], Arry[Index + 2]);
 	};
 
-	/*! \brief returns the specified row of the matrix(this function exists for parody to LWSMatrix4's row function.) */
-	LWVector2<Type> Row(uint32_t Index) const {
-		return m_Rows[Index];
-	}
-
-	/*! \brief set's a value of the matrix at row*2+Column position, this function exists for parody to LWSMatrix4's sRC function.) */
-	LWMatrix2 &sRC(uint32_t Row, uint32_t Column, Type Value) {
-		Type *Arry = &m_Rows[0].x;
-		Arry[Row * 2 + Column] = Value;
-		return *this;
-	}
-
-
 	/*! \brief Returns an copied inverse of this matrix. */
 	LWMatrix2 Inverse(void) const{
 		Type D = Determinant();
-		if (abs(D) <= std::numeric_limits<Type>::epsilon()) return LWMatrix2();
+		if (abs(D) <= (Type)std::numeric_limits<float>::epsilon()) return LWMatrix2();
 		return LWMatrix2(LWVector2<Type>(m_Rows[1].y, m_Rows[0].y)*D, LWVector2<Type>(m_Rows[1].x, m_Rows[0].x)*D );
-	}
-
-	/*! \brief writes into Result the inverse of the matrix. */
-	void Inverse(LWMatrix2 &Result) const{
-		Result = Inverse();
-		return;
 	}
 
 	/*! \brief returns the transpose of the this matrix. */
@@ -1575,14 +1130,19 @@ struct LWMatrix2{
 		return LWMatrix2({ m_Rows[0].x, m_Rows[1].x }, { m_Rows[0].y, m_Rows[1].y });
 	}
 
-	/*! \brief writes into Result the transpose of this matrix. */
-	void Transpose(LWMatrix2 &Result) const{
-		Result = Transpose();
-	}
-
 	/*! \brief calculates the determinant of this matrix. */
 	Type Determinant(void) const{
 		return m_Rows[0].x*m_Rows[1].y - m_Rows[0].y*m_Rows[1].x;
+	}
+
+	/*!< \brief accesses rows of the matrix as if it were an array. */
+	LWVector2<Type> operator[](uint32_t i) const {
+		return m_Rows[i];
+	}
+
+	/*!< \brief accesses rows of the matrix as if it were an array. */
+	LWVector2<Type> &operator[](uint32_t i) {
+		return m_Rows[i];
 	}
 
 	/*! \cond */
@@ -1693,15 +1253,6 @@ struct LWMatrix2{
 		return LWMatrix2({ C, -S }, { S, C });
 	}
 
-	/*! \brief writes into Result a rotated matrix.
-		\param Theta the angle to use.
-		\param Result the matrix to receive the result.
-	*/
-	static void Rotation(Type Theta, LWMatrix2 &Result){
-		Result = Rotation(Theta);
-		return;
-	}
-
 	/*! \brief constructs a 2x2 matrix where each row is scaled by their respective scales.*/
 	LWMatrix2(Type xScale = 1, Type yScale = 1){
 		m_Rows[0] = { xScale, 0 };
@@ -1715,4 +1266,6 @@ struct LWMatrix2{
 	}
 };
 /*! @} */
+
+
 #endif

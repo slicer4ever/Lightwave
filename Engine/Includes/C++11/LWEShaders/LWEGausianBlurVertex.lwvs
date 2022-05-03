@@ -1,0 +1,51 @@
+R"(#module Vertex OpenGL4_5 OpenGL3_3
+#version 440
+#define GLOBALDATA
+#include "Structures"
+#include "Utilitys"
+#module Vertex DirectX11_1
+static const uint KernelSize = 5;
+
+struct Pixel{
+	float4 Position : SV_POSITION;
+	float2 UVCoords[KernelSize] : TEXCOORD0;
+};
+
+struct Vertex{
+	float4 Position : POSITION;
+	float4 TexCoord : TEXCOORD;
+};
+
+Pixel main(Vertex In) {
+	Pixel p;
+	LWEPassData PD = PassData[PassID];
+	float2 Dir = PD.FrameSize[SubPassID].wz/PD.FrameSize[SubPassID].xy;
+	p.Position = In.Position;
+	p.UVCoords[0] = In.TexCoord.xy - Dir*2.0f;
+	p.UVCoords[1] = In.TexCoord.xy - Dir;
+	p.UVCoords[2] = In.TexCoord.xy;
+	p.UVCoords[3] = In.TexCoord.xy + Dir;
+	p.UVCoords[4] = In.TexCoord.xy + Dir*2.0f;
+	return p;
+}
+
+#module Vertex OpenGL4_5 OpenGL3_3
+const uint KernelSize = 5;
+
+in vec4 Position;
+in vec4 TexCoord;
+
+out gl_PerVertex {
+	vec4 gl_Position;
+};
+out vec2 pUVCoords[KernelSize];
+void main(void) {
+	LWEPassData PD = PassData[PassID];
+	vec2 Dir = PD.FrameSize[SubPassID].wz/PD.FrameSize[SubPassID].xy;
+	gl_Position = Position;
+	pUVCoords[0] = TexCoord.xy - Dir*2.0f;
+	pUVCoords[1] = TexCoord.xy - Dir;
+	pUVCoords[2] = TexCoord.xy;
+	pUVCoords[3] = TexCoord.xy + Dir;
+	pUVCoords[4] = TexCoord.xy + Dir*2.0f;
+})",

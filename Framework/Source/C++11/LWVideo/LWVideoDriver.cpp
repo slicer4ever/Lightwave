@@ -11,231 +11,187 @@
 #include "LWVideo/LWImage.h"
 #include "LWPlatform/LWWindow.h"
 #include "LWPlatform/LWFileStream.h"
+#include "LWCore/LWUnicode.h"
 #include "LWCore/LWMatrix.h"
+#include "LWCore/LWLogger.h"
 #include <cstring>
 #include <iostream>
 #include <functional>
+#include <algorithm>
 #include <cstdarg>
 
-uint32_t LWVideoDriver::FindModule(const char *ShaderCode, const char *Environment, const char *ModuleName, uint32_t DefinedCount, const char **DefinedList, char *ModuleBuffer, uint32_t ModuleBufferLen) {
+//LWPipelineInputStream:
+LWPipelineInputStream::LWPipelineInputStream(LWVideoBuffer *Buffer, uint32_t Offset, uint32_t Stride) : m_Buffer(Buffer), m_Offset(Offset), m_Stride(Stride) {}
+
+//LWVideoDriver:
+uint32_t LWVideoDriver::FindModule(const LWUTF8Iterator &ShaderCode, const LWUTF8Iterator &Environment, const LWUTF8Iterator &ModuleName, uint32_t DefinedCount, const LWUTF8Iterator *DefinedList, char8_t *ModuleBuffer, uint32_t ModuleBufferLen) {
 	const uint32_t MaxDefineTable = 256;
-	const uint32_t WordBufferCount = 32;
-	const uint32_t WordBufferLength = 256;
-	const uint32_t MaxDefines = 32;
-	const uint32_t MaxDefineValueLen = 256;
-	char LineBuffer[1024];
-	uint32_t DefineNameHash[MaxDefines];
-	char DefineValues[MaxDefines][MaxDefineValueLen];
-	char ModuleMap[WordBufferCount][WordBufferLength];
-	char WordBuffer[WordBufferCount][WordBufferLength];
-	char *WordList[WordBufferCount];
-	char *ModuleList[WordBufferCount];
-	DefinedCount = std::min<uint32_t>(DefinedCount, MaxDefines);
-	for (uint32_t i = 0; i < WordBufferCount; i++) {
-		WordList[i] = WordBuffer[i];
-		ModuleList[i] = ModuleMap[i];
-	}
+	const uint32_t MaxModules = 256;
+	const uint32_t MaxWords = 256;
+	LWUTF8Iterator ModuleList[MaxModules];
+	LWUTF8Iterator DefineValueList[MaxDefineTable];
+	LWUTF8Iterator WordList[MaxWords];
+	uint32_t DefineNameHash[MaxDefineTable];
+	const uint32_t WordSizes[] = { 7, 7, 6, 7, 6, 5, 6, 5 };
+
+	DefinedCount = std::min<uint32_t>(DefinedCount/2, MaxDefineTable);
+	char8_t *B = ModuleBuffer;
+	char8_t *BL = B + std::min<uint32_t>(ModuleBufferLen - 1, ModuleBufferLen);
+
 	for (uint32_t i = 0; i < DefinedCount; i++) {
-		char NameBuffer[MaxDefineValueLen];
-		*DefineValues[i] = '\0';
-		sscanf(DefinedList[i], "%[^:]:%s", NameBuffer, DefineValues[i]);
-		DefineNameHash[i] = LWText::MakeHash(NameBuffer);
+		DefineValueList[i] = DefinedList[i*2 + 1];
+		DefineNameHash[i] = DefinedList[i * 2].Hash();
 	}
 
-	uint32_t NameHash = LWText::MakeHash(ModuleName);
-	uint32_t EnvironmentHash = LWText::MakeHash(Environment);
+	uint32_t ModuleHash = ModuleName.Hash();
+	uint32_t EnvironmentHash = Environment.Hash();
 	uint32_t Longest = 0;
-	const char *P = ShaderCode;
-	char *L = LineBuffer;
 	bool InTargetModule = false;
 	//This is a terrible name.
-	bool WriteInDefineTable[MaxDefineTable];
-	WriteInDefineTable[0] = true;
-	uint32_t DefineTablePosition = 1;
+	bool isInDefinedTable[MaxDefineTable] = { true };
+	LWUTF8Iterator DefinedTableNames[MaxDefineTable];
+	uint32_t DefineTablePosition = 0;
 	uint32_t o = 0;
-	for (const char *C = ShaderCode;*C; C++) {
+	LWUTF8Iterator P = ShaderCode;
+	for (LWUTF8Iterator C = P; !C.AtEnd(); ++C) {
 		if (*C == '#') {
-			if (LWText::Compare(C, "#module", 7)) {
-				C = LWText::CopyToTokens(C + 7, LineBuffer, sizeof(LineBuffer), "\n\r\0");
-				if (!*C) C--;
-				uint32_t SplitCnt = LWText::SplitWords(LineBuffer, WordList, WordBufferLength, WordBufferCount, Longest);
-				InTargetModule = false;
-				if (SplitCnt < 1) continue;
-				uint32_t ModuleCnt = LWText::SplitToken(WordList[0], ModuleList, WordBufferLength, WordBufferCount, Longest, '|');
-				bool isTargetModule = false;
-				for (uint32_t i = 0; i < ModuleCnt && !isTargetModule; i++) isTargetModule = LWText::MakeHash(ModuleList[i]) == NameHash;
-				if (!isTargetModule) continue;
-				for (uint32_t i = 1; i < SplitCnt && !InTargetModule; i++) InTargetModule = EnvironmentHash == LWText::MakeHash(WordList[i]);
-			}else if(LWText::Compare(C, "#define", 7)){
-				C = LWText::CopyToTokens(C + 7, LineBuffer, sizeof(LineBuffer), "\n\r\0");
-				if (!*C) C--;
-				uint32_t SplitCnt = LWText::SplitWords(LineBuffer, WordList, WordBufferLength, WordBufferCount, Longest);
-				if(SplitCnt<1 || DefinedCount>=MaxDefines) continue;
-				if (WriteInDefineTable[DefineTablePosition - 1]) {
-					DefineNameHash[DefinedCount] = LWText::MakeHash(WordList[0]);
-					*DefineValues[DefinedCount] = '\0';
-					uint32_t r = 0;
-					for (uint32_t i = 1; i < SplitCnt; i++) {
-						if (i == 1) r += snprintf(DefineValues[DefinedCount] + r, WordBufferLength - r, "%s", WordList[i]);
-						else r += snprintf(DefineValues[DefinedCount] + r, WordBufferLength - r, " %s", WordList[i]);
+			uint32_t i = C.CompareListnc(7, u8"#module", 7, u8"#define", 6, "#ifdef", 7, "#ifndef", 6, "#endif", 5, "#else", 6, "#elifn", 5, "#elif");
+			if (i != -1) {
+				C.Advance(WordSizes[i]);
+				LWUTF8Iterator LineEnd = C.NextLine();
+				LWUTF8Iterator Line = LWUTF8Iterator(C, LineEnd);
+				C = LineEnd - 1;
+				uint32_t WordCnt = Line.SplitWords(WordList, MaxWords);
+				if (i == 0) { //#module
+					InTargetModule = false;
+					if(!LWLogCriticalIf<256>(WordCnt>=1, "Line {}: Encounted #module with no parameters.", LWUTF8I::CountLines(LWUTF8I(ShaderCode, C)))) continue;
+
+					uint32_t ModuleCnt = WordList[0].SplitToken(ModuleList, MaxModules, '|');
+					bool isTargetModule = false;
+					for (uint32_t i = 0; i < ModuleCnt && !isTargetModule; i++) isTargetModule = ModuleList[i].Hash() == ModuleHash;
+					if (!isTargetModule) continue;
+					for (uint32_t i = 1; i < WordCnt && !InTargetModule; i++) InTargetModule = WordList[i].Hash() == EnvironmentHash;
+				} else if (i == 1) { //#define 
+					if(!LWLogCriticalIf<256>(WordCnt>=1 && DefinedCount<MaxDefineTable, "Line {}: Encounted #define with no parameters(or exceeded maximum defines({}/{})).", LWUTF8I::CountLines(LWUTF8I(ShaderCode, C)), DefinedCount, MaxDefineTable)) continue;
+					if (isInDefinedTable[DefineTablePosition]) {
+						DefineNameHash[DefinedCount] = WordList[0].Hash();
+						if (WordCnt > 1) DefineValueList[DefinedCount] = LWUTF8Iterator(WordList[1], WordList[WordCnt - 1].NextEnd());
+						DefinedCount++;
 					}
-					DefinedCount++;
-				}
-			} else if (LWText::Compare(C, "#ifdef", 6)) {
-				C = LWText::CopyToTokens(C + 6, LineBuffer, sizeof(LineBuffer), "\n\r\0");
-				if (!*C) C--;
-				uint32_t SplitCnt = LWText::SplitWords(LineBuffer, WordList, WordBufferLength, WordBufferCount, Longest);
-				if(SplitCnt<1) continue;
+				} else if (i == 2) { //#ifdef
+					if(!LWLogCriticalIf<256>(WordCnt>=1, "Line {}: Encounted #ifdef with no parameters.", LWUTF8I::CountLines(LWUTF8I(ShaderCode, C)))) continue;
 
-				bool isDefined = false;
-				uint32_t Hash = LWText::MakeHash(WordList[0]);
-				for (uint32_t i = 0; i < DefinedCount && !isDefined; i++) isDefined = DefineNameHash[i] == Hash;
-				WriteInDefineTable[DefineTablePosition] = isDefined && WriteInDefineTable[DefineTablePosition - 1];
-				DefineTablePosition++;
-			} else if (LWText::Compare(C, "#ifndef", 7)) {
-				C = LWText::CopyToTokens(C + 7, LineBuffer, sizeof(LineBuffer), "\n\r\0");
-				if (!*C) C--;
-				uint32_t SplitCnt = LWText::SplitWords(LineBuffer, WordList, WordBufferLength, WordBufferCount, Longest);
-				if (SplitCnt < 1) continue;
-				bool isDefined = false;
-				uint32_t Hash = LWText::MakeHash(WordList[0]);
-				for (uint32_t i = 0; i < DefinedCount && !isDefined; i++) isDefined = DefineNameHash[i] == Hash;
-				WriteInDefineTable[DefineTablePosition] = !isDefined && WriteInDefineTable[DefineTablePosition - 1];
-				DefineTablePosition++;
-			} else if (LWText::Compare(C, "#endif", 6)) {
-				C = LWText::CopyToTokens(C + 6, LineBuffer, sizeof(LineBuffer), "\n\r\0");
-				if (!*C) C--;
-				DefineTablePosition = DefineTablePosition == 1 ? 1 : DefineTablePosition - 1;
-			} else if (LWText::Compare(C, "#else", 5)) {
-				C = LWText::CopyToTokens(C + 5, LineBuffer, sizeof(LineBuffer), "\n\r\0");
-				if (!*C) C--;
-				if (DefineTablePosition > 1) {
-					WriteInDefineTable[DefineTablePosition - 1] = WriteInDefineTable[DefineTablePosition - 2] && !WriteInDefineTable[DefineTablePosition - 1];
-				}
-			} else if (LWText::Compare(C, "#elifn", 6)) {
-				C = LWText::CopyToTokens(C + 6, LineBuffer, sizeof(LineBuffer), "\n\r\0");
-				if (!*C) C--;
-				uint32_t SplitCnt = LWText::SplitWords(LineBuffer, WordList, WordBufferLength, WordBufferCount, Longest);
-				if (SplitCnt < 1) continue;
+					uint32_t Hash = WordList[0].Hash();
+					bool isDefined = false;
+					for (uint32_t i = 0; i < DefinedCount && !isDefined; ++i) isDefined = DefineNameHash[i] == Hash;
+					isInDefinedTable[DefineTablePosition+1] = isDefined && isInDefinedTable[DefineTablePosition];
+					DefinedTableNames[++DefineTablePosition] = WordList[0];
+				} else if (i == 3) { //#ifndef 
+					if(!LWLogCriticalIf<256>(WordCnt>=1, "Line {}: Encounted #ifndef with no parameters.", LWUTF8I::CountLines(LWUTF8I(ShaderCode, C)))) continue;
 
-				bool isDefined = false;
-				uint32_t Hash = LWText::MakeHash(WordList[0]);
-				for (uint32_t i = 0; i < DefinedCount && !isDefined; i++) isDefined = DefineNameHash[i] == Hash;
-				if (DefineTablePosition > 1) {
-					WriteInDefineTable[DefineTablePosition - 1] = WriteInDefineTable[DefineTablePosition - 2] && !isDefined;
-				}
-			} else if (LWText::Compare(C, "#elif", 5)) {
-				C = LWText::CopyToTokens(C + 5, LineBuffer, sizeof(LineBuffer), "\n\r\0");
-				if (!*C) C--;
-				uint32_t SplitCnt = LWText::SplitWords(LineBuffer, WordList, WordBufferLength, WordBufferCount, Longest);
-				if (SplitCnt < 1) continue;
-
-				bool isDefined = false;
-				uint32_t Hash = LWText::MakeHash(WordList[0]);
-				for (uint32_t i = 0; i < DefinedCount && !isDefined; i++) isDefined = DefineNameHash[i] == Hash;
-				if (DefineTablePosition > 1) {
-					WriteInDefineTable[DefineTablePosition - 1] = WriteInDefineTable[DefineTablePosition - 2] && isDefined;
+					bool isDefined = false;
+					uint32_t Hash = WordList[0].Hash();
+					for (uint32_t i = 0; i < DefinedCount && !isDefined; i++) isDefined = DefineNameHash[i] == Hash;
+					isInDefinedTable[DefineTablePosition + 1] = !isDefined && isInDefinedTable[DefineTablePosition];
+					DefinedTableNames[++DefineTablePosition] = WordList[0];
+				} else if (i == 4) { //#endif
+					if(LWLogCriticalIf<256>(DefineTablePosition, "Line {}: Encounted #endif while not in #if block.", LWUTF8I::CountLines(LWUTF8I(ShaderCode, C)))) --DefineTablePosition;
+				} else if (i == 5) {//#else
+					if(!LWLogCriticalIf<256>(DefineTablePosition, "Line {}: Encounted #else while not in #if block.", LWUTF8I::CountLines(LWUTF8I(ShaderCode, C)))) continue;
+					isInDefinedTable[DefineTablePosition] = isInDefinedTable[DefineTablePosition - 1] && !isInDefinedTable[DefineTablePosition];
+				} else if (i == 6) { //#elifn
+					if(!LWLogCriticalIf<256>(WordCnt>=1, "Line {}: Encounted #elifn with no parameters.\n", LWUTF8I::CountLines(LWUTF8I(ShaderCode, C)))) continue;
+					if(!LWLogCriticalIf<256>(DefineTablePosition, "Line {}: Encounted #elifn while not in #if block.\n", LWUTF8I::CountLines(LWUTF8I(ShaderCode, C)))) continue;
+					
+					bool isDefined = false;
+					uint32_t Hash = WordList[0].Hash();
+					for (uint32_t i = 0; i < DefinedCount && !isDefined; i++) isDefined = DefineNameHash[i] == Hash;
+					isInDefinedTable[DefineTablePosition] = isInDefinedTable[DefineTablePosition - 1] && !isDefined;
+					DefinedTableNames[DefineTablePosition] = WordList[0];
+				} else if (i == 7) { //#elif
+					if(!LWLogCriticalIf<256>(WordCnt>=1, "Line {}: Encounted #elif with no parameters.\n", LWUTF8I::CountLines(LWUTF8I(ShaderCode, C)))) continue;
+					if(!LWLogCriticalIf<256>(DefineTablePosition, "Line {}: Encounted #elif while not in #if block.\n", LWUTF8I::CountLines(LWUTF8I(ShaderCode, C)))) continue;
+					
+					uint32_t Hash = WordList[0].Hash();
+					bool isDefined = false;
+					for (uint32_t i = 0; i < DefinedCount && !isDefined; i++) isDefined = DefineNameHash[i] == Hash;
+					isInDefinedTable[DefineTablePosition] = isInDefinedTable[DefineTablePosition - 1] && isDefined;
+					DefinedTableNames[DefineTablePosition] = WordList[0];
 				}
 			} else {
-				Longest = 0;
-				sscanf(C, "#%s%n", LineBuffer, &Longest);
-				uint32_t Hash = LWText::MakeHash(LineBuffer);
+				LWUTF8Iterator N = C + 1;
+				for (; !N.AtEnd() && !N.isWhitespace(); ++N) {}
+				LWUTF8Iterator L = LWUTF8Iterator(C + 1, N);
+				uint32_t Hash = L.Hash();
 				uint32_t i = 0;
 				for (; i < DefinedCount && DefineNameHash[i] != Hash; i++) {}
 				if (i < DefinedCount) {
-					C += (Longest - 1);
-					if (InTargetModule && WriteInDefineTable[DefineTablePosition - 1]) {
-						uint32_t ValueLen = (uint32_t)strlen(DefineValues[i]);
-						if (o + ValueLen < ModuleBufferLen) {
-							std::copy(DefineValues[i], DefineValues[i] + ValueLen, ModuleBuffer + o);
-							o += ValueLen;
-						}
+					C = N;
+					if (InTargetModule && isInDefinedTable[DefineTablePosition]) {
+						uint32_t r = DefineValueList[i].Copy(B, (uint32_t)(uintptr_t)(BL - B)) - 1;
+						B = std::min<char8_t*>(B + r, BL);
+						o += r;
 					}
 					continue;
 				}
 			}
 		}
-		if (InTargetModule && WriteInDefineTable[DefineTablePosition-1]) {
-			if (o < ModuleBufferLen) {
-				ModuleBuffer[o++] = *C;
-			}
+		if (InTargetModule && isInDefinedTable[DefineTablePosition]) {
+			uint32_t r = LWUTF8Iterator::EncodeCodePoint(B, (uint32_t)(uintptr_t)(BL - B), *C);
+			B = std::min<char8_t*>(B + r, BL);
+			o += r;
 		}
 	}
-	if (ModuleBufferLen) {
-		if (o == ModuleBufferLen) o--;
-		ModuleBuffer[o] = '\0';
-	}
-	if (DefineTablePosition != 1) {
-		std::cout << "Error Shader preprocessor if statement was left open." << std::endl;
-	}
-	return o;
+	if (ModuleBufferLen) *B = '\0';
+	LWLogCriticalIf<256>(DefineTablePosition==0, "Line {}: Shader preprocessor if statement '{}' was left open.", LWUTF8I::CountLines(LWUTF8I(ShaderCode, DefinedTableNames[DefineTablePosition])), DefinedTableNames[DefineTablePosition]);
+
+	return o+1;
 }
 
-uint32_t LWVideoDriver::PerformErrorAnalysis(const char *Source, char *ErrorBuffer, uint32_t ErrorBufferLength) {
-	auto FindLine = [](const char *Source, int32_t Line)->const char* {
-		const char *S = Source;
-		for (; *S && Line; S++) {
-			if (*S == '\n') {
-				if (*(S + 1) == '\r') S++;
-				Line--;
-			}
-		}
-		return S;
+uint32_t LWVideoDriver::PerformErrorAnalysis(const LWUTF8Iterator &Source, char8_t *ErrorBuffer, uint32_t ErrorBufferLength) {
+
+	auto InsertAt = [](LWUTF8Iterator &Pos, const LWUTF8Iterator &Source) -> LWUTF8Iterator {
+		uint32_t NLen, NRawLen;
+		if (!LWUTF8I::ValidateIterator(Source, NLen, NRawLen)) return Pos;
+		LWUTF8Iterator End = Pos.NextEnd();
+
+		--NRawLen;
+		//Type *oBuffer = pReserve(m_RawLength + --NRawLen);
+		if (End() + NRawLen > End.GetLast()) return Pos;
+		std::copy_backward(Pos(), End(), End() + NRawLen);
+		std::copy(Source(), Source() + NRawLen, Pos());
+		return Pos+NLen;	
 	};
 
-	auto CopyStringBackwards = [](char *Dest, const char *Src, uint32_t DestLength)->uint32_t {
-		uint32_t SrcLen = (uint32_t)(strlen(Src)+1);
-		char *DestLast = Dest + DestLength;
-		char *D = Dest + SrcLen;
-		for (const char *S = Src + SrcLen; S >= Src; S--, D--) {
-			if (D < DestLast) *D = *S;
-		}
-		if (DestLast) *(DestLast - 1) = '\0';
-		return SrcLen;
-	};
-
-	auto InsertLine = [&FindLine, &CopyStringBackwards](const char *Source, int32_t Line, char *ErrorBuffer, uint32_t ErrorBufferLength)->char* {
-		const char *Pos = FindLine(Source, Line<=1?0:Line-1);
-		const char *Next = FindLine(Pos, 3);
-		char *BufferLast = ErrorBuffer + ErrorBufferLength;
-		uint32_t Length = (uint32_t)(uintptr_t)(Next - Pos);
-		//std::cout << "Line: '" << Pos << "'" << std::endl;
-		if (ErrorBufferLength < Length) return ErrorBuffer;
-		char *B = ErrorBuffer;
-		CopyStringBackwards(ErrorBuffer + Length, ErrorBuffer, (ErrorBufferLength - Length));
-		for (const char *P = Pos; P != Next && B != BufferLast; B++, P++) *B = *P;
-		return B;
-	};
-
-	auto ParseFormat = [](const char *Line, int32_t &LineVal, int32_t LineOffset, const char *Fmt, ...)->bool {
+	auto ParseFormat = [](const LWUTF8Iterator &Line, int32_t &LineVal, int32_t LineOffset, const char *Fmt, ...)->bool {
 		va_list lst;
 		va_start(lst, Fmt);
-		uint32_t r = vsscanf(Line, Fmt, lst);
+		uint32_t r = vsscanf((const char*)Line(), Fmt, lst);
 		va_end(lst);
 		LineVal += LineOffset;
 		return r == 2;
 	};
 
-	if (!ErrorBuffer) return 0;
-	char *BufferLast = ErrorBuffer + ErrorBufferLength;
-	char *P = ErrorBuffer;
-	char *C = ErrorBuffer;
-	for (; *C; C++) {
-		if (*C == '\n') {
-			C++;
-			int32_t Column = 0;
-			int32_t Line = 0;
-			bool Found = false;
-			if (ParseFormat(P, Line, -1, "ERROR: %d:%d", &Column, &Line)) Found = true;
-			else if (ParseFormat(P, Line, -1, "WARNING: %d:%d", &Column, &Line)) Found = true;
-			else if (ParseFormat(P, Line, 0, "%d(%d)", &Column, &Line)) Found = true;
-			else if (ParseFormat(P, Line, 0, "%*[^(](%d,%d", &Line, &Column)) Found = true;
-			P = C;
-			if (Found) P = C = InsertLine(Source, Line, C, ErrorBufferLength - (uint32_t)(uintptr_t)(C - ErrorBuffer));
+	if (!ErrorBufferLength) return 0;
+	LWUTF8Iterator S = LWUTF8Iterator(ErrorBuffer, ErrorBufferLength);
+	LWUTF8Iterator C = S;
+	LWUTF8Iterator P = C;
+	for (; !C.AtEnd(); C.AdvanceLine()) {
+		int32_t Column = 0;
+		int32_t Line = 0;
+		bool Found = false;
+		if (ParseFormat(P, Line, -1, "ERROR: %d:%d", &Column, &Line)) Found = true;
+		else if (ParseFormat(P, Line, -1, "WARNING: %d:%d", &Column, &Line)) Found = true;
+		else if (ParseFormat(P, Line, 0, "%d(%d)", &Column, &Line)) Found = true;
+		else if (ParseFormat(P, Line, 0, "%*[^(](%d,%d", &Line, &Column)) Found = true;
+		P = C;
+		if (Found) {
+			LWUTF8Iterator BLine = Source.NextLine(Line == 0 ? 0 : Line - 1, true);
+			LWUTF8Iterator ELine = BLine.NextLine(3, false);
+			P = C = InsertAt(C, LWUTF8Iterator(BLine, ELine));
 		}
 	}
-	*(BufferLast - 1) = '\0';
-	return (uint32_t)(uintptr_t)(C - ErrorBuffer);
+	return S.RawDistance(C);
 }
 
 
@@ -289,7 +245,7 @@ uint32_t LWVideoDriver::MakeRasterStateHash(uint64_t RasterFlags, float Bias, fl
 	*((uint64_t*)Buffer) = RasterFlags;
 	*((float*)&Buffer[2]) = Bias;
 	*((float*)&Buffer[3]) = ScaleBias;
-	return LWText::MakeHashb((const char*)Buffer, 16);
+	return LWCrypto::HashFNV1A((const uint8_t*)Buffer, 16);
 }
 
 
@@ -322,8 +278,9 @@ bool LWVideoDriver::UpdatePipelineStages(LWPipeline *Pipeline) {
 		InternalPipeline->BuildMappings();
 		m_PipelineMap.emplace(PipelineHash, InternalPipeline);
 	} else InternalPipeline = Res->second;
+	
 	ClonePipeline(Pipeline, InternalPipeline);
-	Pipeline->SetFlag(Flag&~LWPipeline::DirtyStages);
+	Pipeline->SetFlag((Flag&~LWPipeline::DirtyStages) | LWPipeline::Dirty);
 	return true;
 }
 
@@ -338,7 +295,7 @@ bool LWVideoDriver::SetFrameBuffer(LWFrameBuffer *Buffer, bool ChangeViewport) {
 	return true;
 }
 
-bool LWVideoDriver::SetPipeline(LWPipeline *Pipeline, LWVideoBuffer *Vertices, LWVideoBuffer *Indices, uint32_t VerticeStride, uint32_t Offset){
+bool LWVideoDriver::SetPipeline(LWPipeline *Pipeline, LWPipelineInputStream *InputStreamBuffers, LWVideoBuffer *Indices, LWVideoBuffer *IndirectBuffer){
 	bool Dirty = Pipeline->isDirty();
 	uint64_t Flag = Pipeline->GetFlag();
 	Dirty = UpdatePipelineStages(Pipeline) || Dirty;
@@ -357,23 +314,21 @@ bool LWVideoDriver::SetRasterState(uint64_t Flags, float Bias, float SlopedScale
 	return true;
 }
 
-LWShader *LWVideoDriver::LoadShader(uint32_t ShaderType, const char *Path, LWAllocator &Allocator, uint32_t DefinedCount, const char **DefinedList, char *CompiledBuffer, char *ErrorBuffer, uint32_t *CompiledBufferLen, uint32_t ErrorBufferLen, LWFileStream *ExistingStream) {
+LWShader *LWVideoDriver::LoadShader(uint32_t ShaderType, const LWUTF8Iterator &Path, LWAllocator &Allocator, uint32_t DefinedCount, const LWUTF8Iterator *DefinedList, char8_t *CompiledBuffer, char8_t *ErrorBuffer, uint32_t &CompiledBufferLen, uint32_t ErrorBufferLen, LWFileStream *ExistingStream) {
 	const uint32_t BufferSize = 32 * 1024;
-	char Buffer[BufferSize];
+	char8_t Buffer[BufferSize];
 	LWFileStream Stream;
-	if (!LWFileStream::OpenStream(Stream, Path, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, ExistingStream)) {
-		std::cout << "Error could not open file: '" << Path << "'" << std::endl;
-		return nullptr;
-	}
+	if(!LWLogCriticalIf<256>(LWFileStream::OpenStream(Stream, Path, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator, ExistingStream), "Error could not open file: '{}'\n", Path)) return nullptr;
+	
 	Stream.ReadText(Buffer, BufferSize);
 	return ParseShader(ShaderType, Buffer, Allocator, DefinedCount, DefinedList, CompiledBuffer, ErrorBuffer, CompiledBufferLen, ErrorBufferLen);
 }
 
-LWShader *LWVideoDriver::ParseShader(uint32_t ShaderType, const char *Source, LWAllocator &Allocator, uint32_t DefinedCount, const char **DefinedList, char *CompiledBuffer, char *ErrorBuffer, uint32_t *CompiledBufferLen, uint32_t ErrorBufferLen) {
+LWShader *LWVideoDriver::ParseShader(uint32_t ShaderType, const LWUTF8Iterator &Source, LWAllocator &Allocator, uint32_t DefinedCount, const LWUTF8Iterator *DefinedList, char8_t *CompiledBuffer, char8_t *ErrorBuffer, uint32_t &CompiledBufferLen, uint32_t ErrorBufferLen) {
 	const uint32_t BufferSize = 16 * 1024;
 	char Buffer[BufferSize];
-	char *DriverNames[] = LWVIDEODRIVER_NAMES;
-	char *ModuleNames[] = { "Vertex", "Pixel", "Geometry", "Compute" };
+	const char *DriverNames[] = LWVIDEODRIVER_NAMES;
+	const char *ModuleNames[] = { "Vertex", "Geometry", "Pixel", "Compute" };
 	uint32_t DriverID = GetDriverID();
 	uint32_t Len = FindModule(Source, DriverNames[DriverID], ModuleNames[ShaderType], DefinedCount, DefinedList, Buffer, BufferSize);
 	if (!Len) return nullptr;
@@ -446,14 +401,32 @@ bool LWVideoDriver::UpdateTextureCubeArray(LWTexture *Texture, uint32_t MipmapLe
 	return UpdateTextureCubeArray(Texture, MipmapLevel, Layer, Face, Texels, LWVector2i(), LWImage::MipmapSize2D(Texture->Get2DSize(), MipmapLevel));
 }
 
+LWVideoDriver &LWVideoDriver::DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t Offset) {
+	LWPipelineInputStream InputStreams[LWShader::MaxInputs];
+	Pipeline->MakeInterleavedInputStream(InputStreams, nullptr, InputBlock, VertexStride, LWShader::MaxInputs);
+	return DrawBuffer(Pipeline, DrawMode, InputStreams, IndexBuffer, Count, Offset);
+}
+
+LWVideoDriver &LWVideoDriver::DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWPipelineInputStream *InstanceStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t InstanceCount, uint32_t Offset) {
+	LWPipelineInputStream InputStreams[LWShader::MaxInputs];
+	Pipeline->MakeInterleavedInputStream(InputStreams, InstanceStreams, InputBlock, VertexStride, LWShader::MaxInputs);
+	return DrawInstancedBuffer(Pipeline, DrawMode, InputStreams, IndexBuffer, Count, InstanceCount, Offset);
+}
+
+LWVideoDriver &LWVideoDriver::DrawIndirectBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWPipelineInputStream *InstanceStreams, LWVideoBuffer *IndexBuffer, LWVideoBuffer *IndirectBuffer, uint32_t IndirectCount, uint32_t VertexStride, uint32_t IndirectOffset) {
+	LWPipelineInputStream InputStreams[LWShader::MaxInputs];
+	Pipeline->MakeInterleavedInputStream(InputStreams, InstanceStreams, InputBlock, VertexStride, LWShader::MaxInputs);
+	return DrawIndirectBuffer(Pipeline, DrawMode, InputStreams, IndexBuffer, IndirectBuffer, IndirectCount, IndirectOffset);
+}
+
 LWVideoDriver &LWVideoDriver::DrawMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh){
 	Mesh->ClearFinished();
 	return DrawBuffer(Pipeline, DrawMode, Mesh->GetVertexBuffer(), Mesh->GetIndiceBuffer(), Mesh->GetRenderCount(), Mesh->GetTypeSize());
 }
 
-LWVideoDriver &LWVideoDriver::DrawInstancedMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh, uint32_t InstanceCount) {
+LWVideoDriver &LWVideoDriver::DrawInstancedMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh, LWPipelineInputStream *InstanceStreams, uint32_t InstanceCount) {
 	Mesh->ClearFinished();
-	return DrawInstancedBuffer(Pipeline, DrawMode, Mesh->GetVertexBuffer(), Mesh->GetIndiceBuffer(), Mesh->GetRenderCount(), Mesh->GetTypeSize(), InstanceCount, 0);
+	return DrawInstancedBuffer(Pipeline, DrawMode, Mesh->GetVertexBuffer(), InstanceStreams, Mesh->GetIndiceBuffer(), Mesh->GetRenderCount(), Mesh->GetTypeSize(), InstanceCount, 0);
 }
 
 LWVideoDriver &LWVideoDriver::DrawMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh, uint32_t Count, uint32_t Offset){
@@ -461,9 +434,9 @@ LWVideoDriver &LWVideoDriver::DrawMesh(LWPipeline *Pipeline, int32_t DrawMode, L
 	return DrawBuffer(Pipeline, DrawMode, Mesh->GetVertexBuffer(), Mesh->GetIndiceBuffer(), Count, Mesh->GetTypeSize(), Offset);
 }
 
-LWVideoDriver &LWVideoDriver::DrawInstancedMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh, uint32_t Count, uint32_t InstanceCount, uint32_t Offset) {
+LWVideoDriver &LWVideoDriver::DrawInstancedMesh(LWPipeline *Pipeline, int32_t DrawMode, LWBaseMesh *Mesh, LWPipelineInputStream *InstanceStreams, uint32_t Count, uint32_t InstanceCount, uint32_t Offset) {
 	Mesh->ClearFinished();
-	return DrawInstancedBuffer(Pipeline, DrawMode, Mesh->GetVertexBuffer(), Mesh->GetIndiceBuffer(), Count, Mesh->GetTypeSize(), InstanceCount, Offset);
+	return DrawInstancedBuffer(Pipeline, DrawMode, Mesh->GetVertexBuffer(), InstanceStreams, Mesh->GetIndiceBuffer(), Count, Mesh->GetTypeSize(), InstanceCount, Offset);
 }
 
 LWVideoDriver &LWVideoDriver::UpdateMesh(LWBaseMesh *Mesh){
@@ -475,7 +448,7 @@ LWVideoDriver &LWVideoDriver::UpdateMesh(LWBaseMesh *Mesh){
 	return *this;
 }
 
-bool LWVideoDriver::UpdateVideoBuffer(LWVideoBuffer *Buffer){
+bool LWVideoDriver::UpdateVideoBuffer(LWVideoBuffer *Buffer) {
 	bool Dirty = Buffer->isDirty();
 	if (!Dirty) return Dirty;
 	bool Res = UpdateVideoBuffer(Buffer, Buffer->GetLocalBuffer(), Buffer->GetEditLength());
@@ -580,11 +553,15 @@ LWVideoDriver &LWVideoDriver::Present(uint32_t SwapInterval) {
 	return *this;
 }
 
-LWVideoDriver &LWVideoDriver::DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t Offset) {
+LWVideoDriver &LWVideoDriver::DrawBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t Offset) {
 	return *this;
 }
 
-LWVideoDriver &LWVideoDriver::DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWVideoBuffer *InputBlock, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t VertexStride, uint32_t InstanceCount, uint32_t Offset) {
+LWVideoDriver &LWVideoDriver::DrawInstancedBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InputStreams, LWVideoBuffer *IndexBuffer, uint32_t Count, uint32_t InstanceCount, uint32_t Offset) {
+	return *this;
+}
+
+LWVideoDriver &LWVideoDriver::DrawIndirectBuffer(LWPipeline *Pipeline, int32_t DrawMode, LWPipelineInputStream *InpustStreams, LWVideoBuffer *IndexBuffer, LWVideoBuffer *IndirectBuffer, uint32_t IndirectCount, uint32_t IndirectOffset) {
 	return *this;
 }
 
@@ -596,11 +573,11 @@ LWPipeline *LWVideoDriver::CreatePipeline(LWShader **ShaderStages, uint64_t Flag
 	return nullptr;
 }
 
-LWShader *LWVideoDriver::CreateShader(uint32_t ShaderType, const char *Source, LWAllocator &Allocator, char *CompiledBuffer, char *ErrorBuffer, uint32_t *CompiledBufferLen, uint32_t ErrorBufferLen) {
+LWShader *LWVideoDriver::CreateShader(uint32_t ShaderType, const LWUTF8Iterator &Source, LWAllocator &Allocator, char8_t *CompiledBuffer, char8_t *ErrorBuffer, uint32_t &CompiledBufferLen, uint32_t ErrorBufferLen) {
 	return nullptr;
 }
 
-LWShader *LWVideoDriver::CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledLen, LWAllocator &Allocator, char *ErrorBuffer, uint32_t ErroBufferLen) {
+LWShader *LWVideoDriver::CreateShaderCompiled(uint32_t ShaderType, const char *CompiledCode, uint32_t CompiledLen, LWAllocator &Allocator, char8_t *ErrorBuffer, uint32_t ErrorBufferLen) {
 	return nullptr;
 }
 
@@ -638,6 +615,10 @@ LWTexture *LWVideoDriver::CreateTextureCubeArray(uint32_t TextureState, uint32_t
 
 LWVideoBuffer *LWVideoDriver::CreateVideoBuffer(uint32_t Type, uint32_t UsageFlag, uint32_t TypeSize, uint32_t Length, LWAllocator &Allocator, const uint8_t *Buffer) {
 	return nullptr;
+}
+
+bool LWVideoDriver::ResolveMSAA(LWTexture *Source, LWTexture *Dest, uint32_t MipLevel) {
+	return false;
 }
 
 LWTexture *LWVideoDriver::CreateTexture2DMSArray(uint32_t TextureState, uint32_t PackType, const LWVector2i &Size, uint32_t Samples, uint32_t Layers, LWAllocator &Allocator) {
@@ -680,7 +661,15 @@ bool LWVideoDriver::UpdateTextureCubeArray(LWTexture *Texture, uint32_t MipmapLe
 	return false;
 }
 
-bool LWVideoDriver::UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const uint8_t *Buffer, uint32_t Length) {
+bool LWVideoDriver::UpdateVideoBuffer(LWVideoBuffer *VideoBuffer, const uint8_t *Buffer, uint32_t Length, uint32_t Offset) {
+	return false;
+}
+
+void *LWVideoDriver::MapVideoBuffer(LWVideoBuffer *VideoBuffer, uint32_t Length, uint32_t Offset) {
+	return nullptr;
+}
+
+bool LWVideoDriver::UnmapVideoBuffer(LWVideoBuffer *VideoBuffer) {
 	return false;
 }
 

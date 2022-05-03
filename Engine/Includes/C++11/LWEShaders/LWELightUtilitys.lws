@@ -1,0 +1,273 @@
+R"(#module Vertex|Pixel|Compute DirectX11_1
+
+#ifdef PBRLIGHTFUNCS
+#ifdef SHADOWMAP
+
+Texture2DArray LWEShadowDepthTex;
+TextureCubeArray LWEShadowDepthCubeTex;
+SamplerComparisonState LWEShadowDepthSmp;
+SamplerComparisonState LWEShadowDepthCubeSmp;
+
+int Shadow_PassID(int ShadowID){
+	return (ShadowID&0xFF);
+}
+
+int Shadow_SubPassID(int ShadowID){
+	return ((ShadowID>>8)&0xFF);
+}
+
+float Shadow_Layer(int ShadowID){
+	return float((ShadowID>>16)&0xFF);
+}
+
+float PCFFilter(float2 TexCoord, float Layer, float Depth, float Bias){
+	float Att = 0.0f;
+	Depth = saturate(Depth-Bias);
+	Att += LWEShadowDepthTex.SampleCmpLevelZero(LWEShadowDepthSmp, float3(TexCoord, Layer), Depth);
+	Att += LWEShadowDepthTex.SampleCmpLevelZero(LWEShadowDepthSmp, float3(TexCoord, Layer), Depth, int2(-1,-1));
+	Att += LWEShadowDepthTex.SampleCmpLevelZero(LWEShadowDepthSmp, float3(TexCoord, Layer), Depth, int2( 1,-1));
+	Att += LWEShadowDepthTex.SampleCmpLevelZero(LWEShadowDepthSmp, float3(TexCoord, Layer), Depth, int2(-1, 1));
+	Att += LWEShadowDepthTex.SampleCmpLevelZero(LWEShadowDepthSmp, float3(TexCoord, Layer), Depth, int2( 1, 1));
+	return (Att*0.2f);
+}
+
+
+bool doDirectionShadow(int ShadowID, float4 SPositions[LWEMaxGeometryBuckets], float Bias, inout float Att){
+	if(ShadowID==-1) return false;
+	int PassID = Shadow_PassID(ShadowID);
+	int SubPassID = Shadow_SubPassID(ShadowID);
+	float4 sPosition = SPositions[SubPassID] / SPositions[SubPassID].w;
+
+	float2 sTexCoord = float2(sPosition.x, -sPosition.y)*0.5f+0.5f;
+	if(saturate(sTexCoord.x)!=sTexCoord.x || saturate(sTexCoord.y)!=sTexCoord.y || saturate(sPosition.z)!=sPosition.z) return false;
+
+	Att *= PCFFilter(sTexCoord, Shadow_Layer(ShadowID), sPosition.z, Bias);
+	return true;
+}
+
+bool doShadows(LWELightS L, float4 SPositions[LWEMaxGeometryBuckets], float SNdotL, inout float Att){
+	if(L.Position.w==0.0f) {
+		float Bias = 0.0f;//clamp(0.005f*tan(acos(SNdotL)), 0.0f, 0.001f); 
+		if(doDirectionShadow(L.ShadowIndexs.x, SPositions, Bias, Att)) return true;
+		if(doDirectionShadow(L.ShadowIndexs.y, SPositions, Bias, Att)) return true;
+		if(doDirectionShadow(L.ShadowIndexs.z, SPositions, Bias, Att)) return true;
+		if(doDirectionShadow(L.ShadowIndexs.w, SPositions, Bias, Att)) return true;
+	}else if(L.Position.w==1.0f){
+	}else if(L.Position.w>1.0f){
+		float Bias = 0.0f;//0.00005f;
+		if(doDirectionShadow(L.ShadowIndexs.x, SPositions, Bias, Att)) return true;
+	}
+	return false;
+}
+
+#endif
+
+
+struct LWEPBRLightResult{
+	float Att;
+	float SNdotL;
+	float NdotL;
+	float NdotV;
+	float NdotH;
+	float LdotH;
+	float VdotH;
+};
+
+LWEPBRLightResult MakeLightData(float3 SurfaceNormal, float3 Normal, float3 nViewDir, float3 LightDir){
+	LWEPBRLightResult R;
+	float3 nHalf = normalize(nViewDir+LightDir);
+	R.SNdotL = saturate(dot(SurfaceNormal, LightDir));
+	R.NdotL = saturate(dot(Normal, LightDir));
+	R.NdotV = saturate(dot(Normal, nViewDir));
+	R.NdotH = saturate(dot(Normal, nHalf));
+	R.LdotH = saturate(dot(LightDir, nHalf));
+	R.VdotH = saturate(dot(nViewDir, nHalf));
+	R.Att = 1.0f;
+	return R;
+};
+
+LWEPBRLightResult doAmbientLight(LWELightS L, float AmbientOcclusion){
+	LWEPBRLightResult R;
+	R.Att = (-L.Position.w-1.0f)*AmbientOcclusion;
+	R.SNdotL = 1.0f;
+	R.NdotL = 1.0f;
+	R.NdotV = 0.0f;
+	R.NdotH = 0.5f;
+	R.LdotH = 0.5f;
+	R.VdotH = 0.5f;
+	return R;
+}
+
+LWEPBRLightResult doDirectionalLight(LWELightS L, float3 Position, float3 SurfaceNormal, float3 Normal, float3 nViewDir){
+	LWEPBRLightResult R = MakeLightData(SurfaceNormal, Normal, nViewDir, -L.Direction.xyz);
+	return R;
+}
+
+LWEPBRLightResult doPointLight(LWELightS L, float3 Position, float3 SurfaceNormal, float3 Normal, float3 nViewDir){
+	float3 Dir = Position-L.Position.xyz;
+	float3 nDir = normalize(Dir);
+	float Len = length(Dir);
+	LWEPBRLightResult R = MakeLightData(SurfaceNormal, Normal, nViewDir, -nDir);
+	//R.Att = doPointShadow(L.ShadowIndex.x, -Dir, -nDir);
+	R.Att = R.Att * (1.0f-saturate((Len-L.Direction.x)/L.Direction.y));
+	return R;
+}
+
+LWEPBRLightResult doSpotLight(LWELightS L, float3 Position, float3 SurfaceNormal, float3 Normal, float3 nViewDir){
+	float3 Dir = Position-L.Position.xyz;
+	float3 nDir = normalize(Dir);
+	float Len = L.Direction.w;
+	float mincos = cos(L.Position.w-1.0f);
+	float maxcos = lerp(mincos, 1.0f, 0.5f);
+	float c = dot(L.Direction.xyz, nDir);
+	float Dis = dot(L.Direction.xyz, Dir);
+	LWEPBRLightResult R = MakeLightData(SurfaceNormal, Normal, nViewDir, -nDir);	
+	//R.Att = doSpotShadow(L.ShadowIndex.x, TPositions);
+	
+	R.Att = R.Att * (1.0f-smoothstep(Len*0.75f, Len, Dis))*smoothstep(mincos, maxcos, c);
+	return R;
+}
+
+LWEPBRLightResult doLighting(LWELightS L, float AmbientOcclusion, float3 Position, float3 SurfaceNormal, float3 Normal, float3 nViewDir){
+	if(L.Position.w<0.0) return doAmbientLight(L, AmbientOcclusion);
+	else if(L.Position.w==0.0f) return doDirectionalLight(L, Position, SurfaceNormal, Normal, nViewDir);
+	else if(L.Position.w==1.0f) return doPointLight(L, Position, SurfaceNormal, Normal, nViewDir);
+	return doSpotLight(L, Position, SurfaceNormal, Normal, nViewDir);
+};
+#endif
+
+#module Vertex|Pixel|Compute OpenGL4_5
+
+#ifdef PBRLIGHTFUNCS
+
+#ifdef SHADOWMAP
+uniform sampler2DArrayShadow LWEShadowDepthTex;
+uniform samplerCubeArrayShadow LWEShadowDepthCubeTex;
+
+int Shadow_PassID(int ShadowID){
+	return (ShadowID&0xFF);
+}
+
+int Shadow_SubPassID(int ShadowID){
+	return ((ShadowID>>8)&0xFF);
+}
+
+float Shadow_Layer(int ShadowID){
+	return float((ShadowID>>16)&0xFF);
+}
+
+float PCFFilter(vec2 TexCoord, float Layer, float Depth, float Bias){
+	float Att = 0.0f;
+	Depth = clamp((Depth*0.5f+0.5f)-Bias, 0.0f, 1.0f);
+	Att += texture(LWEShadowDepthTex, vec4(TexCoord, Layer, Depth));
+	Att += textureOffset(LWEShadowDepthTex, vec4(TexCoord, Layer, Depth), ivec2(-1,-1));
+	Att += textureOffset(LWEShadowDepthTex, vec4(TexCoord, Layer, Depth), ivec2( 1,-1));
+	Att += textureOffset(LWEShadowDepthTex, vec4(TexCoord, Layer, Depth), ivec2(-1, 1));
+	Att += textureOffset(LWEShadowDepthTex, vec4(TexCoord, Layer, Depth), ivec2( 1, 1));
+	return (Att*0.2f);
+}
+
+
+bool doDirectionShadow(int ShadowID, vec4 SPositions[LWEMaxGeometryBuckets], float Bias, inout float Att){
+	if(ShadowID==-1) return false;
+	int PassID = Shadow_PassID(ShadowID);
+	int SubPassID = Shadow_SubPassID(ShadowID);
+	vec4 sPosition = SPositions[SubPassID] / SPositions[SubPassID].w;
+
+	vec2 sTexCoord = sPosition.xy*0.5f+0.5f;
+	if(clamp(sTexCoord.x, 0.0f, 1.0f)!=sTexCoord.x || clamp(sTexCoord.y, 0.0f, 1.0f)!=sTexCoord.y || clamp(sPosition.z, -1.0f, 1.0f)!=sPosition.z) return false;
+
+	Att *= PCFFilter(sTexCoord, Shadow_Layer(ShadowID), sPosition.z, Bias);
+	return true;
+}
+
+bool doShadows(LWELightS L, vec4 SPositions[LWEMaxGeometryBuckets], float SNdotL, inout float Att){
+	if(L.Position.w==0.0f) { //Direction Light:
+		float Bias = 0.0f;//clamp(0.005f*tan(acos(SNdotL)), 0.0f, 0.001f); 
+		if(doDirectionShadow(L.ShadowIndexs.x, SPositions, Bias, Att)) return true;
+		if(doDirectionShadow(L.ShadowIndexs.y, SPositions, Bias, Att)) return true;
+		if(doDirectionShadow(L.ShadowIndexs.z, SPositions, Bias, Att)) return true;
+		if(doDirectionShadow(L.ShadowIndexs.w, SPositions, Bias, Att)) return true;
+	}else if(L.Position.w==1.0f){ //Point Light:
+	
+	}else if(L.Position.w>1.0f){ //spot light:
+		float Bias = 0.0f;//0.00005f;
+		if(doDirectionShadow(L.ShadowIndexs.x, SPositions, Bias, Att)) return true;
+	}
+	return false;
+}
+
+#endif
+
+
+struct LWEPBRLightResult{
+	float Att;
+	float SNdotL;
+	float NdotL;
+	float NdotV;
+	float NdotH;
+	float LdotH;
+	float VdotH;
+};
+
+LWEPBRLightResult MakeLightData(vec3 SurfaceNormal, vec3 Normal, vec3 nViewDir, vec3 LightDir){
+	LWEPBRLightResult R;
+	vec3 nHalf = normalize(nViewDir+LightDir);
+	R.SNdotL = clamp(dot(SurfaceNormal, LightDir), 0.0f, 1.0f);
+	R.NdotL = clamp(dot(Normal, LightDir), 0.0f, 1.0f);
+	R.NdotV = clamp(dot(Normal, nViewDir), 0.0f, 1.0f);
+	R.NdotH = clamp(dot(Normal, nHalf), 0.0f, 1.0f);
+	R.LdotH = clamp(dot(LightDir, nHalf), 0.0f, 1.0f);
+	R.VdotH = clamp(dot(nViewDir, nHalf), 0.0f, 1.0f);
+	R.Att = 1.0f;
+	return R;
+};
+
+LWEPBRLightResult doAmbientLight(LWELightS L, float AmbientOcclusion){
+	LWEPBRLightResult R;
+	R.Att = (-L.Position.w-1.0f)*AmbientOcclusion;
+	R.SNdotL = 1.0f;
+	R.NdotL = 1.0f;
+	R.NdotV = 0.0f;
+	R.NdotH = 0.5f;
+	R.LdotH = 0.5f;
+	R.VdotH = 0.5f;
+	return R;
+}
+
+LWEPBRLightResult doDirectionalLight(LWELightS L, vec3 Position, vec3 SurfaceNormal, vec3 Normal, vec3 nViewDir){
+	LWEPBRLightResult R = MakeLightData(SurfaceNormal, Normal, nViewDir, -L.Direction.xyz);
+	return R;
+}
+
+LWEPBRLightResult doPointLight(LWELightS L, vec3 Position, vec3 SurfaceNormal, vec3 Normal, vec3 nViewDir){
+	vec3 Dir = Position-L.Position.xyz;
+	vec3 nDir = normalize(Dir);
+	float Len = length(Dir);
+	LWEPBRLightResult R = MakeLightData(SurfaceNormal, Normal, nViewDir, -nDir);
+
+	R.Att = R.Att * (1.0f-clamp((Len-L.Direction.x)/L.Direction.y, 0.0f, 1.0f));
+	return R;
+}
+
+LWEPBRLightResult doSpotLight(LWELightS L, vec3 Position, vec3 SurfaceNormal, vec3 Normal, vec3 nViewDir){
+	vec3 Dir = Position-L.Position.xyz;
+	vec3 nDir = normalize(Dir);
+	float Len = L.Direction.w;
+	float mincos = cos(L.Position.w-1.0f);
+	float maxcos = mix(mincos, 1.0f, 0.5f);
+	float c = dot(L.Direction.xyz, nDir);
+	float Dis = dot(L.Direction.xyz, Dir);
+	LWEPBRLightResult R = MakeLightData(SurfaceNormal, Normal, nViewDir, -nDir);	
+	
+	R.Att = R.Att * (1.0f-smoothstep(Len*0.75f, Len, Dis))*smoothstep(mincos, maxcos, c);
+	return R;
+}
+
+LWEPBRLightResult doLighting(LWELightS L, float AmbientOcclusion, vec3 Position, vec3 SurfaceNormal, vec3 Normal, vec3 nViewDir){
+	if(L.Position.w<0.0) return doAmbientLight(L, AmbientOcclusion);
+	else if(L.Position.w==0.0f) return doDirectionalLight(L, Position, SurfaceNormal, Normal, nViewDir);
+	else if(L.Position.w==1.0f) return doPointLight(L, Position, SurfaceNormal, Normal, nViewDir);
+	return doSpotLight(L, Position, SurfaceNormal, Normal, nViewDir);
+};
+#endif)",

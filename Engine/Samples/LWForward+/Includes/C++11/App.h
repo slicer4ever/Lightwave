@@ -30,7 +30,7 @@ public:
 
 	bool isTerminate(void);
 
-	App(const char *Path, LWAllocator &Allocator);
+	App(const LWUTF8Iterator &Path, LWAllocator &Allocator);
 
 	~App();
 private:

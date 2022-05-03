@@ -25,6 +25,15 @@
     <Filter Include="Header Files\LWEProtocols">
       <UniqueIdentifier>{ebab224d-dabe-46e0-afff-bbdb9a0b86d5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\LWEShaders">
+      <UniqueIdentifier>{27eb003b-aed1-409f-955c-b7481af9a053}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\LWERenderPasses">
+      <UniqueIdentifier>{5a5430aa-7e93-408a-859b-b8c8108e668e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\LWERenderPasses">
+      <UniqueIdentifier>{09d8767a-63e0-4048-a9d2-a35da99104bb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\Includes\C++11\LWEAsset.h">
@@ -72,19 +81,19 @@
     <ClInclude Include="..\..\..\Includes\C++11\LWEJobQueue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolHTTP.h">
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocol_HTTP.h">
       <Filter>Header Files\LWEProtocols</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolTLS.h">
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocol_TLS.h">
       <Filter>Header Files\LWEProtocols</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolHTTPS.h">
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocol_HTTPS.h">
       <Filter>Header Files\LWEProtocols</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolWebSocket.h">
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocol_WebSocket.h">
       <Filter>Header Files\LWEProtocols</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocolWebSocketSecure.h">
+    <ClInclude Include="..\..\..\Includes\C++11\LWEProtocols\LWEProtocol_WebSocketSecure.h">
       <Filter>Header Files\LWEProtocols</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Includes\C++11\LWEGeometry3D.h">
@@ -119,6 +128,45 @@
     </ClInclude>
     <ClInclude Include="..\..\..\Includes\C++11\LWESGeometry3D.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWESVG.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWECamera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWEMesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderFrame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEGeometryPass.h">
+      <Filter>Header Files\LWERenderPasses</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEShadowMapPass.h">
+      <Filter>Header Files\LWERenderPasses</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEPPPass.h">
+      <Filter>Header Files\LWERenderPasses</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEGausianBlurPass.h">
+      <Filter>Header Files\LWERenderPasses</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEUIPass.h">
+      <Filter>Header Files\LWERenderPasses</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Includes\C++11\LWERenderPasses\LWEResolvePass.h">
+      <Filter>Header Files\LWERenderPasses</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -164,19 +212,19 @@
     <ClCompile Include="..\..\..\Source\C++11\LWEJobQueue.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolHttp.cpp">
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocol_HTTP.cpp">
       <Filter>Source Files\LWEProtocols</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolTLS.cpp">
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocol_TLS.cpp">
       <Filter>Source Files\LWEProtocols</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolHTTPS.cpp">
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocol_HTTPS.cpp">
       <Filter>Source Files\LWEProtocols</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolWebSocket.cpp">
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocol_WebSocket.cpp">
       <Filter>Source Files\LWEProtocols</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocolWebSocketSecure.cpp">
+    <ClCompile Include="..\..\..\Source\C++11\LWEProtocols\LWEProtocol_WebSocketSecure.cpp">
       <Filter>Source Files\LWEProtocols</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Source\C++11\LWEVideoDecoderIVF.cpp">
@@ -197,5 +245,58 @@
     <ClCompile Include="..\..\..\Source\C++11\LWEUI\LWEUIRichLabel.cpp">
       <Filter>Source Files\LWEUI</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWESVG.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWECamera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWEMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderFrame.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderTypes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEGeometryPass.cpp">
+      <Filter>Source Files\LWERenderPasses</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEShadowMapPass.cpp">
+      <Filter>Source Files\LWERenderPasses</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEPPPass.cpp">
+      <Filter>Source Files\LWERenderPasses</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEGausianBlurPass.cpp">
+      <Filter>Source Files\LWERenderPasses</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEUIPass.cpp">
+      <Filter>Source Files\LWERenderPasses</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\C++11\LWERenderPasses\LWEResolvePass.cpp">
+      <Filter>Source Files\LWERenderPasses</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\Includes\C++11\LWEShaders\LWEUIColor.lwps">
+      <Filter>Header Files\LWEShaders</Filter>
+    </None>
+    <None Include="..\..\..\Includes\C++11\LWEShaders\LWEUITexture.lwps">
+      <Filter>Header Files\LWEShaders</Filter>
+    </None>
+    <None Include="..\..\..\Includes\C++11\LWEShaders\LWEUIVertex.lwvs">
+      <Filter>Header Files\LWEShaders</Filter>
+    </None>
+    <None Include="..\..\..\Includes\C++11\LWEShaders\LWEYUVTexture.lwps">
+      <Filter>Header Files\LWEShaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

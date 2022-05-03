@@ -292,7 +292,7 @@ Renderer &Renderer::RenderList(lFrame &F, uint32_t ListIdx, LWWindow *Window) {
 		for (uint32_t n = 0; n < Inst.m_PrimitiveCount; n++) {
 			InstancePrimitive &Prim = Inst.m_PrimitiveList[n];
 			LWPipeline *Pipeline = PreparePipeline(F, isPointView, isShadowView, Inst.m_HasSkin, i>=List.m_TransparentCnt, ListIdx, InstanceID, Prim.m_MaterialID);
-			if (isPointView) m_Driver->DrawInstancedMesh(Pipeline, LWVideoDriver::Triangle, Prim.m_Mesh, 6);
+			if (isPointView) m_Driver->DrawInstancedMesh(Pipeline, LWVideoDriver::Triangle, Prim.m_Mesh, nullptr, 6);
 			else m_Driver->DrawMesh(Pipeline, LWVideoDriver::Triangle, Prim.m_Mesh);
 		}
 	}
@@ -383,9 +383,9 @@ Renderer::Renderer(LWVideoDriver *Driver, App *A, LWEAssetManager *AssetManager,
 		lFrame &F = m_Frames[i];
 		LWVideoBuffer *Buf = Driver->CreateVideoBuffer(LWVideoBuffer::Vertex, LWVideoBuffer::WriteDiscardable | LWVideoBuffer::LocalCopy, sizeof(LWVertexUI), MaxCharacters * 6, Allocator, nullptr);
 		F.m_FontWriter.m_Mesh = LWVertexUI::MakeMesh(Allocator, Buf, 0);
-		F.m_LightBuffer = Allocator.AllocateArray<uint8_t>(m_LightArrayBuffer->GetRawLength());
-		F.m_InstanceBuffer = Allocator.AllocateArray<uint8_t>(m_ModelUniform->GetRawLength());
-		F.m_MaterialBuffer = Allocator.AllocateArray<uint8_t>(m_MaterialUniform->GetRawLength());
+		F.m_LightBuffer = Allocator.Allocate<uint8_t>(m_LightArrayBuffer->GetRawLength());
+		F.m_InstanceBuffer = Allocator.Allocate<uint8_t>(m_ModelUniform->GetRawLength());
+		F.m_MaterialBuffer = Allocator.Allocate<uint8_t>(m_MaterialUniform->GetRawLength());
 	}
 
 
@@ -412,7 +412,7 @@ Renderer::Renderer(LWVideoDriver *Driver, App *A, LWEAssetManager *AssetManager,
 	}
 	LWVideoBuffer *VCone = m_Driver->CreateVideoBuffer<Vertice>(LWVideoBuffer::Vertex, LWVideoBuffer::Static, ConeRadiCnt + 2, m_Allocator, ConeVerts);
 	LWVideoBuffer *ICone = m_Driver->CreateVideoBuffer<uint16_t>(LWVideoBuffer::Index16, LWVideoBuffer::Static, ConeRadiCnt * 6, m_Allocator, ConeIdxs);
-	m_DebugCone = m_Allocator.Allocate<LWMesh<Vertice>>(VCone, ICone, ConeRadiCnt + 2, ConeRadiCnt * 6);
+	m_DebugCone = m_Allocator.Create<LWMesh<Vertice>>(VCone, ICone, ConeRadiCnt + 2, ConeRadiCnt * 6);
 
 	LWVertexUI Verts[4] = { {LWVector4f(0.0f, 576.0f, 0.0f, 1.0f), LWVector4f(1.0f), LWVector4f(0.0f, 0.0f, 0.0f, 0.0f)},
 						    {LWVector4f(0.0f,  64.0f, 0.0f, 1.0f), LWVector4f(1.0f), LWVector4f(0.0f, 1.0f, 0.0f, 0.0f)},
@@ -437,7 +437,7 @@ Renderer::Renderer(LWVideoDriver *Driver, App *A, LWEAssetManager *AssetManager,
 	*(CubeVerts + 7) = { LWVector4f(1.0f, -1.0f, 1.0f, 1.0f) }; //7
 	LWVideoBuffer *VCube = Driver->CreateVideoBuffer<Vertice>(LWVideoBuffer::Vertex, LWVideoBuffer::Static, 8, Allocator, CubeVerts);
 	LWVideoBuffer *ICube = Driver->CreateVideoBuffer<uint16_t>(LWVideoBuffer::Index16, LWVideoBuffer::Static, 36, Allocator, CubeIdxs);
-	m_DebugCube = m_Allocator.Allocate <LWMesh<Vertice>>(VCube, ICube, 8, 36);
+	m_DebugCube = m_Allocator.Create<LWMesh<Vertice>>(VCube, ICube, 8, 36);
 
 	const uint32_t verticalSteps = 20;
 	const uint32_t horizontalSteps = 20;
@@ -467,7 +467,7 @@ Renderer::Renderer(LWVideoDriver *Driver, App *A, LWEAssetManager *AssetManager,
 		v = nv;
 	}
 	LWVideoBuffer *VSphere = Driver->CreateVideoBuffer<Vertice>(LWVideoBuffer::Vertex, LWVideoBuffer::Static, TotalVertices, Allocator, SphereVerts);
-	m_DebugPoint = m_Allocator.Allocate<LWMesh<Vertice>>(VSphere, TotalVertices);
+	m_DebugPoint = m_Allocator.Create<LWMesh<Vertice>>(VSphere, TotalVertices);
 
 }
 

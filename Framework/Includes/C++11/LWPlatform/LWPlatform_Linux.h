@@ -1,6 +1,5 @@
 #ifndef LWPLATFORM_LINUX_H
 #define LWPLATFORM_LINUX_H
-
 #include <X11/Xlib.h>
 #include <X11/X.h>
 #include <X11/Xatom.h>
@@ -68,7 +67,6 @@ typedef std::thread LWThreadType;
 
 #define LWVIDEO_IMPLEMENTED_OPENGL2_1
 #define LWVIDEO_IMPLEMENTED_OPENGL3_2
-#define LWVIDEO_IMPLEMENTED_OPENGL4_4
 #endif
 
 #ifdef LWVIDEODRIVER_OPENGL3_2_H

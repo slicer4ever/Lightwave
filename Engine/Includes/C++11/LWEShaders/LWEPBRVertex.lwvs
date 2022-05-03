@@ -1,0 +1,71 @@
+R"(#module Vertex OpenGL4_5 OpenGL3_3
+#version 440
+#define GLOBALDATA
+#define MODELDATA
+#define PBRPIXELDATA
+#define PBRVERTICE
+#include "Structures"
+#include "Utilitys"
+#module Vertex DirectX11_1
+
+Pixel main(Vertex In) {
+	LWEGeometryBucketData GeomBucket = GetGeometryBucket();
+	LWEModelS ModelData = LWEModel[In.ModelIndex];
+	Pixel o;
+	uint i;
+	float4x4 Transform = GetTransformMatrix(In, ModelData);
+	o.WPosition = mul(Transform, In.Position);
+	o.Position = mul(GeomBucket.ProjViewTransform, o.WPosition);
+	float3 Tangent = normalize(mul(Transform, float4(In.Tangent.xyz, 0.0f)).xyz);
+	float3 Normal = normalize(mul(Transform, In.Normal).xyz);
+	Tangent = normalize(Tangent - dot(Tangent, Normal)*Normal);
+	float3 BiTangent = cross(Normal, Tangent)*In.Tangent.w;
+	o.TBN = (float3x3(Tangent, BiTangent, Normal));
+	o.Transparency = 1.0f-In.TexCoord.z;
+	o.ModelIndex = In.ModelIndex;
+#ifdef SHADOWMAP
+	[fastopt]
+	for(i=0;i<ShadowCount;i++) {
+		LWEGeometryBucketData ShadowGeomBucket = GetShadowBucket(i);
+		o.SPosition[i] = mul(ShadowGeomBucket.ProjViewTransform, (o.WPosition + float4(Normal, 0.0f)*0.3f));
+	}
+#endif
+	[unroll]
+	for(i=0;i<LWEMaxBindableTextures;i++){
+		o.TexCoords[i] = ModelData.SubTextures[i].xy + ModelData.SubTextures[i].zw*In.TexCoord.xy;
+	}	
+	return o;
+}
+#module Vertex OpenGL4_5 OpenGL3_3
+in Vertex v;
+out Pixel p;
+out gl_PerVertex {
+	vec4 gl_Position;
+};
+flat out int ModelIndex;
+void main(void) {
+	LWEGeometryBucketData GeomBucket = GetGeometryBucket();
+	LWEModelS ModelData = LWEModelD[v.ModelIndex];
+	uint i;
+	mat4 Transform = GetTransformMatrix(v, ModelData);
+	p.WPosition = Transform * v.Position;
+	gl_Position = GeomBucket.ProjViewTransform * p.WPosition;
+	vec3 Tangent = normalize((Transform*vec4(v.Tangent.xyz, 0.0f)).xyz);
+	vec3 Normal = normalize((Transform*v.Normal).xyz);
+	Tangent = normalize(Tangent - dot(Tangent, Normal)*Normal);
+	vec3 BiTangent = cross(Normal, Tangent)*v.Tangent.w;
+	p.TBN = mat3(Tangent, BiTangent, Normal);
+	p.Transparency = 1.0f-v.TexCoord.z;
+
+#ifdef SHADOWMAP
+	for(i=0;i<ShadowCount;i++){
+		LWEGeometryBucketData ShadowGeomBucket = GetShadowBucket(i);
+		p.SPosition[i] = ShadowGeomBucket.ProjViewTransform * (p.WPosition + vec4(Normal, 0.0f) * 0.3f);
+	}
+#endif
+
+	for(i=0;i<LWEMaxBindableTextures;i++){
+		p.TexCoords[i] = ModelData.SubTextures[i].xy + ModelData.SubTextures[i].zw*v.TexCoord.xy;
+	}
+	ModelIndex = v.ModelIndex;
+})",

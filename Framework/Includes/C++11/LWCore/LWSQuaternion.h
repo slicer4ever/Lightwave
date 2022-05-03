@@ -8,11 +8,11 @@
 	 \note the member variables should not be accessed directly, as they are subject to change depending on which instruction set's are enabled.
 */
 template<class Type>
-struct LWSQuaternion {
-	Type m_x; /*!< \brief imaginary x component of quaternion */
-	Type m_y; /*!< \brief imaginary y component of quaternion */
-	Type m_z; /*!< \brief imaginary z component of quaternion */
-	Type m_w; /*!< \brief real component of quaternion */
+struct alignas(Type[4]) LWSQuaternion {
+	Type x; /*!< \brief imaginary x component of quaternion */
+	Type y; /*!< \brief imaginary y component of quaternion */
+	Type z; /*!< \brief imaginary z component of quaternion */
+	Type w; /*!< \brief real component of quaternion */
 
 	/*!< \brief constructs a quaternion for the provided yaw, pitch, and roll angles. */
 	static LWSQuaternion FromEuler(Type Pitch, Type Yaw, Type Roll) {
@@ -52,7 +52,7 @@ struct LWSQuaternion {
 			D = -D;
 			Res = -Res;
 		}
-		if (D < 1.0f - std::numeric_limits<Type>::epsilon()) {
+		if (D <= 1.0f - (Type)std::numeric_limits<float>::epsilon()) {
 			Type Theta = (Type)acos(D);
 
 			Type sT = (Type)sin(Theta);
@@ -70,77 +70,85 @@ struct LWSQuaternion {
 	}
 
 	LWQuaternion<Type> AsQuaternion(void) const {
-		return LWQuaternion<Type>(m_w, m_x, m_y, m_z);
+		return LWQuaternion<Type>(w, x, y, z);
 	}
 
 	LWSVector4<Type> AsSVec4(void) const {
-		return LWSVector4<Type>(m_x, m_y, m_z, m_w);
+		return LWSVector4<Type>(x, y, z, w);
 	};
 
 	/*1< \brief converts the quaternion into euler angles in (Pitch, Yaw, Roll order). */
 	LWSVector4<Type> ToEuler(void) const {
-		Type sqw = m_w * m_w;
-		Type sqx = m_x * m_x;
-		Type sqy = m_y * m_y;
-		Type sqz = m_z * m_z;
+		Type sqw = w * w;
+		Type sqx = x * x;
+		Type sqy = y * y;
+		Type sqz = z * z;
 		Type LenSq = sqx + sqy + sqz + sqw;
-		Type Test = m_x * m_y + m_z * m_w;
-		if (Test > 0.499*LenSq) return LWSVector4<Type>(LW_PI_2, (Type)2 * atan2(m_x, m_w), 0);
-		if (Test < -0.499*LenSq) return LWSVector4<Type>(-LW_PI_2, (Type)-2 * atan2(m_x, m_w), 0);
+		Type Test = x * y + z * w;
 
-		Type Yaw = (Type)atan2((Type)2 * m_y*m_w - (Type)2 * m_x*m_z, sqx - sqy - sqz + sqw);
+		if (Test > 0.499*LenSq) return LWSVector4<Type>(LW_PI_2, (Type)2 * atan2(x, w), 0, 0);
+		if (Test < -0.499*LenSq) return LWSVector4<Type>(-LW_PI_2, (Type)-2 * atan2(x, w), 0, 0);
+
+		Type Yaw = (Type)atan2((Type)2 * y*w - (Type)2 * x*z, sqx - sqy - sqz + sqw);
 		Type Pitch = (Type)asin((Type)2 * Test / LenSq);
-		Type Roll = (Type)atan2((Type)2 * m_x*m_w - (Type)2 * m_y*m_z, -sqx + sqy - sqz + sqw);
+		Type Roll = (Type)atan2((Type)2 * x*w - (Type)2 * y*z, -sqx + sqy - sqz + sqw);
 		return LWSVector4<Type>(Pitch, Yaw, Roll, (Type)0);
-
 	}
 
 	/*!< \brief normalizes the quaternion to unit length, returns the result without affecting this object. */
 	LWSQuaternion Normalize(void) const {
-		Type L = m_x * m_x + m_y * m_y + m_z * m_z + m_w * m_w;
-		if (L < std::numeric_limits<Type>::epsilon()) L = (Type)0;
+		Type L = x * x + y * y + z * z + w * w;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) L = (Type)0;
 		else L = (Type)(1 / sqrt(L));
 		return *this*L;
 	}
 
 	/*!< \brief returns the Length squared of this quaternion. */
 	Type LengthSq(void) const {
-		return m_x * m_x + m_y * m_y + m_z * m_z + m_w * m_w;
+		return x * x + y * y + z * z + w * w;
 	}
 
 	/*!< \brief returns the length of this quaternion. */
 	Type Length(void) const {
-		return (Type)sqrt(m_x * m_x + m_y * m_y + m_z * m_z + m_w * m_w);
+		return (Type)sqrt(x * x + y * y + z * z + w * w);
 	}
 
 	/*!< \brief returns the dot product between the two quaternions. */
 	Type Dot(const LWSQuaternion &O) const {
-		return m_x * O.m_x + m_y * O.m_y + m_z * O.m_z + m_w * O.m_w;
+		return x * O.x + y * O.y + z * O.z + w * O.w;
 	}
 
 	/*!< \brief returns the conjugate of the quaternion. */
 	LWSQuaternion Conjugate(void) const {
-		return LWSQuaternion(m_w, -m_x, -m_y, -m_z);
+		return LWSQuaternion(w, -x, -y, -z);
 	}
 
 	/*!< \brief returns the inverse of the quaternion. */
 	LWSQuaternion Inverse(void) const {
-		Type iLenSq = 1.0 / LengthSq();
-		return LWSQuaternion(m_w, -m_x, -m_y, -m_z) * iLenSq;
+		Type iLenSq = (Type)(1.0 / LengthSq());
+		return LWSQuaternion(w, -x, -y, -z) * iLenSq;
 	}
 
 	LWSVector4<Type> RotatePoint(const LWSVector4<Type> Pnt) const {
-		LWSVector4<Type> u = LWSVector4<Type>(m_x, m_y, m_z, 0.0f);
-		float dA = u.Dot3(Pnt);
-		float dB = u.LengthSquared();
-		LWSVector4<Type> r = LWSVector4<Type>((Type)2 * dA*u + (m_w*m_w - dB)*Pnt + 2 * m_w*u.Cross3(Pnt));
+		LWSVector4<Type> u = LWSVector4<Type>(x, y, z, 0.0f);
+		Type dA = u.Dot3(Pnt);
+		Type dB = u.LengthSquared();
+		LWSVector4<Type> r = LWSVector4<Type>((Type)2 * dA*u + (w*w - dB)*Pnt + 2 * w*u.Cross3(Pnt));
 		r = r * LWSVector4<Type>(1.0, 1.0, 1.0, 0.0) + Pnt * LWSVector4<Type>(0.0, 0.0, 0.0, 1.0);
 		return r;
 	}
 
+	Type operator[](uint32_t i) const {
+		return (&x)[i];
+	}
+
+	Type &operator[](uint32_t i) {
+		return (&x)[i];
+	}
+
 	bool operator == (const LWSQuaternion<Type> &Rhs) const {
-		const Type e = std::numeric_limits<Type>::epsilon();
-		return (Type)abs(m_x-Rhs.m_x)<=e && (Type)abs(m_y-Rhs.m_y)<=e && (Type)abs(m_z-Rhs.m_z)<=e && (Type)abs(m_w-Rhs.m_w)<=e;
+		const Type e = (Type)std::numeric_limits<float>::epsilon();
+		return (Type)abs(x-Rhs.x)<=e && (Type)abs(y-Rhs.y)<=e && (Type)abs(z-Rhs.z)<=e && (Type)abs(w-Rhs.w)<=e;
 	}
 
 	bool operator != (const LWSQuaternion<Type> &Rhs) const {
@@ -148,43 +156,43 @@ struct LWSQuaternion {
 	}
 
 	LWSQuaternion operator+(const LWSQuaternion &rhs) const {
-		return LWSQuaternion(m_w + rhs.m_w, m_x + rhs.m_x, m_y + rhs.m_y, m_z + rhs.m_z);
+		return LWSQuaternion(w + rhs.w, x + rhs.x, y + rhs.y, z + rhs.z);
 	}
 
 	LWSQuaternion operator-(const LWSQuaternion &rhs) const {
-		return LWSQuaternion(m_w - rhs.m_w, m_x - rhs.m_x, m_y - rhs.m_y, m_z - rhs.m_z);
+		return LWSQuaternion(w - rhs.w, x - rhs.x, y - rhs.y, z - rhs.z);
 	}
 
 	LWSQuaternion operator*(const LWSQuaternion &rhs) const {
 		return LWSQuaternion(
-			(m_w*rhs.m_w) - (m_x*rhs.m_x) - (m_y*rhs.m_y) - (m_z*rhs.m_z),
-			(m_w*rhs.m_x) + (m_x*rhs.m_w) + (m_y*rhs.m_z) - (m_z*rhs.m_y),
-			(m_w*rhs.m_y) + (m_y*rhs.m_w) + (m_z*rhs.m_x) - (m_x*rhs.m_z),
-			(m_w*rhs.m_z) + (m_z*rhs.m_w) + (m_x*rhs.m_y) - (m_y*rhs.m_x));
+			(w*rhs.w) - (x*rhs.x) - (y*rhs.y) - (z*rhs.z),
+			(w*rhs.x) + (x*rhs.w) + (y*rhs.z) - (z*rhs.y),
+			(w*rhs.y) + (y*rhs.w) + (z*rhs.x) - (x*rhs.z),
+			(w*rhs.z) + (z*rhs.w) + (x*rhs.y) - (y*rhs.x));
 	}
 
 	LWSQuaternion operator*(Type rhs) const {
-		return LWSQuaternion(m_w*rhs, m_x*rhs, m_y*rhs, m_z*rhs);
+		return LWSQuaternion(w*rhs, x*rhs, y*rhs, z*rhs);
 	}
 
 	friend LWSQuaternion operator * (Type Lhs, const LWSQuaternion &Rhs) {
-		return LWSQuaternion(Lhs * Rhs.m_w, Lhs * Rhs.m_x, Lhs * Rhs.m_y, Lhs * Rhs.m_z);
+		return LWSQuaternion(Lhs * Rhs.w, Lhs * Rhs.x, Lhs * Rhs.y, Lhs * Rhs.z);
 	}
 
 	friend LWSQuaternion operator + (Type Lhs, const LWSQuaternion &Rhs) {
-		return LWSQuaternion(Lhs + Rhs.m_w, Lhs + Rhs.m_x, Lhs + Rhs.m_y, Lhs + Rhs.m_z);
+		return LWSQuaternion(Lhs + Rhs.w, Lhs + Rhs.x, Lhs + Rhs.y, Lhs + Rhs.z);
 	}
 
 	friend LWSQuaternion operator - (Type Lhs, const LWSQuaternion &Rhs) {
-		return LWSQuaternion(Lhs - Rhs.m_w, Lhs - Rhs.m_x, Lhs - Rhs.m_y, Lhs - Rhs.m_z);
+		return LWSQuaternion(Lhs - Rhs.w, Lhs - Rhs.x, Lhs - Rhs.y, Lhs - Rhs.z);
 	}
 
 	friend LWSQuaternion operator / (Type Lhs, const LWSQuaternion &Rhs) {
-		return LWSQuaternion(Lhs / Rhs.m_w, Lhs / Rhs.m_x, Lhs / Rhs.m_y, Lhs / Rhs.m_z);
+		return LWSQuaternion(Lhs / Rhs.w, Lhs / Rhs.x, Lhs / Rhs.y, Lhs / Rhs.z);
 	}
 
 	friend std::ostream &operator<<(std::ostream &o, const LWSQuaternion<Type> &q) {
-		o << q.m_w << " " << q.m_x << " " << q.m_y << " " << q.m_z;
+		o << q.w << " " << q.x << " " << q.y << " " << q.z;
 		return o;
 	}
 
@@ -194,60 +202,44 @@ struct LWSQuaternion {
 	}
 
 	LWSQuaternion &operator*=(Type rhs) const {
-		m_w *= rhs;
-		m_x *= rhs;
-		m_y *= rhs;
-		m_z *= rhs;
+		w *= rhs;
+		x *= rhs;
+		y *= rhs;
+		z *= rhs;
 		return *this;
 	}
 
 	LWSQuaternion &operator+=(const LWSQuaternion &rhs) {
-		m_w += rhs.w;
-		m_x += rhs.x;
-		m_y += rhs.y;
-		m_z += rhs.z;
+		w += rhs.w;
+		x += rhs.x;
+		y += rhs.y;
+		z += rhs.z;
 		return *this;
 	}
 
 	LWSQuaternion &operator-=(const LWSQuaternion &rhs) {
-		m_w -= rhs.m_w;
-		m_x -= rhs.m_x;
-		m_y -= rhs.m_y;
-		m_z -= rhs.m_z;
+		w -= rhs.w;
+		x -= rhs.x;
+		y -= rhs.y;
+		z -= rhs.z;
 		return *this;
 	}
 
 	LWSQuaternion &operator=(const LWSQuaternion &rhs) {
-		m_w = rhs.m_w;
-		m_x = rhs.m_x;
-		m_y = rhs.m_y;
-		m_z = rhs.m_z;
+		w = rhs.w;
+		x = rhs.x;
+		y = rhs.y;
+		z = rhs.z;
 		return *this;
 	}
 
 	LWSQuaternion operator-() const {
-		return LWSQuaternion(-m_w, -m_x, -m_y, -m_z);
+		return LWSQuaternion(-w, -x, -y, -z);
 	}
 
-	Type x(void) const {
-		return m_x;
-	}
+	LWSQuaternion(const LWQuaternion<Type> &Q) : w(Q.w), x(Q.x), y(Q.y), z(Q.z) {}
 
-	Type y(void) const {
-		return m_y;
-	}
-
-	Type z(void) const {
-		return m_z;
-	}
-
-	Type w(void) const {
-		return m_w;
-	}
-
-	LWSQuaternion(const LWQuaternion<Type> &Q) : m_w(Q.w), m_x(Q.x), m_y(Q.y), m_z(Q.z) {}
-
-	LWSQuaternion(Type vw, Type vx, Type vy, Type vz) : m_w(vw), m_x(vx), m_y(vy), m_z(vz) {}
+	LWSQuaternion(Type vw, Type vx, Type vy, Type vz) : w(vw), x(vx), y(vy), z(vz) {}
 
 	LWSQuaternion(const LWSMatrix4<Type> &Mat) {
 		LWVector4<Type> R0 = Mat.m_Rows[0].AsVec4();
@@ -279,14 +271,14 @@ struct LWSQuaternion {
 	}
 
 	/*!< \brief constructs a unit identity quaternion. */
-	LWSQuaternion() : m_w((Type)1), m_x((Type)0), m_y((Type)0), m_z((Type)0) {}
+	LWSQuaternion() : x((Type)0), y((Type)0), z((Type)0), w((Type)1) {}
 };
 
-#ifndef LW_NOAVX
+#ifdef __AVX__
 #include "LWCore/LWSQuaternion_AVX_Float.h"
 #endif
 
-#ifndef LW_NOAVX2
+#ifdef __AVX2__
 #include "LWCore/LWSQuaternion_AVX2_Double.h"
 #endif
 #endif

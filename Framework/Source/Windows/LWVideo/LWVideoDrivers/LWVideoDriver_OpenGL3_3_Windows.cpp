@@ -22,7 +22,7 @@ LWVideoDriver_OpenGL3_3 *LWVideoDriver_OpenGL3_3::MakeVideoDriver(LWWindow *Wind
 			wglMakeCurrent(Context.m_DC, Context.m_GLRC);
 			int32_t UniformBlockSize = 0;
 			glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &UniformBlockSize);
-			Driver = Window->GetAllocator()->Allocate<LWVideoDriver_OpenGL3_3>(Window, Context, (uint32_t)UniformBlockSize);
+			Driver = Window->GetAllocator()->Create<LWVideoDriver_OpenGL3_3>(Window, Context, (uint32_t)UniformBlockSize);
 		}
 	}
 	if (!Driver) {

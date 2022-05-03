@@ -21,9 +21,9 @@
 #define LWPLATFORM_WEB 6
 #define LWPLATFORM_CNT 7
 
-#define LWARCH_NAMES {"UNKNOWN", "X86", "X64", "ARM", "ARM64"}
-#define LWPLATFORM_NAMES {"WIN8_1", "WIN7", "LINUX", "OSX", "IOS", "NDK", "WEB" }
-#define LWVIDEODRIVER_NAMES { "OpenGL3_3", "OpenGL2_1", "DirectX11_1", "OpenGLES2", "OpenGL4_5", "DirectX12", "DirectX9C", "OpenGLES3", "Metal", "Vulkan"} 
+#define LWARCH_NAMES {u8"UNKNOWN", u8"X86", u8"X64", u8"ARM", u8"ARM64"}
+#define LWPLATFORM_NAMES {u8"WIN8_1", u8"WIN7", u8"LINUX", u8"OSX", u8"IOS", u8"NDK", u8"WEB" }
+#define LWVIDEODRIVER_NAMES { u8"OpenGL3_3", u8"OpenGL2_1", u8"DirectX11_1", u8"OpenGLES2", u8"OpenGL4_5", u8"DirectX12", u8"DirectX9C", u8"OpenGLES3", u8"Metal", u8"Vulkan"} 
 
 #ifdef __i386__
 #define LWARCH_ID LWARCH_X86
@@ -77,3 +77,4 @@
 #else //assume linux, but might be something else!
 #include "LWPlatform/LWPlatform_Linux.h"
 #endif
+

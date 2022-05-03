@@ -1,0 +1,13 @@
+<AssetManager>
+	<Font Name="SeguiFont" Path="App:seguiemj.arfont" />
+	<Shader Name="UIVertex" Type="Vertex" Path="UIVertex" />
+	<Shader Name="UIColor" Type="Pixel" Path="UIColor" />
+	<Shader Name="UITexture" Type="Pixel" Path="UITexture" />
+	<Shader Name="UIFont" Type="Pixel" Path="FontMSDF" />
+	<Pipeline Name="UIPipeline" Vertex="UIVertex" Pixel="UIFont" Flags="Blending" CullMode="CW" SourceBlendMode="SrcAlpha" DestBlendMode="OneMinusSrcAlpha" />
+</AssetManager>
+<UIManager>
+	<Include Src="App:UIStyle.xml" />
+	<TextInputTest Name="UITextInputTest" Flag="PAMC|LAMC|NoAutoSize" />
+</UIManager>
+

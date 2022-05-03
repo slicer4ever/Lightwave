@@ -55,11 +55,10 @@ LWVideoDriver_OpenGLES2 *LWVideoDriver_OpenGLES2::MakeVideoDriver(LWWindow *Wind
 		return nullptr;
 	}
 	eglMakeCurrent(ESContext.m_Display, ESContext.m_Surface, ESContext.m_Surface, ESContext.m_Context);
-	std::cout << "Video driver ready!" << std::endl;
 	int32_t DefaultFrameBuffer = 0;
 
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &DefaultFrameBuffer);
-	return Window->GetAllocator()->Allocate<LWVideoDriver_OpenGLES2>(Window, ESContext, DefaultFrameBuffer, 1);
+	return Window->GetAllocator()->Create<LWVideoDriver_OpenGLES2>(Window, ESContext, DefaultFrameBuffer, 1);
 }
 
 bool LWVideoDriver_OpenGLES2::DestroyVideoContext(LWVideoDriver_OpenGLES2 *Driver) {

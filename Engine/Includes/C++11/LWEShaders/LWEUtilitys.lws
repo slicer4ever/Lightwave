@@ -1,0 +1,134 @@
+R"(#module Vertex|Pixel|Compute DirectX11_1
+#ifndef NOTRANSFORM
+#ifdef SKELETONVERTICE
+float4x4 BlendMatrix(float4 BoneWeight, int4 BoneIdxs, int BoneID){
+	const float4x4 Identity = float4x4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	float WeightSum = saturate(1.0f-(BoneWeight.x+BoneWeight.y+BoneWeight.z+BoneWeight.w));
+	float4x4 Mat = mul(LWEBone[BoneIdxs.x+BoneID], BoneWeight.x)+
+				   mul(LWEBone[BoneIdxs.y+BoneID], BoneWeight.y)+ 
+				   mul(LWEBone[BoneIdxs.z+BoneID], BoneWeight.z)+
+				   mul(LWEBone[BoneIdxs.w+BoneID], BoneWeight.w)+
+				   mul(Identity, WeightSum);
+	return Mat;
+}
+
+float4x4 GetTransformMatrix(Vertex In, LWEModelS ModelData){
+	return mul(ModelData.Transform, BlendMatrix(In.BoneWeight, In.BoneIndices, ModelData.BoneID));
+}
+#elif STATICVERTICE
+float4x4 GetTransformMatrix(Vertex In, LWEModelS ModelData) {
+	return ModelData.Transform;
+}
+#endif
+#endif
+
+#ifdef GLOBALDATA
+LWEPassData GetPassData(void){
+	return PassData[PassID];
+}
+
+LWEGeometryBucketData GetGeometryBucket(void){
+	return BucketList[PassData[PassID].GeometryBucketOffset.x+SubPassID];
+}
+
+#ifdef SHADOWMAP
+LWEGeometryBucketData GetShadowBucket(uint ShadowIdx){
+	return BucketList[PassData[ShadowPassID].GeometryBucketOffset.x+ShadowIdx];
+}
+#endif
+
+#endif
+
+#ifdef SAMPLEFUNCS
+float4 SampleIf(Texture2D Tex, SamplerState Smp, uint TexID, uint HasTextureFlag, float2 TexCoord, float4 DefaultValue) {
+	if((HasTextureFlag&(1<<TexID))==0) return DefaultValue;
+	return Tex.Sample(Smp, TexCoord);
+}
+
+float4 SampleIf(Texture2D Tex, SamplerState Smp, uint TexID, uint HasTextureFlag, float2 TexCoord){
+	return SampleIf(Tex, Smp, TexID, HasTextureFlag, TexCoord, float4(1.0f, 1.0f, 1.0f, 1.0f));
+}
+#endif
+
+float4 MatrixRight(float4x4 Mat){
+	return Mat._m00_m10_m20_m30;
+}
+
+float4 MatrixUp(float4x4 Mat) {
+	return Mat._m01_m11_m21_m31;
+}
+
+float4 MatrixFwrd(float4x4 Mat){
+	return Mat._m02_m12_m22_m32;
+}
+
+float4 MatrixPosition(float4x4 Mat){
+	return Mat._m03_m13_m23_m33;
+}
+
+#module Vertex|Pixel|Compute OpenGL4_5 OpenGL3_3
+#ifndef NOTRANSFORM
+#ifdef SKELETONVERTICE
+mat4 BlendMatrix(vec4 BoneWeight, ivec4 BoneIdxs, uint BoneID) {
+	float WeightSum = clamp(1.0f-(BoneWeight.x+BoneWeight.y+BoneWeight.z+BoneWeight.w), 0.0f, 1.0f);
+	return LWEBoneD[BoneIdxs.x+BoneID]*BoneWeight.x +
+		   LWEBoneD[BoneIdxs.y+BoneID]*BoneWeight.y +
+		   LWEBoneD[BoneIdxs.z+BoneID]*BoneWeight.z +
+		   LWEBoneD[BoneIdxs.w+BoneID]*BoneWeight.w +
+		   mat4(1.0f)*WeightSum; //identity matrix for any non-zero weights
+}
+
+mat4 GetTransformMatrix(Vertex In, LWEModelS ModelData){
+	return ModelData.Transform * BlendMatrix(In.BoneWeight, In.BoneIndices, ModelData.BoneID);
+}
+#elif STATICVERTICE
+mat4 GetTransformMatrix(Vertex In, LWEModelS ModelData) {
+	return ModelData.Transform;
+}
+#endif
+#endif
+
+#ifdef GLOBALDATA
+LWEPassData GetPassData(void){
+	return PassData[PassID];
+}
+
+LWEGeometryBucketData GetGeometryBucket(void){
+	return BucketList[PassData[PassID].GeometryBucketOffset.x+SubPassID];
+}
+
+#ifdef SHADOWMAP
+LWEGeometryBucketData GetShadowBucket(uint ShadowIdx){
+	return BucketList[PassData[ShadowPassID].GeometryBucketOffset.x+ShadowIdx];
+}
+#endif
+
+#endif
+
+#ifdef SAMPLEFUNCS
+vec4 SampleIf(sampler2D Tex, uint TexID, uint HasTextureFlag, vec2 TexCoord, vec4 DefaultValue) {
+	if((HasTextureFlag&(1<<TexID))==0) return DefaultValue;
+	return texture(Tex, TexCoord);
+}	
+
+vec4 SampleIf(sampler2D Tex, uint TexID, uint HasTextureFlag, vec2 TexCoord){
+	return SampleIf(Tex, TexID, HasTextureFlag, TexCoord, vec4(1.0f, 1.0f, 1.0f, 1.0f));
+}
+#endif
+
+
+vec4 MatrixRight(mat4 Mat){
+	return Mat[0];
+}
+
+vec4 MatrixUp(mat4 Mat) {
+	return Mat[1];
+}
+
+vec4 MatrixFwrd(mat4 Mat){
+	return Mat[2];
+}
+
+vec4 MatrixPosition(mat4 Mat){
+	return Mat[3];
+})",

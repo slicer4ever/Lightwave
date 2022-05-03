@@ -2,7 +2,7 @@
 #define LWEUIMANAGER_H
 #include <LWCore/LWTypes.h>
 #include <LWCore/LWVector.h>
-#include <LWCore/LWText.h>
+#include <LWCore/LWUnicode.h>
 #include <LWPlatform/LWTypes.h>
 #include <LWPlatform/LWInputDevice.h>
 #include <LWVideo/LWMesh.h>
@@ -59,13 +59,23 @@ struct LWEUINavigation {
 
 	bool isEnabled(void) const;
 
-	LWEUINavigation &ProcessUI(LWEUI *UI, const LWVector2f &VisiblePosition, const LWVector2f &VisibleSize,LWEUIManager &UIManager);
+	LWEUINavigation &ProcessUI(LWEUI *UI, const LWVector2f &VisiblePosition, const LWVector2f &VisibleSize, LWEUIManager &UIManager);
 
 	LWEUINavigation &Update(LWWindow *Window, LWEUIManager &UIManager);
 
 	LWEUINavigation() = default;
 };
 
+/*!< \brief UIMaterial each ui component use's materials for determining what colors to use for drawing.
+*	 \note XML propertys:
+*			Name: Name of material.
+*			Color: Overall color of material(Set's colorA property).
+*			ColorA: Gradient color left/bottom side.
+*			ColorB: Gradient color right/top side.
+*			Fill: Full, Gradient, VGradient.  how material colors will be applied if a graident is used when drawing.
+*			Texture: name of the texture to be used.
+*			SubRegion: x|y|width|height in pixels of the texture to make an atlas from it.
+*/
 struct LWEUIMaterial {
 	static const uint32_t FillFull = 0; //XML Fill="Full"
 	static const uint32_t FillGradient = 1; //XML Fill="Gradient"
@@ -93,6 +103,10 @@ struct LWEUIMaterial {
 	LWEUIMaterial() = default;
 };
 
+//Callback parameters passed to UI xml parsing function, return true if processed, or false on error. */
+typedef std::function<LWEUI*(LWEXMLNode *, LWEXML *, LWEUIManager *, LWEXMLNode *, const LWUTF8Iterator &, LWEXMLNode *, LWEXMLNode *, std::map<uint32_t, LWEXMLNode*> &, std::map<uint32_t, LWEXMLNode*> &)> LWEUIXMLParseCallback;
+
+
 struct LWEUIFrame {
 	static const uint32_t MaxTextures = 256;
 	static const uint32_t ExhaustedTextures = -1;
@@ -106,6 +120,7 @@ struct LWEUIFrame {
 	uint32_t SetActiveTexture(LWTexture *Texture, bool FontTexture);
 
 	//x = Left Ratio, y = BottomRatio, z = Right Ratio, w = Top Ratio);
+	//AABB: x = left, y = bottom, z = width, w = height.
 	bool MakeClipRatios(LWVector4f &RatioRes, const LWVector2f &Pos, const LWVector2f &Size, const LWVector4f &AABB);
 
 	LWEUIFrame &ApplyClipRatios(LWVector2f &TopLeft, LWVector2f &BtmLeft, LWVector2f &TopRight, LWVector2f &BtmRight, const LWVector2f &Pos, const LWVector2f &Size, const LWVector4f &Ratio);
@@ -114,7 +129,7 @@ struct LWEUIFrame {
 
 	bool WriteClippedRect(LWEUIMaterial *Mat, const LWVector2f &Pos, const LWVector2f &Size, const LWVector4f &AABB);
 
-	bool WriteClippedText(LWEUIMaterial *Mat, const LWText &Text, LWFont *Fnt, const LWVector2f &Pos, float Scale, const LWVector4f &AABB);
+	bool WriteClippedText(LWEUIMaterial *Mat, const LWUTF8GraphemeIterator &Text, LWFont *Fnt, const LWVector2f &Pos, float Scale, const LWVector4f &AABB);
 
 	bool WriteRect(LWEUIMaterial *Mat, const LWVector2f &Pos, const LWVector2f &Size);
 
@@ -140,13 +155,13 @@ struct LWEUIFrame {
 };
 
 struct LWEUIScreenScale {
-	uint32_t m_ScreenArea;
-	float m_Scale;
+	uint32_t m_ScreenArea = 0;
+	float m_Scale = 1.0f;
 };
 
 struct LWEUIDPIScale {
-	uint32_t m_ScreenDPI;
-	float m_Scale;
+	uint32_t m_ScreenDPI = 0;
+	float m_Scale = 1.0f;
 };
 
 class LWEUIManager {
@@ -156,14 +171,7 @@ public:
 		MaxScreenScales = 32,
 		MaxDPIScales = 32
 	};
-
-	static const char *GetVertexShaderSource(void);
-
-	static const char *GetTextureShaderSource(void);
-
-	static const char *GetColorShaderSource(void);
-
-	static const char *GetYUVTextureShaderSource(void);
+	static const uint32_t TabNavigation = 0x1;
 
 	static bool XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X);
 
@@ -185,9 +193,11 @@ public:
 
 	LWEUIManager &SetNavigationMode(bool Enabled, bool GamepadEnabled = true, bool KeyboardEnabled = true);
 
+	LWEUIManager &SetTabNavigation(bool bEnabled);
+
 	bool RegisterEvent(LWEUI *UI, uint32_t EventCode, LWEUIEventCallback Callback, void *UserData);
 
-	bool RegisterEvent(const LWText &UIName, uint32_t EventCode, LWEUIEventCallback Callback, void *UserData);
+	bool RegisterEvent(const LWUTF8Iterator &UIName, uint32_t EventCode, LWEUIEventCallback Callback, void *UserData);
 
 	template<class T, class Y>
 	bool RegisterMethodEvent(LWEUI *UI, uint32_t EventCode, Y CallBack, T* Object, void *UserData) {
@@ -195,19 +205,25 @@ public:
 	}
 
 	template<class T, class Y>
-	bool RegisterMethodEvent(const LWText &UIName, uint32_t EventCode, Y CallBack, T* Object, void *UserData) {
+	bool RegisterMethodEvent(const LWUTF8Iterator &UIName, uint32_t EventCode, Y CallBack, T* Object, void *UserData) {
 		return RegisterEvent(UIName, EventCode, std::bind(CallBack, Object, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), UserData);
 	}
 
 	bool UnregisterEvent(LWEUI *UI, uint32_t EventCode);
 
-	bool UnregisterEvent(const LWText &UIName, uint32_t EventCode);
+	bool UnregisterEvent(const LWUTF8Iterator &UIName, uint32_t EventCode);
 
 	bool DispatchEvent(LWEUI *Dispatchee, uint32_t EventCode, bool DoDispatch = true);
 
-	bool DispatchEvent(const char *DispatcheeName, uint32_t EventCode, bool DoDispatch = true);
+	bool DispatchEvent(const LWUTF8Iterator &DispatcheeName, uint32_t EventCode, bool DoDispatch = true);
 
-	bool DispatchEventf(const char *DispathceeNameFmt, uint32_t EventCode, bool DoDispatch, ...);
+	//Note built in types are automatically registered in the callback map upon LWEUIManager creation.
+	bool RegisterXMLParseMethod(const LWUTF8Iterator &NodeName, LWEUIXMLParseCallback Callback);
+
+	bool RegisterXMLParseMethod(uint32_t NodeNameHash, LWEUIXMLParseCallback Callback);
+
+	/*!< \brief search's the m_XMLParseCallbackMap for any callback with the Hash'd Node->Name, then calls the function, returning it's result, if the result is not found, then the component checks if it's a user defined component, and tries to deserialize the node as if it were a component. If a relevant component is not found, then null is returned. */
+	LWEUI *DispatchXMLParser(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap);
 
 	LWEUIManager &SetFocused(LWEUI *UI);
 
@@ -217,21 +233,22 @@ public:
 
 	float FindScaleForSize(const LWVector2i &Size);
 
-	bool InsertNamedUI(const LWText &Name, LWEUI *UI);
+	bool InsertNamedUI(const LWUTF8Iterator &Name, LWEUI *UI);
 
 	bool isTextInputFocused(void);
 
-	bool HasNamedUI(const LWText &Name);
+	bool HasNamedUI(const LWUTF8Iterator &Name);
 
-	bool HasNamedUIf(const char *Format, ...);
+	LWEUI *GetNamedUI(const LWUTF8Iterator &Name);
 
-	LWEUI *GetNamedUI(const LWText &Name);
+	template<class Type>
+	Type *GetNamedUI(const LWUTF8Iterator &Name) {
+		return (Type*)GetNamedUI(Name);
+	}
 
-	LWEUI *GetNamedUIf(const char *Format, ...);
+	LWEUIMaterial *InsertMaterial(const LWUTF8Iterator &Name, const LWVector4f &ColorA, const LWVector4f &ColorB, uint32_t FillMode, LWTexture *Texture, const LWVector4f &SubRegion);
 
-	LWEUIMaterial *InsertMaterial(const LWText &Name, const LWVector4f &ColorA, const LWVector4f &ColorB, uint32_t FillMode, LWTexture *Texture, const LWVector4f &SubRegion);
-
-	LWEUIMaterial *GetMaterial(const LWText &Name);
+	LWEUIMaterial *GetMaterial(const LWUTF8Iterator &Name);
 
 	LWVector2f GetVisibleSize(void) const;
 
@@ -245,7 +262,7 @@ public:
 
 	LWEUINavigation &GetNavigator(void);
 
-	LWAllocator *GetAllocator(void);
+	LWAllocator &GetAllocator(void);
 
 	LWWindow *GetWindow(void);
 	
@@ -257,13 +274,15 @@ public:
 
 	bool isNavigationModeEnabled(void) const;
 
+	bool isTabNavigationEnabled(void) const;
+
 	float GetScale(void) const;
 	
 	uint32_t GetScreenDPI(void) const;
 
 	uint32_t GetOverCount(uint32_t PointerIdx=0) const;
 
-	LWEUIManager(LWWindow *Window, uint32_t ScreenDPI, LWAllocator *Allocator, LWELocalization *Localization, LWEAssetManager *AssetManager);
+	LWEUIManager(LWWindow *Window, uint32_t ScreenDPI, LWAllocator &Allocator, LWELocalization *Localization, LWEAssetManager *AssetManager);
 
 	~LWEUIManager();
 private:
@@ -271,28 +290,30 @@ private:
 
 	std::unordered_map<uint32_t, LWEUI*> m_NameMap;
 	std::unordered_map<uint32_t, LWEUIMaterial*> m_MatTable;
+	std::unordered_map<uint32_t, LWEUIXMLParseCallback> m_XMLParseCallbackMap;
 	LWEUIScreenScale m_ResScaleMap[MaxScreenScales];
 	LWEUIDPIScale m_DPIScaleMap[MaxDPIScales];
 	LWEUITooltip m_Tooltip;
 	LWEUINavigation m_Navigator;
 	LWVector2f m_VisibleSize;
 	LWVector2f m_VisiblePosition;
-	LWAllocator *m_Allocator;
-	LWEAssetManager *m_AssetManager;
-	LWELocalization *m_Localization;
+	LWAllocator &m_Allocator;
+	LWEAssetManager *m_AssetManager = nullptr;
+	LWELocalization *m_Localization = nullptr;
 	uint32_t m_ScreenDPI;
-	LWWindow *m_Window;
-	LWEUI *m_FirstUI;
-	LWEUI *m_LastUI;
-	LWEUI *m_FocusedUI;
-	float m_Scale;
-	float m_CachedDPIScale;
-	uint32_t m_MaterialCount;
-	uint32_t m_EventCount;
-	uint32_t m_OverCount[LWTouch::MaxTouchPoints];
-	uint32_t m_TempCount[LWTouch::MaxTouchPoints];
-	uint32_t m_ResScaleCount;
-	uint32_t m_DPIScaleCount;
+	LWWindow *m_Window = nullptr;
+	LWEUI *m_FirstUI = nullptr;
+	LWEUI *m_LastUI = nullptr;
+	LWEUI *m_FocusedUI = nullptr;
+	float m_Scale = 1.0f;
+	float m_CachedDPIScale = 0.0f;
+	uint32_t m_MaterialCount = 0;
+	uint32_t m_EventCount = 0;
+	uint32_t m_OverCount[LWTouch::MaxTouchPoints] = {}; //0's array
+	uint32_t m_TempCount[LWTouch::MaxTouchPoints] = {};
+	uint32_t m_ResScaleCount = 0;
+	uint32_t m_DPIScaleCount = 0;
+	uint32_t m_Flag = TabNavigation;
 };
 
 

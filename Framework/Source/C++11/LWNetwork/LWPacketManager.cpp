@@ -6,9 +6,9 @@
 #include <iostream>
 
 uint32_t LWPacketManager::SerializePacket(LWPacket *Packet, char *Buffer, uint32_t BufferLen){
-	LWByteBuffer ByteBuf((int8_t*)Buffer, BufferLen, LWByteBuffer::Network|LWByteBuffer::BufferNotOwned);
+	LWByteBuffer ByteBuf((int8_t*)Buffer, BufferLen, LWByteBuffer::Network);
 	uint32_t o = sizeof(LWPacketRawHeader);
-	ByteBuf.OffsetPosition(sizeof(LWPacketRawHeader));
+	ByteBuf.Seek(sizeof(LWPacketRawHeader));
 	for (LWPacket *C = Packet, *N = C ? C->GetNext() : C; C; C = N, N = N ? N->GetNext() : N){
 		o += ByteBuf.Write(C->GetRawType());
 		o += C->Serialize(&ByteBuf, this);
@@ -20,11 +20,11 @@ uint32_t LWPacketManager::SerializePacket(LWPacket *Packet, char *Buffer, uint32
 }
 
 LWPacket *LWPacketManager::DeserializePacket(const char *Buffer, uint32_t BufferLen, void *Client, void *Source){
-	LWByteBuffer ByteBuf((const int8_t*)Buffer, BufferLen, LWByteBuffer::Network | LWByteBuffer::BufferNotOwned);
-	ByteBuf.OffsetPosition(sizeof(LWPacketRawHeader)); //offset past the header.
+	LWByteBuffer ByteBuf((const int8_t*)Buffer, BufferLen, LWByteBuffer::Network );
+	ByteBuf.Seek(sizeof(LWPacketRawHeader)); //offset past the header.
 	LWPacket *F = nullptr;
 	LWPacket *C = nullptr;
-	while(!ByteBuf.EndOfBuffer()){
+	while(!ByteBuf.IsEndOfReadData()){
 		uint32_t TypeID = ByteBuf.Read<uint32_t>();
 		uint32_t MajorID = TypeID&LWPacket::MajorBits;
 		TypeID &= ~LWPacket::MajorBits;
@@ -44,7 +44,7 @@ LWPacket *LWPacketManager::DeserializePacket(const char *Buffer, uint32_t Buffer
 }
 
 bool LWPacketManager::ProcessRawData(void *Client, void *Source, const char *Buffer, uint32_t BufferLen){	
-	LWByteBuffer ByteBuf((const int8_t*)Buffer, BufferLen, LWByteBuffer::Network | LWByteBuffer::BufferNotOwned);
+	LWByteBuffer ByteBuf((const int8_t*)Buffer, BufferLen, LWByteBuffer::Network);
 	LWPacketRawHeader Header;
 	LWPacketHeader *BufferHeader = (LWPacketHeader *)m_PacketBuffer;
 	Header.m_Header = ByteBuf.Read<uint32_t>();
@@ -97,7 +97,7 @@ bool LWPacketManager::ProcessRawData(void *Client, void *Source, const char *Buf
 		bool Result = false;
 		if (m_ReceivePacketFunction) Result = m_ReceivePacketFunction(Pack, this);
 		if (Pack->GetFlag()&LWPacket::Ack){
-			LWPacket *AckPack = m_PacketAllocator->Allocate<LWPacket>(Pack->GetPacketAckID(), Client, LWPacket::PacketAck, 0);
+			LWPacket *AckPack = m_PacketAllocator->Create<LWPacket>(Pack->GetPacketAckID(), Client, LWPacket::PacketAck, 0);
 			if(!PushOutPacket(AckPack))	LWAllocator::Destroy(AckPack); //if we failed to add our ack pack, then we'll have to try again later when the client resends the packet.
 		}
 		if (!Result){
@@ -174,7 +174,7 @@ LWAllocator &LWPacketManager::GetPacketAllocator(void) const{
 	return *m_PacketAllocator;
 }
 
-LWPacketManager::LWPacketManager(uint32_t PacketBufferSize, LWAllocator &BufferAllocator, LWAllocator &PacketAllocator, std::function<bool(LWPacket *Pack, LWPacketManager *Man)> ReceivePacketFunc, std::function<bool(LWPacket *Pack, LWPacketManager *Man)> SendPacketFunc) : m_PacketBuffer(BufferAllocator.AllocateArray<char>(PacketBufferSize)), m_ReceivePacketFunction(ReceivePacketFunc), m_SendPacketFunction(SendPacketFunc), m_PacketBufferLength(PacketBufferSize), m_PacketAllocator(&PacketAllocator), m_OutPacketCount(0){
+LWPacketManager::LWPacketManager(uint32_t PacketBufferSize, LWAllocator &BufferAllocator, LWAllocator &PacketAllocator, std::function<bool(LWPacket *Pack, LWPacketManager *Man)> ReceivePacketFunc, std::function<bool(LWPacket *Pack, LWPacketManager *Man)> SendPacketFunc) : m_PacketBuffer(BufferAllocator.Allocate<char>(PacketBufferSize)), m_ReceivePacketFunction(ReceivePacketFunc), m_SendPacketFunction(SendPacketFunc), m_PacketBufferLength(PacketBufferSize), m_PacketAllocator(&PacketAllocator), m_OutPacketCount(0){
 	RegisterDeserialization(LWPacket::PacketAck, LWPacket::Deserialize);
 }
 

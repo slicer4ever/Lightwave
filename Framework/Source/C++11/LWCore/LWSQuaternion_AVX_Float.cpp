@@ -1,6 +1,6 @@
 #include "LWCore/LWSQuaternion.h"
 #include "LWCore/LWSMatrix.h"
-#ifndef LW_NOAVX
+#ifdef __AVX__
 
 LWSQuaternion<float> LWSQuaternion<float>::FromEuler(float Pitch, float Yaw, float Roll) {
 	float c1 = cosf(Yaw * 0.5f);
@@ -120,7 +120,7 @@ LWSQuaternion<float> LWSQuaternion<float>::Inverse(void) const {
 	__m128 iLenSq = _mm_div_ps(_mm_set_ps1(1.0f), _mm_dp_ps(m_Data, m_Data, 0xFF));
 	return _mm_mul_ps(_mm_xor_ps(m_Data, _mm_set_ps(0.0f, -0.0f, -0.0f, -0.0f)), iLenSq);
 }
-#include <iostream>
+
 LWSVector4<float> LWSQuaternion<float>::RotatePoint(const LWSVector4<float> Pnt) const {
 	__m128 u = _mm_mul_ps(m_Data, _mm_set_ps(0.0f, 1.0f, 1.0f, 1.0f));
 	__m128 dA = _mm_dp_ps(u, Pnt.m_Data, 0x7F);
@@ -144,6 +144,14 @@ LWSVector4<float> LWSQuaternion<float>::RotatePoint(const LWSVector4<float> Pnt)
 	__m128 r = _mm_add_ps(_mm_add_ps(PtA, PtB), PtC);
 	r = _mm_blend_ps(r, Pnt.m_Data, 0x8);
 	return r;
+}
+
+float LWSQuaternion<float>::operator[](uint32_t i) const {
+	return (&x)[i];
+}
+
+float &LWSQuaternion<float>::operator[](uint32_t i) {
+	return (&x)[i];
 }
 
 bool LWSQuaternion<float>::operator == (const LWSQuaternion<float>& Rhs) const {
@@ -182,19 +190,19 @@ LWSQuaternion<float> operator / (float Lhs, const LWSQuaternion<float> &Rhs) {
 	return _mm_div_ps(_mm_set_ps1(Lhs), Rhs.m_Data);
 }
 
-LWSQuaternion<float> LWSQuaternion<float>:: operator*(const LWSQuaternion<float>& Rhs) const {
+LWSQuaternion<float> LWSQuaternion<float>::operator*(const LWSQuaternion<float>& Rhs) const {
 	__m128 mwwww = _mm_permute_ps(m_Data, _MM_SHUFFLE(3, 3, 3, 3));
 	__m128 mxyzx = _mm_permute_ps(m_Data, _MM_SHUFFLE(0, 2, 1, 0));
 	__m128 myzxy = _mm_permute_ps(m_Data, _MM_SHUFFLE(1, 0, 2, 1));
 	__m128 mzxyz = _mm_permute_ps(m_Data, _MM_SHUFFLE(2, 1, 0, 2));
 	__m128 rwwwx = _mm_permute_ps(Rhs.m_Data, _MM_SHUFFLE(0, 3, 3, 3));
 	__m128 rzxyy = _mm_permute_ps(Rhs.m_Data, _MM_SHUFFLE(1, 1, 0, 2));
+	__m128 ryzxz = _mm_permute_ps(Rhs.m_Data, _MM_SHUFFLE(2, 0, 2, 1));
 
 	mxyzx = _mm_xor_ps(mxyzx, _mm_set_ps(-0.0f, 0.0f, 0.0f, 0.0f));
 	myzxy = _mm_xor_ps(myzxy, _mm_set_ps(-0.0f, 0.0f, 0.0f, 0.0f));
 	mzxyz = _mm_xor_ps(mzxyz, _mm_set_ps1(-0.0f));
 
-	__m128 ryzxz = _mm_permute_ps(Rhs.m_Data, _MM_SHUFFLE(2, 0, 2, 1));
 	__m128 r = _mm_mul_ps(mwwww, Rhs.m_Data);
 	r = _mm_add_ps(r, _mm_mul_ps(mxyzx, rwwwx));
 	r = _mm_add_ps(r, _mm_mul_ps(myzxy, rzxyy));
@@ -243,22 +251,6 @@ LWSQuaternion<float> LWSQuaternion<float>::operator-() const {
 	return _mm_xor_ps(m_Data, _mm_set_ps1(-0.0f));
 }
 
-float LWSQuaternion<float>::x(void) const {
-	return ((float*)&m_Data)[0];
-}
-
-float LWSQuaternion<float>::y(void) const {
-	return ((float*)&m_Data)[1];
-}
-
-float LWSQuaternion<float>::z(void) const {
-	return ((float*)&m_Data)[2];
-}
-
-float LWSQuaternion<float>::w(void) const {
-	return ((float*)&m_Data)[3];
-}
-
 LWSQuaternion<float>::LWSQuaternion(__m128 Data) : m_Data(Data) {}
 
 LWSQuaternion<float>::LWSQuaternion(const LWQuaternion<float> &Q) : m_Data(_mm_set_ps(Q.w, Q.z, Q.y, Q.x)) {}
@@ -266,10 +258,10 @@ LWSQuaternion<float>::LWSQuaternion(const LWQuaternion<float> &Q) : m_Data(_mm_s
 LWSQuaternion<float>::LWSQuaternion(float vw, float vx, float vy, float vz) : m_Data(_mm_set_ps(vw, vz, vy, vx)) {}
 
 LWSQuaternion<float>::LWSQuaternion(const LWSMatrix4<float>& Mat) {
-	LWVector4<float> R0 = Mat.Row(0).AsVec4();
-	LWVector4<float> R1 = Mat.Row(1).AsVec4();
-	LWVector4<float> R2 = Mat.Row(2).AsVec4();
-	LWVector4<float> R3 = Mat.Row(3).AsVec4();
+	LWVector4<float> R0 = Mat[0].AsVec4();
+	LWVector4<float> R1 = Mat[1].AsVec4();
+	LWVector4<float> R2 = Mat[2].AsVec4();
+	LWVector4<float> R3 = Mat[3].AsVec4();
 
 	float tr = R0.x + R1.y + R2.z;
 	if (tr > 0.0f) {

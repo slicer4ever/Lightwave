@@ -1,5 +1,5 @@
 #include "LWCore/LWSVector.h"
-#ifndef LW_NOAVX
+#ifdef __AVX__
 
 LWVector4<int32_t> LWSVector4<int32_t>::AsVec4(void) const {
 	alignas(16) LWVector4<int32_t> R;
@@ -7,32 +7,9 @@ LWVector4<int32_t> LWSVector4<int32_t>::AsVec4(void) const {
 	return R;
 }
 
-int32_t *LWSVector4<int32_t>::AsArray(void) {
-	return (int32_t*)&m_Data;
-}
-
-const int32_t *LWSVector4<int32_t>::AsArray(void) const {
-	return (int32_t*)&m_Data;
-}
-
-LWSVector4<int32_t> &LWSVector4<int32_t>::sX(int32_t Value) {
-	((int32_t*)&m_Data)[0] = Value;
-	return *this;
-}
-
-LWSVector4<int32_t> &LWSVector4<int32_t>::sY(int32_t Value) {
-	((int32_t*)&m_Data)[1] = Value;
-	return *this;
-}
-
-LWSVector4<int32_t> &LWSVector4<int32_t>::sZ(int32_t Value) {
-	((int32_t*)&m_Data)[2] = Value;
-	return *this;
-}
-
-LWSVector4<int32_t> &LWSVector4<int32_t>::sW(int32_t Value) {
-	((int32_t*)&m_Data)[3] = Value;
-	return *this;
+LWSVector4<int32_t> LWSVector4<int32_t>::Sign(void) const {
+	__m128i c = _mm_cmplt_epi32(m_Data, _mm_set_epi32(0,0,0,0));
+	return _mm_blendv_epi8(_mm_set_epi32(1,1,1,1), _mm_set_epi32(-1,-1,-1,-1), c);
 }
 
 LWSVector4<int32_t> LWSVector4<int32_t>::Normalize(void) const {
@@ -480,6 +457,14 @@ bool LWSVector4<int32_t>::GreaterEqual2(const LWSVector4<int32_t> &Rhs) const {
 	return _mm_test_all_ones(_mm_blend_epi32(t, one, 0xC));
 }
 
+int32_t LWSVector4<int32_t>::operator[](uint32_t i) const {
+	return (&x)[i];
+}
+
+int32_t &LWSVector4<int32_t>::operator[](uint32_t i) {
+	return (&x)[i];
+}
+
 LWSVector4<int32_t>& LWSVector4<int32_t>::operator = (const LWSVector4<int32_t>& Rhs) {
 	m_Data = Rhs.m_Data;
 	return *this;
@@ -520,22 +505,19 @@ LWSVector4<int32_t>& LWSVector4<int32_t>::operator *= (int32_t Rhs) {
 
 LWSVector4<int32_t>& LWSVector4<int32_t>::operator /= (const LWSVector4<int32_t>& Rhs) {
 	//No integer division, cast data to float, divide, cast back to m128i
-	int32_t *L = AsArray();
-	const int32_t *R = Rhs.AsArray();
-	L[0] /= R[0];
-	L[1] /= R[1];
-	L[2] /= R[2];
-	L[3] /= R[3];
+	x /= Rhs.x;
+	y /= Rhs.y;
+	z /= Rhs.z;
+	w /= Rhs.w;
 	return *this;
 }
 
 LWSVector4<int32_t>& LWSVector4<int32_t>::operator /= (int32_t Rhs) {
 	//No integer division, cast data to float, divide, cast back to m128i
-	int32_t *L = AsArray();
-	L[0] /= Rhs;
-	L[1] /= Rhs;
-	L[2] /= Rhs;
-	L[3] /= Rhs;
+	x /= Rhs;
+	y /= Rhs;
+	z /= Rhs;
+	w /= Rhs;
 	return *this;
 }
 
@@ -621,19 +603,14 @@ LWSVector4<int32_t> operator * (int32_t Lhs, const LWSVector4<int32_t>& Rhs) {
 }
 
 LWSVector4<int32_t> operator / (const LWSVector4<int32_t>& Lhs, const LWSVector4<int32_t>& Rhs) {
-	const int32_t *L = Lhs.AsArray();
-	const int32_t *R = Rhs.AsArray();
-	return LWSVector4<int32_t>(L[0] / R[0], L[1] / R[1], L[2] / R[2], L[3] / R[3]);
-}
+	return LWSVector4<int32_t>(Lhs.x / Rhs.x, Lhs.y / Rhs.y, Lhs.z / Rhs.z, Lhs.w / Rhs.w);}
 
 LWSVector4<int32_t> operator / (const LWSVector4<int32_t>& Lhs, int32_t Rhs) {
-	const int32_t *L = Lhs.AsArray();
-	return LWSVector4<int32_t>(L[0] / Rhs, L[1] / Rhs, L[2] / Rhs, L[3] / Rhs);
+	return LWSVector4<int32_t>(Lhs.x / Rhs, Lhs.y / Rhs, Lhs.z / Rhs, Lhs.w / Rhs);
 }
 
 LWSVector4<int32_t> operator / (int32_t Lhs, const LWSVector4<int32_t>& Rhs) {
-	const int32_t *R = Rhs.AsArray();
-	return LWSVector4<int32_t>(Lhs / R[0], Lhs / R[1], Lhs / R[2], Lhs / R[3]);
+	return LWSVector4<int32_t>(Lhs / Rhs.x, Lhs / Rhs.y, Lhs / Rhs.z, Lhs / Rhs.w);
 }
 
 LWSVector4<int32_t> LWSVector4<int32_t>::AAAB(const LWSVector4<int32_t>& B) const {
@@ -797,6 +774,18 @@ LWSVector4<int32_t> LWSVector4<int32_t>::xyzy(void) const {
 
 LWSVector4<int32_t> LWSVector4<int32_t>::xyzz(void) const {
 	return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(2, 2, 1, 0));
+}
+
+LWSVector4<int32_t> LWSVector4<int32_t>::xyz0(void) const {
+	LWSVector4<int32_t> v = m_Data;
+	v.w = 0;
+	return v;
+}
+
+LWSVector4<int32_t> LWSVector4<int32_t>::xyz1(void) const {
+	LWSVector4<int32_t> v = m_Data;
+	v.w = 1;
+	return v;
 }
 
 LWSVector4<int32_t> LWSVector4<int32_t>::xywx(void) const {
@@ -1833,23 +1822,6 @@ LWSVector4<int32_t> LWSVector4<int32_t>::yx(void) const {
 
 LWSVector4<int32_t> LWSVector4<int32_t>::yy(void) const {
 	return _mm_shuffle_epi32(m_Data, _MM_SHUFFLE(3, 2, 1, 1));
-}
-
-int32_t LWSVector4<int32_t>::x(void) const {
-	return ((int32_t*)&m_Data)[0];
-}
-
-int32_t LWSVector4<int32_t>::y(void) const {
-	return ((int32_t*)&m_Data)[1];
-}
-
-int32_t LWSVector4<int32_t>::z(void) const {
-	return ((int32_t*)&m_Data)[2];
-
-}
-
-int32_t LWSVector4<int32_t>::w(void) const {
-	return ((int32_t*)&m_Data)[3];
 }
 
 LWSVector4<int32_t>::LWSVector4(__m128i Data) : m_Data(Data) {}

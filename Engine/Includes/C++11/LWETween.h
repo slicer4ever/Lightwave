@@ -129,21 +129,6 @@ public:
 		return o;
 	}
 
-	/*
-	float GetValue(float Time, float DefValue) const {
-		auto N = std::lower_bound(m_Frames.begin(), m_Frames.end(), Time);
-		if (N == m_Frames.end()) {
-			if (m_Frames.size() == 0) return DefValue;
-			--N;
-			return (*N).m_Value;
-		} else if (N == m_Frames.begin()) return (*N).m_Value;
-		auto C = N - 1;
-		float Len = (*N).m_Time - (*C).m_Time;
-		float Diff = (*N).m_Value - (*C).m_Value;
-		float d = (Time - (*C).m_Time) / Len;
-		return (*C).m_Value + Diff * d;
-	}*/
-
 	Type GetValue(float Time, const Type DefValue = Type()) const {
 		auto RFrame = std::lower_bound(m_Frames.begin(), m_Frames.end(), Time);
 		if (RFrame == m_Frames.end()) {
@@ -233,9 +218,10 @@ inline LWSQuaternionf LWETweenFrame<LWSQuaternionf>::CubicTween(const LWETweenFr
 
 template<>
 inline LWSQuaterniond LWETweenFrame<LWSQuaterniond>::CubicTween(const LWETweenFrame<LWSQuaterniond> &A, const LWETweenFrame<LWSQuaterniond> &B, float p) {
-	float t2 = p * p;
-	float t3 = p * p * p;
-	LWSQuaterniond Res = (2.0f * t3 - 3.0f * t2 + 1.0f) * A.m_Value[1] + (t3 - 2.0f * t2 + p) * A.m_Value[0] + (-2.0f * t3 + 3.0f * t2) * B.m_Value[1] + (t3 - t2) * B.m_Value[2];
+	double pd = (double)p;
+	double t2 = pd * pd;
+	double t3 = pd * pd * pd;
+	LWSQuaterniond Res = (2.0 * t3 - 3.0 * t2 + 1.0) * A.m_Value[1] + (t3 - 2.0 * t2 + pd) * A.m_Value[0] + (-2.0 * t3 + 3.0 * t2) * B.m_Value[1] + (t3 - t2) * B.m_Value[2];
 	return Res.Normalize();
 }
 
@@ -249,9 +235,10 @@ inline LWQuaternionf LWETweenFrame<LWQuaternionf>::CubicTween(const LWETweenFram
 
 template<>
 inline LWQuaterniond LWETweenFrame<LWQuaterniond>::CubicTween(const LWETweenFrame<LWQuaterniond> &A, const LWETweenFrame<LWQuaterniond> &B, float p) {
-	float t2 = p * p;
-	float t3 = p * p * p;
-	LWQuaterniond Res = (2.0f * t3 - 3.0f * t2 + 1.0f) * A.m_Value[1] + (t3 - 2.0f * t2 + p) * A.m_Value[0] + (-2.0f * t3 + 3.0f * t2) * B.m_Value[1] + (t3 - t2) * B.m_Value[2];
+	double pd = (double)p;
+	double t2 = pd * pd;
+	double t3 = pd * pd * pd;
+	LWQuaterniond Res = (2.0 * t3 - 3.0 * t2 + 1.0) * A.m_Value[1] + (t3 - 2.0 * t2 + pd) * A.m_Value[0] + (-2.0 * t3 + 3.0 * t2) * B.m_Value[1] + (t3 - t2) * B.m_Value[2];
 	return Res.Normalize();
 }
 

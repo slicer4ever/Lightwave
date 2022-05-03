@@ -8,6 +8,8 @@
 #include "LWEVideoDecoder.h"
 #include <functional>
 
+typedef std::function<void(LWEVideoPlayer &, void*)> LWEVideoFinishedCallback;
+
 class LWEVideoPlayer {
 public:
 	enum {
@@ -17,7 +19,7 @@ public:
 		StopRequested=0x4,
 	};
 	//Finished callback is called at the end of each loop.
-	static bool OpenVideo(LWEVideoPlayer &Player, LWVideoDriver *Driver, const LWText &Path, bool StartPlaying, uint32_t LoopCnt, void *Userdata, std::function<void(LWEVideoPlayer &, void*)> FinishedCallback, float PlaybackSpeed, LWAllocator &Allocator, LWFileStream *Existing = nullptr);
+	static bool OpenVideo(LWEVideoPlayer &Player, LWVideoDriver *Driver, const LWUTF8Iterator &Path, bool StartPlaying, uint32_t LoopCnt, void *Userdata, LWEVideoFinishedCallback FinishedCallback, float PlaybackSpeed, LWAllocator &Allocator, LWFileStream *Existing = nullptr);
 
 	static bool YUVToRGBA(const uint8_t **YUVArrays, const LWVector3i &YUVStrides, const LWVector2i &ImageSize, uint8_t *Buffer, uint32_t BufferSize);
 
@@ -27,7 +29,7 @@ public:
 	//Updates the internal texture.
 	LWEVideoPlayer &UpdateTexture();
 
-	LWEVideoPlayer &SetFinishedCallback(std::function<void(LWEVideoPlayer &, void*)> Callback, void *UserData);
+	LWEVideoPlayer &SetFinishedCallback(LWEVideoFinishedCallback Callback, void *UserData);
 
 	//Returns the current textured frame.
 	LWTexture *Frame(void);
@@ -64,7 +66,7 @@ public:
 
 	LWEVideoPlayer &operator = (LWEVideoPlayer &&O);
 
-	LWEVideoPlayer(LWVideoDriver *Driver, LWEVideoDecoder *Decoder, const LWVector2i &FrameSize, uint64_t FrameRate, uint32_t FrameCount, uint32_t LoopCnt, uint32_t Flag, void *UserData, std::function<void(LWEVideoPlayer&, void*)> FinishedCallback, float PlaybackSpeed, LWAllocator &Allocator);
+	LWEVideoPlayer(LWVideoDriver *Driver, LWEVideoDecoder *Decoder, const LWVector2i &FrameSize, uint64_t FrameRate, uint32_t FrameCount, uint32_t LoopCnt, uint32_t Flag, void *UserData, LWEVideoFinishedCallback FinishedCallback, float PlaybackSpeed, LWAllocator &Allocator);
 
 	LWEVideoPlayer(LWEVideoPlayer &&O);
 
@@ -72,7 +74,7 @@ public:
 
 	~LWEVideoPlayer();
 private:
-	std::function<void(LWEVideoPlayer &, void *)> m_FinishedCallback;
+	LWEVideoFinishedCallback m_FinishedCallback;
 	LWEVideoDecoder *m_Decoder = nullptr;
 	LWTexture *m_Texture = nullptr;
 	void *m_UserData = nullptr;

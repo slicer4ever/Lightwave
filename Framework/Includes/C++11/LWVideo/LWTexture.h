@@ -2,9 +2,10 @@
 #define LWTEXTURE_H
 #include "LWCore/LWTypes.h"
 #include "LWCore/LWVector.h"
+#include "LWVideo/LWTypes.h"
 
 /*!< \brief texture object. */
-class LWTexture{
+class LWTexture : public LWVideoResource {
 public:
 	enum{
 		MinNearest              = 0, /*!< \brief min filter is determined by nearest texels. */
@@ -62,6 +63,14 @@ public:
 		StencilRead = 0x4000, /*!< \brief flag to indicate the texture should read from the stencil component if a depth-stencil texture. */
 		DepthReadFlag = 0x4000, /*!< \brief used to find the depth/stencil reading mode for the texture that it is set to. This flag is only used in openGL context's, directX allows reading from both. */
 		DepthReadBitOffset = 0xE, /*!< \brief used for offsetting the depth/stencil reading mode to the first bit. */
+
+		Anisotropy_None = 0x0, /*!< \brief default flag for Anisotropy multiplier, if non zero Anisotropy flag is set then sampler set's relevant Anisotropy filtering(which can override mag/min settings depending on api). */
+		Anisotropy_2x = 0x8000, /*!< \brief set's Anisotropy filtering to 2x(depending on api this will override min/mag filter settings) */
+		Anisotropy_4x = 0x10000, /*!< \brief set's Anisotropy filtering to 4x(depending on api this will override min/mag filter settings). */
+		Anisotropy_8x = 0x18000, /*!< \brief set's Anisotropy filtering to 8x(depending on api this will override min/mag filter settings). */
+		Anisotropy_16x = 0x20000, /*!< \brief set's Anisotropy filtering to 16x(depending on api this will override min/mag filter settings). */
+		AnisotropyFlag = 0x38000, /*!< \brief used to isolate the Anisotropy flags. */
+		AnisotropyBitOffset = 0xF, /*!< \brief used for offsetting the Anisotropy flags to 0 indexed array. */
 
 		RenderTarget            = 0x08000000, /*!< \brief the texture is going to be bound to a framebuffer. */
 		RenderBuffer            = 0x10000000, /*!< \brief the texture is going to be bound to a framebuffer, and only used for rendering, not used as a texture(note: d3d11 doesn't respect this flag, rendertarget is more consistent across different api's). */

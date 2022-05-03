@@ -30,7 +30,7 @@ public:
 
 	static const uint8_t Network = 1; /*!< \brief Network specifies that the byte buffer is to encode data for network or portable transmission. */
 	static const uint8_t ReadOnly = 2; /*!< \brief Specifies if the byte buffer is a read only class. */
-	static const uint8_t BufferNotOwned = 4; /*!< \brief specifies if the internal buffer is to not be considered owned by the Buffer. */
+	static const uint8_t BufferOwned = 4; /*!< \brief specifies if the internal buffer is to to be considered owned by the Buffer(and cleaned up when LWByteBuffer is destroyed). */
 	/*! @} */
 
 	/*! \brief converts the number from host order to network order.
@@ -268,6 +268,69 @@ public:
 	*/
 	static double MakeLittle(double Value);
 
+	/*!< \brief calculates how many bytes the Value is to occupy with variant encoding. (int16_t, int32_t, int64_t, uint16_t, uint32_t, uint64_t supported)
+		 \return total bytes needed to store the number.
+	*/
+	static int32_t VariantLength(uint16_t Value);
+
+	/*!< \overload int32_t LWByteBuffer::VariantLength(int16_t) */
+	static int32_t VariantLength(int16_t Value);
+
+	/*!< \overload int32_t LWByteBuffer::VariantLength(uint32_t) */
+	static int32_t VariantLength(uint32_t Value);
+
+	/*!< \overload int32_t LWByteBuffer::VariantLength(int32_t) */
+	static int32_t VariantLength(int32_t Value);
+	
+	/*!< \overload int32_t LWByteBuffer::VariantLength(uint64_t) */
+	static int32_t VariantLength(uint64_t Value);
+	
+	/*!< \overload int32_t LWByteBuffer::VariantLength(int64_t) */
+	static int32_t VariantLength(int64_t Value);
+
+	/*!< \brief calculates how many bytes the Value is to occupy with zig-zag signed variant encoding(as described by google protobuf encoding schemes, for int types.) */
+	static int32_t SVariantLength(int16_t Value);
+
+	/*!< \overload int32_t LWByteBuffer::SVariantLength(int32_t) */
+	static int32_t SVariantLength(int32_t Value);
+
+	/*!< \overload int32_t LWByteBuffer::SVariantLength(int64_t) */
+	static int32_t SVariantLength(int64_t Value);
+
+	/*!< \brief Writes into Buffer a variant encoding of Value.
+	*	 \param MinBytes minimum number of bytes to write, will fill the bytes with 0x80 when reading back, allows for certain optimization when writing sizes.
+		 \return the total bytes needed to store the number.
+		 \note If buffer is not null, then it is expected to be large enough to store the variant value.
+	*/
+	static int32_t WriteVariant(uint16_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
+	/*!< \overload int32_t LWByteBuffer::WriteVariant(int16_t, int8_t *, uint32_t) */
+	static int32_t WriteVariant(int16_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
+	/*!< \overload int32_t LWByteBuffer::WriteVariant(uint32_t, int8_t *, uint32_t) */
+	static int32_t WriteVariant(uint32_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
+	/*!< \overload int32_t LWByteBuffer::WriteVariant(int32_t, int8_t *, uint32_t) */
+	static int32_t WriteVariant(int32_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
+	/*!< \overload int32_t LWByteBuffer::WriteVariant(int64_t, int8_t *, uint32_t) */
+	static int32_t WriteVariant(int64_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
+	/*!< \overload int32_t LWByteBuffer::WriteVariant(uint64_t, int8_t *, uint32_t) */
+	static int32_t WriteVariant(uint64_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
+	/*!< \brief writes into buffer a zig-zag signed variant encoding of Value
+	*	 \return the total bytes needed to store the number.
+	*	 \param MinBytes minimum number of bytes to write, will fill the bytes with 0x80 when reading back, allows for certain optimization when writing sizes.
+	*    \note If buffer is not null, then it is expected to be large enough to store the signed variant. */
+	static int32_t WriteSVariant(int16_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
+	/*!< \overload int32_t LWByteBuffer::WriteSVariant(int32_t, int8_t*, uint32_t) */
+	static int32_t WriteSVariant(int32_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
+	/*!< \overload int32_t LWByteBuffer::WriteSVariant(int64_t, int8_t*, uint32_t) */
+	static int32_t WriteSVariant(int64_t Value, int8_t *Buffer, int32_t MinBytes = 0);
+
 	/*! \brief writes the value of the pointer itself into the buffer for later.
 		Warning this function is only here for convenience, you should have a strong understanding of pointers before using!
 		\param Value the pointer to be written.
@@ -414,11 +477,24 @@ public:
 		return sizeof(Type) * 4;
 	}
 
-	/*! \brief writes a utf-8 text to the buffer stream. */
-	static int32_t WriteUTF8(const uint8_t *Text, int8_t *Buffer);
-
-	/*! \overload int32_t WriteUTF8(const char *Text, int8_t *Buffer) */
-	static int32_t WriteUTF8(const char *Text, int8_t *Buffer);
+	/*! \brief writes a utf-X encoded text to the buffer stream. */
+	template<class Type>
+	static int32_t WriteUTF(const LWUnicodeIterator<Type> &Iter, int8_t *Buffer) {
+		const Type *P = Iter();
+		const Type *L = Iter.GetLast();
+		int32_t o = 0;
+		uint32_t l = 0;
+		for (; *P && P != L; ++P) {
+			l = Write<Type>(*P, Buffer);
+			if (Buffer) Buffer += l;
+			o += l;
+		}
+		l = Write<Type>(0, Buffer);
+		if (Buffer) Buffer += l;
+		o += l;
+		if(o&1) o += Write<char>(0, Buffer);
+		return o;
+	}
 
 	/*!< \brief writes a null terminated string to buffer(including the null termination). */
 	static int32_t WriteText(const uint8_t *Text, int8_t *Buffer);
@@ -786,12 +862,26 @@ public:
 		return sizeof(Type)* 4;
 	}
 
-	/*! \brief writes a network encoded utf-8 string. */
-	static int32_t WriteNetworkUTF8(const uint8_t *Text, int8_t *Buffer);
-
-	/*! \overload int32_t WriteNetworkUTF8(const char *, int8_t *) */
-	static int32_t WriteNetworkUTF8(const char *Text, int8_t *Buffer);
-
+	/*! \brief writes a network encoded utfX string. */
+	template<class Type>
+	static int32_t WriteNetworkUTF(const LWUnicodeIterator<Type> &Iter, int8_t *Buffer) {
+		const Type *P = Iter();
+		const Type *L = Iter.GetLast();
+		uint32_t l = 0;
+		int32_t o = 0;
+		for (; *P && P != L; ++P) {
+			l = WriteNetwork<Type>(*P, Buffer);
+			if (Buffer) Buffer += l;
+			o += l;
+		}
+		l = WriteNetwork<Type>(0, Buffer);
+		o += l;
+		if (o & 1) {
+			if (Buffer) Buffer += l;
+			o += WriteNetwork<char>(0, Buffer);
+		}
+		return o;
+	}
 
 	/** \brief writes an host encoded number of values into buffer in network order.
 		\param Len the number of values expected to be written.
@@ -1015,6 +1105,40 @@ public:
 		va_end(lst);
 		return Result;
 	}
+	
+	/*!< \brief reads back a variant encoded value and stores the value in Out if not null, checks that buffer never goes pass BufferEnd to prevent buffer overflows.
+	*	 \return the number of bytes read from buffer.
+	*/
+	static int32_t ReadVariant(uint16_t *Out, const int8_t *Buffer, const int8_t *BufferEnd);
+
+	/*!< \overload int32_t ReadVariant(int16_t *, const int8_t *) */
+	static int32_t ReadVariant(int16_t *Out, const int8_t *Buffer, const int8_t *BufferEnd);
+
+	/*!< \overload int32_t ReadVariant(uint32_t *, const int8_t *) */
+	static int32_t ReadVariant(uint32_t *Out, const int8_t *Buffer, const int8_t *BufferEnd);
+
+	/*!< \overload int32_t ReadVariant(int32_t *, const int8_t *) */
+	static int32_t ReadVariant(int32_t *Out, const int8_t *Buffer, const int8_t *BufferEnd);
+
+	/*!< \overload int32_t ReadVariant(uint64_t *, const int8_t *) */
+	static int32_t ReadVariant(uint64_t *Out, const int8_t *Buffer, const int8_t *BufferEnd);
+
+	/*!< \overload int32_t ReadVariant(int64_t *, const int8_t *) */
+	static int32_t ReadVariant(int64_t *Out, const int8_t *Buffer, const int8_t *BufferEnd);
+
+	/*!< \brief read's 64 bit value from buffer.  This is the main read function, which is called by all other read variants which exist for convience factor. */
+	static int32_t ReadVariant(uint64_t &Out, const int8_t *Buffer, const int8_t *BufferEnd);
+
+	/*!< \brief reads back a zig-zag signed variant encoded value and stores the value in Out if not null.
+	*	 \return the number of bytes read from buffer.
+	*/
+	static int32_t ReadSVariant(int16_t *Out, const int8_t *Buffer, const int8_t *BufferEnd);
+
+	/*!< \overload int32_t ReadSVariant(int32_t *, const int8_t *) */
+	static int32_t ReadSVariant(int32_t *Out, const int8_t *Buffer, const int8_t *BufferEnd);
+
+	/*!< \overload int32_t ReadSVariant(int64_t *, const int8_t *) */
+	static int32_t ReadSVariant(int64_t *Out, const int8_t *Buffer, const int8_t *BufferEnd);
 
 	/*! \brief Reads back a pointer from the buffer.
 		\param Out the value to write out to.
@@ -1091,19 +1215,30 @@ public:
 		return sizeof(Type) * 16;
 	}
 
-	/*! \brief reads back an utf8 string from the buffer, and stores it into Out.
-		\param Out the buffer to receive the utf-8 text.
-		\param OutLen the length of the out buffer for storage.
+	/*! \brief reads back an utf-X string from the buffer, and stores it into Out.
+		\param Out the buffer to receive the utf-X text.
+		\param OutLen the length of the out buffer(in Type) for storage.
 		\param Buffer the buffer to read back from.
 		\param BufferLen the length of the buffer, so that a buffer overflow on reading can't occur.
-		\return the raw length of the utf8 string(minus the null character)+2 bytes for the leading length identifier placed in front of the string.
-		\note to calculate the length Out needs to be to store the entire string, simply allocate an array of length return-1.
+		\return the raw byte length of the utfX string(plus the null character)+possible padding byte.
+		\note to calculate the length Out needs to be to store the entire string, simply allocate an array of length return/sizeof(Type).
 	*/
-	static int32_t ReadUTF8(uint8_t *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen);
-
-	/*! \overload int32_t ReadUTF8(const char *, uint32_t, const int8_t *, const uint32_t) */
-	static int32_t ReadUTF8(char *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen);
-	
+	template<class Type>
+	static int32_t ReadUTF(Type *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen) {
+		int8_t o = 0;
+		Type *oP = Out;
+		Type *oL = oP + std::min<uint32_t>(OutLen - 1, OutLen);
+		const Type *bP = (const Type*)Buffer;
+		const Type *bL = bP + BufferLen;
+		for (; bP != bL && *bP; ++bP) {
+			if (oP < oL) *oP++ = *bP;
+			o += sizeof(Type);
+		}
+		if (OutLen) *oP = 0;
+		o += sizeof(Type);
+		if (o & 1) o += 1; //skip padding if it was added.
+		return o;
+	}
 
 	/*!< \brief reads back an null terminated string from the buffer, and stores it into Out.
 		 \param Out the buffer to receive the null terminated text.
@@ -1365,20 +1500,30 @@ public:
 		return sizeof(Type)* 4;
 	}
 
-	/*! \brief reads back an network utf8 string from the buffer, and stores it into Out.
-		\param Out the buffer to receive the utf-8 text.
+	/*! \brief reads back an network utfX string from the buffer, and stores it into Out.
+		\param Out the buffer to receive the utfX text.
 		\param OutLen the length of the out buffer for storage.
 		\param Buffer the buffer to read back from.
 		\param BufferLen the length of the buffer, to prevent reading past the buffer.
-		\return the raw length of the utf8 string(minus the null character)+2 bytes for the leading length identifier placed in front of the string.
-		\note to calculate the length Out needs to be to store the entire string, simply allocate an array of length return-1.
+		\return the raw length of the utfX string(plus the null character)+possible padding byte.
+		\note to calculate the length Out needs to be to store the entire string, simply allocate an array of length return.
 	*/
-	static int32_t ReadNetworkUTF8(uint8_t *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen);
-
-	/*! \overload int32_t ReadNetwork(char *, uint32_t, const int8_t *, const uint32_t) */
-	static int32_t ReadNetworkUTF8(char *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen);
-
-
+	template<class Type>
+	static int32_t ReadNetworkUTF(Type *Out, uint32_t OutLen, const int8_t *Buffer, const uint32_t BufferLen) {
+		int8_t o = 0;
+		Type *oP = Out;
+		Type *oL = oP + std::min<uint32_t>(OutLen - 1, OutLen);
+		const Type *bP = (const Type*)Buffer;
+		const Type *bL = bP + BufferLen;
+		for (; bP != bL && *bP; ++bP) {
+			if (oP < oL) *oP++ = *bP;
+			o += sizeof(Type);
+		}
+		if (OutLen) *oP = 0;
+		o += sizeof(Type);
+		if (o & 1) o += 1; //skip padding if it was added.
+		return o;
+	}
 
 	/*! \brief reads back an array of network encoded value from buffer and transforms it to host form.
 		\param Out the values to write to.
@@ -1581,10 +1726,50 @@ public:
 	*/
 	int32_t WritePointer(void *Value);
 
+	/*!< \brief returns Len for bytes potentially written(to stay inlign with all other Write methods),  write's into Buffer the pointed to space if available, otherwise write's null if the space was not available internally.*/
+	int32_t WriteStorage(int32_t Len, int8_t *&Buffer);
+
+	/*!< \brief write's a variant int to the buffer, variant's are endian agnostic. */
+	template<class Type>
+	int32_t WriteVariant(Type Value, int32_t MinBytes = 0) {
+		int32_t Len = std::max<uint32_t>(VariantLength(Value), MinBytes);
+		if (m_Position + Len > m_BufferSize) return Len;
+		m_Position += WriteVariant(Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr, MinBytes);
+		m_BytesWritten += Len;
+		return Len;
+	}
+	/*!< \brief write's a variant int to the buffer at the specified location, variant's are endian agnostic. */
+	template<class Type>
+	int32_t WriteVariant(Type Value, int32_t Position, int32_t MinBytes) {
+		int32_t Len = std::max<uint32_t>(VariantLength(Value), MinBytes);
+		if (Position + Len > m_BufferSize) return Len;
+		WriteVariant(Value, m_WriteBuffer ? m_WriteBuffer + Position : nullptr, MinBytes);
+		return Len;
+	}
+	
+	/*!< \brief write's a signed variant zig-zag encoded int into buffer. */
+	template<class Type>
+	int32_t WriteSVariant(Type Value, int32_t MinBytes = 0) {
+		int32_t Len = std::max<uint32_t>(SVariantLength(Value), MinBytes);
+		if (m_Position + Len > m_BufferSize) return Len;
+		m_Position += WriteSVariant(Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr, MinBytes);
+		m_BytesWritten += Len;
+		return Len;
+	}
+
+	/*!< \brief write's an signed varient int to the buffer at the specified position. */
+	template<class Type>
+	int32_t WriteSVariant(Type Value, int32_t Position, int32_t MinBytes) {
+		int32_t Len = std::max<uint32_t>(SVariantLength(Value), MinBytes);
+		if (Position + Len > m_BufferSize) return Len;
+		WriteSVariant(Value, m_WriteBuffer ? m_WriteBuffer + Position : nullptr, MinBytes);
+		return Len;
+	}
+
+	
 	/*! \brief writes a value of type into the internal buffer.
 		\return the number of bytes written.
 	*/
-
 	template<class Type>
 	int32_t Write(const Type Value){
 		typedef int32_t (*Func_T)(const Type, int8_t *);
@@ -1601,7 +1786,7 @@ public:
 	int32_t Write(const LWSQuaternion<Type> &Value) {
 		typedef int32_t(*Func_T)(const LWSQuaternion<Type> &, int8_t *);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
-		uint32_t Len = sizeof(Type) * 4;
+		int32_t Len = sizeof(Type) * 4;
 		if (m_Position + Len > m_BufferSize) return Len;
 		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
 		m_BytesWritten += Len;
@@ -1726,11 +1911,18 @@ public:
 		m_BytesWritten += Len;
 		return Len;
 	}
-	/*! \brief writes a utf8 text string into the buffer. */
-	int32_t WriteUTF8(const uint8_t *Text);
 
-	/*! \overload int32_t WriteUTF8(const char *) */
-	int32_t WriteUTF8(const char *Text);
+	/*!< \brief write's a UTFx string to the buffer. */
+	template<class Type>
+	int32_t WriteUTF(const LWUnicodeIterator<Type> &Iter) {
+		typedef int32_t(*Func_T)(const LWUnicodeIterator<Type> &, int8_t*);
+		Func_T Funcs[] = { LWByteBuffer::WriteUTF<Type>, LWByteBuffer::WriteNetworkUTF<Type> };
+		int32_t Length = Funcs[m_SelectedFunc](Iter, nullptr);
+		if (m_Position + Length > m_BufferSize) return Length;
+		m_Position += Funcs[m_SelectedFunc](Iter, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		m_BytesWritten += Length;
+		return Length;
+	}
 
 	/*!< \brief writes an null terminated text string into the buffer. */
 	int32_t WriteText(const uint8_t *Text);
@@ -1817,6 +2009,50 @@ public:
 		return Result;
 	}
 
+	/*!< \brief read's a variant encoded int from the internal buffer. 
+		 \return the value of the object of type.
+	*/
+	template<class Type>
+	Type ReadVariant(void) {
+		Type Value = Type();
+		if (m_Position >= m_BufferSize) return Value;
+		m_Position += ReadVariant(&Value, m_ReadBuffer + m_Position, m_ReadBuffer+m_BufferSize);
+		return Value;
+	}
+
+	/*!< \brief read's a variant encoded int from the internal buffer at position.
+	*	 \return the value of the object of type.
+	*/
+	template<class Type>
+	Type ReadVariant(int32_t Position) {
+		Type Value = Type();
+		if (Position >= m_BufferSize) return Value;
+		ReadVariant(&Value, m_ReadBuffer + Position, m_ReadBuffer + m_BufferSize);
+		return Value;
+	}
+
+	/*!< \brief read's a signed variant zig-zag encoded int from the internal buffer.
+		 \return the value of the object of type.
+	*/
+	template<class Type>
+	Type ReadSVariant(void) {
+		Type Value = Type();
+		if (m_Position >= m_BufferSize) return Value;
+		m_Position += ReadSVariant(&Value, m_ReadBuffer + m_Position, m_ReadBuffer + m_BufferSize);
+		return Value;
+	}
+
+	/*!< \brief read's a signed variant encoded zig-zag int from the internal buffer at position.
+	*	 \return the value of the object of type.
+	*/
+	template<class Type>
+	Type ReadSVariant(int32_t Position) {
+		Type Value = Type();
+		if (Position >= m_BufferSize) return Value;
+		ReadSVariant(&Value, m_ReadBuffer + Position, m_ReadBuffer + m_BufferSize);
+		return Value;
+	}
+
 	/*! \brief reads a variable of type from the internal buffer.
 		\return the value of the object of type.
 	*/
@@ -1825,7 +2061,7 @@ public:
 		typedef int32_t (*Func_T)(Type*, const int8_t *);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		Type Value = Type();
-		if (m_Position >= m_BufferSize) return Value;
+		if (m_Position+(int32_t)sizeof(Type) > m_BufferSize) return Value;
 		m_Position += Funcs[m_SelectedFunc](&Value, m_ReadBuffer + m_Position);
 		return Value;
 	}
@@ -1839,7 +2075,7 @@ public:
 		typedef int32_t (*Func_T)(Type*, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		Type Value = Type();
-		if (Position >= m_BufferSize) return Value;
+		if (Position+ (int32_t)sizeof(Type) > m_BufferSize) return Value;
 		Funcs[m_SelectedFunc](&Value, m_ReadBuffer + Position);
 		return Value;
 	}
@@ -1853,7 +2089,7 @@ public:
 	int32_t Read(Type *Values, uint32_t Len){
 		typedef int32_t (*Func_T)(Type *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
-		if (m_Position >= m_BufferSize) return 0;
+		if (m_Position+ (int32_t)(sizeof(Type)*Len) > m_BufferSize) return 0;
 		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Length;
@@ -1865,7 +2101,7 @@ public:
 		typedef int32_t(*Func_T)(LWVector2<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWVector2<Type> Res;
-		if (m_Position >= m_BufferSize) return Res;
+		if (m_Position+ (int32_t)sizeof(LWVector2<Type>) > m_BufferSize) return Res;
 		int32_t Length = Funcs[m_SelectedFunc](&Res, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Res;
@@ -1877,6 +2113,7 @@ public:
 		typedef int32_t(*Func_T)(LWVector2<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWVector2<Type> Res;
+		if(Position+ (int32_t)sizeof(LWVector2<Type>)>m_BufferSize) return Res;
 		Funcs[m_SelectedFunc](&Res, m_ReadBuffer+Position);
 		return Res;
 	}
@@ -1886,7 +2123,7 @@ public:
 	int32_t ReadVec2(LWVector2<Type> *Values, uint32_t Len) {
 		typedef int32_t(*Func_T)(LWVector2<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
-		if (m_Position >= m_BufferSize) return 0;
+		if (m_Position+ (int32_t)(sizeof(LWVector2<Type>)*Len) > m_BufferSize) return 0;
 		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Length;
@@ -1897,6 +2134,7 @@ public:
 	int32_t ReadVec2(LWVector2<Type> *Values, uint32_t Len, int32_t Position) {
 		typedef int32_t(*Func_T)(LWVector2<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		if(Position+ (int32_t)(sizeof(LWVector2<Type>)*Len)>m_BufferSize) return 0;
 		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
 	}
 
@@ -1906,7 +2144,7 @@ public:
 		typedef int32_t(*Func_T)(LWVector3<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWVector3<Type> Res;
-		if (m_Position >= m_BufferSize) return Res;
+		if (m_Position + (int32_t)sizeof(LWVector3<Type>) > m_BufferSize) return Res;
 		int32_t Length = Funcs[m_SelectedFunc](&Res, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Res;
@@ -1918,6 +2156,7 @@ public:
 		typedef int32_t(*Func_T)(LWVector2<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWVector3<Type> Res;
+		if(Position+ (int32_t)sizeof(LWVector3<Type>)>m_BufferSize) return Res;
 		Funcs[m_SelectedFunc](&Res, m_ReadBuffer + Position);
 		return Res;
 	}
@@ -1927,7 +2166,7 @@ public:
 	int32_t ReadVec3(LWVector3<Type> *Values, uint32_t Len) {
 		typedef int32_t(*Func_T)(LWVector3<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
-		if (m_Position >= m_BufferSize) return 0;
+		if (m_Position+ (int32_t)(sizeof(LWVector3<Type>)*Len) > m_BufferSize) return 0;
 		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Length;
@@ -1938,6 +2177,7 @@ public:
 	int32_t ReadVec3(LWVector3<Type> *Values, uint32_t Len, int32_t Position) {
 		typedef int32_t(*Func_T)(LWVector3<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		if(Position+ (int32_t)(sizeof(LWVector3<Type>)*Len)>m_BufferSize) return 0;
 		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
 	}
 
@@ -1947,7 +2187,7 @@ public:
 		typedef int32_t(*Func_T)(LWVector4<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWVector4<Type> Res;
-		if (m_Position >= m_BufferSize) return Res;
+		if (m_Position+ (int32_t)sizeof(LWVector4<Type>) > m_BufferSize) return Res;
 		int32_t Length = Funcs[m_SelectedFunc](&Res, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Res;
@@ -1959,6 +2199,7 @@ public:
 		typedef int32_t(*Func_T)(LWVector4<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWVector4<Type> Res;
+		if(Position+ (int32_t)sizeof(LWVector4<Type>) > m_BufferSize) return Res;
 		Funcs[m_SelectedFunc](&Res, m_ReadBuffer + Position);
 		return Res;
 	}
@@ -1968,7 +2209,7 @@ public:
 	int32_t ReadVec4(LWVector4<Type> *Values, uint32_t Len) {
 		typedef int32_t(*Func_T)(LWVector4<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
-		if (m_Position >= m_BufferSize) return 0;
+		if (m_Position+ (int32_t)(sizeof(LWVector4<Type>)*Len) > m_BufferSize) return 0;
 		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Length;
@@ -1979,6 +2220,7 @@ public:
 	int32_t ReadVec4(LWVector4<Type> *Values, uint32_t Len, int32_t Position) {
 		typedef int32_t(*Func_T)(LWVector4<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		if(Position+ (int32_t)(sizeof(LWVector4<Type>)*Len)>m_BufferSize) return 0;
 		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
 	}
 
@@ -1988,7 +2230,7 @@ public:
 		typedef int32_t(*Func_T)(LWSVector4<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWSVector4<Type> Res;
-		if (m_Position >= m_BufferSize) return Res;
+		if (m_Position+ (int32_t)sizeof(LWSVector4<Type>) > m_BufferSize) return Res;
 		int32_t Length = Funcs[m_SelectedFunc](&Res, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Res;
@@ -2000,6 +2242,7 @@ public:
 		typedef int32_t(*Func_T)(LWSVector4<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWSVector4<Type> Res;
+		if(Position+ (int32_t)sizeof(LWSVector4<Type>)>m_BufferSize) return Res;
 		Funcs[m_SelectedFunc](&Res, m_ReadBuffer + Position);
 		return Res;
 	}
@@ -2009,7 +2252,7 @@ public:
 	int32_t ReadSVec4(LWSVector4<Type> *Values, uint32_t Len) {
 		typedef int32_t(*Func_T)(LWSVector4<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
-		if (m_Position >= m_BufferSize) return 0;
+		if (m_Position+ (int32_t)(sizeof(LWSVector4<Type>)*Len) > m_BufferSize) return 0;
 		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Length;
@@ -2020,6 +2263,7 @@ public:
 	int32_t ReadSVec4(LWSVector4<Type> *Values, uint32_t Len, int32_t Position) {
 		typedef int32_t(*Func_T)(LWSVector4<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		if(Position+ (int32_t)(sizeof(LWSVector4<Type>)*Len)>m_BufferSize) return 0;
 		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
 	}
 
@@ -2029,7 +2273,7 @@ public:
 		typedef int32_t(*Func_T)(LWQuaternion<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWQuaternion<Type> Res;
-		if (m_Position >= m_BufferSize) return Res;
+		if (m_Position+ (int32_t)sizeof(LWQuaternion<Type>) > m_BufferSize) return Res;
 		int32_t Length = Funcs[m_SelectedFunc](&Res, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Res;
@@ -2041,6 +2285,7 @@ public:
 		typedef int32_t(*Func_T)(LWQuaternion<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWQuaternion<Type> Res;
+		if(Position+ (int32_t)sizeof(LWQuaternion<Type>)>m_BufferSize) return Res;
 		Funcs[m_SelectedFunc](&Res, m_ReadBuffer + Position);
 		return Res;
 	}
@@ -2050,7 +2295,7 @@ public:
 	int32_t ReadQuaternion(LWQuaternion<Type> *Values, uint32_t Len) {
 		typedef int32_t(*Func_T)(LWQuaternion<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
-		if (m_Position >= m_BufferSize) return 0;
+		if (m_Position+ (int32_t)(sizeof(LWQuaternion<Type>)*Len) > m_BufferSize) return 0;
 		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Length;
@@ -2061,6 +2306,7 @@ public:
 	int32_t ReadQuaternion(LWQuaternion<Type> *Values, uint32_t Len, int32_t Position) {
 		typedef int32_t(*Func_T)(LWQuaternion<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		if(Position+ (int32_t)(sizeof(LWQuaternion<Type>)*Len)>m_BufferSize) return 0;
 		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
 	}
 
@@ -2071,7 +2317,7 @@ public:
 		typedef int32_t(*Func_T)(LWSQuaternion<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWSQuaternion<Type> Res;
-		if (m_Position >= m_BufferSize) return Res;
+		if (m_Position+ (int32_t)sizeof(LWSQuaternion<Type>) > m_BufferSize) return Res;
 		int32_t Length = Funcs[m_SelectedFunc](&Res, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Res;
@@ -2083,6 +2329,7 @@ public:
 		typedef int32_t(*Func_T)(LWSQuaternion<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWSQuaternion<Type> Res;
+		if(Position+ (int32_t)sizeof(LWSQuaternion<Type>)>m_BufferSize) return Res;
 		Funcs[m_SelectedFunc](&Res, m_ReadBuffer + Position);
 		return Res;
 	}
@@ -2092,7 +2339,7 @@ public:
 	int32_t ReadSQuaternion(LWSQuaternion<Type> *Values, uint32_t Len) {
 		typedef int32_t(*Func_T)(LWSQuaternion<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
-		if (m_Position >= m_BufferSize) return 0;
+		if (m_Position+ (int32_t)(sizeof(LWSQuaternion<Type>)*Len) > m_BufferSize) return 0;
 		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Length;
@@ -2103,6 +2350,7 @@ public:
 	int32_t ReadSQuaternion(LWSQuaternion<Type> *Values, uint32_t Len, int32_t Position) {
 		typedef int32_t(*Func_T)(LWSQuaternion<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		if(Position+ (int32_t)(sizeof(LWSQuaternion<Type>)*Len)>m_BufferSize) return 0;
 		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
 	}
 
@@ -2112,7 +2360,7 @@ public:
 		typedef int32_t(*Func_T)(LWMatrix2<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWMatrix2<Type> Res;
-		if (m_Position >= m_BufferSize) return Res;
+		if (m_Position+ (int32_t)sizeof(LWMatrix2<Type>) > m_BufferSize) return Res;
 		int32_t Length = Funcs[m_SelectedFunc](&Res, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Res;
@@ -2124,6 +2372,7 @@ public:
 		typedef int32_t(*Func_T)(LWMatrix2<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWMatrix2<Type> Res;
+		if(Position+ (int32_t)sizeof(LWMatrix2<Type>)>m_BufferSize) return Res;
 		Funcs[m_SelectedFunc](&Res, m_ReadBuffer + Position);
 		return Res;
 	}
@@ -2133,7 +2382,7 @@ public:
 	int32_t ReadMat2(LWMatrix2<Type> *Values, uint32_t Len) {
 		typedef int32_t(*Func_T)(LWMatrix2<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
-		if (m_Position >= m_BufferSize) return 0;
+		if (m_Position+ (int32_t)(sizeof(LWMatrix2<Type>)*Len) > m_BufferSize) return 0;
 		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Length;
@@ -2144,6 +2393,7 @@ public:
 	int32_t ReadMat2(LWMatrix2<Type> *Values, uint32_t Len, int32_t Position) {
 		typedef int32_t(*Func_T)(LWMatrix2<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		if(Position+ (int32_t)(sizeof(LWMatrix2<Type>)*Len)>m_BufferSize) return 0;
 		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
 	}
 
@@ -2153,7 +2403,7 @@ public:
 		typedef int32_t(*Func_T)(LWMatrix3<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWMatrix3<Type> Res;
-		if (m_Position >= m_BufferSize) return Res;
+		if (m_Position+ (int32_t)sizeof(LWMatrix3<Type>) > m_BufferSize) return Res;
 		int32_t Length = Funcs[m_SelectedFunc](&Res, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Res;
@@ -2165,6 +2415,7 @@ public:
 		typedef int32_t(*Func_T)(LWMatrix3<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWMatrix3<Type> Res;
+		if(Position+ (int32_t)sizeof(LWMatrix3<Type>)>m_BufferSize) return Res;
 		Funcs[m_SelectedFunc](&Res, m_ReadBuffer + Position);
 		return Res;
 	}
@@ -2174,7 +2425,7 @@ public:
 	int32_t ReadMat3(LWMatrix3<Type> *Values, uint32_t Len) {
 		typedef int32_t(*Func_T)(LWMatrix3<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
-		if (m_Position >= m_BufferSize) return 0;
+		if (m_Position+ (int32_t)(sizeof(LWMatrix3<Type>)*Len) > m_BufferSize) return 0;
 		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Length;
@@ -2185,6 +2436,7 @@ public:
 	int32_t ReadMat3(LWMatrix3<Type> *Values, uint32_t Len, int32_t Position) {
 		typedef int32_t(*Func_T)(LWMatrix3<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		if(Position+ (int32_t)(sizeof(LWMatrix3<Type>)*Len)>m_BufferSize) return 0;
 		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
 	}
 
@@ -2194,7 +2446,7 @@ public:
 		typedef int32_t(*Func_T)(LWMatrix4<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWMatrix4<Type> Res;
-		if (m_Position >= m_BufferSize) return Res;
+		if (m_Position+ (int32_t)sizeof(LWMatrix4<Type>) > m_BufferSize) return Res;
 		int32_t Length = Funcs[m_SelectedFunc](&Res, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Res;
@@ -2206,6 +2458,7 @@ public:
 		typedef int32_t(*Func_T)(LWMatrix4<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWMatrix4<Type> Res;
+		if(Position+ (int32_t)sizeof(LWMatrix4<Type>)>m_BufferSize) return Res;
 		Funcs[m_SelectedFunc](&Res, m_ReadBuffer + Position);
 		return Res;
 	}
@@ -2215,7 +2468,7 @@ public:
 	int32_t ReadMat4(LWMatrix4<Type> *Values, uint32_t Len) {
 		typedef int32_t(*Func_T)(LWMatrix4<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
-		if (m_Position >= m_BufferSize) return 0;
+		if (m_Position+ (int32_t)(sizeof(LWMatrix4<Type>)*Len) > m_BufferSize) return 0;
 		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Length;
@@ -2226,6 +2479,7 @@ public:
 	int32_t ReadMat4(LWMatrix4<Type> *Values, uint32_t Len, int32_t Position) {
 		typedef int32_t(*Func_T)(LWMatrix4<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		if(Position+ (int32_t)(sizeof(LWMatrix4<Type>)*Len)>m_BufferSize) return 0;
 		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
 	}
 
@@ -2236,7 +2490,7 @@ public:
 		typedef int32_t(*Func_T)(LWSMatrix4<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWSMatrix4<Type> Res;
-		if (m_Position >= m_BufferSize) return Res;
+		if (m_Position+ (int32_t)sizeof(LWSMatrix4<Type>) > m_BufferSize) return Res;
 		int32_t Length = Funcs[m_SelectedFunc](&Res, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Res;
@@ -2248,6 +2502,7 @@ public:
 		typedef int32_t(*Func_T)(LWSMatrix4<Type> *, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
 		LWSMatrix4<Type> Res;
+		if(Position+ (int32_t)sizeof(LWSMatrix4<Type>)>m_BufferSize) return Res;
 		Funcs[m_SelectedFunc](&Res, m_ReadBuffer + Position);
 		return Res;
 	}
@@ -2257,7 +2512,7 @@ public:
 	int32_t ReadSMat4(LWSMatrix4<Type> *Values, uint32_t Len) {
 		typedef int32_t(*Func_T)(LWSMatrix4<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
-		if (m_Position >= m_BufferSize) return 0;
+		if (m_Position+ (int32_t)(sizeof(LWSMatrix4<Type>)*Len) > m_BufferSize) return 0;
 		int32_t Length = Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + m_Position);
 		m_Position += Length;
 		return Length;
@@ -2268,6 +2523,7 @@ public:
 	int32_t ReadSMat4(LWSMatrix4<Type> *Values, uint32_t Len, int32_t Position) {
 		typedef int32_t(*Func_T)(LWSMatrix4<Type> *, uint32_t, const int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
+		if(Position+ (int32_t)(sizeof(LWSMatrix4<Type>)*Len)>m_BufferSize) return 0;
 		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
 	}
 
@@ -2281,30 +2537,37 @@ public:
 	int32_t Read(Type *Values, uint32_t Len, int32_t Position){
 		typedef int32_t (*Func_T)(Type *, uint32_t, const int8_t);
 		Func_T Funcs[] = { LWByteBuffer::Read, LWByteBuffer::ReadNetwork };
-		if (Position >= m_BufferSize) return 0;
+		if (Position+ (int32_t)(sizeof(Type)*Len) > m_BufferSize) return 0;
 		return Funcs[m_SelectedFunc](Values, Len, m_ReadBuffer + Position);
 	}
 
-	/*! \brief reads an utf8 string from the buffer.
+	/*! \brief reads an utfX string from the buffer.
 		\param Out the buffer to receive the text.
 		\param OutLen the length of the buffer to receive the text.
-		\sa int32_t ReadUTF8(int8_t *, uint32_t, const int8_t *)
+		\sa int32_t ReadUTF(int8_t *, uint32_t, const int8_t *)
 	*/
-	int32_t ReadUTF8(uint8_t *Out, uint32_t OutLen);
+	template<class Type>
+	int32_t ReadUTF(Type *Out, uint32_t OutLen) {
+		typedef int32_t(*Func_T)(Type *, uint32_t, const int8_t*, const uint32_t);
+		Func_T Funcs[] = { LWByteBuffer::ReadUTF<Type>, LWByteBuffer::ReadNetworkUTF<Type> };
+		int32_t Length = Funcs[m_SelectedFunc](Out, OutLen, m_ReadBuffer + m_Position, (uint32_t)(m_BufferSize - m_Position));
+		m_Position += Length;
+		return Length;
+	}
 
-	/*! \overload int32_t ReadUTF8(char *, uint32_t) */
-	int32_t ReadUTF8(char *Out, uint32_t OutLen);
-
-	/*! \brief reads an utf8 string from the buffer at position.
+	/*! \brief reads an utfX string from the buffer at position.
 		\param Out the buffer to receive the text.
 		\param OutLen the length of the buffer to receive the text.
 		\param Position the position of the buffer to read from.
-		\sa int32_t ReadUTF8(int8_t *, uint32_t, const int8_t *)
+		\sa int32_t ReadUTF(int8_t *, uint32_t, const int8_t *)
 	*/
-	int32_t ReadUTF8(uint8_t *Out, uint32_t OutLen, int32_t Position);
-
-	/*! \overload int32_t ReadUTF8(char *, uint32_t, uint32_t) */
-	int32_t ReadUTF8(char *Out, uint32_t OutLen, int32_t Position);
+	template<class Type>
+	int32_t ReadUTF(Type *Out, uint32_t OutLen, int32_t Position) {
+		typedef int32_t(*Func_T)(Type *, uint32_t, const int8_t*, const uint32_t);
+		Func_T Funcs[] = { LWByteBuffer::ReadUTF<Type>, LWByteBuffer::ReadNetworkUTF<Type> };
+		if (Position >= m_BufferSize) return 0;
+		return Funcs[m_SelectedFunc](Out, OutLen, m_ReadBuffer + Position, (uint32_t)(m_BufferSize - Position));
+	}
 
 	/*!< \brief reads a null terminated string from the buffer.
 	\param Out the buffer to receive the text.
@@ -2335,41 +2598,41 @@ public:
 	*/
 	LWByteBuffer &SetPosition(int32_t Position);
 
-	/*! \brief offset's the position to the next alignment. 
+	/*! \brief offset's the position to the next alignment.
 		\param Write, add the offset to bytesWritten.
+		\return the number of bytes that need to be added for alignment.
+		\note Alignment must be a power 2.
 	*/
-	LWByteBuffer &AlignPosition(uint32_t Alignment, bool Write=false);
+	int32_t AlignPosition(uint32_t Alignment, bool Write=false);
 
 	/*! \brief Offset's the position of the buffer stream.
 		\param Offset the offset to apply to position.
 		\return Returns the LWByteBuffer object.
 	*/
-	LWByteBuffer &OffsetPosition(int32_t Offset);
+	LWByteBuffer &Seek(int32_t Offset, bool Write=false);
 
 	/*! \brief returns size of the buffer.
 	*/
-	int32_t GetBufferSize(void);
+	int32_t GetBufferSize(void) const;
 
 	/*! \brief returns the number of bytes written.
 	*/
-	int32_t GetBytesWritten(void);
+	int32_t GetBytesWritten(void) const;
 
 	/*! \brief returns the position of the buffer for read/writing.
 	*/
-	int32_t GetPosition(void);
+	int32_t GetPosition(void) const;
 
-	/*! \brief returns if we've reached the end of readable data.
-	*/
-	bool EndOfData(void);
-	
-	/*! \brief returns if we've reached the end of writable data.
-	*/
-	bool EndOfBuffer(void);
+	//returns true if Position>=BufferLength.
+	bool IsEndOfReadData(void) const;
+
+	//returns true if WritePosition >=BufferLength || !m_WriteBuffer.
+	bool IsEndOfWriteData(void) const;
 
 	/*! \brief returns the read buffer of the object.
 		\return the read buffer.
 	*/
-	const int8_t *GetReadBuffer(void);
+	const int8_t *GetReadBuffer(void) const;
 
 	/*! \brief Constructs a LWByteBuffer object where Buffer can be read/written to.
 		\param Buffer the buffer object that can be read/written to.
@@ -2384,6 +2647,9 @@ public:
 		\param Flag the flags for the buffer to use.
 	*/
 	LWByteBuffer(const int8_t *ReadBuffer, uint32_t BufferSize, uint8_t Flag = 0);
+
+	/*!< \brief default constructor for buffer's, can be used for calculating write size's, but no data will be written. */
+	LWByteBuffer() = default;
 
 	/*! \brief Deconstruct that cleans up write buffer if the BufferNotOwned flag wasn't set. */
 	~LWByteBuffer();
@@ -3049,7 +3315,6 @@ inline int32_t LWByteBuffer::WriteNetwork<double>(int8_t *Buffer, uint32_t Len, 
 	if (Buffer) for (uint32_t i = 0; i < Len; i++) *(((int64_t*)Buffer) + i) = MakeNetwork(va_arg(lst, double));
 	return sizeof(double)*Len;
 }
-
 
 template<>
 inline int32_t LWByteBuffer::ReadNetwork<float>(float *Out, const int8_t *Buffer){

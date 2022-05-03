@@ -1,52 +1,80 @@
 #ifndef LWEXML_H
 #define LWEXML_H
-#include <LWCore/LWText.h>
 #include <functional>
 #include "LWETypes.h"
+#include <LWCore/LWUnicode.h>
 
 #define LWEXMLMAXNAMELEN 32
 #define LWEXMLMAXVALUELEN 256
 #define LWEXMLMAXTEXTLEN 1024
 
-struct LWXMLAttribute {
-	char m_Name[LWEXMLMAXNAMELEN];
-	char m_Value[LWEXMLMAXVALUELEN];
+/*!< \brief Callback for xml parsing various nodes.  return true if the parser also parses the children nodes, otherwise return false to let the xml process parse children. */
+typedef std::function<bool(LWEXMLNode*, void*, LWEXML*)> LWEXMLParseCallback;
+
+struct LWEXMLAttribute {
+	char8_t m_Name[LWEXMLMAXNAMELEN]="";
+	char8_t m_Value[LWEXMLMAXVALUELEN]="";
+	uint32_t m_NameHash = LWCrypto::FNV1AHash;
+
+	LWEXMLAttribute &SetName(const LWUTF8Iterator &Name);
+
+	LWEXMLAttribute &SetValue(const LWUTF8Iterator &Value);
+
+	LWUTF8Iterator GetName(void) const;
+
+	LWUTF8Iterator GetValue(void) const;
+
+	LWEXMLAttribute(const LWUTF8Iterator &Name, const LWUTF8Iterator &Value);
+
+	LWEXMLAttribute() = default;
 };
 
 struct LWEXMLNode {
 	enum {
 		MaxAttributes = 32
 	};
-	LWXMLAttribute m_Attributes[MaxAttributes];
-	char m_Text[LWEXMLMAXTEXTLEN];
-	char m_Name[LWEXMLMAXNAMELEN];
-	uint32_t m_AttributeCount;
-	LWEXMLNode *m_Parent;
-	LWEXMLNode *m_Next;
-	LWEXMLNode *m_FirstChild;
-	LWEXMLNode *m_LastChild;
+	char8_t m_Text[LWEXMLMAXTEXTLEN]="";
+	char8_t m_Name[LWEXMLMAXNAMELEN]="";
+	LWEXMLAttribute m_Attributes[MaxAttributes];
+	LWEXMLNode *m_Parent = nullptr;
+	LWEXMLNode *m_Next = nullptr;
+	LWEXMLNode *m_FirstChild = nullptr;
+	LWEXMLNode *m_LastChild = nullptr;
+	uint32_t m_AttributeCount = 0;
+	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 
-	bool PushAttribute(const char *Name, const char *Value);
-
-	bool PushAttributef(const char *Name, const char *ValueFmt, ...);
+	bool PushAttribute(const LWEXMLAttribute &Attr);
 
 	bool RemoveAttribute(uint32_t i);
 
-	bool RemoveAttribute(LWXMLAttribute *Attr);
+	bool RemoveAttribute(LWEXMLAttribute *Attr);
 
-	LWEXMLNode &SetName(const char *Name);
+	LWUTF8Iterator GetName(void) const;
 
-	LWEXMLNode &SetText(const char *Text);
+	LWUTF8Iterator GetText(void) const;
 
-	LWEXMLNode &SetTextf(const char *TextFmt, ...);
+	LWEXMLNode &SetName(const LWUTF8Iterator &Name);
 
-	LWXMLAttribute *FindAttribute(const LWText &Name);
+	LWEXMLNode &SetText(const LWUTF8Iterator &Text);
+
+	LWEXMLAttribute *FindAttribute(const LWUTF8Iterator &Name);
+
+	LWEXMLAttribute *FindAttribute(uint32_t NameHash);
+
+	LWEXMLNode(const LWUTF8Iterator &Name);
+
+	LWEXMLNode() = default;
 };
 
 struct LWEXMLParser {
-	char m_Name[LWEXMLMAXNAMELEN];
-	std::function<bool(LWEXMLNode *, void *, LWEXML *)> m_Callback;
-	void *m_UserData;
+	char m_Name[LWEXMLMAXNAMELEN]="";
+	LWEXMLParseCallback m_Callback = nullptr;
+	void *m_UserData = nullptr;
+	uint32_t m_NameHash = LWCrypto::FNV1AHash;
+
+	LWEXMLParser(const LWUTF8Iterator &Name, LWEXMLParseCallback Callback, void *UserData);
+
+	LWEXMLParser() = default;
 };
 
 class LWEXML {
@@ -56,28 +84,28 @@ public:
 		MaxParsers = 32
 	};
 
-	static bool LoadFile(LWEXML &XML, LWAllocator &Allocator, const LWText &Path, bool StripFormatting, LWEXMLNode *Parent, LWEXMLNode *Prev, LWFileStream *ExistingStream = nullptr);
+	static bool LoadFile(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterator &Path, bool StripFormatting, LWEXMLNode *Parent, LWEXMLNode *Prev, LWFileStream *ExistingStream = nullptr);
 
-	static bool LoadFile(LWEXML &XML, LWAllocator &Allocator, const LWText &Path, bool StripFormatting, LWFileStream *ExistingStream = nullptr);
+	static bool LoadFile(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterator &Path, bool StripFormatting, LWFileStream *ExistingStream = nullptr);
 
-	static bool ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const char *Buffer, bool StripFormatting, LWEXMLNode *Parent, LWEXMLNode *Prev);
+	static bool ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterator &Source, bool StripFormatting, LWEXMLNode *Parent, LWEXMLNode *Prev);
 
-	static bool ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const char *Buffer, bool StripFormatting);
+	static bool ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterator &Source, bool StripFormatting);
 
-	static uint32_t ConstructBuffer(LWEXML &XML, char *Buffer, uint32_t BufferLen, bool Format);
+	static uint32_t ConstructBuffer(LWEXML &XML, char8_t *Buffer, uint32_t BufferLen, bool Format);
 
 	LWEXMLNode *NextNode(LWEXMLNode *Current, bool SkipChildren=false);
 
 	LWEXMLNode *NextNode(LWEXMLNode *Current, LWEXMLNode *Top, bool SkipChildren = false);
 
-	LWEXMLNode *NextNodeWithName(LWEXMLNode *Current, const LWText &Name, bool SkipChildren =false);
+	LWEXMLNode *NextNodeWithName(LWEXMLNode *Current, const LWUTF8Iterator &Name, bool SkipChildren =false);
 
 	template<class Method, class Obj>
-	LWEXML &PushMethodParser(const LWText &XMLNodeName, Method CB, Obj *O, void *UserData) {
+	LWEXML &PushMethodParser(const LWUTF8Iterator &XMLNodeName, Method CB, Obj *O, void *UserData) {
 		return PushParser(XMLNodeName, std::bind(CB, O, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), UserData);
 	}
 
-	LWEXML &PushParser(const LWText &XMLNodeName, std::function<bool(LWEXMLNode*, void*, LWEXML*)> Callback, void *UserData);
+	LWEXML &PushParser(const LWUTF8Iterator &XMLNodeName, std::function<bool(LWEXMLNode*, void*, LWEXML*)> Callback, void *UserData);
 
 	LWEXML &Process(void);
 
@@ -87,17 +115,17 @@ public:
 
 	LWEXMLNode *GetLastNode(void);
 
-	LWEXML();
+	LWEXML() = default;
 
 	~LWEXML();
 
 private:
-	LWEXMLNode **m_NodePool;
 	LWEXMLParser m_Parsers[MaxParsers];
-	uint32_t m_NodeCount;
-	uint32_t m_ParserCount;
-	LWEXMLNode *m_FirstNode;
-	LWEXMLNode *m_LastNode;
+	LWEXMLNode **m_NodePool = nullptr;
+	uint32_t m_NodeCount = 0;
+	uint32_t m_ParserCount = 0;
+	LWEXMLNode *m_FirstNode = nullptr;
+	LWEXMLNode *m_LastNode = nullptr;
 };
 
 #endif

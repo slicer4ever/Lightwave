@@ -6,6 +6,21 @@
 	@{
 */
 
+
+/*!< \brief base format that all LWVideo resources(LWVideoBuffer, LWTexture, LWShader, LWPipeline, LWFrameBuffer), inherit to identify them when passed to a pipeline to prevent incorrect type mapping. */
+class LWVideoResource {
+public:
+	/*!< \brief dynamic cast the resource to the specified type, returns null if this is not that type. */
+	template<class Type>
+	Type *As(void) {
+		return dynamic_cast<Type*>(this);
+	}
+
+	/*!< \brief virtual destructor to make class polymorphic. */
+	virtual ~LWVideoResource() {}
+};
+
+
 class LWImage;
 
 class LWFrameBuffer;

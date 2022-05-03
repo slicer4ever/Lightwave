@@ -1,26 +1,12 @@
 #include "LWCore/LWSMatrix.h"
 #include "LWCore/LWSQuaternion.h"
-#ifndef LW_NOAVX2
+#ifdef __AVX2__
 
 LWMatrix4<float> LWSMatrix4<float>::AsMat4(void) const {
 	alignas(64) LWMatrix4<float> R;
 	_mm256_store_ps(&R.m_Rows[0].x, m_Row01);
 	_mm256_store_ps(&R.m_Rows[2].x, m_Row23);
 	return R;
-}
-
-float *LWSMatrix4<float>::AsArray(void) {
-	return (float*)&m_Row01;
-}
-
-const float *LWSMatrix4<float>::AsArray(void) const {
-	return (float*)&m_Row01;
-}
-
-LWSMatrix4<float> &LWSMatrix4<float>::sRC(uint32_t Row, uint32_t Column, float Value) {
-	float *v = AsArray();
-	v[Row * 4 + Column] = Value;
-	return *this;
 }
 
 LWSVector4<float> LWSMatrix4<float>::DecomposeScale(bool doTranspose3x3) const {
@@ -160,7 +146,7 @@ LWSMatrix4<float> LWSMatrix4<float>::Inverse(void) const {
 	__m128 DyyyCy = _mm_blend_ps(Dyyyy, Cyyyy, 0x8);
 	__m128 CxxBxx = _mm_blend_ps(Cxxxx, Bxxxx, 0xC);
 	__m128 DxxxCx = _mm_blend_ps(Dxxxx, Cxxxx, 0x8);
-
+	
 	__m128 A2323_A2323_A1323_A1223 = _mm_sub_ps(_mm_mul_ps(Czzyy, Dwwwz), _mm_mul_ps(Cwwwz, Dzzyy));
 	__m128 A1323_A0323_A0323_A0223 = _mm_sub_ps(_mm_mul_ps(Cyxxx, Dwwwz), _mm_mul_ps(Cwwwz, Dyxxx));
 	__m128 A1223_A0223_A0123_A0123 = _mm_sub_ps(_mm_mul_ps(Cyxxx, Dzzyy), _mm_mul_ps(Czzyy, Dyxxx));
@@ -171,7 +157,7 @@ LWSMatrix4<float> LWSMatrix4<float>::Inverse(void) const {
 	__m128 A0323_A0323_A0313_A0312 = _mm_sub_ps(_mm_mul_ps(CxxBxx, DwwwCw), _mm_mul_ps(CwwBww, DxxxCx));
 	__m128 A0223_A0223_A0213_A0212 = _mm_sub_ps(_mm_mul_ps(CxxBxx, DzzzCz), _mm_mul_ps(CzzBzz, DxxxCx));
 	__m128 A0123_A0123_A0113_A0112 = _mm_sub_ps(_mm_mul_ps(CxxBxx, DyyyCy), _mm_mul_ps(CyyByy, DxxxCx));
-
+	
 	__m128 NegA = _mm_set_ps(0.0f, -0.0f, 0.0f, -0.0f);
 	__m128 NegB = _mm_set_ps(-0.0f, 0.0f, -0.0f, 0.0f);
 
@@ -185,15 +171,15 @@ LWSMatrix4<float> LWSMatrix4<float>::Inverse(void) const {
 	__m128 Det = _mm_xor_ps(_mm_mul_ps(_mm_add_ps(_mm_sub_ps(PtA, PtB), Ptc), A), NegA);
 	Det = _mm_hadd_ps(Det, Det);
 	Det = _mm_hadd_ps(Det, Det);
+	//std::cout << "Det: " << LWSVector4<float>(Det) << std::endl;
 	__m128 rDet = _mm_div_ps(One, Det);
 	rDet = _mm_blendv_ps(rDet, Zero, _mm_cmple_ps(_mm_andnot_ps(_mm_set_ps1(-0.0f), Det), e));
-
-
 
 	__m128 ByAyyy = _mm_blend_ps(Byyyy, Ayyyy, 0xE);
 	__m128 BzAzzz = _mm_blend_ps(Bzzzz, Azzzz, 0xE);
 	__m128 BwAwww = _mm_blend_ps(Bwwww, Awwww, 0xE);
 	__m128 BxAxxx = _mm_blend_ps(Bxxxx, Axxxx, 0xE);
+
 	A = _mm_mul_ps(rDet, _mm_xor_ps(NegA, _mm_add_ps(_mm_sub_ps(_mm_mul_ps(ByAyyy, A2323_A2323_A2313_A2312), _mm_mul_ps(BzAzzz, A1323_A1323_A1313_A1312)), _mm_mul_ps(BwAwww, A1223_A1223_A1213_A1212))));
 	//A = (ByAyyy * A2323_A2323_A2313_A2312 - BzAzzz * A1323_A1323_A1313_A1312 + BwAwww * A1223_A1223_A1213_A1212) * MulA * Det;
 	B = _mm_mul_ps(rDet, _mm_xor_ps(NegB, _mm_add_ps(_mm_sub_ps(_mm_mul_ps(BxAxxx, A2323_A2323_A2313_A2312), _mm_mul_ps(BzAzzz, A0323_A0323_A0313_A0312)), _mm_mul_ps(BwAwww, A0223_A0223_A0213_A0212))));
@@ -217,15 +203,6 @@ LWSVector4<float> LWSMatrix4<float>::Column(uint32_t Index) const {
 	else if (Index == 3) R = _mm256_extractf128_ps(T.m_Row23, 1);
 	return LWSVector4<float>(R);
 };
-
-LWSVector4<float> LWSMatrix4<float>::Row(uint32_t Index) const {
-	__m128 R;
-	if (Index == 0) R = _mm256_extractf128_ps(m_Row01, 0);
-	else if (Index == 1) R = _mm256_extractf128_ps(m_Row01, 1);
-	else if (Index == 2) R = _mm256_extractf128_ps(m_Row23, 0);
-	else if (Index == 3) R = _mm256_extractf128_ps(m_Row23, 1);
-	return LWSVector4<float>(R);
-}
 
 LWSMatrix4<float> LWSMatrix4<float>::Transpose(void) const {
 	__m256 A = _mm256_unpacklo_ps(m_Row01, m_Row23);
@@ -329,6 +306,14 @@ LWSMatrix4<float>& LWSMatrix4<float>::operator*= (const LWSMatrix4<float>& Rhs) 
 	m_Row23 = _mm256_add_ps(m_Row23, _mm256_mul_ps(CDzw, Rhs.m_Row23));
 	m_Row23 = _mm256_add_ps(m_Row23, _mm256_mul_ps(CDwz, Row32));
 	return *this;
+}
+
+LWSVector4<float> LWSMatrix4<float>::operator[](uint32_t i) const {
+	return m_Rows[i];
+}
+
+LWSVector4<float> &LWSMatrix4<float>::operator[](uint32_t i) {
+	return m_Rows[i];
 }
 
 LWSMatrix4<float>& LWSMatrix4<float>::operator *=(float Rhs) {
@@ -460,6 +445,34 @@ LWSVector4<float> operator * (const LWSVector4<float>& Lhs, const LWSMatrix4<flo
 	r = _mm256_add_ps(r, _mm256_mul_ps(Lzw, Rhs.m_Row23));
 	r = _mm256_add_ps(r, _mm256_permutevar8x32_ps(r, _mm256_set_epi32(3, 2, 1, 0, 7, 6, 5, 4)));
 	return LWSVector4<float>(_mm256_extractf128_ps(r, 0));
+}
+
+LWSMatrix4<float> LWSMatrix4<float>::FromEuler(float Pitch, float Yaw, float Roll) {
+	float c1 = cosf(Yaw);
+	float c2 = cosf(Pitch);
+	float c3 = cosf(Roll);
+	float s1 = sinf(Yaw);
+	float s2 = sinf(Pitch);
+	float s3 = sinf(Roll);
+	float s1s2 = s1 * s2;
+	return LWSMatrix4<float>({ c1 * c2, s1 * s3 - c1 * s2 * c3, c1 * s2 * s3 + s1 * c3, 0.0 },
+		{ s2, c2 * c3, -c2 * s3, 0.0 },
+		{ -s1 * c2, s1s2 * c3 + c1 * s3, -s1s2 * s3 + c1 * c3, 0.0 },
+		{ 0.0, 0.0, 0.0, 1.0 });
+}
+
+LWSMatrix4<float> LWSMatrix4<float>::FromEuler(const LWVector3<float> &Euler) {
+	return FromEuler(Euler.x, Euler.y, Euler.z);
+}
+
+LWVector3<float> LWSMatrix4<float>::ToEuler(void) const {
+	const float e = std::numeric_limits<float>::epsilon();
+	if (m_Rows[1].x > 1.0f - e) {
+		return LWVector3<float>(LW_PI_2, atan2f(m_Rows[0].z, m_Rows[2].z), 0.0);
+	} else if (m_Rows[1].x < -1.0f + e) {
+		return LWVector3<float>(-LW_PI_2, atan2f(m_Rows[0].z, m_Rows[2].z), 0.0);
+	}
+	return LWVector3<float>(asinf(m_Rows[1].x), atan2f(-m_Rows[2].x, m_Rows[0].x), atan2f(-m_Rows[1].z, m_Rows[1].y));
 }
 
 LWSMatrix4<float> LWSMatrix4<float>::RotationX(float Theta) {

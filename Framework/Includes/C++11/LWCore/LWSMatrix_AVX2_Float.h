@@ -6,17 +6,16 @@
 #include <immintrin.h>
 
 template<>
-struct LWSMatrix4<float> {
-	__m256 m_Row01;
-	__m256 m_Row23;
+struct alignas(__m256[2]) LWSMatrix4<float> {
+	union {
+		struct {
+			__m256 m_Row01;
+			__m256 m_Row23;
+		};
+		LWSVector4<float> m_Rows[4];
+	};
 
 	LWMatrix4<float> AsMat4(void) const;
-
-	float *AsArray(void);
-
-	const float *AsArray(void) const;
-
-	LWSMatrix4<float> &sRC(uint32_t Row, uint32_t Column, float Value);
 
 	LWSVector4<float> DecomposeScale(bool doTranspose3x3) const;
 
@@ -27,8 +26,6 @@ struct LWSMatrix4<float> {
 	LWSMatrix4<float> Inverse(void) const;
 	
 	LWSVector4<float> Column(uint32_t Index) const;
-	
-	LWSVector4<float> Row(uint32_t Index) const;
 
 	LWSMatrix4<float> Transpose(void) const;
 	
@@ -37,6 +34,10 @@ struct LWSMatrix4<float> {
 	LWSMatrix4<float> Transpose2x2(void) const;
 	
 	float Determinant(void) const;
+
+	LWSVector4<float> operator[](uint32_t i) const;
+
+	LWSVector4<float> &operator[](uint32_t i);
 
 	LWSMatrix4<float>& operator = (const LWSMatrix4<float>& Rhs);
 
@@ -73,6 +74,12 @@ struct LWSMatrix4<float> {
 	friend LWSVector4<float> operator * (const LWSMatrix4<float>& Lhs, const LWSVector4<float>& Rhs);
 
 	friend LWSVector4<float> operator * (const LWSVector4<float>& Lhs, const LWSMatrix4<float>& Rhs);
+
+	static LWSMatrix4<float> FromEuler(float Pitch, float Yaw, float Roll);
+
+	static LWSMatrix4<float> FromEuler(const LWVector3<float> &Euler);
+
+	LWVector3<float> ToEuler(void) const;
 
 	static LWSMatrix4<float> RotationX(float Theta);
 

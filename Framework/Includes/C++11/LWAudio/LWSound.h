@@ -26,7 +26,7 @@ public:
 	static uint32_t CalculatePosition(float Time, uint32_t SampleRate);
 
 	/*!< \brief calculates a time stamp based on the sample position. */
-	static float CalculateTime(uint32_t SamplePos, uint32_t SampleRate); 
+	static float CalculateTime(uint32_t SamplePos, uint32_t SampleRate);
 
 	/*!< \brief updates the volume of the sound object. 
 		 \param MakeEvent will add an event to the audiodriver to change the volume, this parameter should be ignored by the application.

@@ -14,7 +14,7 @@
 
 bool LWAudioDriver::PreUpdateSoundsPlatform(uint64_t ElapsedTime) {
 	if (!isUpdatingListenerPosition()) return true;
-	LWVector3f Up = -m_ListenerMatrix.m_Rows[1].xyz();
+	LWVector3f Up = m_ListenerMatrix.m_Rows[1].xyz();
 	LWVector3f Fwrd = m_ListenerMatrix.m_Rows[2].xyz();
 	LWVector3f Pos = m_ListenerMatrix.m_Rows[3].xyz();
 	float OrientVals[6] = { Fwrd.x, Fwrd.y, Fwrd.z, Up.x, Up.y, Up.z };
@@ -114,6 +114,7 @@ bool LWAudioDriver::ProcessVolumeEventPlatform(uint32_t EventID, uint32_t EventD
 		float Vol = Iter->GetVolume()*m_MasterVolume*m_ChannelVolumes[Iter->GetChannel()];
 		if (Iter->isMuted()) Vol = 0.0f;
 		alSourcef(Context.m_Source, AL_GAIN, Vol);
+		alSourcef(Context.m_Source, AL_MAX_GAIN, Vol);
 	}
 	return true;
 }
@@ -143,7 +144,6 @@ bool LWAudioDriver::ProcessFocusMuteEventPlatform(uint32_t EventID, uint32_t Eve
 }
 
 bool LWAudioDriver::UpdateSoundPlatform(LWSound *Sound, uint64_t ElapsedTime) {
-
 	//X3DAUDIO_DSP_SETTINGS dspSettings = { 0 };
 	//float SndMatrix[16];
 	//float channelThetas[2];
@@ -155,11 +155,10 @@ bool LWAudioDriver::UpdateSoundPlatform(LWSound *Sound, uint64_t ElapsedTime) {
 		if ((Flag&LWSound::PositionChanged) != 0 || isUpdatingListenerPosition()) {
 			LWVector3f Pos = Sound->Get3DPosition();
 			float CurveDistance = Sound->GetCurveDistance();
-
-			alSourcef(Context.m_Source, AL_MAX_GAIN, 1.0f);
-			alSourcef(Context.m_Source, AL_MAX_DISTANCE, CurveDistance*64.0f);
-			alSourcef(Context.m_Source, AL_REFERENCE_DISTANCE, CurveDistance*2.0f);
+			float Volume = Sound->GetVolume();
+			alSourcef(Context.m_Source, AL_REFERENCE_DISTANCE, CurveDistance);
 			alSourcefv(Context.m_Source, AL_POSITION, &Pos.x);
+			Sound->SetFlag(Flag & ~LWSound::PositionChanged);
 		}
 	}
 	uint64_t Time = Sound->GetTimePlayed();
@@ -172,7 +171,6 @@ bool LWAudioDriver::UpdateSoundPlatform(LWSound *Sound, uint64_t ElapsedTime) {
 	uint64_t TimePerSlice = SamplesPerSlice * TimePerSample;
 	bool Playing = Sound->isPlaying();
 	if (Playing) Time += (uint64_t)(ElapsedTime*Sound->GetSpeed());
-
 	uint32_t TotalSlices = (Stream->GetSampleLength() + (SamplesPerSlice - 1)) / SamplesPerSlice;
 	uint64_t LoadedSamples = Sound->GetSamplesLoaded();
 
@@ -192,8 +190,11 @@ bool LWAudioDriver::UpdateSoundPlatform(LWSound *Sound, uint64_t ElapsedTime) {
 		char *Samples = Stream->DecodeSamples(Reserve, SliceIdx*SamplesPerSlice, SliceSamples);
 		if (Reserve == Samples) Context.m_ReserveIdx++;
 		uint32_t Seek = Context.m_SeekSamples*FrameSize;
+		//Unqueue first:
+		if (Context.m_BufferIdx >= LWSOUND_RESERVECNT) alSourceUnqueueBuffers(Context.m_Source, 1, &Context.m_Buffers[BufferIdx]);
 		alBufferData(Context.m_Buffers[BufferIdx], ALFormat, Samples+Seek, SliceSamples*FrameSize-Seek, Stream->GetSampleRate());
 		alSourceQueueBuffers(Context.m_Source, 1, &Context.m_Buffers[BufferIdx]);
+
 		Context.m_BufferIdx++;
 		LoadedSamples += SliceSamples;
 		PreloadedSlices++;
@@ -219,7 +220,8 @@ bool LWAudioDriver::CreateSoundPlatform(LWSound *Sound) {
 	alGenSources(1, &Context.m_Source);
 	alGenBuffers(LWSOUND_RESERVECNT, Context.m_Buffers);
 	if (SoundType == LWSound::Sound3D) {
-		alSourcef(Context.m_Source, AL_MAX_GAIN, 0.0f);
+		alSourcef(Context.m_Source, AL_MAX_GAIN, 1.0f);
+		alSourcef(Context.m_Source, AL_MIN_GAIN, 0.0f);
 	} else {
 		alSourcef(Context.m_Source, AL_ROLLOFF_FACTOR, 0.0f);
 		alSourcei(Context.m_Source, AL_SOURCE_RELATIVE, 1);
