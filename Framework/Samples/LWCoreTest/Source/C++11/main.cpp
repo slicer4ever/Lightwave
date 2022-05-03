@@ -2176,14 +2176,14 @@ bool PerformLWUnicodeTest(void) {
 	if (!TestEquality("LWUnicodeIterator::Create<ValidText>", LWUnicodeIterator<Type>::Create(SampleIterator, ValidText.m_Data, ValidText.m_DataLen, Len, RawLen), true)) return false;
 	if (!TestEquality("LWUnicodeIterator::RawLen==ValidTextRawLen", RawLen, ValidText.m_DataLen)) return false;
 	if (!TestEquality("LWUnicodeIterator::Len==ValidTextLen", Len + 1, (uint32_t)(sizeof(ValidText32) / sizeof(char32_t)))) return false; /*Len+1 to include null char */
-	if (!TestEquality("LWUnicodeIterator::MakeUTF8<Null>", SampleIterator.MakeUTF<char8_t>(nullptr, 0), (uint32_t)sizeof(ValidText8))) return false;
-	if (!TestEquality("LWUnicodeIterator::MakeUTF8", SampleIterator.MakeUTF<char8_t>(ValidText8Res, sizeof(ValidText8Res)), (uint32_t)sizeof(ValidText8))) return false;
+	if (!TestEquality("LWUnicodeIterator::MakeUTF8<Null>", SampleIterator.template MakeUTF<char8_t>(nullptr, 0), (uint32_t)sizeof(ValidText8))) return false;
+	if (!TestEquality("LWUnicodeIterator::MakeUTF8", SampleIterator.template MakeUTF<char8_t>(ValidText8Res, sizeof(ValidText8Res)), (uint32_t)sizeof(ValidText8))) return false;
 	if (!TestEquality("MakeUTF8==ValidText8", sizeof(ValidText8), ValidText8Res, ValidText8)) return false;
-	if (!TestEquality("LWUnicodeIterator::MakeUTF16<Null>", SampleIterator.MakeUTF<char16_t>(nullptr, 0), (uint32_t)(sizeof(ValidText16) / sizeof(char16_t)))) return false;
-	if (!TestEquality("LWUnicodeIterator::MakeUTF16", SampleIterator.MakeUTF<char16_t>(ValidText16Res, sizeof(ValidText16Res) / sizeof(char16_t)), (uint32_t)(sizeof(ValidText16) / sizeof(char16_t)))) return false;
+	if (!TestEquality("LWUnicodeIterator::MakeUTF16<Null>", SampleIterator.template MakeUTF<char16_t>(nullptr, 0), (uint32_t)(sizeof(ValidText16) / sizeof(char16_t)))) return false;
+	if (!TestEquality("LWUnicodeIterator::MakeUTF16", SampleIterator.template MakeUTF<char16_t>(ValidText16Res, sizeof(ValidText16Res) / sizeof(char16_t)), (uint32_t)(sizeof(ValidText16) / sizeof(char16_t)))) return false;
 	if (!TestEquality("MakeUTF16==ValidText16", sizeof(ValidText16) / sizeof(char16_t), ValidText16Res, ValidText16)) return false;
-	if (!TestEquality("LWUnicodeIterator::MakeUTF32<Null>", SampleIterator.MakeUTF<char32_t>(nullptr, 0), (uint32_t)(sizeof(ValidText32) / sizeof(char32_t)))) return false;
-	if (!TestEquality("LWUnicodeIterator::MakeUTF32", SampleIterator.MakeUTF<char32_t>(ValidText32Res, sizeof(ValidText32Res) / sizeof(char32_t)), (uint32_t)(sizeof(ValidText32) / sizeof(char32_t)))) return false;
+	if (!TestEquality("LWUnicodeIterator::MakeUTF32<Null>", SampleIterator.template MakeUTF<char32_t>(nullptr, 0), (uint32_t)(sizeof(ValidText32) / sizeof(char32_t)))) return false;
+	if (!TestEquality("LWUnicodeIterator::MakeUTF32", SampleIterator.template MakeUTF<char32_t>(ValidText32Res, sizeof(ValidText32Res) / sizeof(char32_t)), (uint32_t)(sizeof(ValidText32) / sizeof(char32_t)))) return false;
 	if (!TestEquality("MakeUTF32==ValidText32", sizeof(ValidText32) / sizeof(char32_t), ValidText32Res, ValidText32)) return false;
 	if (!PerformTest("SampleIterator Compare ValidText", [&SampleIterator, &ValidText]()->bool {
 		return SampleIterator.Compare(ValidText.m_Data); }, true)) return false;

@@ -104,7 +104,7 @@ uint32_t LWByteStream::GetRemainingCache(void) const {
 	return m_CachedBufferLength - m_Position;
 }
 
-LWByteStream::LWByteStream(uint32_t CachedBufferLength, std::function<int32_t(int8_t*, uint32_t, void*)> DataReadCallback, uint32_t Flag, void *UserData, LWAllocator &Allocator) : m_ReadCallback(DataReadCallback), m_UserData(UserData), m_TargetCachedLength(CachedBufferLength), m_SelectedFunc((Flag&Network) == 0 ? 0 : 1), m_Flag(Flag), m_Allocator(&Allocator) {
+LWByteStream::LWByteStream(uint32_t CachedBufferLength, std::function<int32_t(int8_t*, uint32_t, void*)> DataReadCallback, uint32_t Flag, void *UserData, LWAllocator &Allocator) : m_Allocator(&Allocator), m_ReadCallback(DataReadCallback), m_UserData(UserData), m_TargetCachedLength(CachedBufferLength), m_SelectedFunc((Flag&Network) == 0 ? 0 : 1), m_Flag(Flag) {
 	m_DataBuffer = m_Allocator->Allocate<int8_t>(CachedBufferLength);
 }
 
