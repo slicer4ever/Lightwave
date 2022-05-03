@@ -203,7 +203,7 @@ struct LWAudioDriverContext {
 
 struct LWSoundContext {
 	pa_stream *m_Source = nullptr;
-	char m_ReserveBuffer[LWSOUND_RESERVEBUFFERSIZE*LWSOUND_RESERVECNT];
+	char m_ReserveBuffer[LWSOUND_RESERVECNT][LWSOUND_RESERVEBUFFERSIZE];
 	uint32_t m_ReserveIdx = 0;
 	uint32_t m_SeekSamples = 0;
 
