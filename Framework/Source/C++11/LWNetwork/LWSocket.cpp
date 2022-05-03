@@ -582,8 +582,8 @@ uint32_t LWSocket::GetStatus(void) const {
 }
 
 bool LWSocket::IsValid(void) const {
-	uint32_t Status = GetStatus();
-	return Status==S_Connected || Status==S_Connecting;
+	uint32_t lStatus = GetStatus();
+	return lStatus==S_Connected || lStatus==S_Connecting;
 }
 
 uint32_t LWSocket::Hash(void) const {
