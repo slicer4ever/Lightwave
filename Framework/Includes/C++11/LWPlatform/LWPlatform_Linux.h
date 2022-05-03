@@ -90,8 +90,6 @@ typedef std::thread LWThreadType;
 struct LWOpenGL3_3Context {
 	GLXContext m_GLContext;/*!< \brief the x11 openGL context. */
 	uint32_t m_VAOID; /*!< \brief the Vertex array object id for the entire context. */
-	uint32_t m_ActiveAttribs = 0; /*!< \brief the number of currently active attribute arrays. */
-	uint32_t m_ActiveAttributeIDs[32];
 };
 
 #endif
@@ -140,6 +138,8 @@ struct LWOpenGL4_5Context {
 /*! \brief This context is the underlying context used in the x11 openGL video driver.  the application should never require accessing it directly, but it is provided here incase the application is specifically targeting the openGL api. */
 struct LWOpenGL2_1Context {
 	GLXContext m_GLContext; /*!< \brief the x11 openGL context. */
+	uint32_t m_ActiveAttribs = 0; /*!< \brief the number of currently active attribute arrays. */
+	uint32_t m_ActiveAttributeIDs[32];
 };
 #endif
 #endif
