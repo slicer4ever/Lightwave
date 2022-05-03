@@ -82,8 +82,6 @@ struct LWWindowContext {
 /*! \brief This variable is declared in the LWWindow_NDK.cpp and is a global scope variable, it is provided for applications that require processing the android saved state. */
 extern LWNDKAppContext LWAppContext;
 
-//possible problems from this.
-#define sscanf_s sscanf
 
 void NDKLog(const char *F);
 

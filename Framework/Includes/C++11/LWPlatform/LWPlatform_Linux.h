@@ -69,6 +69,11 @@ typedef std::thread LWThreadType;
 #define _strnicmp strncasecmp
 #endif
 
+//possible problems from this.
+#ifndef sscanf_s
+#define sscanf_s sscanf
+#endif
+
 #define LWVIDEO_IMPLEMENTED_OPENGL2_1
 #define LWVIDEO_IMPLEMENTED_OPENGL3_3
 #endif
