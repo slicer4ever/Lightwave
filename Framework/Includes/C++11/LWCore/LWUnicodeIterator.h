@@ -28,6 +28,10 @@ public:
 			return LWUnicodeIterator<Type>(m_ReadData);
 		}
 
+		friend std::ostream &operator<<(std::ostream &o, const C_View<Len> &cView) {
+			return o << LWUnicodeIterator<Type>(cView);
+		}
+
 		/*!< \brief constructs the c string copy of the iterator range, if Iterator ends on a null character then ReadData will point to the iterator current position instead. */
 		C_View(const LWUnicodeIterator<Type> &Iterator) {
 			uint32_t L = Iterator.Copy(m_Data, Len);
@@ -1314,6 +1318,5 @@ inline bool LWUnicodeIterator<char32_t>::isTrailingCodeUnit(const char32_t *Pos)
 std::ostream &operator << (std::ostream &o, const LWUTF8Iterator &Iter);
 std::ostream &operator << (std::ostream &o, const LWUTF16Iterator &Iter);
 std::ostream &operator << (std::ostream &o, const LWUTF32Iterator &Iter);
-
 
 #endif
