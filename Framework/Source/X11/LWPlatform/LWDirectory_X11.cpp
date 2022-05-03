@@ -19,7 +19,7 @@ bool LWDirectory::DirExists(const LWUTF8Iterator &DirectoryPath, const LWFileStr
 	return true;
 }
 
-bool LWDirectory::OpenDir(LWDirectory &DirObject, const LWText &DirectoryPath, LWAllocator &Allocator, const LWFileStream *ExistingStream){
+bool LWDirectory::OpenDir(LWDirectory &DirObject, const LWUTF8Iterator &DirectoryPath, LWAllocator &Allocator, const LWFileStream *ExistingStream){
 	char Buffer[256];
 	char FileBuffer[256];
 	uint32_t Count = 0;
