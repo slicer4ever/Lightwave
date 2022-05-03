@@ -78,7 +78,7 @@ bool LWAudioDriver::ProcessSoundPanEventPlatform(LWSound *Sound, float Pan, uint
 
 bool LWAudioDriver::ProcessSoundSpeedEventPlatform(LWSound *Sound, float Speed, uint64_t ElapsedTime) {
 	LWSoundContext &Context = Sound->GetContext();
-	float Pitch = LWAudioDriver::DecodeEventPitch(EventData);
+	//float Pitch = LWAudioDriver::DecodeEventPitch(EventData);
 	//Context.m_Source->SetFrequencyRatio(Pitch, m_Context.m_OpSet);
 	//m_Context.m_OpChanged = true;
 	return true;
