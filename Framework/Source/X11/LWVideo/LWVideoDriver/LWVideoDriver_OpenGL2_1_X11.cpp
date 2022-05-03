@@ -36,7 +36,7 @@ bool LWVideoDriver_OpenGL2_1::Update(void) {
 	return true;
 }
 
-LWVideoDriver &LWVideoDriver_OpenGL2_1::Present(LWTexture *Texture, uint32_t SwapInterval) {
+LWVideoDriver &LWVideoDriver_OpenGL2_1::Present(uint32_t SwapInterval) {
 	LWWindowContext WinCon = m_Window->GetContext();
 #ifdef glXSwapIntervalSGI
 	glXSwapIntervalSGI(SwapInterval);
