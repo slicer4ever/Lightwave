@@ -114,7 +114,7 @@ inline LWUTF8I::C_View<Len> LWLog_FormatString(uint32_t LogLevel, const LWUTF8It
 	std::chrono::system_clock::time_point tp = std::chrono::system_clock::now();
 	time_t Time = std::chrono::system_clock::to_time_t(tp);
 	tm t;
-#ifdef _MSC_VER //because people need to be weird :/
+#ifdef _MSC_VER //because people need to be weird  :/
 	localtime_s(&t, &Time);	
 #else
 	localtime_s(&Time, &t);
