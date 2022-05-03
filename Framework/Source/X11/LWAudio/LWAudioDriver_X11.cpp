@@ -89,16 +89,16 @@ bool LWAudioDriver::ProcessSoundSeekEventPlatform(LWSound *Sound, uint32_t Seek,
 	LWAudioStream *Stream = Sound->GetAudioStream();
 
 	uint64_t TimePerSample = Stream->GetTimePerSample();
-	uint64_t TimePlayed = 0;//TimePerSample * EventData;
+	uint64_t TimePlayed = TimePerSample * Seek;
 	uint32_t FinishCount = Sound->GetFinishedCount();
 	uint32_t SamplesPerSlice = Stream->GetSampleSliceSize(LWSOUND_RESERVEBUFFERSIZE);
-	uint32_t TargetSlice = (uint32_t)(EventData / SamplesPerSlice);
+	uint32_t TargetSlice = (uint32_t)(Seek / SamplesPerSlice);
 
 	uint32_t LoadedSamples = Stream->GetSampleLength()*FinishCount;
 	LoadedSamples += TargetSlice * SamplesPerSlice;
 	TimePlayed += FinishCount * TimePerSample*Stream->GetSampleLength();
 	Sound->SetSamplesLoaded(LoadedSamples).SetTimePlayed(TimePlayed);
-	Context.m_SeekSamples = EventData - (TargetSlice*SamplesPerSlice);
+	Context.m_SeekSamples = Seek - (TargetSlice*SamplesPerSlice);
 	pa_stream_flush(Context.m_Source, nullptr, nullptr);
 	if (Sound->isPlaying()) {
 		Sound->SetFlag(Sound->GetFlag()&~LWSound::Playing);
