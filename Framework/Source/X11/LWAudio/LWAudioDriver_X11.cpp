@@ -46,14 +46,14 @@ bool LWAudioDriver::ProcessSoundStopEventPlatform(LWSound *Sound, uint32_t Event
 bool LWAudioDriver::ProcessSoundMuteEventPlatform(LWSound *Sound, uint32_t EventID, uint32_t EventData, uint64_t ElapsedTime) {
 	LWSoundContext &Context = Sound->GetContext();
 	//Context.m_Source->SetVolume(0.0f, m_Context.m_OpSet);
-	m_Context.m_OpChanged = true;
+	//m_Context.m_OpChanged = true;
 	return true;
 }
 
 bool LWAudioDriver::ProcessSoundUnmuteEventPlatform(LWSound *Sound, uint32_t EventID, uint32_t EventData, uint64_t ElapsedTime) {
 	LWSoundContext &Context = Sound->GetContext();
 	//Context.m_Source->SetVolume(Sound->GetVolume(), m_Context.m_OpSet);
-	m_Context.m_OpChanged = true;
+	//m_Context.m_OpChanged = true;
 	return true;
 }
 
@@ -79,8 +79,8 @@ bool LWAudioDriver::ProcessSoundPanEventPlatform(LWSound *Sound, float Pan, uint
 bool LWAudioDriver::ProcessSoundSpeedEventPlatform(LWSound *Sound, float Speed, uint64_t ElapsedTime) {
 	LWSoundContext &Context = Sound->GetContext();
 	float Pitch = LWAudioDriver::DecodeEventPitch(EventData);
-	Context.m_Source->SetFrequencyRatio(Pitch, m_Context.m_OpSet);
-	m_Context.m_OpChanged = true;
+	//Context.m_Source->SetFrequencyRatio(Pitch, m_Context.m_OpSet);
+	//m_Context.m_OpChanged = true;
 	return true;
 }
 
