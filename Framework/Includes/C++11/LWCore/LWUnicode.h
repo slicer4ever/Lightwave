@@ -275,7 +275,7 @@ public:
 		LWVerify(O.m_Buffer != nullptr);
 		LWAllocator *Alloc = LWAllocator::GetAllocator(O.m_Buffer);
 		Type *oBuffer = m_Buffer;
-		Type *nBuffer = Alloc.Allocate<Type>(O.m_Capacity);
+		Type *nBuffer = Alloc->Allocate<Type>(O.m_Capacity);
 		std::copy(O.m_Buffer, O.m_Buffer + O.m_RawLength, nBuffer);
 		m_Length = O.m_Length;
 		m_RawLength = O.m_RawLength;
