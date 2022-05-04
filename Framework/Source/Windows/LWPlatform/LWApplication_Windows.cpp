@@ -21,6 +21,12 @@ bool LWSignal_Handler(int32_t Signal) {
 	return LWSignal_Funcs[ID](Signal, LWSignal_UserData[ID]);
 };
 
+void LWRegisterSignal(LWSignalHandlerFunc Handler, uint32_t Signal, void *UserData) {
+	LWSignal_UserData[Signal] = UserData;
+	LWSignal_Funcs[Signal] = Handler;
+	return;
+}
+
 //Application entry points and other data is managed here.
 int main(int argc, char **argv){
 	const uint32_t MaxIterList = 32;
@@ -56,13 +62,6 @@ int __stdcall WinMain(HINSTANCE, HINSTANCE, LPSTR, int CmdCnt){
 	}
 	return LWMain(0, nullptr);
 }
-
-void LWRegisterSignal(LWSignalHandlerFunc Handler, uint32_t Signal, void *UserData){
-	LWSignal_UserData[Signal] = UserData;
-	LWSignal_Funcs[Signal] = Handler;
-	return;
-}
-
 
 bool LWRunLoop(std::function<bool(void*)> LoopFunc, uint64_t Frequency, void* UserData) {
 	uint64_t Prev = LWTimer::GetCurrent();

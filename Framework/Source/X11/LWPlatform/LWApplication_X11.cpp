@@ -2,19 +2,43 @@
 #include "LWPlatform/LWPlatform.h"
 #include "LWCore/LWUnicode.h"
 #include "LWCore/LWTimer.h"
+#include <signal.h>
 #include <unistd.h>
 #include <spawn.h>
 #include <cstring>
 #include <stdlib.h>
 #include <cstdio>
 #include <iostream>
-char **env;
+
+void *LWSignal_UserData[LWSignal_Unknown];
+LWSignalHandlerFunc LWSignal_Funcs[LWSignal_Unknown];
+
+void LWSignal_Handler(int32_t Int) {
+	uint32_t LWSignalIDs[5] = { LWSignal_CtrlC, LWSignal_Break, LWSignal_Close, LWSignal_Logoff, LWSignal_Shutdown };
+	int32 SignalMap[5] = {SIGINT, SIGTERM, SIGTERM, SIGTERM, SIGTERM};
+	int32 Signal = 0;
+	for(;Signal<LWSignal_Unknown && SignalMap[Signal]!=Int;++Signal){}
+	if (Signal >= LWSignal_Unknown) return;
+	uint32_t ID = LWSignalIDs[Signal];
+	if (ID >= LWSignal_Unknown) return;
+	if (!LWSignal_Funcs[ID]) return;
+	LWSignal_Funcs[ID](Signal, LWSignal_UserData[ID]);
+	return;
+};
+
+void LWRegisterSignal(LWSignalHandlerFunc Handler, uint32_t Signal, void *UserData) {
+	LWSignal_UserData[Signal] = UserData;
+	LWSignal_Funcs[Signal] = Handler;
+	return;
+}
 
 int main(int argc, char **argv){
 	const uint32_t MaxIterList = 32;
 	LWUTF8Iterator IterList[MaxIterList];
 	uint32_t Cnt = std::min<uint32_t>(argc, MaxIterList);
 	for (uint32_t i = 0; i < Cnt; i++) IterList[i] = LWUTF8Iterator((const char8_t*)argv[i]);
+	signal(SIGINT, LWSignal_Handler);
+	signal(SIGTERM, LWSignal_Handler);
 	return LWMain(Cnt, IterList);
 }
 
