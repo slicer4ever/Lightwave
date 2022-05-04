@@ -16,7 +16,7 @@ LWSignalHandlerFunc LWSignal_Funcs[LWSignal_Unknown];
 void LWSignal_Handler(int32_t Int) {
 	uint32_t LWSignalIDs[5] = { LWSignal_CtrlC, LWSignal_Break, LWSignal_Close, LWSignal_Logoff, LWSignal_Shutdown };
 	int32_t SignalMap[5] = {SIGINT, SIGTERM, SIGTERM, SIGTERM, SIGTERM};
-	int32_t Signal = 0;
+	uint32_t Signal = 0;
 	for(;Signal<LWSignal_Unknown && SignalMap[Signal]!=Int;++Signal){}
 	if (Signal >= LWSignal_Unknown) return;
 	uint32_t ID = LWSignalIDs[Signal];

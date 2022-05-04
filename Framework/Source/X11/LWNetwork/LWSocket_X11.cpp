@@ -65,7 +65,7 @@ uint32_t LWSocket::CreateSocket(LWSocket &Socket, uint32_t Type, const LWSocketA
 
 	if (Handle == INVALID_SOCKET) return LWSocket::E_Socket;
 	if (Type == LWSocket::UDP) {
-		if (ioctl(Handle, UDP_CONNRESET, (u_long *)&UPDNoConnReset)) return LWSocket::E_CtrlFlags;
+		//if (ioctl(Handle, UDP_CONNRESET, (u_long *)&UPDNoConnReset)<0) return LWSocket::E_CtrlFlags;
 		if (setsockopt(Handle, SOL_SOCKET, SO_BROADCAST, (char *)&SockBroadcast, sizeof(SockBroadcast))) return LWSocket::E_CtrlFlags;
 	} else {
 		if (setsockopt(Handle, IPPROTO_TCP, TCP_NODELAY, (char *)&iTcpNoDelay, sizeof(iTcpNoDelay))) return LWSocket::E_CtrlFlags;
