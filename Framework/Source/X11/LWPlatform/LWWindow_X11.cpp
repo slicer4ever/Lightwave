@@ -29,7 +29,7 @@ uint32_t LWWindow::MakeLoadFileMultipleDialog(const LWUTF8Iterator &Filter, char
 }
 
 bool LWWindow::WriteClipboardText(const LWUTF8Iterator &Text) {
-	strlcpy(WriteClipboardTextB, *Text.c_str<256>(), sizeof(WriteClipboardTextB));
+	Text.Copy(WriteClipboardTextB, sizeof(WriteClipboardTextB));
 	XSetSelectionOwner(ClipboardContext->m_Display, ClipboardContext->m_AtomList[X11_CLIPBOARD], ClipboardContext->m_Window, CurrentTime);
 	XFlush(ClipboardContext->m_Display);
 	return true;
@@ -41,7 +41,7 @@ uint32_t LWWindow::ReadClipboardText(char8_t *Buffer, uint32_t BufferLen) {
 	XConvertSelection(ClipboardContext->m_Display, ClipboardContext->m_AtomList[X11_CLIPBOARD], XA_STRING, ClipboardContext->m_AtomList[X11_CLIPBOARD], ClipboardContext->m_Window, CurrentTime);
 	ClipSet = false;
 	while (!ClipSet) ClipboardWindow->Update(LWTimer::GetCurrent());
-	return strlcpy((char*)Buffer, RecvClipboardTextB, BufferLen);
+	return LWUTF8I(RecvClipboardTextB).Copy(Buffer, BufferLen);
 }
 
 LWWindow &LWWindow::SetTitle(const LWUTF8Iterator &Title){
@@ -243,7 +243,7 @@ bool LWWindow::ProcessWindowMessage(uint32_t Message, void *MessageData, uint64_
 			ClipSet = true;
 			return false;
 		}
-		strlcpy(RecvClipboardTextB, (const char*)Result, sizeof(RecvClipboardTextB));
+		LWUTF8I((const char8_t*)Result).Copy(RecvClipboardTextB, sizeof(RecvClipboardTextB));
 		ClipSet = true;
 		return true;
 	}else{
