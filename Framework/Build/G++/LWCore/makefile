@@ -1,4 +1,4 @@
-CFlags = -Wall -std=c++14 -Wfatal-errors -I../../../Includes/C++11/ -mavx2
+CFlags = -Wall -std=c++17 -Wfatal-errors -I../../../Includes/C++11/
 CC = g++ $(CFlags) -O3
 Config = Release
 debug ?= 0

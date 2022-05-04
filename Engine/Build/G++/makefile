@@ -1,4 +1,4 @@
-CFlags = -Wall -std=c++14 -Wfatal-errors -I../../Includes/C++11/ -I../../../Dependency/Includes/C++11/ -I../../../Framework/Includes/C++11/
+CFlags = -Wall -std=c++17 -Wfatal-errors -I../../Includes/C++11/ -I../../../Dependency/Includes/C++11/ -I../../../Framework/Includes/C++11/ -I/usr/include/botan-2/
 CC = g++ $(CFlags) -O3
 Config = Release
 debug ?= 0
@@ -14,8 +14,6 @@ SrcPath = ../../Source/
 
 Sources = C++11/LWEAsset.cpp
 Sources += C++11/LWECamera.cpp
-Sources += C++11/LWEGeometry2D.cpp
-Sources += C++11/LWEGeometry3D.cpp
 Sources += C++11/LWEGLTFParser.cpp
 Sources += C++11/LWEJobQueue.cpp
 Sources += C++11/LWEJson.cpp
@@ -25,11 +23,11 @@ Sources += C++11/LWERenderer.cpp
 Sources += C++11/LWERenderFrame.cpp
 Sources += C++11/LWERenderPass.cpp
 Sources += C++11/LWERenderTypes.cpp
-Sources += C++11/LWESVG.cpp
+#Sources += C++11/LWESVG.cpp
 Sources += C++11/LWEUIManager.cpp
 Sources += C++11/LWEVideoPlayer.cpp
-Sources += C++11/LWEVideoDecoderIVF.cpp
-Sources += C++11/LWEVideoDecoderWEBM.cpp
+#Sources += C++11/LWEVideoDecoderIVF.cpp
+#Sources += C++11/LWEVideoDecoderWEBM.cpp
 Sources += C++11/LWEVideoPlayer.cpp
 Sources += C++11/LWEXML.cpp
 Sources += C++11/LWEProtocols/LWEProtocol_HTTP.cpp
@@ -39,7 +37,7 @@ Sources += C++11/LWEProtocols/LWEProtocol_WebSocket.cpp
 Sources += C++11/LWEProtocols/LWEProtocol_WebSocketSecure.cpp
 Sources += C++11/LWERenderPasses/LWEGausianBlurPass.cpp
 Sources += C++11/LWERenderPasses/LWEGeometryPass.cpp
-Sources += C++11/LWERenderPasses/LWEPPass.cpp
+Sources += C++11/LWERenderPasses/LWEPPPass.cpp
 Sources += C++11/LWERenderPasses/LWEResolvePass.cpp
 Sources += C++11/LWERenderPasses/LWEShadowMapPass.cpp
 Sources += C++11/LWERenderPasses/LWEUIPass.cpp

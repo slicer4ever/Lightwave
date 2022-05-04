@@ -1,4 +1,4 @@
-CFlags = -std=c++11 -pthread -Wall -Wfatal-errors -I../../../../Includes/C++11/
+CFlags = -std=c++17 -pthread -Wall -Wfatal-errors -I../../../../Includes/C++11/
 CC = g++ $(CFlags) -O3
 Config = Release
 debug ?= 0
@@ -11,7 +11,7 @@ Target = ../../Binarys/$(Config)/$(PlatformTarget)/
 LWFramework = ../../../../Binarys/$(Config)/$(PlatformTarget)/
 Dependency = ../../../../../Dependency/Binarys/$(Config)/$(PlatformTarget)/
 TargetName = LWIOTest
-Libs = -lLWCore -lLWPlatform
+Libs = -lLWCore -lLWPlatform -lfmt
 LibPath = -L$(LWFramework) -L$(Dependency)
 Obj = $(Config)/$(PlatformTarget)/
 Src = ../../Source/

@@ -1,4 +1,4 @@
-CFlags = -Wall -std=c++14 -Wfatal-errors -I../../../Includes/C++11/ -I/usr/include/freetype2/
+CFlags = -Wall -std=c++17 -Wfatal-errors -I../../../Includes/C++11/ -I/usr/include/freetype2/ -I../../../../Dependency/libcompressonator/cmp_core/source/
 CC = g++ $(CFlags) -O3
 Config = Release
 debug ?= 0
@@ -22,9 +22,9 @@ Sources += C++11/LWVideo/LWShader.cpp
 Sources += C++11/LWVideo/LWTexture.cpp
 Sources += C++11/LWVideo/LWVideoBuffer.cpp
 Sources += C++11/LWVideo/LWVideoDriver.cpp
-Sources += C++11/LWVideo/LWVideoDriver/LWVideoDriver_OpenGL3_2.cpp
+Sources += C++11/LWVideo/LWVideoDriver/LWVideoDriver_OpenGL3_3.cpp
 Sources += C++11/LWVideo/LWVideoDriver/LWVideoDriver_OpenGL2_1.cpp
-Sources += X11/LWVideo/LWVideoDriver/LWVideoDriver_OpenGL3_2_X11.cpp
+Sources += X11/LWVideo/LWVideoDriver/LWVideoDriver_OpenGL3_3_X11.cpp
 Sources += X11/LWVideo/LWVideoDriver/LWVideoDriver_OpenGL2_1_X11.cpp
 
 T = $(Sources:.cpp=.o)
