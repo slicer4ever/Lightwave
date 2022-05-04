@@ -2603,7 +2603,7 @@ public:
 		\return the number of bytes that need to be added for alignment.
 		\note Alignment must be a power 2.
 	*/
-	int32_t AlignPosition(uint32_t Alignment, bool Write=false);
+	int32_t Align(uint32_t Alignment, bool Write=false);
 
 	/*! \brief Offset's the position of the buffer stream.
 		\param Offset the offset to apply to position.

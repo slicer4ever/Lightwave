@@ -250,12 +250,12 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 			if (V.m_NameLength) {
 				V.m_Name = Allocator.Allocate<char>(V.m_NameLength + 1);
 				Buf.ReadText(V.m_Name, V.m_NameLength + 1);
-				Buf.AlignPosition(4);
+				Buf.Align(4);
 			}
 			if (V.m_MetaDataLength) {
 				V.m_MetaData = Allocator.Allocate<char>(V.m_MetaDataLength + 1);
 				Buf.ReadText(V.m_MetaData, V.m_MetaDataLength + 1);
-				Buf.AlignPosition(4);
+				Buf.Align(4);
 			}
 			V.m_GlyphList = Allocator.Allocate<ARGlyph>(V.m_GlyphCount);
 			V.m_KernList = Allocator.Allocate<ARKernPair>(V.m_KernCount);
@@ -313,11 +313,11 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 			if (Image.m_MetaDataLength) {
 				Image.m_MetaData = Allocator.Allocate<char>(Image.m_MetaDataLength + 1);
 				Buf.ReadText(Image.m_MetaData, Image.m_MetaDataLength + 1);
-				Buf.AlignPosition(4);
+				Buf.Align(4);
 			}
 			Image.m_Data = Buf.GetReadBuffer() + Buf.GetPosition();
 			Buf.Seek(Image.m_DataLength);
-			Buf.AlignPosition(4);
+			Buf.Align(4);
 			return true;
 		};
 	};
@@ -334,11 +334,11 @@ LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAlloca
 			if (Appendix.m_MetaDataLength) {
 				Appendix.m_MetaData = Allocator.Allocate<char>(Appendix.m_MetaDataLength + 1);
 				Buf.ReadText(Appendix.m_MetaData, Appendix.m_MetaDataLength + 1);
-				Buf.AlignPosition(4);
+				Buf.Align(4);
 			}
 			Appendix.m_Data = Buf.GetReadBuffer() + Buf.GetPosition();
 			Buf.Seek(Appendix.m_DataLength);
-			Buf.AlignPosition(4);
+			Buf.Align(4);
 			return true;
 		}
 

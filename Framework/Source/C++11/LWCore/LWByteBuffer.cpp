@@ -555,7 +555,7 @@ LWByteBuffer &LWByteBuffer::SetPosition(int32_t Position){
 	return *this;
 }
 
-int32_t LWByteBuffer::AlignPosition(uint32_t Alignment, bool Write) {
+int32_t LWByteBuffer::Align(uint32_t Alignment, bool Write) {
 	int32_t r = Alignment - (m_Position & (Alignment - 1));
 	if (m_Position + r > m_BufferSize) return r;
 	m_Position += r;
