@@ -155,7 +155,7 @@ struct LWEGLTFBuffer {
 
 	~LWEGLTFBuffer();
 
-	char8_t m_Name[256]="";
+	char8_t m_Name[256]={};
 	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 	uint8_t *m_Buffer = nullptr;
 	uint32_t m_Length = 0;
@@ -226,7 +226,7 @@ struct LWEGLTFCamera {
 
 	LWEGLTFCamera() = default;
 
-	char8_t m_Name[256]="";
+	char8_t m_Name[256]={};
 	LWEGLTFCameraOrtho m_Ortho;
 	LWEGLTFCameraPerspective m_Perspective;
 	uint32_t m_NameHash = LWCrypto::FNV1AHash;
@@ -283,7 +283,7 @@ struct LWEGLTFMesh {
 
 	LWEGLTFMesh() = default;
 
-	char8_t m_Name[256]="";
+	char8_t m_Name[256]={};
 	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 	std::vector<LWEGLTFPrimitive> m_Primitives;
 };
@@ -308,8 +308,8 @@ struct LWEGLTFImage {
 
 	LWEGLTFImage(const LWUTF8Iterator &Name, const LWUTF8Iterator &URI, uint32_t MimeType, uint32_t BufferView);
 
-	char8_t m_Name[256]="";
-	char8_t m_URI[256]="";
+	char8_t m_Name[256]={};
+	char8_t m_URI[256]={};
 	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 	uint32_t m_BufferView = -1;
 	uint32_t m_MimeType = 0;
@@ -326,7 +326,7 @@ struct LWEGLTFTexture {
 
 	LWEGLTFTexture() = default;
 
-	char8_t m_Name[256]="";
+	char8_t m_Name[256]={};
 	uint32_t m_NameHash=LWCrypto::FNV1AHash;
 	uint32_t m_ImageID = 0;
 	uint32_t m_SamplerFlag = 0;
@@ -403,7 +403,7 @@ struct LWEGLTFMaterial {
 
 	LWEGLTFMaterial() = default;
 
-	char8_t m_Name[256]="";
+	char8_t m_Name[256]={};
 	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 	LWEGLTFMatMetallicRoughness m_MetallicRoughness;
 	LWEGLTFMatSpecularGlossyness m_SpecularGlossy;
@@ -452,7 +452,7 @@ struct LWEGLTFNode {
 
 	LWEGLTFNode() = default;
 	
-	char8_t m_Name[256]="";
+	char8_t m_Name[256]={};
 	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 	std::vector<uint32_t> m_Children;
 	LWMatrix4f m_TransformMatrix;
@@ -476,7 +476,7 @@ struct LWEGLTFScene {
 
 	LWEGLTFScene() = default;
 
-	char8_t m_Name[256]="";
+	char8_t m_Name[256]={};
 	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 	std::vector<uint32_t> m_NodeList;
 };

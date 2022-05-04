@@ -74,11 +74,11 @@ struct LWEWebSocket {
 		CONNECTING_CLIENT,
 		CONNECTING_SERVER,
 	};
-	char8_t m_Host[HeaderMaxLength]="";
-	char8_t m_Path[HeaderMaxLength]="";
-	char8_t m_Origin[HeaderMaxLength]="";
-	char8_t m_SecKey[HeaderMaxLength]="";
-	char8_t m_SecProtocols[HeaderMaxLength]="";
+	char8_t m_Host[HeaderMaxLength]={};
+	char8_t m_Path[HeaderMaxLength]={};
+	char8_t m_Origin[HeaderMaxLength]={};
+	char8_t m_SecKey[HeaderMaxLength]={};
+	char8_t m_SecProtocols[HeaderMaxLength]={};
 	LWEWebSocketClosedCallback m_OnClosedCallback = nullptr;
 	LWEWebSocketConnectedCallback m_OnConnectedCallback = nullptr;
 	LWEWebSocketReceivedCallback m_OnReceivedCallback = nullptr;
@@ -174,9 +174,9 @@ public:
 	LWEProtocol_WebSocket(uint32_t ProtocolID, LWAllocator &Allocator);
 
 protected:
-	char m_Server[LWEWebSocket::HeaderMaxLength]="";
-	char m_UserAgent[LWEWebSocket::HeaderMaxLength]="";
-	char m_SubProtocol[LWEWebSocket::HeaderMaxLength]="";
+	char m_Server[LWEWebSocket::HeaderMaxLength]={};
+	char m_UserAgent[LWEWebSocket::HeaderMaxLength]={};
+	char m_SubProtocol[LWEWebSocket::HeaderMaxLength]={};
 	LWConcurrentFIFO<LWRef<LWEWebPacket>, PacketBufferSize> m_OutPackets;
 
 	std::unordered_map<uint32_t, LWRef<LWEWebSocket>> m_WebSocketMap;

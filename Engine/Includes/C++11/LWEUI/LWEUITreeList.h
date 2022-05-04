@@ -37,7 +37,7 @@ struct LWEUITreeItem {
 
 	LWEUITreeItem() = default;
 
-	char8_t m_Value[MaxNameSize]="";
+	char8_t m_Value[MaxNameSize]={};
 	void *m_UserData = nullptr;
 	LWVector2f m_TextSize;
 	uint32_t m_ParentID = -1;

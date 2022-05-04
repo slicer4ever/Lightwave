@@ -70,7 +70,7 @@ public:
 	LWEAsset();
 
 private:
-	char8_t m_AssetPath[256]="";
+	char8_t m_AssetPath[256]={};
 	uint32_t m_Type = 0;
 	void *m_Asset = nullptr;
 };

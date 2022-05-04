@@ -23,8 +23,8 @@ struct LWEJObject {
 	};
 	static const uint32_t NameBufferLen = 32;
 	static const uint32_t ValueBufferLen = 32;
-	char8_t m_NameBuf[NameBufferLen]="";
-	char8_t m_ValueBuf[ValueBufferLen]="";
+	char8_t m_NameBuf[NameBufferLen]= {};
+	char8_t m_ValueBuf[ValueBufferLen]= {};
 	char8_t *m_Name = m_NameBuf;
 	char8_t *m_Value = m_ValueBuf;
 	uint32_t m_NameBufferLen = NameBufferLen;

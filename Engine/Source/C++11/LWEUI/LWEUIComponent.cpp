@@ -7,7 +7,7 @@
 
 LWEUIComponent *LWEUIComponent::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode *> &StyleMap, std::map<uint32_t, LWEXMLNode *> &ComponentMap) {
 	char8_t Buffer[256];
-	char8_t NameBuffer[256]="";
+	char8_t NameBuffer[256]={};
 	uint32_t NameHash = Node->GetName().Hash();
 	auto Iter = ComponentMap.find(NameHash);
 	if(!LWLogCriticalIf<256>(Iter!=ComponentMap.end(), "Unknown node: '{}'", Node->GetName())) return nullptr;

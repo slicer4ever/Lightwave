@@ -12,8 +12,8 @@
 typedef std::function<bool(LWEXMLNode*, void*, LWEXML*)> LWEXMLParseCallback;
 
 struct LWEXMLAttribute {
-	char8_t m_Name[LWEXMLMAXNAMELEN]="";
-	char8_t m_Value[LWEXMLMAXVALUELEN]="";
+	char8_t m_Name[LWEXMLMAXNAMELEN]={};
+	char8_t m_Value[LWEXMLMAXVALUELEN]={};
 	uint32_t m_NameHash = LWCrypto::FNV1AHash;
 
 	LWEXMLAttribute &SetName(const LWUTF8Iterator &Name);
@@ -33,8 +33,8 @@ struct LWEXMLNode {
 	enum {
 		MaxAttributes = 32
 	};
-	char8_t m_Text[LWEXMLMAXTEXTLEN]="";
-	char8_t m_Name[LWEXMLMAXNAMELEN]="";
+	char8_t m_Text[LWEXMLMAXTEXTLEN]={};
+	char8_t m_Name[LWEXMLMAXNAMELEN]={};
 	LWEXMLAttribute m_Attributes[MaxAttributes];
 	LWEXMLNode *m_Parent = nullptr;
 	LWEXMLNode *m_Next = nullptr;
@@ -67,7 +67,7 @@ struct LWEXMLNode {
 };
 
 struct LWEXMLParser {
-	char m_Name[LWEXMLMAXNAMELEN]="";
+	char m_Name[LWEXMLMAXNAMELEN]={};
 	LWEXMLParseCallback m_Callback = nullptr;
 	void *m_UserData = nullptr;
 	uint32_t m_NameHash = LWCrypto::FNV1AHash;

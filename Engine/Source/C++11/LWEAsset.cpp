@@ -593,7 +593,7 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 	LWUTF8Iterator AssetPath;
 	
 	char CompiledBuffer[MaxFileBufferLen];
-	char ErrorBuffer[MaxErrorBufferLen]="";
+	char ErrorBuffer[MaxErrorBufferLen]={};
 	LWUTF8Iterator DefineIterList[MaxDefines];
 
 	uint32_t CompiledLen = 0;

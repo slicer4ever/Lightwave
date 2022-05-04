@@ -105,9 +105,9 @@ struct LWEHTTPMessage {
 	static const char8_t StatusCodeNames[S_Count][32]; //Named codes
 	static const uint32_t StatusCodeMap[S_Count]; //Map of names to status codes.
 
-	char8_t m_Body[BodyMaxLength]="";
-	char8_t m_Path[PathMaxLength] = "/";
-	char8_t m_Header[MaxHeaderLength]="";
+	char8_t m_Body[BodyMaxLength]= {};
+	char8_t m_Path[PathMaxLength] = u8"/";
+	char8_t m_Header[MaxHeaderLength]={};
 	LWEHTTPMessageHeader m_HeaderTable[MaxHeaderItems];
 	
 	void *m_UserData = nullptr;
@@ -306,8 +306,8 @@ public:
 	LWEProtocol_HTTP(uint32_t ProtocolID, LWAllocator &Allocator);
 protected:
 	LWAllocator &m_Allocator;
-	char8_t m_Agent[LWEHTTPMessage::ValueMaxLength]="";
-	char8_t m_Server[LWEHTTPMessage::ValueMaxLength]="";
+	char8_t m_Agent[LWEHTTPMessage::ValueMaxLength]={};
+	char8_t m_Server[LWEHTTPMessage::ValueMaxLength]={};
 	LWConcurrentFIFO<LWRef<LWEHTTPMessage>, RequestBufferSize> m_OutMessages;
 	LWConcurrentFIFO<LWRef<LWEHTTPMessage>, RequestBufferSize> m_InRequests; 
 	std::unordered_map<uint32_t, LWRef<LWEHTTPMessage>> m_MessageMap;
