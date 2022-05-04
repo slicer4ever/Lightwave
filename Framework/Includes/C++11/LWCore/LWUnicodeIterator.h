@@ -280,6 +280,33 @@ public:
 		if (BufferSize) *B = '\0';
 		return o + 1;
 	}
+	
+
+	/*!< \brief Concat's this iterator to the end of buffer
+		 \return size of buffer(per type) needed to contain that concat'd string. */
+	uint32_t Concat(Type *Buffer, uint32_t BufferSize) {
+		LWUnicodeIterator<Type> Iter = LWUnicodeIterator<Type>(Buffer, BufferSize);
+		uint32_t Len = (uint32_t)Iter.RawLength();
+		return Len + Copy(Buffer+Len, BufferSize-std::min<uint32_t>(Len, BufferSize));
+	}
+
+
+	/*!< \brief Concat's this iterator to the end of buffer
+	*	 \param Count the number of codepoints wanted to be copy.
+		 \return size of buffer(per type) needed to contain that concat'd string. */
+	uint32_t Concat(Type *Buffer, uint32_t BufferSize, uint32_t Count) {
+		LWUnicodeIterator<Type> Iter = LWUnicodeIterator<Type>(Buffer, BufferSize);
+		uint32_t Len = (uint32_t)Iter.RawLength();
+		return Len + Copy(Buffer + Len, BufferSize - std::min<uint32_t>(Len, BufferSize), Count);
+	}
+
+	/*!< \brief Concat's this iterator to the end of buffer
+		 \return size of buffer(per type) needed to contain that concat'd string. */
+	uint32_t Concat(Type *Buffer, uint32_t BufferSize, const LWUnicodeIterator<Type> &Other) {
+		LWUnicodeIterator<Type> Iter = LWUnicodeIterator<Type>(Buffer, BufferSize);
+		uint32_t Len = (uint32_t)Iter.RawRemaining();
+		return Len + Copy(Buffer + Len, BufferSize - std::min<uint32_t>(Len, BufferSize), Other);
+	}
 
 	/*!< \brief copy's from current position to Count codepoints.
 	*	 \param Count the number of codepoints wanted to be copy.

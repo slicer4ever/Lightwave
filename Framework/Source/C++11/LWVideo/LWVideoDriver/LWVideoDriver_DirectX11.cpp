@@ -84,7 +84,7 @@ LWShader *LWVideoDriver_DirectX11_1::CreateShader(uint32_t ShaderType, const LWU
 	if (FAILED(D3DCompile((const char*)Source(), SrcLen, nullptr, nullptr, nullptr, "main", CompileModes[ShaderType], CompileFlag, 0, &Res, &Err))) {
 		if (ErrorBuffer) {
 			*ErrorBuffer = '\0';
-			strlcat(ErrorBuffer, (const char*)Err->GetBufferPointer(), ErrorBufferLen);
+			LWUTF8I((const char*)Err->GetBufferPointer()).Copy(ErrorBuffer, ErrorBufferLen);
 			Err->Release();
 			PerformErrorAnalysis(Source, ErrorBuffer, ErrorBufferLen);
 			return nullptr;

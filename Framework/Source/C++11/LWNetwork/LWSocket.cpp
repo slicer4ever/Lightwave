@@ -392,6 +392,7 @@ uint32_t LWSocket::DNSQuery(const LWUTF8Iterator *QueryNames, uint16_t *QueryTyp
 }
 
 uint32_t LWSocket::DNSParseSRVRecord(const char *Response, uint32_t ResponseLen, LWSRVRecord *RecordBuffer, uint32_t RecordBufferLen) {
+	//This function needs to be upgraded to LWUnicodeIterator
 	LWByteBuffer Buffer((const int8_t*)Response, ResponseLen, LWByteBuffer::Network);
 	char SubBuffer[256];
 	uint16_t ID = Buffer.Read<uint16_t>();
@@ -429,7 +430,7 @@ uint32_t LWSocket::DNSParseSRVRecord(const char *Response, uint32_t ResponseLen,
 			RecordBuffer[Cnt].m_Port = Port;
 			RecordBuffer[Cnt].m_Weight = (uint32_t)Weight;
 			RecordBuffer[Cnt].m_Priority = (uint32_t)Priority;
-			strlcpy(RecordBuffer[Cnt].m_Address, SubBuffer, sizeof(RecordBuffer[Cnt].m_Address));
+			LWUTF8I(SubBuffer).Copy(RecordBuffer[Cnt].m_Address, sizeof(RecordBuffer[Cnt].m_Address));
 		}
 		Buffer.Seek(RLen);
 		Cnt++;

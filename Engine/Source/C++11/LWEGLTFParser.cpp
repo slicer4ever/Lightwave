@@ -89,7 +89,7 @@ LWUTF8Iterator LWEGLTFBuffer::GetName(void) const {
 }
 
 LWEGLTFBuffer &LWEGLTFBuffer::operator = (LWEGLTFBuffer &&O) {
-	strlcpy(m_Name, O.m_Name, sizeof(m_Name));
+	O.GetName().Copy(m_Name, sizeof(m_Name));
 	m_NameHash = O.m_NameHash;
 	m_Buffer = O.m_Buffer;
 	m_Length = O.m_Length;
@@ -98,7 +98,7 @@ LWEGLTFBuffer &LWEGLTFBuffer::operator = (LWEGLTFBuffer &&O) {
 }
 
 LWEGLTFBuffer::LWEGLTFBuffer(LWEGLTFBuffer &&O) : m_Buffer(O.m_Buffer), m_Length(O.m_Length), m_NameHash(O.m_NameHash) {
-	strlcpy(m_Name, O.m_Name, sizeof(m_Name));
+	O.GetName().Copy(m_Name, sizeof(m_Name));
 	O.m_Buffer = nullptr;
 }
 

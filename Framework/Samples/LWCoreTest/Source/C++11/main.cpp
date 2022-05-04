@@ -2342,6 +2342,17 @@ bool PerformLWUnicodeTest(void) {
 			if (!SubString.Compare(CopyIter)) return false;
 		}
 		return true; }, true)) return false;
+	if(!PerformTest("Concat iterator test.", [&SampleIterator, &ValidTextRes, &CompareText]()->bool {
+		Type Buffer[256];
+		uint32_t Len = SampleIterator.Copy(Buffer, sizeof(Buffer), 5) - 1; //remove added '\0'.
+		if(Len!=5) return false;
+		//Iterate a bit forward.
+		LWUnicodeIterator<Type> TIter = SampleIterator.Next(5);
+		uint32_t nLen = TIter.Concat(Buffer, sizeof(Buffer)) - 1;
+		if(nLen!=SampleIterator.RawLength()) return false;
+		return SampleIterator.Compare(Buffer);
+	}, true)) return false;
+
 	if (!PerformTest("CompareList test.", [&SampleIterator, &ValidText, &CompareText]()->bool {
 		LWUnicodeIterator<Type> A = LWUnicodeIterator<Type>((Type*)"Test case that should fail!");
 		LWUnicodeIterator<Type> B = LWUnicodeIterator<Type>(ValidText.m_Data);

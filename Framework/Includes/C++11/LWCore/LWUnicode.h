@@ -530,17 +530,4 @@ private:
 };
 
 
-//Implementations of strlcpy+strlcat if they aren't part of the platform's standard c library.
-size_t LWstrlcpy(char *Dest, const char *Src, size_t dstSize);
-
-size_t LWstrlcat(char *Dest, const char *Src, size_t dstSize);
-
-#ifndef strlcpy
-#define strlcpy LWstrlcpy
-#endif
-
-#ifndef strlcat
-#define strlcat LWstrlcat
-#endif
-
 #endif
