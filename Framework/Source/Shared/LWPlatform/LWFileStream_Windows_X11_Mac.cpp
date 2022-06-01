@@ -104,6 +104,6 @@ LWFileStream::LWFileStream(FILE *FileObject, const LWUTF8Iterator &FilePath, uin
 	if (fstat(FileID, &Res)) return;
 	m_Length = (uint32_t)Res.st_size;
 	m_CreateTime = (uint64_t)Res.st_ctime;
-	m_ModifiedTime = (uint64_t)Res.st_atime;
+	m_ModifiedTime = (uint64_t)Res.st_mtime;
 	m_AccessedTime = (uint64_t)Res.st_atime;
 }
