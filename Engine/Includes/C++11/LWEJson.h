@@ -96,6 +96,8 @@ struct LWEJObject {
 
 	LWVector4i AsVec4i(LWEJson &Js);
 
+	uint32_t GetChildrenCount(void) const;
+
 	LWEJObject &operator = (LWEJObject &&O);
 
 	LWEJObject(LWEJObject &&O);

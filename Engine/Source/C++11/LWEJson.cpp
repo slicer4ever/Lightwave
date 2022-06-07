@@ -328,6 +328,10 @@ LWVector4i LWEJObject::AsVec4i(LWEJson &Js){
 	return Vec;
 }
 
+uint32_t LWEJObject::GetChildrenCount(void) const {
+	return m_Length;
+}
+
 LWEJObject &LWEJObject::operator=(LWEJObject &&O) {
 	std::copy(O.m_NameBuf, O.m_NameBuf+sizeof(m_NameBuf), m_NameBuf);
 	std::copy(O.m_ValueBuf, O.m_ValueBuf+sizeof(m_ValueBuf), m_ValueBuf);
