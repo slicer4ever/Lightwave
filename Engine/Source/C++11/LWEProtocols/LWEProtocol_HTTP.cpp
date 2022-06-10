@@ -644,7 +644,7 @@ uint32_t LWEProtocol_HTTP::ProcessHTTPReadMessage(LWRef<LWSocket> &Socket, const
 }
 
 LWEProtocol_HTTP &LWEProtocol_HTTP::ProcessOutboundMessages(LWProtocolManager &Manager, bool Verbose, uint64_t lTimeout) {
-	char Buffer[1024 * 64]; //64KB buffer.
+	char Buffer[1024 * 64]; //64KB buffer. 
 	uint64_t EndTime = lTimeout==0?-1:LWTimer::GetCurrent()+lTimeout;
 	LWRef<LWEHTTPMessage> Message;
 	while (LWTimer::GetCurrent() < EndTime && m_OutMessages.PopMove(Message)) {
