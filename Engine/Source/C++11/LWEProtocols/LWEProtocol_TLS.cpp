@@ -75,7 +75,8 @@ void LWETLSCallbacks::tls_emit_data(const uint8_t data[], size_t size) {
 	if(!LWLogCriticalIf((bool)m_Socket && m_Socket->IsValid(), "TLS connection was closed, dropping emit data.")) return;
 	uint32_t Len = (uint32_t)size;
 	uint32_t r = m_Socket->SendAll(data, Len);
-	LWLogCriticalIf<256>(r==Len, "Emitting data from '{}' failed: {}", m_Socket->GetLocalAddr(), LWProtocolManager::GetError());
+	if(!LWLogCriticalIf<256>(r==Len, "Emitting data from '{}' failed: {}", m_Socket->GetLocalAddr(), LWProtocolManager::GetError())) return;
+	m_Protocol.m_TLSBytesSent+=r;
 	return;
 }
 
@@ -139,12 +140,12 @@ LWETLSCallbacks::~LWETLSCallbacks() {
 LWProtocol &LWEProtocol_TLS::Read(LWRef<LWSocket> &Socket, LWProtocolManager &Manager) {
 	char Buffer[1024 * 64]; //64KB read buffer.
 	int32_t r = Socket->Receive(Buffer, sizeof(Buffer));
-
 	if (r <= 0) {
 		LWLogCriticalIf<256>(r!=-1, "Socket '{}' Error: {}", Socket->GetRemoteAddr(), LWProtocolManager::GetError());
 		Socket->MarkClosable();
 		return *this;
 	}
+	m_TLSBytesRecv += (uint32_t)r;
 	LWRef<LWETLSCallbacks> CB = GetSocketDataFor(Socket, m_CallbackMap, m_CallbackMapMutex);
 
 	Botan::TLS::Client *TLSCli = nullptr;
@@ -197,6 +198,14 @@ uint32_t LWEProtocol_TLS::Send(LWRef<LWSocket> &Socket, const void *Buffer, uint
 		TLSSrv->send((uint8_t*)Buffer, Len);
 	}
 	return Len;
+}
+
+uint32_t LWEProtocol_TLS::GetTLSBytesSent(void) const {
+	return m_TLSBytesSent;
+}
+
+uint32_t LWEProtocol_TLS::GetTLSBytesRecv(void) const {
+	return m_TLSBytesRecv;
 }
 
 LWEProtocol_TLS::LWEProtocol_TLS(uint32_t ProtocolID, LWAllocator &Allocator, const LWUTF8Iterator &CertFile, const LWUTF8Iterator &KeyFile) : LWProtocol(ProtocolID), m_Allocator(Allocator) {

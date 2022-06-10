@@ -89,6 +89,10 @@ public:
 
 	virtual uint32_t Send(LWRef<LWSocket> &Socket, const void *Buffer, uint32_t Len);
 
+	uint32_t GetTLSBytesRecv(void) const;
+
+	uint32_t GetTLSBytesSent(void) const;
+
 	LWEProtocol_TLS(uint32_t ProtocolID, LWAllocator &Allocator, const LWUTF8Iterator &CertFile = LWUTF8Iterator(), const LWUTF8Iterator &KeyFile = LWUTF8Iterator());
 
 	~LWEProtocol_TLS();
@@ -100,7 +104,10 @@ protected:
 	LWETLS_CredentialsManager m_CredentialsManager;
 	std::unordered_map<uint32_t, LWRef<LWETLSCallbacks>> m_CallbackMap;
 	std::shared_mutex m_CallbackMapMutex;
-
+	uint32_t m_TLSBytesRecv = 0;
+	uint32_t m_TLSBytesSent = 0;
+	
+	friend LWETLSCallbacks;
 };
 
 #endif

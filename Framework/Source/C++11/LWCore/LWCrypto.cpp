@@ -544,9 +544,9 @@ uint32_t LWCrypto::HashFNV1A<char32_t>(const LWUnicodeIterator<char32_t> &Iter, 
 
 
 uint32_t LWCrypto::Base64Encode(const char *InBuffer, uint32_t InBufferLen, char *OutBuffer, uint32_t OutBufferLen){
-	if (!OutBuffer) return (InBufferLen + 2) / 3 * 4;
+	if (!OutBufferLen) return (InBufferLen + 2) / 3 * 4 + 1;
 	char CodeTable[] = { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
-	char *OutLast = OutBuffer + OutBufferLen;
+	char *OutLast = OutBuffer + std::min<uint32_t>(OutBufferLen, OutBufferLen-1);
 	for (uint32_t i = 0; i < InBufferLen;i+=3){
 		uint32_t iA = InBuffer[i];
 		uint32_t iB = (i + 1) < InBufferLen ? InBuffer[i + 1] : 0;
@@ -560,10 +560,9 @@ uint32_t LWCrypto::Base64Encode(const char *InBuffer, uint32_t InBufferLen, char
 		if (OutBuffer != OutLast) *OutBuffer++ = CodeTable[oB];
 		if (OutBuffer != OutLast) *OutBuffer++ = (i + 1) < InBufferLen ? CodeTable[oC] : '=';
 		if (OutBuffer != OutLast) *OutBuffer++ = (i + 2) < InBufferLen ? CodeTable[oD] : '=';
-
-
 	}
-	return (InBufferLen + 2) / 3 * 4;
+	*OutBuffer = '\0';
+	return (InBufferLen + 2) / 3 * 4 + 1;
 }
 
 uint32_t LWCrypto::Base64Decode(const char *InBuffer, uint32_t InBufferLen, char *OutBuffer, uint32_t OutBufferLen){

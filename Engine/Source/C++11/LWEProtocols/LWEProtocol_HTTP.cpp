@@ -74,16 +74,16 @@ uint32_t LWEHTTPMessage::MakeAMZDate(void *Buffer, uint32_t BufferLen, bool Incl
 uint32_t LWEHTTPMessage::SerializeBody(void *Buffer, uint32_t BufferLen) {
 	uint32_t Remaining = m_ContentLength - m_ChunkOffset;
 	uint32_t o = 0;
-	if(!Remaining) return o;
+	if (!Remaining) return o;
 	uint32_t Length = std::min<uint32_t>(BufferLen, Remaining);
-	if(GetEncodeType()==Encode_Chunked) o += LWUTF8I::Fmt_ns((char8_t*)Buffer, BufferLen, o, "{:x}\r\n", Length);
-	memcpy((char8_t *)Buffer+o, m_Body+m_ChunkOffset, Length);
+	if (GetEncodeType() == Encode_Chunked) o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "{:x}\r\n", Length);
+	memcpy((char8_t *)Buffer + o, m_Body + m_ChunkOffset, Length);
 	o += Length;
 	m_ChunkOffset += Length;
-	if(GetEncodeType()==Encode_Chunked) {
-		if(m_ChunkOffset==Remaining) {
+	if (GetEncodeType() == Encode_Chunked) {
+		if (m_ChunkOffset == Remaining) {
 			o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "0\r\n\r\n"); //add final chunk, and then no trailing headers.
-			if(!LWLogWarnIf(o<=BufferLen, "Error: Could not correctly add trailing chunk, this problem needs to be fixed.")) return std::min<uint32_t>(o, BufferLen);
+			if (!LWLogWarnIf(o <= BufferLen, "Error: Could not correctly add trailing chunk, this problem needs to be fixed.")) return std::min<uint32_t>(o, BufferLen);
 		}
 	}
 	return o;
@@ -106,15 +106,15 @@ uint32_t LWEHTTPMessage::SerializeHeaders(void *Buffer, uint32_t BufferLen, cons
 	uint32_t Encoding = GetEncodeType();
 	uint32_t ContentEncode = GetContentEncoding();
 	uint32_t UpgradeState = GetUpgradeState();
-	uint32_t lStatus = GetStatus();
-	bool bIsResponse = lStatus!=S_Request;
+	uint32_t lStatusCode = GetStatus();
+	bool bIsResponse = lStatusCode !=S_Request;
 	
 	//if (!m_ChunkLength) { //This is the first "Chunk", we send chunk encoding if m_ContentLength>BufferLen.
 	if(bIsResponse) {
-		const uint32_t *StatusMap = std::find(StatusCodeMap, StatusCodeMap+S_Count, lStatus);
+		const uint32_t *StatusMap = std::find(StatusCodeMap, StatusCodeMap+S_Count, lStatusCode);
 		uint32_t Index = (uint32_t)std::distance(StatusCodeMap, StatusMap);
-		const char8_t *lStatus = Index==S_Count ? "" : StatusCodeNames[Index];
-		o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "HTTP/1.1 {} {}\r\n", lStatus, lStatus);
+		const char8_t *lStatusName = Index==S_Count ? "" : StatusCodeNames[Index];
+		o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "HTTP/1.1 {} {}\r\n", lStatusCode, lStatusName);
 	}else o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "{} {} HTTP/1.1\r\n", Methods[GetMethod()], m_Path);
 	
 	//Write all header's:
@@ -387,7 +387,7 @@ uint32_t LWEHTTPMessage::SetBody(const LWUTF8Iterator &Body) {
 		m_Body[0] = '\0';
 		return SetContentLength(0);
 	}
-	return SetContentLength(Body.Copy(m_Body, sizeof(m_Body)));
+	return SetContentLength(Body.Copy(m_Body, sizeof(m_Body))-1);
 }
 
 uint32_t LWEHTTPMessage::SetBody(const void *Buffer, uint32_t BufferLen) {
@@ -479,7 +479,7 @@ uint32_t LWEHTTPMessage::GetConnectionState(void) const {
 }
 
 uint32_t LWEHTTPMessage::GetContentEncoding(void) const {
-	return LWBitFieldGet(ConnectionBits, m_Flag);
+	return LWBitFieldGet(ContentEncodeBits, m_Flag);
 }
 
 uint32_t LWEHTTPMessage::GetMethod(void) const {
@@ -574,6 +574,7 @@ LWProtocol &LWEProtocol_HTTP::Read(LWRef<LWSocket> &Socket, LWProtocolManager &M
 		Socket->MarkClosable();
 		return *this;
 	}
+	m_HTTPBytesRecv += r;
 	Buffer[r] = '\0';
 
 	uint32_t o = 0;
@@ -597,6 +598,7 @@ LWProtocol &LWEProtocol_HTTP::SocketClosed(LWRef<LWSocket> &Socket, LWProtocolMa
 
 uint32_t LWEProtocol_HTTP::Send(LWRef<LWSocket> &Socket, const void *Buffer, uint32_t Len) {
 	uint32_t r = Socket->SendAll(Buffer, Len);
+	m_HTTPBytesSent += r;
 	if(!LWLogCriticalIf<256>(r==Len, "Socket '{}' Error: {}", Socket->GetLocalAddr(), LWProtocolManager::GetError())) return -1;
 	return r;
 }
@@ -724,6 +726,14 @@ uint64_t LWEProtocol_HTTP::GetTotalInboundMessages(void) const {
 
 uint64_t LWEProtocol_HTTP::GetTotalOutboundMessages(void) const {
 	return m_TotalOutMessages;
+}
+
+uint32_t LWEProtocol_HTTP::GetHTTPRecvBytes(void) const {
+	return m_HTTPBytesRecv;
+}
+
+uint32_t LWEProtocol_HTTP::GetHTTPSentBytes(void) const {
+	return m_HTTPBytesSent;
 }
 
 LWEProtocol_HTTP::LWEProtocol_HTTP(uint32_t ProtocolID, LWAllocator &Allocator) : LWProtocol(ProtocolID), m_Allocator(Allocator) {}

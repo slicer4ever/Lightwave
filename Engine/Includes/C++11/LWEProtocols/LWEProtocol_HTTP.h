@@ -303,6 +303,10 @@ public:
 
 	uint64_t GetTotalOutboundMessages(void) const;
 
+	uint32_t GetHTTPRecvBytes(void) const;
+
+	uint32_t GetHTTPSentBytes(void) const;
+
 	LWEProtocol_HTTP(uint32_t ProtocolID, LWAllocator &Allocator);
 protected:
 	LWAllocator &m_Allocator;
@@ -315,6 +319,9 @@ protected:
 	uint64_t m_TimeoutPeriod = -1;
 	uint64_t m_TotalInMessages = 0;
 	uint64_t m_TotalOutMessages = 0;
+	uint32_t m_HTTPBytesRecv = 0;
+	uint32_t m_HTTPBytesSent = 0;
+
 };
 
 #endif

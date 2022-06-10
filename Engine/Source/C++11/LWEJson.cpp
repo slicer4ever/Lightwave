@@ -631,7 +631,7 @@ LWEJObject *LWEJson::MakeElement(const LWUTF8Iterator &Name, LWEJObject *Parent)
 	LWEJObject *P = Parent;
 	while (P) {
 		if (ParentCnt >= MaxParents) return nullptr;
-		if (P->m_Type != LWEJObject::Array) ParentTable[ParentCnt++] = P;
+		ParentTable[ParentCnt++] = P;
 		P = P->m_ParentHash == 0 ? nullptr : Find(P->m_ParentHash);
 	}
 	uint32_t o = 0;
@@ -646,8 +646,10 @@ LWEJObject *LWEJson::MakeElement(const LWUTF8Iterator &Name, LWEJObject *Parent)
 
 	//std::pair<uint32_t, LWEJObject> p(O.m_Hash, O);
 	auto Res = m_ObjectMap.emplace(FullHash, LWEJObject(Name, "", 0, FullHash, ParentHash, m_Allocator));
-	if(!LWLogCriticalIf<256>(Res.second, "JSON name collision: '{}'", FullNameBuffer)) return nullptr;
-
+	if(!LWLogCriticalIf<256>(Res.second, "JSON name collision: '{}'", FullNameBuffer)) {
+		assert(false);
+		return nullptr;
+	}
 	LWEJObject &R = Res.first->second;
 	if (Parent) Parent->PushChild(&R, m_Allocator);
 	else PushRootElement(&R);
