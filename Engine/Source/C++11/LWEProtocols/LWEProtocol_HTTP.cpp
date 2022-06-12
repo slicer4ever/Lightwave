@@ -91,7 +91,7 @@ uint32_t LWEHTTPMessage::SerializeBody(void *Buffer, uint32_t BufferLen) {
 
 uint32_t LWEHTTPMessage::SerializeHeaders(void *Buffer, uint32_t BufferLen, const LWUTF8Iterator &UserAgent) {
 	char8_t Methods[][32] = { "GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH" };
-	char8_t Caches[][32] = { "no-cache" };
+	char8_t Caches[][32] = { "none", "no-cache", "no-store", "cache" };
 	char8_t Connections[][32] = { "close", "Keep-Alive",  "upgrade"};
 	char8_t Encodings[][32] = { "", "chunk" };
 	char8_t ContentEncodings[][32] = { "identity", "gzip", "compress", "deflate", "br" };
@@ -122,7 +122,7 @@ uint32_t LWEHTTPMessage::SerializeHeaders(void *Buffer, uint32_t BufferLen, cons
 		LWEHTTPMessageHeader &H = m_HeaderTable[i];
 		o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "{}: {}\r\n", m_Header + H.m_NameOffset, m_Header + H.m_ValueOffset);
 	}
-	if (m_ContentLength) o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "Content-Length: {}\r\n", m_ContentLength);
+	o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "Content-Length: {}\r\n", m_ContentLength);
 	if (!UserAgent.AtEnd()) {
 		if (bIsResponse) o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "Server: {}\r\n", UserAgent);
 		else o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "User-Agent: {}\r\n", UserAgent);
@@ -134,9 +134,15 @@ uint32_t LWEHTTPMessage::SerializeHeaders(void *Buffer, uint32_t BufferLen, cons
 	if(Connection==LWEHTTPMessage::Connection_KeepAlive && (m_KeepAliveTimeout>0 || m_KeepAliveMessages>0)) {
 		o += LWUTF8I::Fmt_ns((char8_t*)Buffer, BufferLen, o, "Keep-Alive: timeout={}, max={}\r\n", m_KeepAliveTimeout, m_KeepAliveMessages);
 	}
-	o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "Cache-Control: {}\r\n", Caches[Cache]);
+	if(Cache!=CacheControl_None || m_CacheMaxAge>0) {
+		o += LWUTF8I::Fmt_ns((char8_t*)Buffer, BufferLen, o, "Cache-Control: ");
+		if(m_CacheMaxAge>0) o += LWUTF8I::Fmt_ns((char8_t*)Buffer, BufferLen, o, "max-age={}{} ", m_CacheMaxAge, (Cache!=CacheControl_None?",":""));
+		if(Cache!=CacheControl_None) o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "{}", Caches[Cache]);
+		o += LWUTF8I::Fmt_ns((char8_t*)Buffer, BufferLen, o, "\r\n");
+	}
 	if (ContentEncode != ContentEncode_Identity)  o += LWUTF8I::Fmt_ns((char8_t*)Buffer, BufferLen, o, "Content-Encoding: {}\r\n", ContentEncodings[ContentEncode]);
 	o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "\r\n");
+	//if(!m_ContentLength) o += LWUTF8I::Fmt_ns((char8_t*)Buffer, BufferLen, o, "\r\n");
 	LWLogWarnIf<256>(o<HeaderSize, "Predicted header size: '{}' is smaller than actual header size: '{}'", HeaderSize, o); 
 
 	m_ChunkOffset = 0; //Reset chunk offset for serializing.
@@ -268,7 +274,14 @@ uint32_t LWEHTTPMessage::DeserializeHeaders(const void *Buffer, uint32_t Len, bo
 			if (hdr != -1) {
 				Value.Lower(ResultBuffer, sizeof(ResultBuffer)); //lower value to pre-pare for case insensitive comparisons.
 				if (hdr == 0) { //cache-control:
-					if (Value.Compare("no-cache")) SetCacheControl(CacheControl_NoStore);
+					if (Value.HasSubString("no-store")) SetCacheControl(CacheControl_NoStore);
+					else if (Value.HasSubString("no-cache")) SetCacheControl(CacheControl_NoCache);
+					else if (Value.HasSubString("cache")) SetCacheControl(CacheControl_Cache);
+					LWUTF8Iterator MaxAgeSubStr = Value.NextSubString("max-age=");
+					if(!MaxAgeSubStr.AtEnd()) {
+						LWUTF8Iterator AgeValue = Value.Advance(8);
+						m_CacheMaxAge = (uint32_t)atoi(Value.c_str());
+					}
 				} else if (hdr == 1) { //transfer-encoding:
 					if (Value.Compare("chunked")) SetEncoding(Encode_Chunked);
 				} else if (hdr == 2) { //content-encoding:

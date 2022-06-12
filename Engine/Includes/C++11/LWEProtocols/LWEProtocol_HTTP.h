@@ -45,8 +45,8 @@ struct LWEHTTPMessage {
 	static const uint32_t MaxHeaderLength = 1024 * 2; //2kb of header data.
 	LWBitField32(MethodBits, 4, 0);
 	LWBitField32(ConnectionBits, 2, MethodBitsOffset+4);
-	LWBitField32(CacheControlBits, 1, ConnectionBitsOffset+2);
-	LWBitField32(EncodingBits, 1, CacheControlBitsOffset+1);
+	LWBitField32(CacheControlBits, 2, ConnectionBitsOffset+2);
+	LWBitField32(EncodingBits, 1, CacheControlBitsOffset+2);
 	LWBitField32(ContentEncodeBits, 3, EncodingBitsOffset+1);
 	LWBitField32(UpgradeBits, 1, ContentEncodeBitsOffset+3); 
 	LWBitField32(StatusBits, 10, UpgradeBitsOffset+1);
@@ -65,7 +65,10 @@ struct LWEHTTPMessage {
 	static const uint32_t Connection_KeepAlive = 1;
 	static const uint32_t Connection_Upgrade = 2;
 
-	static const uint32_t CacheControl_NoStore = 0; //Default cache control if not indicated.
+	static const uint32_t CacheControl_None = 0;//Default cache control if not indicated.
+	static const uint32_t CacheControl_NoCache = 1; 
+	static const uint32_t CacheControl_NoStore = 2;
+	static const uint32_t CacheControl_Cache = 3;
 
 	static const uint32_t Encode_None = 0;
 	static const uint32_t Encode_Chunked = 1;
@@ -121,6 +124,7 @@ struct LWEHTTPMessage {
 	uint32_t m_HeaderOffset = 0; //Offset into HeaderData to store more data.
 	uint32_t m_KeepAliveTimeout = 0;
 	uint32_t m_KeepAliveMessages = 0;
+	uint32_t m_CacheMaxAge = 0; //how long response can be cache'd for. (Value > 0 will write into headers).
 	uint32_t m_Flag = 0;
 	uint16_t m_Port = 0;
 
