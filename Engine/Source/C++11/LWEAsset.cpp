@@ -598,6 +598,7 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 
 	uint32_t CompiledLen = 0;
 	uint32_t DefineCount = 0;
+	uint64_t SourceModifiedTime = 0;
 	LWVideoDriver *Driver = AM->GetDriver();
 	uint32_t DriverID = Driver->GetDriverID();
 	LWAllocator &Allocator = AM->GetAllocator();
@@ -738,11 +739,16 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 		LWFileStream CStream;
 		if (!LWFileStream::OpenStream(CStream, CPath, LWFileStream::ReadMode | LWFileStream::BinaryMode, Allocator)) {
 			if(!LWLogCriticalIf<256>(PathAttr, "Shader '{}': Could not open compiled shader at: '{}'", NameAttr->GetValue(), CPath)) return false;
-			CompiledLen = 0;
 		} else {
-			CompiledLen = CStream.Read(CompiledBuffer, sizeof(CompiledBuffer));
-			Res = Driver->CreateShaderCompiled(Type, CompiledBuffer, CompiledLen, Allocator, ErrorBuffer, sizeof(ErrorBuffer));
-			if(!LWLogCriticalIf<256>(Res, "Shader '{}' Failed to load pre-compiled shader, Error: '{}' falling back to full compilation.", NameAttr->GetValue(), ErrorBuffer)) CompiledLen = 0;
+			LWFileStream SStream;
+			if(!Path.AtEnd() && LWFileStream::OpenStream(SStream, Path, LWFileStream::ReadMode|LWFileStream::BinaryMode, Allocator)) {
+				SourceModifiedTime = SStream.GetModifiedTime();
+			}
+			if(SourceModifiedTime<=CStream.GetModifiedTime()) {
+				CompiledLen = CStream.Read(CompiledBuffer, sizeof(CompiledBuffer));
+				Res = Driver->CreateShaderCompiled(Type, CompiledBuffer, CompiledLen, Allocator, ErrorBuffer, sizeof(ErrorBuffer));
+				if(!LWLogCriticalIf<256>(Res, "Shader '{}' Failed to load pre-compiled shader, Error: '{}' falling back to full compilation.", NameAttr->GetValue(), ErrorBuffer)) CompiledLen = 0;
+			}
 		}
 	}
 	AssetPath = Path;
@@ -793,6 +799,7 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 	uint32_t InputCount = 0;
 	uint32_t ResoruceCount = 0;
 	uint32_t BlockCount = 0;
+	uint64_t SourceModifiedTime = 0;
 	LWVideoDriver *Driver = AM->GetDriver();
 	LWAllocator &Alloc = AM->GetAllocator();
 
@@ -840,7 +847,7 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 		return Count;
 	};
 
-	auto ParseShader = [&DefineIterList, &MaxDefines, &ParseInputMap, &ParseResourceMap, &ParseBlockMap, &InputList, &InputCount, &ResourceList, &ResoruceCount, &BlockList, &BlockCount, &Driver, &Alloc](LWEXMLNode *N, const LWUTF8Iterator &Source, const LWUTF8Iterator &SourcePath, LWEAssetManager *AM) ->bool {
+	auto ParseShader = [&DefineIterList, &MaxDefines, &ParseInputMap, &ParseResourceMap, &ParseBlockMap, &InputList, &InputCount, &ResourceList, &ResoruceCount, &BlockList, &BlockCount, &Driver, &Alloc, &SourceModifiedTime](LWEXMLNode *N, const LWUTF8Iterator &Source, const LWUTF8Iterator &SourcePath, LWEAssetManager *AM) ->bool {
 		const uint32_t MaxBufferLength = 1024 * 256;//256KB.
 		const uint32_t MaxNameLen = 256;
 		const uint32_t MaxPathLen = 256;
@@ -878,12 +885,13 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 		auto CPath = LWUTF8I::Fmt<MaxPathLen>("{}/{}.{}{}", CompileCache, NameAttr->GetValue(), CompiledNames[Type], DriverNames[Driver->GetDriverID()]);
 		if (!CompileCache.AtEnd() && !ForceCompile) {
 			LWFileStream CStream;
-			if (!LWFileStream::OpenStream(CStream, CPath, LWFileStream::ReadMode | LWFileStream::BinaryMode, Alloc)) {
-				CompiledLen = 0;
-			} else {
-				CompiledLen = CStream.Read(CompiledBuffer, sizeof(CompiledBuffer));
-				Res = Driver->CreateShaderCompiled(Type, CompiledBuffer, CompiledLen, Alloc, ErrorBuffer, sizeof(ErrorBuffer));
-				if(!LWLogCriticalIf<1024>(Res, "Shader '{}': Failed to load cached shader, Error: '{}', Falling back to full compilation.", NameAttr->GetValue(), ErrorBuffer)) CompiledLen = 0;
+			if (LWFileStream::OpenStream(CStream, CPath, LWFileStream::ReadMode | LWFileStream::BinaryMode, Alloc)) {
+				//check if shader source is newer than our compiled shader.
+				if(SourceModifiedTime<=CStream.GetModifiedTime()) {
+					CompiledLen = CStream.Read(CompiledBuffer, sizeof(CompiledBuffer));
+					Res = Driver->CreateShaderCompiled(Type, CompiledBuffer, CompiledLen, Alloc, ErrorBuffer, sizeof(ErrorBuffer));
+					if(!LWLogCriticalIf<1024>(Res, "Shader '{}': Failed to load cached shader, Error: '{}', Falling back to full compilation.", NameAttr->GetValue(), ErrorBuffer)) CompiledLen = 0;
+				}
 			}
 		}
 		if (!CompiledLen) {
@@ -933,7 +941,7 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 	
 	std::function<LWUTF8Iterator(const LWUTF8Iterator &, uint32_t &, LWFileStream *)> ParseSourceFunc;
 
-	auto ParsePath = [&ParseSourceFunc, &Alloc](const LWUTF8Iterator &Path, uint32_t &Length, LWFileStream *ExistingStream)->LWUTF8Iterator {
+	auto ParsePath = [&ParseSourceFunc, &Alloc, &SourceModifiedTime](const LWUTF8Iterator &Path, uint32_t &Length, LWFileStream *ExistingStream)->LWUTF8Iterator {
 		uint32_t n = Path.CompareLista(LWEShaderCount, LWEShaderNames);
 		char8_t *Buffer = nullptr;
 		LWFileStream Stream;
@@ -943,6 +951,7 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 			std::copy(LWEShaderSources[n], LWEShaderSources[n] + Length, Buffer);
 		} else {
 			if(!LWLogCriticalIf<256>(LWFileStream::OpenStream(Stream, Path, LWFileStream::ReadMode | LWFileStream::BinaryMode, Alloc, ExistingStream), "Failed to open path: '{}'", Path)) return nullptr;
+			SourceModifiedTime = std::max<uint64_t>(SourceModifiedTime, Stream.GetModifiedTime());
 			Length = Stream.Length() + 1;
 			Buffer = Alloc.Allocate<char8_t>(Length);
 			if(!LWLogCriticalIf<256>(Stream.ReadText(Buffer, Length)==Length, "Failed to read '{}'", Path)) {

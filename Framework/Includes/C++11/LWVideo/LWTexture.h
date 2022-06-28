@@ -130,11 +130,20 @@ public:
 	/*!< \brief returns the size of the texture as if it were a 1D texture.  */
 	uint32_t Get1DSize(void) const;
 
+	/*!< \brief returns the size of the texture as if it were a 1D texture as a float. */
+	float Get1DSizef(void) const;
+
 	/*!< \brief returns the size of the texture as if it were a 2D texture, also useful for cubemap textures to get each faces size. */
 	LWVector2i Get2DSize(void) const;
 
+	/*!< \brief returns the size of the texture as if it were a 2D texture as a float. */
+	LWVector2f Get2DSizef(void) const;
+
 	/*!< \brief returns the size of the texture as if it were a 3D texture. */
 	LWVector3i Get3DSize(void) const;
+
+	/*!< \brief returns the size of the texture as if it were a 3D texture as a float. */
+	LWVector3f Get3DSizef(void) const;
 
 	/*!< \brief returns the layers for a 1D texture array. */
 	uint32_t Get1DLayers(void) const;

@@ -721,6 +721,29 @@ struct alignas(LWSVector4<Type>[4]) LWSMatrix4 {
 		m_Rows[2] = ((C.ABAA(B.zzzz())).AABA(A))*Scale.zzzw();
 		m_Rows[3] = Pos;
 	};
+
+	/*!< \brief constructs a 4x4 matrix from Rotation, Scale, Position components(Position should have 1 as it's w component). */
+	LWSMatrix4(const LWSQuaternion<Type> &Rotation, const LWSVector4<Type> &Scale, const LWSVector4<Type> &Pos) {
+		LWSVector4<Type> VQ = Rotation.AsSVec4();
+
+		LWSVector4<Type> yy_xx_xx_xx = VQ.yxxx() * VQ.yxxx();
+		LWSVector4<Type> zz_zz_yy_xx = VQ.zzyx() * VQ.zzyx();
+
+		LWSVector4<Type> xz_xy_yz_xx = VQ.xxyx() * VQ.zyzx();
+		LWSVector4<Type> yw_zw_xw_xx = VQ.yzxx() * VQ.wwwx();
+
+		LWSVector4<Type> One = LWSVector4<Type>(1, 1, 1, 0);
+		LWSVector4<Type> Two = LWSVector4<Type>(2, 2, 2, 0);
+
+		LWSVector4<Type> A = One - Two * (yy_xx_xx_xx + zz_zz_yy_xx);
+		LWSVector4<Type> B = Two * (xz_xy_yz_xx + yw_zw_xw_xx);
+		LWSVector4<Type> C = Two * (xz_xy_yz_xx - yw_zw_xw_xx);
+
+		m_Rows[0] = ((A.ABAA(C)).AABA(B.xxxx())) * Scale;
+		m_Rows[1] = ((B.yyww().ABAA(A)).AABA(C)) * Scale;
+		m_Rows[2] = ((C.ABAA(B.zzzz())).AABA(A)) * Scale;
+		m_Rows[3] = Pos;
+	};
 };
 
 #ifdef __AVX2__

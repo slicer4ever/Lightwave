@@ -380,8 +380,7 @@ int32_t LWByteBuffer::WritePointer(void *Value, int8_t *Buffer){
 
 int32_t LWByteBuffer::WriteStorage(int32_t Len, int8_t *&Buffer) {
 	Buffer = nullptr;
-	if (m_Position + Len > m_BufferSize) return Len;
-	Buffer = m_WriteBuffer + m_Position;
+	if (m_Position + Len <= m_BufferSize) Buffer = m_WriteBuffer + m_Position;
 	m_Position += Len;
 	m_BytesWritten += Len;
 	return Len;
@@ -427,8 +426,8 @@ int32_t LWByteBuffer::ReadText(char *Out, uint32_t OutLen, const int8_t *Buffer,
 
 int32_t LWByteBuffer::WriteText(const uint8_t *Text) {
 	int32_t Length = LWByteBuffer::WriteText(Text, nullptr);
-	if (m_Position + Length > m_BufferSize) return Length;
-	m_Position += LWByteBuffer::WriteText(Text, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+	if (m_Position + Length <= m_BufferSize) LWVerify(LWByteBuffer::WriteText(Text, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr) == Length);
+	m_Position += Length;
 	m_BytesWritten += Length;
 	return Length;
 }
@@ -538,9 +537,10 @@ int32_t LWByteBuffer::ReadText(char *Out, uint32_t OutLen, int32_t Position) {
 }
 
 int32_t LWByteBuffer::WritePointer(void *Value) {
-	int32_t Len = sizeof(void*);
-	if (m_Position + Len > m_BufferSize) return Len;
-	m_Position += WritePointer(Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+	int32_t Len = sizeof(void *);
+	if (m_Position + Len <= m_BufferSize) {
+		m_Position += WritePointer(Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+	}
 	m_BytesWritten += Len;
 	return Len;
 }
@@ -557,7 +557,7 @@ LWByteBuffer &LWByteBuffer::SetPosition(int32_t Position){
 
 int32_t LWByteBuffer::Align(uint32_t Alignment, bool Write) {
 	int32_t r = Alignment - (m_Position & (Alignment - 1));
-	if (m_Position + r > m_BufferSize) return r;
+	if (r == Alignment) return 0;
 	m_Position += r;
 	if (Write) m_BytesWritten += r;
 	return r;

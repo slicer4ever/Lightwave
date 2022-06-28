@@ -49,12 +49,24 @@ uint32_t LWTexture::Get1DSize(void) const {
 	return m_Size.x;
 }
 
+float LWTexture::Get1DSizef(void) const {
+	return (float)m_Size.x;
+}
+
 LWVector2i LWTexture::Get2DSize(void) const {
-	return LWVector2i(m_Size.x, m_Size.y);
+	return m_Size.xy();
+}
+
+LWVector2f LWTexture::Get2DSizef(void) const {
+	return m_Size.xy().CastTo<float>();
 }
 
 LWVector3i LWTexture::Get3DSize(void) const {
 	return m_Size;
+}
+
+LWVector3f LWTexture::Get3DSizef(void) const {
+	return m_Size.CastTo<float>();
 }
 
 uint32_t LWTexture::Get1DLayers(void) const {

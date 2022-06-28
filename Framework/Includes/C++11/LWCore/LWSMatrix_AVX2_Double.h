@@ -141,7 +141,9 @@ struct alignas(__m256d[4]) LWSMatrix4<double> {
 
 	LWSMatrix4(const LWSVector4<double>& RowA, const LWSVector4<double>& RowB, const LWSVector4<double>& RowC, const LWSVector4<double>& RowD);
 
-	LWSMatrix4(const LWSVector4<double>& Scale, const LWSQuaternion<double>& Rotation, const LWSVector4<double>& Pos);
+	LWSMatrix4(const LWSVector4<double> &Scale, const LWSQuaternion<double> &Rotation, const LWSVector4<double> &Pos);
+
+	LWSMatrix4(const LWSQuaternion<double> &Rotation, const LWSVector4<double> &Scale, const LWSVector4<double> &Pos);
 };
 
 

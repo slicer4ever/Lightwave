@@ -683,7 +683,7 @@ struct LWMatrix4 {
 		m_Rows[3] = RowD;
 	}
 
-	/*!< \brief constructs a 4x4 matrix from Scale, Rotation, Position components. */
+	/*!< \brief constructs a 4x4 matrix from Scale * Rotation * Position components. */
 	LWMatrix4(const LWVector3<Type> &Scale, const LWQuaternion<Type> &Rotation, const LWVector3<Type> &Pos) {
 		const LWQuaternion<Type> &Q = Rotation;
 		Type xx = Q.x*Q.x;
@@ -702,6 +702,27 @@ struct LWMatrix4 {
 		m_Rows[2] = LWVector4<Type>((Type)(2 * (xz - yw)), (Type)(2 * (yz + xw)), (Type)(1 - 2 * (xx + yy)), (Type)0)*Scale.z;
 		m_Rows[3] = LWVector4<Type>((Type)Pos.x, (Type)Pos.y, (Type)Pos.z, (Type)1 );
 	};
+
+	/*!< \brief constructs a 4x4 matrix from rotation * scale * Position components. */
+	LWMatrix4(const LWQuaternion<Type> &Rotation, const LWVector3<Type> &Scale, const LWVector3<Type> &Pos) {
+		const LWQuaternion<Type> &Q = Rotation;
+		Type xx = Q.x * Q.x;
+		Type xy = Q.x * Q.y;
+		Type xz = Q.x * Q.z;
+		Type xw = Q.x * Q.w;
+		Type yy = Q.y * Q.y;
+		Type yz = Q.y * Q.z;
+		Type yw = Q.y * Q.w;
+
+		Type zz = Q.z * Q.z;
+		Type zw = Q.z * Q.w;
+
+		m_Rows[0] = LWVector4<Type>((Type)(1 - 2 * (yy + zz)) * Scale.x, (Type)(2 * (xy - zw))     * Scale.y, (Type)(2 * (xz + yw)) * Scale.z, (Type)0);
+		m_Rows[1] = LWVector4<Type>((Type)2 * (xy + zw)       * Scale.x, (Type)(1 - 2 * (xx + zz)) * Scale.y, (Type)(2 * (yz - xw)) * Scale.z, 0);
+		m_Rows[2] = LWVector4<Type>((Type)(2 * (xz - yw))     * Scale.x, (Type)(2 * (yz + xw))     * Scale.y, (Type)(1 - 2 * (xx + yy)) * Scale.z, (Type)0);
+		m_Rows[3] = LWVector4<Type>((Type)Pos.x, (Type)Pos.y, (Type)Pos.z, (Type)1);
+	};
+
 };
 
 /*! \brief LWMatrix3 is a 3x3 row-major matrix object.

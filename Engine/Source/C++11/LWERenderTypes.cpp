@@ -43,6 +43,14 @@ uint32_t LWERenderMaterial::PushTexture(const LWERenderMaterialTexture &Texture,
 	return (1<<TextureID);
 }
 
+void LWERenderMaterial::SetTextureModel(LWEGeometryModelData &ModelData, const LWERenderMaterialTexture &Texture, uint32_t TextureID, const LWVector4f &SubTexture) {
+	m_TextureList[TextureID] = Texture;
+	ModelData.m_HasTextureFlag |= Texture.m_TextureID ? (1 << TextureID) : 0;
+	ModelData.m_SubTextures[TextureID] = SubTexture;
+	m_TextureCount = std::max(m_TextureCount, TextureID + 1);
+	return;
+}
+
 LWERenderMaterial::LWERenderMaterial(const LWUTF8I &PipelineName, LWERenderMaterialTexture *TextureList, uint32_t TextureCount) : LWERenderMaterial(PipelineName.Hash(), TextureList, TextureCount) {}
 
 LWERenderMaterial::LWERenderMaterial(uint32_t PipelineNameHash, LWERenderMaterialTexture *TextureList, uint32_t TextureCount) : m_PipelineName(PipelineNameHash), m_TextureCount(TextureCount) {

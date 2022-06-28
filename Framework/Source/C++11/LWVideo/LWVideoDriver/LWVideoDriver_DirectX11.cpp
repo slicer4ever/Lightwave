@@ -217,7 +217,7 @@ LWPipeline *LWVideoDriver_DirectX11_1::CreatePipeline(LWPipeline *Source, LWAllo
 		for (uint32_t i = 0; i < VContext.m_InputCount; i++) {
 			LWDirectX11_1ShaderInput &vIn = VContext.m_InputList[i];
 			bool bIsInternal = LWUTF8I(vIn.m_Name).Compare("SV_", 3);
-			if (LWUTF8I(vIn.m_Name).Compare("SV_", 3)) {
+			if(bIsInternal) {
 				LayoutElements[i] = { vIn.m_Name, vIn.m_SemanticIndex, vIn.m_DXFormat, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 };
 				continue;
 			}

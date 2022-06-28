@@ -102,10 +102,10 @@ LWSMatrix4f LWECameraOrtho::MakeMatrix(void) const {
 const LWECameraOrtho &LWECameraOrtho::BuildFrustrum(const LWSVector4f &Fwrd, const LWSVector4f &Up, const LWSVector4f &Right, LWSVector4f *Result) const {
 	Result[0] = Fwrd.AAAB(LWSVector4f(m_Near));// LWVector4f(Fwrd, m_Near);
 	Result[1] = (-Fwrd).AAAB(LWSVector4f(m_Far));// (-Fwrd, m_Far);
-	Result[2] = Right.AAAB(LWSVector4f(-m_Left));// LWVector4f(Right, -m_Left);
+	Result[2] = (Right).AAAB(LWSVector4f(-m_Left));// LWVector4f(Right, -m_Left);
 	Result[3] = (-Right).AAAB(LWSVector4f(m_Right));// LWVector4f(-Right, m_Right);
-	Result[4] = (-Up).AAAB(LWSVector4f(m_Top));// LWVector4f(-Up, m_Top);
-	Result[5] = Up.AAAB(LWSVector4f(-m_Bottom)); // LWVector4f(Up, -m_Bottom);
+	Result[4] = -Up.AAAB(LWSVector4f(-m_Top));// LWVector4f(-Up, m_Top);
+	Result[5] = (Up).AAAB(LWSVector4f(-m_Bottom)); // LWVector4f(Up, -m_Bottom);
 	//for (uint32_t i = 0; i < 6; i++) std::cout << i << ": " << Result[i] << std::endl;
 	return *this;
 }
@@ -239,6 +239,11 @@ LWECamera &LWECamera::SetAspect(float Aspect) {
 	if (IsPointCamera()) return *this;
 	if (IsOrthoCamera()) return *this;
 	m_Perspective.m_Aspect = Aspect;
+	return *this;
+}
+
+LWECamera &LWECamera::SetOrthoPropertys(float Left, float Right, float Bottom, float Top, float Near, float Far) {
+	if(IsOrthoCamera())	m_Ortho = LWECameraOrtho(Left, Right, Near, Far, Top, Bottom);
 	return *this;
 }
 

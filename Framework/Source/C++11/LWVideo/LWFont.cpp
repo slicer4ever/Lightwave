@@ -549,12 +549,12 @@ LWFont *LWFont::LoadFontTTF(LWFileStream *Stream, LWVideoDriver *Driver, uint32_
 				uint8_t v = Src[x + y*Stride];
 				uint8_t k = Kernelsize;
 				bool Inside = v > Threshold;
-				int32_t xmin = x > Kernelsize ? x - Kernelsize : 0;
-				int32_t xmax = (x + Kernelsize) > width ? width : x + Kernelsize;
-				int32_t ymin = y > Kernelsize ? y - Kernelsize : 0;
-				int32_t ymax = (y + Kernelsize) > height ? height : y + Kernelsize;
-				for (int32_t ny = ymin; ny < ymax; ny++) {
-					for (int32_t nx = xmin; nx < xmax; nx++) {
+				uint32_t xmin = x > Kernelsize ? x - Kernelsize : 0;
+				uint32_t xmax = (x + Kernelsize) > width ? width : x + Kernelsize;
+				uint32_t ymin = y > Kernelsize ? y - Kernelsize : 0;
+				uint32_t ymax = (y + Kernelsize) > height ? height : y + Kernelsize;
+				for (uint32_t ny = ymin; ny < ymax; ny++) {
+					for (uint32_t nx = xmin; nx < xmax; nx++) {
 						uint32_t p = Src[nx + ny*Stride];
 						if (p > Threshold && Inside) continue;
 						else if (p <= Threshold && !Inside) continue;

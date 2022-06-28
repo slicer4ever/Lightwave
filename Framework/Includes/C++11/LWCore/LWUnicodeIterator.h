@@ -17,6 +17,11 @@ struct LWUTFC_View {
 		return (const char *)m_ReadData;
 	}
 
+	// \brief hash's the c-view string by calling the UnicodeIterators hash function on it. */
+	uint32_t Hash(void) const {
+		return LWUnicodeIterator<Type>(m_ReadData).Hash();
+	}
+
 	/*!< \brief returns an iterator to C_View data. */
 	LWUnicodeIterator<Type> operator()(void) const {
 		return LWUnicodeIterator<Type>(m_ReadData);

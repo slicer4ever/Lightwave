@@ -13,6 +13,8 @@ class LWERenderPass;
 
 class LWERendererBlockGeometry;
 
+struct LWEGeometryModelData;
+
 static const uint32_t LWEMaxGeometryBuckets = 16;
 static const uint32_t LWEMaxPasses = 16;
 static const uint32_t LWEMaxBindableTextures = 5;
@@ -61,9 +63,9 @@ static const uint32_t LWEPBRSGSpecularID = 1;
 struct LWEPassFrameData {};
 
 struct LWERenderMaterialTexture {
-	uint32_t m_ResourceName = LWUTF8I::EmptyHash;
-	uint32_t m_TextureID = 0;
-	uint32_t m_TextureState = 0;
+	uint32_t m_ResourceName = LWUTF8I::EmptyHash; //Maps to the shader texture name of the pipeline. 
+	uint32_t m_TextureID = 0; //ID of the texture in the renderer.
+	uint32_t m_TextureState = 0; //LWTexture texture state.
 
 	LWERenderMaterialTexture(const LWUTF8I &ResourceName, uint32_t TextureID, uint32_t TextureState = 0);
 
@@ -71,7 +73,6 @@ struct LWERenderMaterialTexture {
 
 	LWERenderMaterialTexture() = default;
 };
-
 
 //Helper class for applications to manage video buffer's, allocates a local data reserve, upload's to Renderer when requested.
 struct LWERenderVideoBuffer {
@@ -120,6 +121,9 @@ struct LWERenderMaterial {
 
 	uint32_t PushTexture(const LWERenderMaterialTexture &Texture, uint32_t TextureID); //Returns the bit of TextureID if can be inserted, or 0 if not.
 
+	//Set's model has flag if Texture.m_ID!=0, also set's uv coordinates to the SubTexture coordinates(x/y = position(0-1 range), z/w = size of sub region(0-1 range), also set's texturecount to max(TextureCount, TextureID+1).
+	void SetTextureModel(LWEGeometryModelData &ModelData, const LWERenderMaterialTexture &Texture, uint32_t TextureID, const LWVector4f &SubTexture);
+
 	LWERenderMaterial(const LWUTF8I &PipelineName, LWERenderMaterialTexture *TextureList, uint32_t TextureCount);
 
 	LWERenderMaterial(uint32_t PipelineNameHash, LWERenderMaterialTexture *TextureList, uint32_t TextureCount);
@@ -164,7 +168,7 @@ struct LWEVerticePBR {
 struct alignas(32) LWEGeometryModelData {
 	LWSMatrix4f m_Transform;
 	LWSVector4f m_MaterialData[LWEMaxMaterialData];
-	LWVector4f m_SubTextures[LWEMaxBindableTextures];
+	LWVector4f m_SubTextures[LWEMaxBindableTextures]; //SubTexture, x/y = Position(0-1) range of texture, z/w = Size(0-1) of sampled texture. (if using the Utilitys SampleIf functions)
 	uint32_t m_HasTextureFlag = 0;
 	uint32_t m_BoneID = 0;
 	uint32_t m_Pad[2];

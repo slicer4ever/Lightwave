@@ -1733,8 +1733,8 @@ public:
 	template<class Type>
 	int32_t WriteVariant(Type Value, int32_t MinBytes = 0) {
 		int32_t Len = std::max<uint32_t>(VariantLength(Value), MinBytes);
-		if (m_Position + Len > m_BufferSize) return Len;
-		m_Position += WriteVariant(Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr, MinBytes);
+		if (m_Position + Len <= m_BufferSize) LWVerify(WriteVariant(Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr, MinBytes) == Len);
+		m_Position += Len;
 		m_BytesWritten += Len;
 		return Len;
 	}
@@ -1751,8 +1751,8 @@ public:
 	template<class Type>
 	int32_t WriteSVariant(Type Value, int32_t MinBytes = 0) {
 		int32_t Len = std::max<uint32_t>(SVariantLength(Value), MinBytes);
-		if (m_Position + Len > m_BufferSize) return Len;
-		m_Position += WriteSVariant(Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr, MinBytes);
+		if (m_Position + Len <= m_BufferSize) LWVerify(WriteSVariant(Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr, MinBytes) == Len);
+		m_Position += Len;
 		m_BytesWritten += Len;
 		return Len;
 	}
@@ -1775,8 +1775,8 @@ public:
 		typedef int32_t (*Func_T)(const Type, int8_t *);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Len = sizeof(Type);
-		if (m_Position + Len > m_BufferSize) return Len;
-		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		if (m_Position + Len <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr) == Len);
+		m_Position += Len;
 		m_BytesWritten += Len;
 		return Len;
 	}
@@ -1787,8 +1787,8 @@ public:
 		typedef int32_t(*Func_T)(const LWSQuaternion<Type> &, int8_t *);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Len = sizeof(Type) * 4;
-		if (m_Position + Len > m_BufferSize) return Len;
-		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		if (m_Position + Len <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr) == Len);
+		m_Position += Len;
 		m_BytesWritten += Len;
 		return Len;
 	}
@@ -1801,8 +1801,8 @@ public:
 		typedef int32_t(*Func_T)(const LWQuaternion<Type> &, int8_t *);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Len = sizeof(Type) * 4;
-		if (m_Position + Len > m_BufferSize) return Len;
-		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		if (m_Position + Len <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr) == Len);
+		m_Position += Len;
 		m_BytesWritten += Len;
 		return Len;
 	}
@@ -1813,8 +1813,8 @@ public:
 		typedef int32_t(*Func_T)(const LWSVector4<Type> &, int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Len = sizeof(Type) * 4;
-		if (m_Position + Len > m_BufferSize) return Len;
-		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		if (m_Position + Len <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr) == Len);
+		m_Position += Len;
 		m_BytesWritten += Len;
 		return Len;
 	}
@@ -1827,8 +1827,8 @@ public:
 		typedef int32_t(*Func_T)(const LWVector4<Type> &, int8_t *);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Len = sizeof(Type)* 4;
-		if (m_Position + Len > m_BufferSize) return Len;
-		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		if (m_Position + Len <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr) == Len);
+		m_Position += Len;
 		m_BytesWritten += Len;
 		return Len;
 	}
@@ -1841,8 +1841,8 @@ public:
 		typedef int32_t(*Func_T)(const LWVector3<Type> &, int8_t *);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Len = sizeof(Type)* 3;
-		if (m_Position + Len > m_BufferSize) return Len;
-		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		if (m_Position + Len <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr) == Len);
+		m_Position += Len;
 		m_BytesWritten += Len;
 		return Len;
 	}
@@ -1855,8 +1855,8 @@ public:
 		typedef int32_t(*Func_T)(const LWVector2<Type> &, int8_t *);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Len = sizeof(Type)* 2;
-		if (m_Position + Len > m_BufferSize) return Len;
-		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		if (m_Position + Len <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr) == Len);
+		m_Position += Len;
 		m_BytesWritten += Len;
 		return Len;
 	}
@@ -1867,8 +1867,8 @@ public:
 		typedef int32_t(*Func_T)(const LWSMatrix4<Type> &, int8_t *);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Len = sizeof(Type) * 16;
-		if (m_Position + Len > m_BufferSize) return Len;
-		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		if (m_Position + Len <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr) == Len);
+		m_Position += Len;
 		m_BytesWritten += Len;
 		return Len;
 	}
@@ -1880,8 +1880,8 @@ public:
 		typedef int32_t(*Func_T)(const LWMatrix4<Type> &, int8_t *);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Len = sizeof(Type)* 16;
-		if (m_Position + Len > m_BufferSize) return Len;
-		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		if (m_Position + Len <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr) == Len);
+		m_Position += Len;
 		m_BytesWritten += Len;
 		return Len;
 	}
@@ -1893,8 +1893,8 @@ public:
 		typedef int32_t(*Func_T)(const LWMatrix3<Type> &, int8_t *);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Len = sizeof(Type)* 9;
-		if (m_Position + Len > m_BufferSize) return Len;
-		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		if (m_Position + Len <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr) == Len);
+		m_Position += Len;
 		m_BytesWritten += Len;
 		return Len;
 	}
@@ -1906,8 +1906,8 @@ public:
 		typedef int32_t(*Func_T)(const LWMatrix2<Type> &, int8_t *);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Len = sizeof(Type)* 4;
-		if (m_Position + Len > m_BufferSize) return Len;
-		m_Position += Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		if (m_Position + Len <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](Value, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr) == Len);
+		m_Position += Len;
 		m_BytesWritten += Len;
 		return Len;
 	}
@@ -1918,8 +1918,8 @@ public:
 		typedef int32_t(*Func_T)(const LWUnicodeIterator<Type> &, int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::WriteUTF<Type>, LWByteBuffer::WriteNetworkUTF<Type> };
 		int32_t Length = Funcs[m_SelectedFunc](Iter, nullptr);
-		if (m_Position + Length > m_BufferSize) return Length;
-		m_Position += Funcs[m_SelectedFunc](Iter, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		if (m_Position + Length <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](Iter, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr) == Length);
+		m_Position += Length;
 		m_BytesWritten += Length;
 		return Length;
 	}
@@ -1939,8 +1939,8 @@ public:
 		typedef int32_t (*Func_T)(uint32_t, const Type *, int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Length = sizeof(Type)*Len;
-		if (m_Position + Length > m_BufferSize) return Length;
-		m_Position += Funcs[m_SelectedFunc](Len, Values, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		if (m_Position + Length <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](Len, Values, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr) == Length);
+		m_Position += Length;
 		m_BytesWritten += Length;
 		return Length;
 	}
@@ -1951,8 +1951,8 @@ public:
 		typedef int32_t(*Func_T)(uint32_t, const LWSQuaternion<Type> *, int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Length = sizeof(Type) * 4 * Len;
-		if (m_Position + Length > m_BufferSize) return Length;
-		m_Position += Funcs[m_SelectedFunc](Len, Values, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		if (m_Position + Length <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](Len, Values, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr) == Length);
+		m_Position += Length;
 		m_BytesWritten += Length;
 		return Length;
 	}
@@ -1963,8 +1963,8 @@ public:
 		typedef int32_t(*Func_T)(uint32_t, const LWSVector4<Type>*, int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Length = sizeof(Type) * 4 * Len;
-		if (m_Position + Length > m_BufferSize) return Length;
-		m_Position += Funcs[m_SelectedFunc](Len, Values, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		if (m_Position + Length <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](Len, Values, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr) == Length);
+		m_Position += Length;
 		m_BytesWritten += Length;
 		return Length;
 	}
@@ -1975,8 +1975,8 @@ public:
 		typedef int32_t(*Func_T)(uint32_t, const LWSMatrix4<Type>*, int8_t*);
 		Func_T Funcs[] = { LWByteBuffer::Write, LWByteBuffer::WriteNetwork };
 		int32_t Length = sizeof(Type) * 16 * Len;
-		if (m_Position + Length > m_BufferSize) return Length;
-		m_Position += Funcs[m_SelectedFunc](Len, Values, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr);
+		if (m_Position + Length <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](Len, Values, m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr)==Length);
+		m_Position += Length;
 		m_BytesWritten += Length;
 		return Length;
 	}
@@ -1990,8 +1990,8 @@ public:
 		typedef int32_t (*Func_T)(int8_t *, uint32_t, va_list);
 		Func_T Funcs[] = { LWByteBuffer::Write<Type>, LWByteBuffer::WriteNetwork<Type>};
 		int32_t Length = sizeof(Type)*Len;
-		if (m_Position + Length > m_BufferSize) return Length;
-		m_Position += Funcs[m_SelectedFunc](m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr, Len, lst);
+		if (m_Position + Length <= m_BufferSize) LWVerify(Funcs[m_SelectedFunc](m_WriteBuffer ? m_WriteBuffer + m_Position : nullptr, Len, lst)==Length);
+		m_Position += Length;
 		m_BytesWritten += Length;
 		return Length;
 	}

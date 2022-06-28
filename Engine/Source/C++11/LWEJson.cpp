@@ -189,7 +189,7 @@ LWQuaternionf LWEJObject::AsQuaternionf(LWEJson &Js){
 		for (uint32_t i = 0; i < Len; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
 			V[i] = JO->AsFloat();
-		}
+		}		
 	} else {
 		for (uint32_t i = 0; i < m_Length; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];

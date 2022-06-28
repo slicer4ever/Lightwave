@@ -16,7 +16,7 @@ LWMatrix4f LWEGLTFAnimTween::GetFrame(float Time, bool Loop) {
 	LWVector3f Trans = m_Translation.GetValue(Time);
 	LWVector3f Scale = m_Scale.GetValue(Time, LWVector3f(1.0f));
 	LWQuaternionf Rot = m_Rotation.GetValue(Time);
-	LWMatrix4f Mat = (LWMatrix4f(Scale.x, Scale.y, Scale.z, 1.0f) * LWMatrix4f(Rot) * LWMatrix4f::Translation(Trans)).Transpose3x3();
+	LWMatrix4f Mat = LWMatrix4f(Rot, Scale, Trans).Transpose3x3();
 	return Mat;
 }
 
@@ -676,7 +676,7 @@ bool LWEGLTFNode::ParseJSON(LWEGLTFNode &Node, LWEJson &J, LWEJObject *Obj) {
 		LWVector3f Translation = JTranslation ? JTranslation->AsVec3f(J) : LWVector3f();
 		LWVector3f Scale = JScale ? JScale->AsVec3f(J) : LWVector3f(1.0f);
 		LWQuaternionf Rot = JRotation ? JRotation->AsQuaternionf(J) : LWQuaternionf();
-		Matrix = (LWMatrix4f(Scale.x, Scale.y, Scale.z, 1.0f)*LWMatrix4f(Rot)*LWMatrix4f::Translation(Translation)).Transpose3x3();
+		Matrix = LWMatrix4f(Rot, Scale, Translation).Transpose3x3();
 	}
 	Node = LWEGLTFNode(JName ? JName->GetValue() : LWUTF8Iterator(), JMesh ? JMesh->AsInt() : -1, JSkin ? JSkin->AsInt() : -1, JCamera ? JCamera->AsInt():-1, JChildren ? JChildren->m_Length : 0, Matrix);
 	if (JChildren) {
@@ -899,24 +899,36 @@ bool LWEGLTFParser::LoadFileGLB(LWEGLTFParser &Parser, const LWUTF8Iterator &Pat
 	
 	Header H;
 	ReadHeader(H, Buf);
-	if(!LWLogCriticalIf<256>(H.m_Magic==MagicID, "glb magic header incorrect: '{}'", Path)) return false;
-	if(!LWLogCriticalIf<256>(H.m_Version==SupportedVersion, "glb has version: {} while glb parser only supports version {} for file: '{}'.", H.m_Version, SupportedVersion, Path)) return false;
-
+	if (!LWLogCriticalIf<256>(H.m_Magic == MagicID, "glb magic header incorrect: '{}'", Path)) {
+		LWAllocator::Destroy(Buffer);
+		return false;
+	}
+	if (!LWLogCriticalIf<256>(H.m_Version == SupportedVersion, "glb has version: {} while glb parser only supports version {} for file: '{}'.", H.m_Version, SupportedVersion, Path)) {
+		LWAllocator::Destroy(Buffer);
+		return false;
+	}
 	//We only support 1 json and then 1 bin chunk(if attached).
 	Chunk jsonChunk;
 	Chunk binChunk;
 	char *binChunkBuf = nullptr;
 	ReadChunk(jsonChunk, Buf);
-	if(!LWLogCriticalIf<256>(jsonChunk.m_Type==ChunkJSON, "glb is formatted incorrectly: '{}'", Path)) return false;
-
+	if (!LWLogCriticalIf<256>(jsonChunk.m_Type == ChunkJSON, "glb is formatted incorrectly: '{}'", Path)) {
+		LWAllocator::Destroy(Buffer);
+		return false;
+	}
 	if ((Buf.GetPosition() + jsonChunk.m_Length) != Len) {
 		Buf.Seek(jsonChunk.m_Length);
 		ReadChunk(binChunk, Buf);
 		binChunkBuf = Buffer + binChunk.m_Position;
 	}
 	LWEJson J(Allocator);
-	if(!LWLogCriticalIf<256>(LWEJson::Parse(J, Buffer+jsonChunk.m_Position), "glb failed to parse gltf: '{}'", Path)) return false;
-	return ParseJSON(Parser, J, Stream, binChunkBuf, Allocator);
+	if (!LWLogCriticalIf<256>(LWEJson::Parse(J, Buffer + jsonChunk.m_Position), "glb failed to parse gltf: '{}'", Path)) {
+		LWAllocator::Destroy(Buffer);
+		return false;
+	}
+	bool bResult = ParseJSON(Parser, J, Stream, binChunkBuf, Allocator);
+	LWAllocator::Destroy(Buffer);
+	return bResult;
 }
 
 bool LWEGLTFParser::LoadFileGLTF(LWEGLTFParser &Parser, const LWUTF8Iterator &Path, LWAllocator &Allocator) {

@@ -313,7 +313,7 @@ bool LWEAABBInFrustum(const LWSVector4<Type> &AABBMin, const LWSVector4<Type> &A
 		uint32_t LUTIdx = (Frustum[i].x > (Type)0) << 2 | (Frustum[i].y > (Type)0) << 1 | (Frustum[i].z > (Type)0);
 		LWSVector4<Type> P = Frustum[i];// *LWSVector4<Type>((Type)-1, (Type)-1, (Type)-1, (Type)1);
 		if (Frustum[i].Dot(Table[LUTIdx]) < (Type)0) return false; //Outside
-		if (Frustum[i].Dot(Table[(~LUTIdx) & 0x7]) <= (Type)0) return true; //Intersection
+		//if (Frustum[i].Dot(Table[(~LUTIdx) & 0x7]) <= (Type)0) result = intersection; //if we add intersection disertion test in the future, uncomment this.
 	}
 	return true; //All inside.
 }

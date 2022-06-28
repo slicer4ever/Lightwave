@@ -715,4 +715,40 @@ LWSMatrix4<float>::LWSMatrix4(const LWSVector4<float>& Scale, const LWSQuaternio
 	m_Row23 = _mm256_set_m128(Row3, Row2);
 };
 
+LWSMatrix4<float>::LWSMatrix4(const LWSQuaternion<float> &Rotation, const LWSVector4<float> &Scale, const LWSVector4<float> &Pos) {
+	__m128 vq = Rotation.m_Data;
+
+	__m128 yxxx = _mm_permute_ps(vq, _MM_SHUFFLE(0, 0, 0, 1));
+	__m128 zzyx = _mm_permute_ps(vq, _MM_SHUFFLE(0, 1, 2, 2));
+	__m128 xxyx = _mm_permute_ps(vq, _MM_SHUFFLE(0, 1, 0, 0));
+	__m128 zyzx = _mm_permute_ps(vq, _MM_SHUFFLE(0, 2, 1, 2));
+	__m128 yzxx = _mm_permute_ps(vq, _MM_SHUFFLE(0, 0, 2, 1));
+	__m128 wwwx = _mm_permute_ps(vq, _MM_SHUFFLE(0, 3, 3, 3));
+
+	__m128 yy_xx_xx_xx = _mm_mul_ps(yxxx, yxxx);
+	__m128 zz_zz_yy_xx = _mm_mul_ps(zzyx, zzyx);
+
+	__m128 xz_xy_yz_xx = _mm_mul_ps(xxyx, zyzx);
+	__m128 yw_zw_xw_xx = _mm_mul_ps(yzxx, wwwx);
+
+	__m128 One = _mm_set_ps(0.0f, 1.0f, 1.0f, 1.0f);
+	__m128 Two = _mm_set_ps(0.0f, 2.0f, 2.0f, 2.0f);
+
+	__m128 A = _mm_sub_ps(One, _mm_mul_ps(Two, _mm_add_ps(yy_xx_xx_xx, zz_zz_yy_xx)));
+	__m128 B = _mm_mul_ps(Two, _mm_add_ps(xz_xy_yz_xx, yw_zw_xw_xx));
+	__m128 C = _mm_mul_ps(Two, _mm_sub_ps(xz_xy_yz_xx, yw_zw_xw_xx));
+
+	__m128 Bxxxx = _mm_permute_ps(B, _MM_SHUFFLE(0, 0, 0, 0));
+	__m128 Byyww = _mm_permute_ps(B, _MM_SHUFFLE(3, 3, 1, 1));
+	__m128 Bzzzz = _mm_permute_ps(B, _MM_SHUFFLE(2, 2, 2, 2));
+
+	__m128 Row0 = _mm_mul_ps(_mm_blend_ps(_mm_blend_ps(A, C, 0x2), Bxxxx, 0x4), Scale.m_Data);
+	__m128 Row1 = _mm_mul_ps(_mm_blend_ps(_mm_blend_ps(Byyww, A, 0x2), C, 0x4), Scale.m_Data);
+	__m128 Row2 = _mm_mul_ps(_mm_blend_ps(_mm_blend_ps(C, Bzzzz, 0x2), A, 0x4), Scale.m_Data);
+	__m128 Row3 = Pos.m_Data;
+
+
+	m_Row01 = _mm256_set_m128(Row1, Row0);
+	m_Row23 = _mm256_set_m128(Row3, Row2);
+};
 #endif

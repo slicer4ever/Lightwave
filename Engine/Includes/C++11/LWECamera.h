@@ -85,6 +85,8 @@ public:
 
 	LWECamera &SetAspect(float Aspect);
 
+	LWECamera &SetOrthoPropertys(float Left, float Right, float Bottom, float Top, float Near, float Far);
+
 	LWECamera &BuildFrustrum(void);
 
 	const LWECamera &BuildFrustrumPoints(LWSVector4f *Result) const; //Builds 6 frustrum points, where 0 = Near top left, 1 = top right, 2 = bottom left.  3 = Far top left, 4 = top right, 5 = bottom left.  used in light culling system to build sub frustrums.
