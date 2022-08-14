@@ -1,5 +1,12 @@
 #include "LWCore/LWUnicodeIterator.h"
 
+const uint32_t LWUTF8I::EmptyHash;
+const uint32_t LWUTF8I::MaxCodePoints;
+const uint32_t LWUTF16I::EmptyHash;
+const uint32_t LWUTF16I::MaxCodePoints;
+const uint32_t LWUTF32I::EmptyHash;
+const uint32_t LWUTF32I::MaxCodePoints;
+
 std::ostream &operator << (std::ostream &o, const LWUTF8Iterator &Iter) {
 	LWUTF8Iterator C = Iter;
 	for (; !C.AtEnd(); ++C) {

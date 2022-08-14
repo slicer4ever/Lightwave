@@ -9,6 +9,26 @@
 #include <algorithm>
 #include <iostream>
 
+
+const uint32_t LWFileStream::ReadMode; /*!< \brief Marks the file as a read file. */
+const uint32_t LWFileStream::WriteMode; /*!< \brief Marks the file as a write file. */
+const uint32_t LWFileStream::AppendMode; /*!< \brief Marks the file as an appended file. */
+const uint32_t LWFileStream::BinaryMode; /*!< \brief Marks the file as being in binary mode. */
+const uint32_t LWFileStream::AssetMode; /*!< \brief internally used to indicate using platform specific api to access and read/write files. */
+const uint32_t LWFileStream::AssetFlagBitOffset; /*!< \brief bit offset to get assetmode or normal mode when using platform with api specfic read/write files. */
+
+const uint32_t LWFileStream::Game; /*!< \brief the local game folder id. save all content here needed to be preserved that is not user data. */
+const uint32_t LWFileStream::Fonts; /*!< \brief the system fonts folder id. */
+const uint32_t LWFileStream::App; /*!< \brief the read only content folder(or asset folder packed with the apk)*/
+const uint32_t LWFileStream::User; /*!< \brief the system's user folder id. save data that is use specific here.*/
+
+const uint8_t LWFileStream::SeekCurrent; /*!< \brief Seek flag from the current position. */
+const uint8_t LWFileStream::SeekStart; /*!< \brief Seek flag from the beginning of the file. */
+const uint8_t LWFileStream::SeekEnd; /*!< \brief Seek flag from the end of the file. */
+
+const uint8_t LWFileStream::AssetToken; /*!< \brief token placed at beginning of file path to indicate asset mode is to be used. */
+
+
 void LWFileStream::SplitPath(const LWUTF8Iterator &FilePath, LWUTF8Iterator &DirPath, LWUTF8Iterator &FileName, LWUTF8Iterator &Extension) {
 	LWUTF8Iterator C = FilePath;
 	LWUTF8Iterator NameStart;

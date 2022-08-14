@@ -4,6 +4,9 @@
 #include <LWCore/LWLogger.h>
 
 //LWEShadowMapPass:
+LWBitField32Define(LWEShadowMapPass::CubeFaceIndexBits);
+const uint32_t LWEShadowMapPass::CubeIndex;
+
 LWEPass *LWEShadowMapPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer *Renderer, LWEAssetManager *AssetManager, LWAllocator &Allocator) {
 	LWEShadowMapPass *SMPass = Pass ? (LWEShadowMapPass*)Pass : Allocator.Create<LWEShadowMapPass>();
 	if (!LWEGeometryPass::ParseXML(Node, SMPass, Renderer, AssetManager, Allocator)) {

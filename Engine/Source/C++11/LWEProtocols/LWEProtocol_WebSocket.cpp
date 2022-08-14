@@ -9,6 +9,7 @@
 #include <LWCore/LWLogger.h>
 #include <iostream>
 
+//LWEWebPacket:
 uint32_t LWEWebPacket::Deserialize(const void *Buffer, uint32_t BufferLen, LWAllocator &Allocator) {
 	LWByteBuffer Buf((const int8_t*)Buffer, BufferLen, LWByteBuffer::Network);
 	
@@ -191,6 +192,9 @@ LWEWebPacket::~LWEWebPacket() {
 	LWAllocator::Destroy(m_Data);
 }
 
+//LWEWebSocket:
+const uint32_t LWEWebSocket::HeaderMaxLength;
+
 LWEWebSocket &LWEWebSocket::SetURI(const LWUTF8Iterator &URI) {
 	LWUTF8Iterator Proto, Domain, Path;
 	LWSocket::SplitURI(URI, m_Port, Domain, Proto, Path);
@@ -264,6 +268,9 @@ LWEWebSocket::LWEWebSocket(const LWUTF8Iterator &URI, const LWUTF8Iterator &Orig
 	SetURI(URI);
 	SetOrigin(Origin);
 }
+
+//LWEProtocol_WebSocket:
+const uint32_t LWEProtocol_WebSocket::WebSocketVersion;
 
 LWProtocol &LWEProtocol_WebSocket::Read(LWRef<LWSocket> &Socket, LWProtocolManager &Manager) {
 	char Buffer[64 * 1024]; //64 kb buffer!

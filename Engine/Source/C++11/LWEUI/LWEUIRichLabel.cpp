@@ -11,6 +11,11 @@
 #include <cstdarg>
 #include <iostream>
 
+
+const uint32_t LWEUIRichLabel::MinimumBufferSize;
+const uint32_t LWEUIRichLabel::MaxStyles;
+const uint32_t LWEUIRichLabel::MaxLines;
+
 LWEUIRichLabel *LWEUIRichLabel::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
 	char Buffer[1024*32]; //max of 32kb files.
 	char SBuffer[1024 * 32];

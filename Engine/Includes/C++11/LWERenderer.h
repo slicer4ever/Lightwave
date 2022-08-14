@@ -34,7 +34,6 @@ private:
 	uint32_t m_TotalBlocks = 0;
 };
 
-
 //BlockGeometry allows for pooling different mesh's into one large video buffer, allowing for optimizations in how many render calls must be made per frame.
 //BlockGeometry separates Position data(must start with a vec4) from vertex attribute data(must be interleaved) to attempt to see a slight performance boost in early-z test.
 //Indices all all uint32_t as well.

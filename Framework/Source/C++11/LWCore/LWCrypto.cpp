@@ -4,6 +4,8 @@
 #include <cstring>
 #include <iostream>
 
+const uint32_t LWCrypto::FNV1AHash;
+
 uint32_t LWCrypto::NextChunk(const char **ReadBufferList, uint32_t *ReadBufferSize, uint32_t ReadBufferCount, uint32_t &ActiveBuffer, uint32_t &ActivePosition, uint32_t ChunkSize, void *Out) {
 	uint32_t o = 0;
 	while (ActiveBuffer != ReadBufferCount && o != ChunkSize) {

@@ -5,6 +5,11 @@
 #include <cstring>
 
 const uint32_t CheckEndianValue = 0x44332211;
+const uint8_t LWByteBuffer::Network;
+const uint8_t LWByteBuffer::ReadOnly;
+const uint8_t LWByteBuffer::BufferOwned;
+
+
 const bool BigEndian = ((int8_t*)&CheckEndianValue)[0] != 0x11;
 const bool NetworkOrdered = BigEndian;
 

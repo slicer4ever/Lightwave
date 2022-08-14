@@ -19,6 +19,8 @@ class LWESVG;
 typedef std::function<bool(uint32_t, LWESVGElement &, LWESVGElement *, LWESVG &)> LWESVGIterateFunc;
 typedef std::function<bool(uint32_t, const LWESVGElement &, const LWESVGElement *, const LWESVG &)> LWESVGConstIterateFunc;
 
+
+
 struct LWESVGStyle {
 	LWBitField32(LineCapBits, 2, 0);
 

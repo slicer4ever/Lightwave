@@ -29,6 +29,71 @@ LWEHTTPMessageHeader::LWEHTTPMessageHeader(uint32_t NameOffset, uint32_t NameLen
 const char8_t LWEHTTPMessage::StatusCodeNames[S_Count][32] = { "Continue", "Switching Protocols", "OK", "Bad Request", "Unauthorized", "Forbidden", "Not Found", "Request Timeout",  "Not Implemented", "Bad Gateway", "Internal Server Error" };
 const uint32_t LWEHTTPMessage::StatusCodeMap[S_Count]  = { S_Continue, S_SwitchingProtocols, S_Ok, S_BadRequest, S_Unauthorized, S_Forbidden, S_NotFound, S_RequestTimeout, S_NotImplemented, S_BadGateway, S_InternalServerError};
 
+const uint32_t LWEHTTPMessage::BodyMaxLength; //256kb default.
+const uint32_t LWEHTTPMessage::ValueMaxLength;
+const uint32_t LWEHTTPMessage::PathMaxLength;
+const uint32_t LWEHTTPMessage::MaxHeaderItems;
+const uint32_t LWEHTTPMessage::MaxHeaderLength; //2kb of header data.
+LWBitField32Define(LWEHTTPMessage::MethodBits);
+LWBitField32Define(LWEHTTPMessage::ConnectionBits);
+LWBitField32Define(LWEHTTPMessage::CacheControlBits);
+LWBitField32Define(LWEHTTPMessage::EncodingBits);
+LWBitField32Define(LWEHTTPMessage::ContentEncodeBits);
+LWBitField32Define(LWEHTTPMessage::UpgradeBits);
+LWBitField32Define(LWEHTTPMessage::StatusBits);
+
+const uint32_t LWEHTTPMessage::Method_Get;
+const uint32_t LWEHTTPMessage::Method_Head;
+const uint32_t LWEHTTPMessage::Method_Post;
+const uint32_t LWEHTTPMessage::Method_Put;
+const uint32_t LWEHTTPMessage::Method_Delete;
+const uint32_t LWEHTTPMessage::Method_Connect;
+const uint32_t LWEHTTPMessage::Method_Options;
+const uint32_t LWEHTTPMessage::Method_Trace;
+const uint32_t LWEHTTPMessage::Method_Patch;
+
+const uint32_t LWEHTTPMessage::Connection_Close;
+const uint32_t LWEHTTPMessage::Connection_KeepAlive;
+const uint32_t LWEHTTPMessage::Connection_Upgrade;
+
+const uint32_t LWEHTTPMessage::CacheControl_None;//Default cache control if not indicated.
+const uint32_t LWEHTTPMessage::CacheControl_NoCache;
+const uint32_t LWEHTTPMessage::CacheControl_NoStore;
+const uint32_t LWEHTTPMessage::CacheControl_Cache;
+
+const uint32_t LWEHTTPMessage::Encode_None;
+const uint32_t LWEHTTPMessage::Encode_Chunked;
+
+const uint32_t LWEHTTPMessage::ContentEncode_Identity;
+const uint32_t LWEHTTPMessage::ContentEncode_GZip;
+const uint32_t LWEHTTPMessage::ContentEncode_Compress;
+const uint32_t LWEHTTPMessage::ContentEncode_Deflate;
+const uint32_t LWEHTTPMessage::ContentEncode_BR;
+
+const uint32_t LWEHTTPMessage::Upgrade_None;
+const uint32_t LWEHTTPMessage::Upgrade_WebSocket;
+
+const uint32_t LWEHTTPMessage::HeadersRead;
+const uint32_t LWEHTTPMessage::GenerateDate;
+
+const uint32_t LWEHTTPMessage::ResponseFlags;
+
+const uint32_t LWEHTTPMessage::S_Request; //Special code that indicates this is not a response, but a request.
+const uint32_t LWEHTTPMessage::S_Continue;
+const uint32_t LWEHTTPMessage::S_SwitchingProtocols;
+const uint32_t LWEHTTPMessage::S_Ok;
+const uint32_t LWEHTTPMessage::S_BadRequest;
+const uint32_t LWEHTTPMessage::S_Unauthorized;
+const uint32_t LWEHTTPMessage::S_Forbidden;
+const uint32_t LWEHTTPMessage::S_NotFound;
+const uint32_t LWEHTTPMessage::S_RequestTimeout;
+const uint32_t LWEHTTPMessage::S_InternalServerError;
+const uint32_t LWEHTTPMessage::S_NotImplemented;
+const uint32_t LWEHTTPMessage::S_BadGateway;
+
+const uint32_t LWEHTTPMessage::S_Count; //Number of status's this implementation understand.
+const uint32_t LWEHTTPMessage::S_Fallback; //If we receive a status code we don't understand.
+const uint32_t LWEHTTPMessage::S_DomainNoResponse; //Custom code returned to requests if domain could not be found/would not respond to connection.
 
 uint32_t LWEHTTPMessage::MakeJSONQueryString(LWEJson &Json, char8_t *Buffer, uint32_t BufferLen) {
 	const uint32_t TBufferLen = 64 * 1024;

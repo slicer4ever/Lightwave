@@ -3,6 +3,8 @@
 #include <LWCore/LWLogger.h>
 
 //LWEPassPostProcess
+const uint32_t LWEPPPass::MaxSubPasses;
+
 LWEPass *LWEPPPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer *Renderer, LWEAssetManager *AssetManager, LWAllocator &Allocator) {
 	LWEPPPass *PPPass = Pass ? (LWEPPPass*)Pass : Allocator.Create<LWEPPPass>();
 	

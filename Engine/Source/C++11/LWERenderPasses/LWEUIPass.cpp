@@ -6,6 +6,8 @@
 #include <cmath>
 
 //LWEUIPass:
+const uint32_t LWEUIPass::MaxUIItems;
+
 LWEPass *LWEUIPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer *Renderer, LWEAssetManager *AssetManager, LWAllocator &Allocator) {
 	LWEUIPass *UIPass = Pass ? (LWEUIPass*)Pass : Allocator.Create<LWEUIPass>();
 	if(!LWLogCriticalIf<256>(LWEPass::ParseXML(Node, UIPass, Renderer, AssetManager, Allocator), "Could not create pass: '{}'", Node->GetName())) {

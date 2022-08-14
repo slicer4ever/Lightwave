@@ -28,6 +28,13 @@ LWFile::LWFile(const LWUTF8Iterator &Name, uint64_t Size, uint32_t Flag) : m_Siz
 }
 
 //LWDirectory:
+
+const uint32_t LWDirectory::Directory;
+const uint32_t LWDirectory::Hidden;
+const uint32_t LWDirectory::CanRead;
+const uint32_t LWDirectory::CanWrite;
+
+
 bool LWDirectory::CreateDir(const LWUTF8Iterator &DirectoryPath, const LWFileStream *ExistingStream) {
 	char8_t Buffer[1024];
 	uint32_t Len = 0;

@@ -8,7 +8,6 @@
 #include <iostream>
 
 //LWEUIListBoxItem
-
 LWUTF8Iterator LWEUIListBoxItem::GetName(void) const {
 	return m_Name;
 }
@@ -27,6 +26,8 @@ LWEUIListBoxItem::LWEUIListBoxItem(const LWUTF8Iterator &Name, const LWVector2f 
 }
 
 //LWEUIListBox
+const uint32_t LWEUIListBox::NullItem;
+
 LWEUIListBox *LWEUIListBox::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
 	const uint32_t MaxValues = 64;
 	char Buffer[1024]; //1kb

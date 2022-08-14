@@ -27,6 +27,7 @@ struct LWShaderInput {
 		dVec4, /*!< \brief type is 4 double's. */
 		Count /*!< \brief total count list for inputs. */
 	};
+
 	LWBitField32(TypeBits, 4, 0); // \brief bits of flag for the type. */
 	LWBitField32(BindIndexBits, 4, TypeBitsOffset+4); // \brief bits of flag for BindIndex(which means max of 16 bindable inputs at the moment.)
 	LWBitField32(OffsetBits, 8, BindIndexBitsOffset+4); // \brief bits of flag for offset*4 in the interleaved array.

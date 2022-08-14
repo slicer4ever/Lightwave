@@ -233,6 +233,8 @@ struct LWEGLTFCamera {
 	uint32_t m_CameraType = 0;
 };
 
+
+
 struct LWEGLTFAttribute {
 	static const uint32_t POSITION = 0x7808e88a; //LWText::MakeHash("POSITION");
 	static const uint32_t NORMAL = 0x3c329992; //LWText::MakeHash("NORMAL");
@@ -252,7 +254,7 @@ struct LWEGLTFAttribute {
 	uint32_t m_AccessorID = -1;
 	uint32_t m_AttributeHash = 0;
 };
-	
+
 struct LWEGLTFPrimitive {
 	static const uint32_t MaxAttributes = 8;
 

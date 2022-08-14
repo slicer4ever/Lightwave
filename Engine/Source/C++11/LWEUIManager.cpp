@@ -57,6 +57,11 @@ LWEUITooltip &LWEUITooltip::Update(float Scale) {
 }
 
 //LWEUINavigation
+const uint32_t LWEUINavigation::GamepadEnabled;
+const uint32_t LWEUINavigation::KeyboardEnabled;
+const uint32_t LWEUINavigation::Pressed;
+const uint32_t LWEUINavigation::Back;
+
 bool LWEUINavigation::isPressed(void) const {
 	return (m_Flag&Pressed) != 0;
 }
@@ -140,6 +145,10 @@ LWEUINavigation &LWEUINavigation::Update(LWWindow *Window, LWEUIManager &UIManag
 
 
 //LWEUIMaterial
+const uint32_t LWEUIMaterial::FillFull; //XML Fill="Full"
+const uint32_t LWEUIMaterial::FillGradient; //XML Fill="Gradient"
+const uint32_t LWEUIMaterial::FillVGradient; //XML Fill="VGradient" (Vertical Gradient)
+
 LWEUIMaterial &LWEUIMaterial::MakeColors(LWVector4f &TLColor, LWVector4f &BLColor, LWVector4f &TRColor, LWVector4f &BRColor) {
 	if (m_FillType == FillFull) {
 		TLColor = BLColor = TRColor = BRColor = m_ColorA;
@@ -180,6 +189,9 @@ LWEUIMaterial::LWEUIMaterial(const LWVector4f &ColorA, const LWVector4f &ColorB,
 
 
 //LWEUIFrame
+const uint32_t LWEUIFrame::MaxTextures;
+const uint32_t LWEUIFrame::ExhaustedTextures;
+
 uint32_t LWEUIFrame::SetActiveTexture(LWTexture *Texture, bool FontTexture) {
 	if (!m_TextureCount) {
 		m_VertexCount[m_TextureCount] = 0;
@@ -491,6 +503,9 @@ LWEUIFrame::LWEUIFrame(LWEUIFrame &F) : m_Mesh(F.m_Mesh), m_TextureCount(F.m_Tex
 LWEUIFrame::LWEUIFrame(LWMesh<LWVertexUI> *Mesh) : m_Mesh(Mesh), m_TextureCount(0) {}
 
 LWEUIFrame::LWEUIFrame() : m_Mesh(nullptr), m_TextureCount(0) {}
+
+//LWEUIManager:
+const uint32_t LWEUIManager::TabNavigation;
 
 bool LWEUIManager::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
 	std::map<uint32_t, LWEXMLNode*> StyleMap;

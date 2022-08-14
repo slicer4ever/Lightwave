@@ -5,6 +5,35 @@
 #include <cstdarg>
 #include <unordered_map>
 
+const uint32_t LWWindow::Terminate; /*!< \brief the window has requested for a termination */
+const uint32_t LWWindow::Visible; /*!< \brief the window is visible. */
+const uint32_t LWWindow::Focused; /*!< \brief the window is focused or not. */
+const uint32_t LWWindow::MouseVisible; /*!< \brief rather or not the mouse is to be considered visible or not. */
+const uint32_t LWWindow::PosChanged; /*!< \brief the window position has been changed. */
+const uint32_t LWWindow::SizeChanged; /*!< \brief the window size has been changed. */
+const uint32_t LWWindow::FocusChanged; /*!< \brief the window focus has been changed. */
+const uint32_t LWWindow::Error; /*!< \brief the window had an error during creation. */
+const uint32_t LWWindow::Fullscreen; /*!< \brief the window is designed to be in fullscreen mode. note that for DX11 the display mode does not need to be changed if this flag is set. */
+const uint32_t LWWindow::Borderless; /*!< \brief the window is designed to be a borderless window. */
+const uint32_t LWWindow::OrientationChanged; /*!< \brief signals that the window orientation has changed. */
+const uint32_t LWWindow::KeyboardPresent; /*!< \brief the windows softward keyboard is present, this flag is only viable for iOS and Android OS's. */
+const uint32_t LWWindow::Rotation_0; /*!< \brief the current window is in default portrait mode, and is not rotated at all. */
+const uint32_t LWWindow::Rotation_90; /*!< \brief the current window is orientated in landscape mode. */
+const uint32_t LWWindow::Rotation_180; /*!< \brief the current window is orientated in upside down portrait mode. */
+const uint32_t LWWindow::Rotation_270; /*!< \brief the current window is orientated in upside down landscape mode. */
+
+const uint32_t LWWindow::MouseDevice; /*!< \brief flag to indicate window should create a mouse device if applicable to the platform(windows, mac, linux). */
+const uint32_t LWWindow::KeyboardDevice; /*!< \brief flag to indicate window should create a keyboard device if applicable to the platform. (windows, mac, linux, android, iOS) */
+const uint32_t LWWindow::GamepadDevice; /*!< \brief flag to indicate window should create the gamepad devices if applicable to the platform. (windows). */
+const uint32_t LWWindow::TouchDevice; /*!< \brief flag to indicate window should create the touchscreen device if applicable to the platform. (android, iOS). */
+const uint32_t LWWindow::GyroscopeDevice; /*!< \brief flag to indicate window should create and activate the gyroscope device if applicable to the platform. (android, iOS). */
+const uint32_t LWWindow::AccelerometerDevice; /*!< \brief flag to indicate window should create and activate the accelerometer device if applicable to the platform. (android, IOS). */
+
+const uint32_t LWWindow::DialogOK; /*!< \brief provides the dialog OK button when creating a dialog. */
+const uint32_t LWWindow::DialogYES; /*!< \brief provides the dialog an yes and no button when creating a dialog. */
+const uint32_t LWWindow::DialogNo; /*!< \brief return value only on what MakeDialog creates. */
+const uint32_t LWWindow::DialogCancel; /*!< \brief provides the dialog an cancel button when creating a dialog. */
+
 uint32_t LWWindow::MakeDialog(const LWUTF8Iterator &Text, const LWUTF8Iterator &Header, uint32_t DialogFlags) {
 	LWLogEvent<256>("Dialog: {}: {}", Header, Text);
 	return 0;

@@ -3,6 +3,9 @@
 #include <LWCore/LWLogger.h>
 
 //LWEBucketPropertys:
+LWBitField32Define(LWEBucketPropertys::PassBitIDBits);
+const uint32_t LWEBucketPropertys::PrimarySource;
+
 bool LWEBucketPropertys::isPrimarySource(void) const {
 	return (m_Flags & PrimarySource) != 0;
 }

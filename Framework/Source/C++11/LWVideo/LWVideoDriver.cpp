@@ -24,6 +24,19 @@
 LWPipelineInputStream::LWPipelineInputStream(LWVideoBuffer *Buffer, uint32_t Offset, uint32_t Stride) : m_Buffer(Buffer), m_Offset(Offset), m_Stride(Stride) {}
 
 //LWVideoDriver:
+const uint32_t LWVideoDriver::Unspecefied; /*!< \brief automatically selects the best and most suitable driver when calling CreateVideoContext. */
+const uint32_t LWVideoDriver::OpenGL3_3; /*!< \brief Driver type for passing to CreateVideoContext which creates an openGL 3.2 context. */
+const uint32_t LWVideoDriver::OpenGL2_1; /*!< \brief Driver type for passing to CreateVideoContext which creates an openGL 2.1 context. */
+const uint32_t LWVideoDriver::DirectX11_1; /*!< \brief Driver type for passing to CreateVideoContext which creates an DirectX11 context. */
+const uint32_t LWVideoDriver::OpenGLES2; /*!< \brief Driver type for passing to CreateVideoContext which creates an OpenGL ES 2.0 context. */
+const uint32_t LWVideoDriver::OpenGL4_5;  /*!< \brief Driver type for passing to CreateVideoContext which creates an OpenGL4.5 context. */
+const uint32_t LWVideoDriver::DirectX12;  /*!< \brief Driver type for passing to CreateVideoContext which creates an DirectX12 context. */
+const uint32_t LWVideoDriver::DirectX9C;  /*!< \brief Driver type for passing to CreateVideoContext which creates an DirectX9C context. */
+const uint32_t LWVideoDriver::OpenGLES3;  /*!< \brief Driver type for passing to CreateVideoContext which creates an OpenGL ES 3.0 context. */
+const uint32_t LWVideoDriver::Metal; /*!< \brief Driver type for passing to CreateVideoContext which creates an iOS Metal context. */
+const uint32_t LWVideoDriver::Vulkan; /*!< \brief Driver type for passing to CreateVideoContext which creates an OpenGL Vulkan context. */
+const uint32_t LWVideoDriver::DebugLayer; /*!< \brief flag to add to MakeVideoDriver Type paramater which will enable a debug layer output if the driver api supports it(such as directX). */
+
 uint32_t LWVideoDriver::FindModule(const LWUTF8Iterator &ShaderCode, const LWUTF8Iterator &Environment, const LWUTF8Iterator &ModuleName, uint32_t DefinedCount, const LWUTF8Iterator *DefinedList, char8_t *ModuleBuffer, uint32_t ModuleBufferLen) {
 	const uint32_t MaxDefineTable = 256;
 	const uint32_t MaxModules = 256;

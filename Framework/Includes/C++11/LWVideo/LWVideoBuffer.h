@@ -44,7 +44,7 @@ public:
 
 		LocalCopy=0x10000000, /*!< \brief flag which indicates a local buffer is attached the video buffer, which can be used to temporarily modify the underlying buffer. */
 		Dirty = 0x20000000, /*!< \brief flag to indicate the local buffer has been modified. */
-		};
+	};
 
 	/*!< \brief sets the edited length of the local copy and set's the dirty flag for updating the video buffer.
 		 \param EditLength the length of the local buffer that has been changed.

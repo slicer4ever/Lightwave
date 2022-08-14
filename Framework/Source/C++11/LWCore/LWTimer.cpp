@@ -2,6 +2,9 @@
 #include <chrono>
 
 
+const int8_t LWTimer::Running;
+const int8_t LWTimer::Completed;
+
 uint64_t LWTimer::GetCurrent(void){
 	return std::chrono::high_resolution_clock::now().time_since_epoch().count();	
 }

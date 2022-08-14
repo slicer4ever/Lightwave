@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <iostream>
 
+const uint32_t LWEUIComponent::MaxComponentCount;
+
 LWEUIComponent *LWEUIComponent::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode *> &StyleMap, std::map<uint32_t, LWEXMLNode *> &ComponentMap) {
 	char8_t Buffer[256];
 	char8_t NameBuffer[256]={};

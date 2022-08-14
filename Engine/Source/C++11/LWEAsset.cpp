@@ -1055,7 +1055,7 @@ bool LWEAssetManager::XMLParseVideoBuffer(LWEXMLNode *N, LWEAssetManager *AM) {
 		LWFileStream Stream;
 		if(LWLogCriticalIf<256>(LWFileStream::OpenStream(Stream, DataPathAttr->GetValue(), LWFileStream::ReadMode | LWFileStream::BinaryMode, Alloc), "VideoBuffer {}: Failed to open data file: '{}'", NameAttr->GetValue(), DataPathAttr->GetValue())) {
 			uint32_t DataLen = TypeSize*Length;
-			if(LWLogCriticalIf<256>(Stream.Length()>=DataLen, "VideoBuffer {}: Data file is not large enough to fill up video buffer as expected {} - {}", Stream.Length(), DataLen)) {
+			if(LWLogCriticalIf<256>(Stream.Length()>=DataLen, "VideoBuffer {}: Data file is not large enough to fill up video buffer as expected {} - {}", NameAttr->GetValue(), Stream.Length(), DataLen)) {
 				Data = Alloc.Allocate<uint8_t>(DataLen);
 				if(!LWLogCriticalIf<256>(Stream.Read(Data, DataLen)==DataLen, "VideoBuffer {}: Failed to read data file '{}'", NameAttr->GetValue(), DataPathAttr->GetValue())) {
 					Data = LWAllocator::Destroy(Data);

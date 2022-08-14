@@ -9,6 +9,7 @@
 #include <algorithm>
 
 uint32_t LWCurrentLogLevel = LWLOG_CRITICAL;
+const uint32_t LWLoggerTimeMetrics::MaxValues;
 
 void LWLoggerTimeMetrics::PushValue(uint64_t Value) {
 	m_Values[m_ValueCount%MaxValues] = Value;

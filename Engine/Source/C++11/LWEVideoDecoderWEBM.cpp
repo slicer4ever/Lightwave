@@ -99,6 +99,9 @@ bool ParseEBMLLoop(LWByteStream &Stream, uint64_t &Length, std::function<bool(LW
 	return true;
 };
 
+
+const uint32_t LWEWebmHeader::MaxTextLength;
+
 LWEWebmHeader::LWEWebmHeader(LWByteStream &Stream, uint64_t HeaderSize){
 	auto ParseID = [this](LWByteStream &Stream, uint32_t ID, uint64_t DataSize)->bool {
 		if (ID == LWE_EBLM_VERSION_ID) m_Version = (uint32_t)ParseEBMLInt(Stream, DataSize);

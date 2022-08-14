@@ -2,6 +2,7 @@
 #define LWEGEOMETRYPASS_H
 #include "LWERenderPass.h"
 
+
 struct LWEBucketPropertys {
 	LWBitField32(PassBitIDBits, 8, 0);
 	static const uint32_t PrimarySource = 0x1000000;

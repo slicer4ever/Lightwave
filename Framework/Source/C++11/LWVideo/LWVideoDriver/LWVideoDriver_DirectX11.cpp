@@ -64,6 +64,13 @@ struct ViewArray {
 	ViewArray() : m_Count(0) {}
 };
 
+
+//LWDirectX11_1ShaderContext:
+const uint32_t LWDirectX11_1ShaderContext::MaxResources;
+const uint32_t LWDirectX11_1ShaderContext::MaxBlocks;
+const uint32_t LWDirectX11_1ShaderContext::MaxInputs;
+
+//LWVideoDriver_DirectX11_1:
 LWVideoDriver &LWVideoDriver_DirectX11_1::ViewPort(const LWVector4i &Viewport) {
 	m_Viewport = Viewport;
 	D3D11_VIEWPORT Port = { (float)m_Viewport.x, (float)m_Viewport.y, (float)m_Viewport.z, (float)m_Viewport.w, 0.0f, 1.0f };

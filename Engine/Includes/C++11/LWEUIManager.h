@@ -106,7 +106,6 @@ struct LWEUIMaterial {
 //Callback parameters passed to UI xml parsing function, return true if processed, or false on error. */
 typedef std::function<LWEUI*(LWEXMLNode *, LWEXML *, LWEUIManager *, LWEXMLNode *, const LWUTF8Iterator &, LWEXMLNode *, LWEXMLNode *, std::map<uint32_t, LWEXMLNode*> &, std::map<uint32_t, LWEXMLNode*> &)> LWEUIXMLParseCallback;
 
-
 struct LWEUIFrame {
 	static const uint32_t MaxTextures = 256;
 	static const uint32_t ExhaustedTextures = -1;

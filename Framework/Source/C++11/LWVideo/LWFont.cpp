@@ -13,6 +13,9 @@
 #include <algorithm>
 #include <cstdarg>
 
+//LWFontSimpleWriter:
+const uint32_t LWFontSimpleWriter::MaxTextures;
+
 bool LWFontSimpleWriter::WriteTexture(LWTexture *Tex) {
 	if (!m_TextureCount || m_Textures[m_TextureCount - 1] != Tex) {
 		if (m_TextureCount >= MaxTextures) return false;
@@ -51,6 +54,8 @@ bool LWFontSimpleWriter::WriteGlyph(LWTexture *Tex, const LWVector2f &Position, 
 
 LWFontSimpleWriter::LWFontSimpleWriter(LWMesh<LWVertexUI> *Mesh) : m_Mesh(Mesh) {}
 
+//LWFont:
+const uint32_t LWFont::MaxTextures; /*!< \brief max number of "pages" the glyphs can inhabit. */
 
 LWFont *LWFont::LoadFontAR(LWFileStream *Stream, LWVideoDriver *Driver, LWAllocator &Allocator) {
 	//Reverse engineered Artery format from: (https://github.com/Chlumsky/artery-font-format)

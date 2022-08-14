@@ -10,6 +10,10 @@
 #include <cstdarg>
 #include <algorithm>
 
+//LWEJObject:
+const uint32_t LWEJObject::NameBufferLen;
+const uint32_t LWEJObject::ValueBufferLen;
+
 LWEJObject &LWEJObject::SetValue(LWAllocator &Allocator, const LWUTF8Iterator &Value) {
 	uint32_t Len = Value.RawDistance(Value.NextEnd())+1;
 	if (Len <= m_ValueBufferLen) {

@@ -3,6 +3,7 @@
 #include "LWERenderPasses/LWEGeometryPass.h"
 
 //LWEShadowMapPass
+
 class LWEShadowMapPass : public LWEGeometryPass {
 public:
 	LWBitField32(CubeFaceIndexBits, 3, 28);

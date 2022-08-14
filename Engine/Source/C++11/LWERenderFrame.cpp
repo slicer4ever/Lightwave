@@ -12,6 +12,10 @@ const float LWEGeometryBucketItem::ForceFirstDistance = -1.0f;
 const float LWEGeometryBucketItem::ForceLastDistance = std::numeric_limits<float>::max();
 
 //LWEGeometryModelBlock:
+LWBitField64Define(LWEGeometryModelBlock::IndiceVBBits);
+LWBitField64Define(LWEGeometryModelBlock::VertexAttributeVBBits);
+LWBitField64Define(LWEGeometryModelBlock::VertexPositionVBBits);
+
 uint32_t LWEGeometryModelBlock::Hash(void) const {
 	return LWCrypto::HashFNV1A((uint8_t*)this,sizeof(this));
 }
@@ -29,6 +33,8 @@ LWEGeometryModelBlock::LWEGeometryModelBlock(uint32_t VertexPositionBufferID, ui
 LWEGeometryModelBlock::LWEGeometryModelBlock(const LWERenderVideoBuffer &VertexPositionBuffer, const LWERenderVideoBuffer &VertexAttributeBuffer, const LWERenderVideoBuffer &IndiceBuffer, uint32_t Offset, uint32_t Count) : m_BufferName(((uint64_t)VertexPositionBuffer.m_ID << VertexPositionVBBitsOffset) | ((uint64_t)VertexAttributeBuffer.m_ID << VertexAttributeVBBitsOffset) | ((uint64_t)IndiceBuffer.m_ID << IndiceVBBitsOffset)), m_Offset(Offset), m_Count(Count) {}
 
 //LWEGeometryModel:
+LWBitField32Define(LWEGeometryModel::DistanceModeBits);
+
 bool LWEGeometryModel::isTransparent(void) const {
 	return (m_Flag & Transparent) != 0;
 }
@@ -71,6 +77,9 @@ LWEShadowBucketItem::LWEShadowBucketItem(uint32_t LightIndex, float DistanceSq) 
 
 
 //LWEGeometryBucket:
+LWBitField32Define(LWEGeometryBucket::OpaqueSortBits);
+LWBitField32Define(LWEGeometryBucket::TransparentSortBits);
+
 bool LWEGeometryBucket::PushModel(uint32_t ModelIndex, uint32_t ModelBlockHash, uint32_t MaterialHash, const LWEGeometryModel &Model, const LWSVector4f &Position) {
 	float DisSq = (Position - m_ViewTransform[3]).LengthSquared3();
 	uint32_t DistanceMode = Model.GetDistanceMode();

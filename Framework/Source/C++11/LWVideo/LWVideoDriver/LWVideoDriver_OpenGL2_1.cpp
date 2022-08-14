@@ -10,6 +10,12 @@
 #include "LWVideo/LWVideoBuffer.h"
 #include <iostream>
 
+//LWOpenGL2_1Block:
+const uint32_t LWOpenGL2_1Block::MaxUniforms; /*!< \brief total maximum number of uniforms per block. */
+//LWOpenGL2_1PipelineContext:
+const uint32_t LWOpenGL2_1PipelineContext::MaxBlocks; /*!< \brief total maximum blocks any pipeline is expected to ever have. */
+
+//LWVideoDriver_OpenGL2_1:
 LWVideoDriver &LWVideoDriver_OpenGL2_1::ViewPort(const LWVector4i &Viewport) {
 	m_Viewport = Viewport;
 	glViewport(Viewport.x, Viewport.y, Viewport.z, Viewport.w);

@@ -8,6 +8,9 @@
 #include "LWECamera.h"
 
 //LWEPassResource:
+const uint32_t LWEPassResource::VideoBufferBit;
+const uint32_t LWEPassResource::FrameBufferBit;
+
 LWEPassResource::LWEPassResource(const LWUTF8Iterator &BindName, LWVideoBuffer *Buffer, uint32_t Offset) : m_Resource(Buffer), m_BindNameHash(BindName.Hash()), m_Offset(Offset) {}
 
 LWEPassResource::LWEPassResource(const LWUTF8Iterator &BindName, LWTexture *Texture) : m_Resource(Texture), m_BindNameHash(BindName.Hash()) {}
@@ -36,6 +39,11 @@ bool LWEPassPipelinePropertys::PushResource(const LWEPassResource &Resource) {
 LWEPassPipelinePropertys::LWEPassPipelinePropertys(LWPipeline *Pipeline) : m_DefaultPipeline(Pipeline) {}
 
 //LWEPassPropertys:
+const uint32_t LWEPassPropertys::ClearColor;
+const uint32_t LWEPassPropertys::ClearDepth;
+const uint32_t LWEPassPropertys::ClearStencil;
+const uint32_t LWEPassPropertys::CustomViewport;
+
 bool LWEPassPropertys::isClearColor(void) const {
 	return (m_Flag & ClearColor) != 0;
 }
@@ -53,6 +61,8 @@ bool LWEPassPropertys::isCustomViewport(void) const {
 }
 
 //LWEPass:
+const uint32_t LWEPass::Disaabled; //Disabled pass's partake in all settings except RenderPass.
+
 bool LWEPass::ParseXMLPassPropertys(LWEXMLNode *Node, LWEPassPropertys &Propertys, LWERenderer *Renderer) {
 	LWEXMLAttribute *ClearColorAttr = Node->FindAttribute("ClearColor");
 	LWEXMLAttribute *ClearDepthAttr = Node->FindAttribute("ClearDepth");

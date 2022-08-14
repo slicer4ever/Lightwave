@@ -9,6 +9,9 @@
 #include <algorithm>
 #include <execution>
 
+const uint32_t LWImage::MaxTextureImages;
+
+
 bool LWImage::LoadImage(LWImage &Image, const LWUTF8Iterator &FilePath, LWAllocator &Allocator,LWFileStream *ExistingStream){
 	uint32_t Result = LWFileStream::IsExtensions(FilePath, "DDS", "dds", "PNG", "png", "TGA", "tga", "ktx2", "KTX2");
 	if (Result < 2) return LoadImageDDS(Image, FilePath, Allocator, ExistingStream);

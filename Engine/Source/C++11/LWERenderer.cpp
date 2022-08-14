@@ -12,7 +12,39 @@
 #include "LWERenderPasses/LWEGausianBlurPass.h"
 #include "LWERenderPasses/LWEUIPass.h"
 
+//LWERendererBlockGeometry:
+const uint32_t LWERendererBlockGeometry::DefaultVerticesPerBlock;
+const uint32_t LWERendererBlockGeometry::DefaultIndicesPerBlock;
+const uint32_t LWERendererBlockGeometry::DefaultMaxVerticeBlocks;
+const uint32_t LWERendererBlockGeometry::DefaultMaxIndiceBlocks;
+const uint64_t LWERendererBlockGeometry::VerticeBits;
+const uint64_t LWERendererBlockGeometry::VerticeBitOffset;
+const uint64_t LWERendererBlockGeometry::IndiceBits;
+const uint64_t LWERendererBlockGeometry::IndiceBitOffset;
+const uint64_t LWERendererBlockGeometry::NullID;
+
+//LWERenderFramebufferTexture:
+LWBitField32Define(LWERenderFramebufferTexture::NamedLayerBits);
+LWBitField32Define(LWERenderFramebufferTexture::NamedFaceBits);
+LWBitField32Define(LWERenderFramebufferTexture::NamedMipmapBits);
+const uint32_t LWERenderFramebufferTexture::FrameBufferName; //if framebuffer is set, layer is used to refer to the attachment point being referenced.
+
+//LWERenderPendingResource:
+LWBitField32Define(LWERenderPendingResource::TypeBits);
+const uint32_t LWERenderPendingResource::NoDiscard; //If NoDiscard is raised, then the data/Image are not destroyed once upload is complete.
+const uint32_t LWERenderPendingResource::DestroyResource; //The renderer reference to the object this resource refers to is destroyed.
+const uint32_t LWERenderPendingResource::WriteOverlap; //If buffer already exists, then this buffer will update a portion of that buffer.
+
+const uint32_t LWERenderPendingResource::tBuffer;
+const uint32_t LWERenderPendingResource::tTexture;
+const uint32_t LWERenderPendingResource::tFrameBuffer;
+const uint32_t LWERenderPendingResource::tBlockGeometry;
+
 //LWERenderer:
+const uint32_t LWERenderer::FrameBuffer;
+const uint32_t LWERenderer::MaxPendingResources;
+const uint32_t LWERenderer::FBAttachmentIDBit;
+
 void LWERenderer::GenerateDefaultXMLPasses(std::unordered_map<uint32_t, LWEPassXMLCreateFunc> &PassMap) {
 	PassMap.insert({ LWUTF8I("UIPass").Hash(), &LWEUIPass::ParseXML });
 	PassMap.insert({ LWUTF8I("PPPass").Hash(), &LWEPPPass::ParseXML });

@@ -5,6 +5,8 @@
 #include <LWEGeometry2D.h>
 
 //LWEUITreeItem
+const uint32_t LWEUITreeItem::MaxNameSize;
+
 LWEUITreeItem &LWEUITreeItem::SetValue(const LWUTF8Iterator &Value, LWFont *Font, float FontScale) {
 	Value.Copy(m_Value, sizeof(m_Value));
 	return UpdateTextBounds(Font, FontScale);
@@ -44,6 +46,9 @@ LWEUITreeItem::LWEUITreeItem(const LWUTF8Iterator &Value, void *UserData, LWFont
 }
 
 //LWEUITreeList
+const uint32_t LWEUITreeList::EditIDAdd;
+const uint32_t LWEUITreeList::EditIDDel;
+const uint32_t LWEUITreeList::BatchSize; //Size of each list expansion size.
 
 LWEUITreeList *LWEUITreeList::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Manager, LWEXMLNode *Style, const LWUTF8Iterator &ActiveComponentName, LWEXMLNode *ActiveComponent, LWEXMLNode *ActiveComponentNode, std::map<uint32_t, LWEXMLNode*> &StyleMap, std::map<uint32_t, LWEXMLNode*> &ComponentMap) {
 	char Buffer[256];

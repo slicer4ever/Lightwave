@@ -203,6 +203,8 @@ LWEGLTFCameraPerspective::LWEGLTFCameraPerspective(float FOV, float zNear) : m_F
 #pragma endregion
 
 #pragma region LWEGLTFCAMERA
+const uint32_t LWEGLTFCamera::perspective; //LWText::MakeHash("perspective");
+const uint32_t LWEGLTFCamera::orthographic; //LWText::MakeHash("orthographic");
 
 bool LWEGLTFCamera::ParseJSON(LWEGLTFCamera &Camera, LWEJson &J, LWEJObject *Obj) {
 	LWEJObject *JType = Obj->FindChild("type", J);
@@ -251,6 +253,16 @@ LWEGLTFCamera::LWEGLTFCamera(const LWUTF8Iterator &Name, uint32_t CameraType) : 
 #pragma endregion
 
 #pragma region LWEGLTFATTRIBUTE
+const uint32_t LWEGLTFAttribute::POSITION; //LWText::MakeHash("POSITION");
+const uint32_t LWEGLTFAttribute::NORMAL; //LWText::MakeHash("NORMAL");
+const uint32_t LWEGLTFAttribute::TANGENT; //LWText::MakeHash("TANGENT");
+const uint32_t LWEGLTFAttribute::TEXCOORD_0; //LWText::MakeHash("TEXCOORD_0");
+const uint32_t LWEGLTFAttribute::TEXCOORD_1; //LWText::MakeHash("TEXCOORD_1");
+const uint32_t LWEGLTFAttribute::COLOR_0; //LWText::MakeHash("COLOR_0");
+const uint32_t LWEGLTFAttribute::JOINTS_0; //LWText::MakeHash("JOINTS_0");
+const uint32_t LWEGLTFAttribute::WEIGHTS_0; //LWText::MakeHash("WEIGHTS_0");
+const uint32_t LWEGLTFPrimitive::MaxAttributes;
+
 bool LWEGLTFAttribute::ParseJSON(LWEGLTFAttribute &Attribute, LWEJson &J, LWEJObject *Obj) {
 	Attribute = LWEGLTFAttribute(Obj->AsInt(), Obj->GetName().Hash());
 	return true;
@@ -317,6 +329,11 @@ LWEGLTFMesh::LWEGLTFMesh(const LWUTF8Iterator &Name, uint32_t PrimitiveCount) {
 #pragma endregion
 
 #pragma region LWEGLTFIMAGE
+const uint32_t LWEGLTFImage::MimeNone;
+const uint32_t LWEGLTFImage::MimeImageJpeg; //LWText::MakeHash("image/jpeg");
+const uint32_t LWEGLTFImage::MimeImagePng; //LWText::MakeHash("image/png");
+const uint32_t LWEGLTFImage::MimeImageDDS; //LWText::MakeHash("image/vnd-ms.dds");
+
 bool LWEGLTFImage::ParseJSON(LWEGLTFImage &Img, LWEJson &J, LWEJObject *Obj, LWFileStream &Stream) {
 	LWEJObject *JName = Obj->FindChild("name", J);
 	LWEJObject *JUri = Obj->FindChild("uri", J);
@@ -617,6 +634,9 @@ LWEGLTFMaterial::LWEGLTFMaterial(const LWUTF8Iterator &Name) {
 #pragma endregion
 
 #pragma region LWEGLTFLIGHT
+const uint32_t LWEGLTFLight::POINT;//LWText::MakeHash("point");
+const uint32_t LWEGLTFLight::DIRECTIONAL;//LWText::MakeHash("directional");
+const uint32_t LWEGLTFLight::SPOT;//LWText::MakeHash("spot");
 
 bool LWEGLTFLight::ParseJSON(LWEGLTFLight &L, LWEJson &J, LWEJObject *Obj) {
 	LWEJObject *JName = Obj->FindChild("name", J);
@@ -776,6 +796,13 @@ LWEGLTFSkin::LWEGLTFSkin(const LWUTF8Iterator &Name, uint32_t JointCnt, uint32_t
 #pragma endregion
 
 #pragma region LWEGLTFANIMCHANNEL
+const uint32_t LWEGLTFAnimChannel::LINEAR; //LWText::MakeHash("LINEAR");
+const uint32_t LWEGLTFAnimChannel::STEP; //LWText::MakeHash("STEP");
+const uint32_t LWEGLTFAnimChannel::CUBICSPLINE; //LWText::MakeHash("CUBICSPLINE");
+const uint32_t LWEGLTFAnimChannel::translation; //LWText::MakeHash("translation");
+const uint32_t LWEGLTFAnimChannel::rotation; //LWText::MakeHash("rotation");
+const uint32_t LWEGLTFAnimChannel::scale; //LWText::MakeHash("scale");
+
 bool LWEGLTFAnimChannel::ParseJSON(LWEGLTFAnimChannel &Channel, LWEJson &J, LWEJObject *Obj, LWEJObject *AnimObj) {
 	auto ParseSampler = [](LWEGLTFAnimChannel &Channel, LWEJson &J, LWEJObject *Obj)->bool {
 		LWEJObject *JInput = Obj->FindChild("input", J);

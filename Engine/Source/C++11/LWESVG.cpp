@@ -7,6 +7,39 @@
 #include <LWCore/LWLogger.h>
 
 //LWESVGStyle:
+
+
+LWBitField32Define(LWESVGStyle::LineCapBits);
+
+//Flags:
+const uint32_t LWESVGStyle::WidthAuto;
+const uint32_t LWESVGStyle::HeightAuto;
+const uint32_t LWESVGStyle::xRadiAuto;
+const uint32_t LWESVGStyle::yRadiAuto;
+const uint32_t LWESVGStyle::xPosPercent;
+const uint32_t LWESVGStyle::yPosPercent;
+const uint32_t LWESVGStyle::xSizePercent;
+const uint32_t LWESVGStyle::ySizePercent;
+const uint32_t LWESVGStyle::xRadiPercent;
+const uint32_t LWESVGStyle::yRadiPercent;
+
+//Line-Caps:
+const uint32_t LWESVGStyle::CapButt;
+const uint32_t LWESVGStyle::CapRound;
+const uint32_t LWESVGStyle::CapSquare;
+
+//Inheritance flags(all set functions will raise the relevant flag):
+const uint32_t LWESVGStyle::hasXPos;
+const uint32_t LWESVGStyle::hasYPos;
+const uint32_t LWESVGStyle::hasXSize;
+const uint32_t LWESVGStyle::hasYSize;
+const uint32_t LWESVGStyle::hasXRadi;
+const uint32_t LWESVGStyle::hasYRadi;
+const uint32_t LWESVGStyle::hasLineCap;
+const uint32_t LWESVGStyle::hasFillColor;
+const uint32_t LWESVGStyle::hasStrokeColor;
+const uint32_t LWESVGStyle::hasStrokeWidth;
+
 LWESVGStyle &LWESVGStyle::SetxPos(float Position, bool bIsPercent) {
 	m_Position.x = Position;
 	m_Flag |= bIsPercent ? xPosPercent : 0;
@@ -130,6 +163,17 @@ LWESVGStyle::LWESVGStyle(const LWESVGStyle &Style, const LWESVGStyle &Inheritanc
 
 
 //LWESVGElement:
+LWBitField32Define(LWESVGElement::TypeBits);
+const uint32_t LWESVGElement::Group;
+const uint32_t LWESVGElement::Define;
+const uint32_t LWESVGElement::Circle;
+const uint32_t LWESVGElement::Ellipse;
+const uint32_t LWESVGElement::Rect;
+const uint32_t LWESVGElement::Line;
+const uint32_t LWESVGElement::Path;
+const uint32_t LWESVGElement::Polygon;
+const uint32_t LWESVGElement::Polyline;
+
 uint32_t LWESVGElement::GetType(void) const {
 	return LWBitFieldGet(TypeBits, m_Flag);
 }

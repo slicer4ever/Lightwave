@@ -51,7 +51,6 @@ struct LWFontSimpleWriter {
 	LWFontSimpleWriter() = default;
 };
 
-
 class LWFont {
 public:
 	static const uint32_t MaxTextures = 16; /*!< \brief max number of "pages" the glyphs can inhabit. */

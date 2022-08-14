@@ -22,6 +22,10 @@ LWGraphemeBlock::LWGraphemeBlock(uint32_t CodePoint, uint32_t Type) : m_Min(Code
 LWGraphemeBlock::LWGraphemeBlock(uint32_t MinCodePoint, uint32_t MaxCodePoint, uint32_t Type) : m_Min(MinCodePoint), m_Max(MaxCodePoint), m_Type(Type) {}
 
 //LWGraphemeTable:
+const uint32_t LWGraphemeTable::BlockSize;
+const uint32_t LWGraphemeTable::TableBlocks;
+
+
 bool LWGraphemeTable::EvaluateGraphemeRules(uint32_t LeftGraphemeType, uint32_t RightGraphemeType) {
 	//Follows rules and matrix as outlined here: https://www.unicode.org/Public/UCD/latest/ucd/auxiliary/GraphemeBreakTest.html
 	//Rule table matrix, true means break, false means stay.

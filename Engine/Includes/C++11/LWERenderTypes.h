@@ -131,7 +131,6 @@ struct LWERenderMaterial {
 	LWERenderMaterial() = default;
 };
 
-
 struct LWEGeometryRenderable {
 	static const uint32_t BufferVideoBuffer = 0x80000000; //Adds bit to DrawCount if BlockBufferNameHash should instead be interpreted as video buffer id's(with the upper 16 bit being vertex buffer id, and lower 16 being index buffer id).
 

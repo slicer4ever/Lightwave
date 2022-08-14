@@ -24,7 +24,6 @@
 
 #define LWE_WEBM_READVERSION 0x2
 
-
 struct LWEWebmHeader {
 	static const uint32_t MaxTextLength = 64;
 	uint32_t m_Version = 1;

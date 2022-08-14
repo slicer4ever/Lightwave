@@ -10,7 +10,7 @@
 #include <iostream>
 #include <algorithm> 
 
-
+//LWVideoDriver_DirectX11_1:
 LWVideoDriver_DirectX11_1 *LWVideoDriver_DirectX11_1::MakeVideoDriver(LWWindow *Window, uint32_t Type) {
 	LWDirectX11_1Context Context;
 	LWWindowContext WinCon = Window->GetContext();

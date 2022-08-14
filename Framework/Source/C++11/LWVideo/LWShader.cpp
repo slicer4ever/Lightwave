@@ -3,6 +3,12 @@
 #include <cstdarg>
 
 //LWShaderInput:
+LWBitField32Define(LWShaderInput::TypeBits);
+LWBitField32Define(LWShaderInput::BindIndexBits);
+LWBitField32Define(LWShaderInput::OffsetBits);
+LWBitField32Define(LWShaderInput::LengthBits);
+LWBitField32Define(LWShaderInput::InstanceFrequencyBits);
+
 LWShaderInput &LWShaderInput::SetType(uint32_t lType) {
 	m_Flag = LWBitFieldSet(TypeBits, m_Flag, lType);
 	return *this;
@@ -56,6 +62,20 @@ LWShaderInput::LWShaderInput(const LWUTF8Iterator &Name, uint32_t Type, uint32_t
 LWShaderInput::LWShaderInput(uint32_t NameHash, uint32_t Type, uint32_t Length, uint32_t InstanceFreq) : m_NameHash(NameHash), m_Flag((Type<<TypeBitsOffset) | (Length<<LengthBitsOffset) | (InstanceFreq << InstanceFrequencyBitsOffset)) {}
 
 //LWShaderResource:
+LWBitField32Define(LWShaderResource::TypeBits);
+LWBitField32Define(LWShaderResource::LengthBits);
+LWBitField32Define(LWShaderResource::VertexBindingBits);
+LWBitField32Define(LWShaderResource::GeometryBindingBits);
+LWBitField32Define(LWShaderResource::PixelBindingBits);
+LWBitField32Define(LWShaderResource::ComputeBindingBits);
+
+const uint32_t LWShaderResource::BindingBitCount;
+const uint32_t LWShaderResource::VertexStage; /*!< \brief flag indicating the resource is apart of the vertex stage. */
+const uint32_t LWShaderResource::GeometryStage; /*!< \brief flag indicating the resource is apart of the geometry stage. */
+const uint32_t LWShaderResource::PixelStage; /*!< \brief flag indicating the resource is apart of the pixel stage. */
+const uint32_t LWShaderResource::ComputeStage; /*!< \brief flag indicating the resource is apart of the compute stage. */
+
+
 LWShaderResource &LWShaderResource::SetStageBinding(uint32_t StageID, uint32_t Idx) {
 	uint32_t StageBits = VertexBindingBits << (StageID * BindingBitCount);
 	m_StageBindings = (m_StageBindings & ~StageBits) | (Idx << (StageID * BindingBitCount));
@@ -154,6 +174,14 @@ LWShaderResource::LWShaderResource(uint32_t NameHash, uint32_t Type, uint32_t Le
 }
 
 //LWShader:
+const uint32_t LWShader::Vertex; /*!< \brief shader is a vertex type. */
+const uint32_t LWShader::Geometry; /*!< \brief shader is a vertex type. */
+const uint32_t LWShader::Pixel; /*!< \brief shader is a vertex type. */
+const uint32_t LWShader::Compute; /*!< \brief shader is a vertex type. */
+const uint32_t LWShader::MaxInputs; /*!< \brief max input map size for shader. */
+const uint32_t LWShader::MaxResources; /*!< \brief max resource's mappable by a single stage. */
+const uint32_t LWShader::MaxBlocks; /*!< \brief max block's mappable by a single stage. */
+
 uint32_t LWShader::GenerateInputOffsets(uint32_t Count, LWShaderInput *InputMap) {
 	//	                           Float, UInt, Int, Double, Vec2, Vec3, Vec4, uvec2, uvec3, uvec4, iVec2, iVec3, iVec4, dVec2, dVec3, dVec4
 	const uint32_t TypeSizes[] = { 4,     4,    4,   8,      8,    12,   16,   8,     12,    16,    8,     12,    16,    16,    24,    32 };

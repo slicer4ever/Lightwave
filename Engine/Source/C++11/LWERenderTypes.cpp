@@ -62,6 +62,9 @@ LWEGeometryModelData::LWEGeometryModelData(const LWSMatrix4f &Transform, uint32_
 
 //LWEShaderLightData:
 
+LWBitField32Define(LWEShaderLightData::ShadowPassIDBits);
+LWBitField32Define(LWEShaderLightData::ShadowSubPassIdxBits);
+LWBitField32Define(LWEShaderLightData::ShadowLayerBits);
 uint32_t LWEShaderLightData::MakeShadowFlag(uint32_t PassID, uint32_t SubPassIdx, uint32_t LayerID) {
 	return (PassID << ShadowPassIDBitsOffset) | (SubPassIdx << ShadowSubPassIdxBitsOffset) | (LayerID << ShadowLayerBitsOffset);
 }
@@ -76,6 +79,8 @@ LWEShaderLightData::LWEShaderLightData(const LWSVector4f &Position, float Interi
 
 
 //LWEGeometryRenderable
+const uint32_t LWEGeometryRenderable::BufferVideoBuffer; //Adds bit to DrawCount if BlockBufferNameHash should instead be interpreted as video buffer id's(with the upper 16 bit being vertex buffer id, and lower 16 being index buffer id).
+
 LWEGeometryRenderable::LWEGeometryRenderable(uint64_t BlockBufferNameHash, const LWERenderMaterial &Material, uint32_t DrawCount) : m_BlockBufferNameHash(BlockBufferNameHash), m_Material(Material), m_DrawCount(DrawCount) {}
 
 //LWEShaderGlobalData:

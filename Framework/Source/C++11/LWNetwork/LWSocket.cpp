@@ -8,7 +8,6 @@
 #include <iostream>
 
 //LWSocketAddr:
-
 bool LWSocketAddr::ParseIP(const LWUTF8Iterator &IPNotation, uint32_t *IPBuffer, bool &bIsIP6) {
 	LWUTF8Iterator ColonSplits[8];
 	LWUTF8Iterator DotSplits[4];
@@ -125,9 +124,67 @@ LWSocketAddr::LWSocketAddr(uint32_t IP6A, uint32_t IP6B, uint32_t IP6C, uint32_t
 }
 
 //LWSocket:
+LWBitField32Define(LWSocket::TypeBits);
+LWBitField32Define(LWSocket::StatusBits);
+LWBitField32Define(LWSocket::ErrorBits);
+
 const char8_t *LWSocket::ProtocolNames[LWSocket::ProtocolCount] = { u8"https", u8"http", u8"wss", u8"ws", u8"ftp", u8"telnet", u8"ssh" };
 const uint32_t LWSocket::ProtocolPorts[LWSocket::ProtocolCount] = { 443, 80, 443, 80, 20, 23, 22 };
 const char8_t *LWSocket::ErrorNames[LWSocket::E_Count] = { u8"OK", u8"Connect", u8"AddressLookup", u8"Socket", u8"Bind", u8"Listen", u8"GetLocalAddress", u8"GetRemoteAddress", u8"ControlFlags" };
+
+const uint32_t LWSocket::TCP; // \brief indicates socket is TCP ip protocol.
+const uint32_t LWSocket::UDP; // \brief indicates socket is UDP ip protocol.
+
+const uint32_t LWSocket::S_Connected; // \brief indicates socket is still in connecting phase.
+const uint32_t LWSocket::S_Connecting; // \brief indicates socket is still in connecting phase.
+const uint32_t LWSocket::S_Closed; // \brief indicates socket is closed.
+const uint32_t LWSocket::S_Error; // \brief indicates socket is in an error state.
+
+const uint32_t LWSocket::E_OK; /*!< \brief error flag indicating everything is ok. */
+const uint32_t LWSocket::E_Connect; /*!< \brief error flag to indicate error in connecting to remote host. */
+const uint32_t LWSocket::E_Address; /*!< \brief error flag to indicate error in retrieving the address of remote and local host. */
+const uint32_t LWSocket::E_Socket; /*!< \brief error flag to indicate error in creating the socket object. */
+const uint32_t LWSocket::E_Bind; /*!< \brief error flag to indicate error in binding the socket object. */
+const uint32_t LWSocket::E_Listen; /*!< \brief error flag to indicate error in becoming a listening object. */
+const uint32_t LWSocket::E_GetSock; /*!< \brief error flag to indicate error in retrieving local socket information. */
+const uint32_t LWSocket::E_GetPeer; /*!< \brief error flag to indicate error in retrieving remote socket information. */
+const uint32_t LWSocket::E_CtrlFlags; /*!< \brief error flag to indicate an error occurred while setting certain socket properties. */
+const uint32_t LWSocket::E_Count; /*!< \brief total number of error flags avaiable. */
+
+const uint32_t LWSocket::LocalIP4; // \brief ip4 local loopback address.
+const uint32_t LWSocket::BroadcastIP4; // \brief ip4 broadcast address.
+
+const uint32_t LWSocket::Listening; // \brief indicates socket listens for incoming connections, and accepts them automatically.
+const uint32_t LWSocket::UDPConnReset; // \brief indicates if a udp socket should reset when it's remote connection notifies it is closed.
+const uint32_t LWSocket::TcpNoDelay; // \brief indicates if a tcp socket should not delay batch data when sending, and instead send immediately.
+const uint32_t LWSocket::ReuseAddr; // \brief indicates socket is safe to bind to an already bound port.
+const uint32_t LWSocket::BroadcastAble; // \brief indicates socket should be made to broadcast if possible.
+const uint32_t LWSocket::Closed; // \brief indicates the socket is to be closed, and should no longer be accessed.
+const uint32_t LWSocket::AsyncFlags; // \brief indicates sockets flags that should be preserved when asyncing requests are made.
+
+const uint32_t LWSocket::DefaultBacklog; //Default backlog for listen sockets.
+const uint32_t LWSocket::DefaultURIPort; //Default URI port when parsing a URI that doesn't include a uri or a protocol.
+const uint32_t LWSocket::DefaultDNSPort; //Default dns port when one isn't specified. 
+
+const uint32_t LWSocket::ProtocolCount; /*!< \brief total number of protocol's lightwave is aware of. */
+
+const uint32_t LWSocket::DNS_A;
+const uint32_t LWSocket::DNS_NS;
+const uint32_t LWSocket::DNS_MD;
+const uint32_t LWSocket::DNS_MF;
+const uint32_t LWSocket::DNS_CNAME;
+const uint32_t LWSocket::DNS_SOA;
+const uint32_t LWSocket::DNS_MB;
+const uint32_t LWSocket::DNS_MG;
+const uint32_t LWSocket::DNS_MR;
+const uint32_t LWSocket::DNS_NULL;
+const uint32_t LWSocket::DNS_WKS;
+const uint32_t LWSocket::DNS_PTR;
+const uint32_t LWSocket::DNS_HINFO;
+const uint32_t LWSocket::DNS_MINFO;
+const uint32_t LWSocket::DNS_MX;
+const uint32_t LWSocket::DNS_TXT;
+const uint32_t LWSocket::DNS_SRV;
 
 uint32_t LWSocket::DecodeURI(const LWUTF8Iterator &URI, char8_t *Buffer, uint32_t BufferSize) {
 	char8_t *Last = Buffer + BufferSize;

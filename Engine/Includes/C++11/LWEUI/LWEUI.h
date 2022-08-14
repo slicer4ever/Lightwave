@@ -126,9 +126,6 @@ public:
 		LABL = LocalAnchorBtmLeft, //XML Flags: LABL
 		LABC = LocalAnchorBtmCenter, //XML Flags: LABC
 		LABR = LocalAnchorBtmRight, //XML Flags: LABR
-
-
-
 	};
 
 	static LWVector4f EvaluatePerPixelAttr(const LWUTF8Iterator &Value);
