@@ -69,6 +69,10 @@
 #define LWBitFieldSetStrict(Name, Flag, Value) \
 	(((Flag)&~(Name)) | (((Value) << (Name##Offset))&(Name)))
 
+/*!< \brief returns conditional comparison that Value is within the named bits size. */
+#define LWBitFieldCheckValue(Name, Value) \
+	Value<=(Name>>Name##Offset)
+
 
 /*! \defgroup LWCore LWCore
 	\brief the core of the entire framework that is built upon these classes.
