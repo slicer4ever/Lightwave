@@ -285,6 +285,6 @@ LWSQuaternion<float>::LWSQuaternion(const LWSMatrix4<float>& Mat) {
 	*this = LWSQuaternion((R1.x - R0.y) * iS, (R0.z + R2.x) * iS, (R1.z + R2.y) * iS, 0.25f * s).Normalize();
 }
 
-	LWSQuaternion<float>::LWSQuaternion() : m_Data(_mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f)) {}
+LWSQuaternion<float>::LWSQuaternion() : m_Data(_mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f)) {}
 
 #endif

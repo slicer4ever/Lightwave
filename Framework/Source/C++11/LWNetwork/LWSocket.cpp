@@ -73,6 +73,10 @@ uint32_t LWSocketAddr::Hash(void) const {
 	return LWCrypto::HashFNV1A((const uint8_t *)this, sizeof(LWSocketAddr));
 }
 
+uint32_t LWSocketAddr::HashIP(void) const {
+	return LWCrypto::HashFNV1A((const uint8_t*)IP, sizeof(IP));
+}
+
 bool LWSocketAddr::IsIP6Addr(void) const {
 	return (Port & IP6Addr) != 0;
 }

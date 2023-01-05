@@ -376,11 +376,6 @@ float &LWSVector4<float>::operator[](uint32_t i) {
 	return (&x)[i];
 }
 
-LWSVector4<float>& LWSVector4<float>::operator = (const LWSVector4<float>& Rhs) {
-	m_Data = Rhs.m_Data;
-	return *this;
-}
-
 LWSVector4<float>& LWSVector4<float>::operator += (const LWSVector4<float>& Rhs) {
 	m_Data = _mm_add_ps(m_Data, Rhs.m_Data);
 	return *this;
@@ -1750,5 +1745,7 @@ LWSVector4<float>::LWSVector4(const LWVector2<float>& vxy, float vz, float vw) :
 LWSVector4<float>::LWSVector4(float vx, float vy, float vz, float vw) : m_Data(_mm_set_ps(vw, vz, vy, vx)) {}
 
 LWSVector4<float>::LWSVector4(float f) : m_Data(_mm_set_ps1(f)) {}
+
+LWSVector4<float>::LWSVector4() : m_Data(_mm_set_ps1(0.0f)) {}
 
 #endif

@@ -465,11 +465,6 @@ int32_t &LWSVector4<int32_t>::operator[](uint32_t i) {
 	return (&x)[i];
 }
 
-LWSVector4<int32_t>& LWSVector4<int32_t>::operator = (const LWSVector4<int32_t>& Rhs) {
-	m_Data = Rhs.m_Data;
-	return *this;
-}
-
 LWSVector4<int32_t>& LWSVector4<int32_t>::operator += (const LWSVector4<int32_t>& Rhs) {
 	m_Data = _mm_add_epi32(m_Data, Rhs.m_Data);
 	return *this;
@@ -1837,5 +1832,7 @@ LWSVector4<int32_t>::LWSVector4(const LWVector2<int32_t>& vxy, int32_t vz, int32
 LWSVector4<int32_t>::LWSVector4(int32_t vx, int32_t vy, int32_t vz, int32_t vw) : m_Data(_mm_set_epi32(vw, vz, vy, vx)) {}
 
 LWSVector4<int32_t>::LWSVector4(int32_t f) : m_Data(_mm_set1_epi32(f)) {}
+
+LWSVector4<int32_t>::LWSVector4() : m_Data(_mm_set1_epi32(0)) {}
 
 #endif

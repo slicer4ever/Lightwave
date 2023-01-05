@@ -41,8 +41,6 @@ struct alignas(__m256d[4]) LWSMatrix4<double> {
 
 	LWSVector4<double> &operator[](uint32_t i);
 
-	LWSMatrix4<double>& operator = (const LWSMatrix4<double>& Rhs);
-
 	LWSMatrix4<double>& operator+= (const LWSMatrix4<double>& Rhs);
 
 	LWSMatrix4<double>& operator-= (const LWSMatrix4<double>& Rhs);
@@ -135,9 +133,11 @@ struct alignas(__m256d[4]) LWSMatrix4<double> {
 
 	LWSMatrix4(const LWMatrix4<double> &M);
 
+	LWSMatrix4();
+
 	LWSMatrix4(__m256d Row0, __m256d Row1, __m256d Row2, __m256d Row3);
 
-	LWSMatrix4(double xScale = 1.0, double yScale = 1.0, double zScale = 1.0, double wScale = 1.0);
+	LWSMatrix4(double xScale, double yScale, double zScale, double wScale);
 
 	LWSMatrix4(const LWSVector4<double>& RowA, const LWSVector4<double>& RowB, const LWSVector4<double>& RowC, const LWSVector4<double>& RowD);
 

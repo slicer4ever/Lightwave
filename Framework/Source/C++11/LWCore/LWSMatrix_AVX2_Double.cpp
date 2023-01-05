@@ -297,14 +297,6 @@ double LWSMatrix4<double>::Determinant(void) const {
 	return _mm256_cvtsd_f64(r);
 }
 
-LWSMatrix4<double>& LWSMatrix4<double>::operator = (const LWSMatrix4<double>& Rhs) {
-	m_Row0 = Rhs.m_Row0;
-	m_Row1 = Rhs.m_Row1;
-	m_Row2 = Rhs.m_Row2;
-	m_Row3 = Rhs.m_Row3;
-	return *this;
-}
-
 LWSMatrix4<double>& LWSMatrix4<double>::operator+= (const LWSMatrix4<double>& Rhs) {
 	m_Row0 = _mm256_add_pd(m_Row0, Rhs.m_Row0);
 	m_Row1 = _mm256_add_pd(m_Row1, Rhs.m_Row1);
@@ -696,6 +688,8 @@ LWSMatrix4<double>::LWSMatrix4(const LWMatrix4<double> &M) {
 	m_Row2 = _mm256_set_pd(M.m_Rows[2].w, M.m_Rows[2].z, M.m_Rows[2].y, M.m_Rows[2].x);
 	m_Row3 = _mm256_set_pd(M.m_Rows[3].w, M.m_Rows[3].z, M.m_Rows[3].y, M.m_Rows[3].x);
 }
+
+LWSMatrix4<double>::LWSMatrix4() : m_Row0(_mm256_set_pd(0.0, 0.0, 0.0, 1.0)), m_Row1(_mm256_set_pd(0.0, 0.0, 1.0, 0.0)), m_Row2(_mm256_set_pd(0.0, 1.0, 0.0, 0.0)), m_Row3(_mm256_set_pd(1.0, 0.0, 0.0, 0.0)) {}
 
 LWSMatrix4<double>::LWSMatrix4(__m256d Row0, __m256d Row1, __m256d Row2, __m256d Row3) : m_Row0(Row0), m_Row1(Row1), m_Row2(Row2), m_Row3(Row3) {}
 

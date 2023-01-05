@@ -191,14 +191,6 @@ struct LWMatrix4 {
 	}
 
 	/*! \cond */
-	LWMatrix4 &operator = (const LWMatrix4 &Rhs) {
-		m_Rows[0] = Rhs.m_Rows[0];
-		m_Rows[1] = Rhs.m_Rows[1];
-		m_Rows[2] = Rhs.m_Rows[2];
-		m_Rows[3] = Rhs.m_Rows[3];
-		return *this;
-	}
-
 	LWMatrix4 &operator+= (const LWMatrix4 &Rhs) {
 		m_Rows[0] += Rhs.m_Rows[0];
 		m_Rows[1] += Rhs.m_Rows[1];
@@ -666,9 +658,16 @@ struct LWMatrix4 {
 
 	}
 
+	LWMatrix4() {
+		m_Rows[0] = { (Type)1, 0, 0, 0 };
+		m_Rows[1] = { 0, (Type)1, 0, 0 };
+		m_Rows[2] = { 0, 0, (Type)1, 0 };
+		m_Rows[3] = { 0, 0, 0, (Type)1 };
+	}
+
 	/*! \brief constructs a 4x4 matrix with each row scaled by the respective scales.
 	*/
-	LWMatrix4(Type xScale = 1, Type yScale = 1, Type zScale = 1, Type wScale = 1){
+	LWMatrix4(Type xScale, Type yScale, Type zScale, Type wScale){
 		m_Rows[0] = { xScale, 0, 0, 0 };
 		m_Rows[1] = { 0, yScale, 0, 0 };
 		m_Rows[2] = { 0, 0, zScale, 0 };
@@ -776,13 +775,6 @@ struct LWMatrix3{
 	}
 
 	/*! \cond */
-	LWMatrix3 &operator = (const LWMatrix3 &Rhs){
-		m_Rows[0] = Rhs.m_Rows[0];
-		m_Rows[1] = Rhs.m_Rows[1];
-		m_Rows[2] = Rhs.m_Rows[2];
-		return *this;
-	}
-
 	LWMatrix3 &operator+= (const LWMatrix3 &Rhs){
 		m_Rows[0] += Rhs.m_Rows[0];
 		m_Rows[1] += Rhs.m_Rows[1];
@@ -1111,8 +1103,14 @@ struct LWMatrix3{
 		
 	}
 
+	LWMatrix3() {
+		m_Rows[0] = { (Type)1, 0, 0 };
+		m_Rows[1] = { 0, (Type)1, 0 };
+		m_Rows[2] = { 0, 0, (Type)1 };
+	}
+
 	/*! \brief construs a 3x3 matrix where each row is scaled by their respective scales.*/
-	LWMatrix3(Type xScale = 1, Type yScale = 1, Type zScale = 1){
+	LWMatrix3(Type xScale, Type yScale, Type zScale) {
 		m_Rows[0] = { xScale, 0, 0 };
 		m_Rows[1] = { 0, yScale, 0 };
 		m_Rows[2] = { 0, 0, zScale };
@@ -1129,7 +1127,7 @@ struct LWMatrix3{
 /*! \brief LWMatrix2 is a 2x2 row-major matrix object.
 */
 template<class Type>
-struct LWMatrix2{
+struct LWMatrix2 {
 	LWVector2<Type> m_Rows[2]; /*!< The 4x4 matrix in row-major order. */
 
 
@@ -1167,12 +1165,6 @@ struct LWMatrix2{
 	}
 
 	/*! \cond */
-	LWMatrix2 &operator = (const LWMatrix2 &Rhs){
-		m_Rows[0] = Rhs.m_Rows[0];
-		m_Rows[1] = Rhs.m_Rows[1];
-		return *this;
-	}
-
 	LWMatrix2 &operator+= (const LWMatrix2 &Rhs){
 		m_Rows[0] += Rhs.m_Rows[0];
 		m_Rows[1] += Rhs.m_Rows[1];
@@ -1274,8 +1266,13 @@ struct LWMatrix2{
 		return LWMatrix2({ C, -S }, { S, C });
 	}
 
+	LWMatrix2() {
+		m_Rows[0] = { (Type)1, 0 };
+		m_Rows[1] = { 0, (Type)1 };
+	}
+
 	/*! \brief constructs a 2x2 matrix where each row is scaled by their respective scales.*/
-	LWMatrix2(Type xScale = 1, Type yScale = 1){
+	LWMatrix2(Type xScale, Type yScale){
 		m_Rows[0] = { xScale, 0 };
 		m_Rows[1] = { 0, yScale };
 	}

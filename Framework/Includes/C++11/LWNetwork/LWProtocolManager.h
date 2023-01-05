@@ -58,9 +58,9 @@ public:
 	/*!< \brief polls all active sockets for any data to be read, and calls the relevant protocols. 
 		 \param Timeout the timeout time is in milliseconds, with 0 being instant, and 0xFFFFFFFF for infinite.
 		 \param lCurrentTime the current time, used to timeout sockets which have been waiting too long without sending/receiving new data.
-		 \return true if polling was successful, false if failure.
+		 \return number of sockets which had data on them, or -1 if an error occurred.
 	*/
-	bool Poll(uint32_t PollTimeout, uint64_t lCurrentTime);
+	int32_t Poll(uint32_t PollTimeout, uint64_t lCurrentTime);
 
 	/*!< \brief processes the async queue list. Timeout is in high resolution time, if timeout is 0 then time is considered infinite, otherwise returns at specified time when possible. */
 	void ProcessAsyncSockets(bool Verbose = true, uint64_t lTimeout = 0, uint64_t lCurrentTime = 0);

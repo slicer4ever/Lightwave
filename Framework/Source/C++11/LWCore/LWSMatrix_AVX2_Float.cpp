@@ -264,12 +264,6 @@ float LWSMatrix4<float>::Determinant(void) const {
 	return _mm_cvtss_f32(r);
 }
 
-LWSMatrix4<float>& LWSMatrix4<float>::operator = (const LWSMatrix4<float>& Rhs) {
-	m_Row01 = Rhs.m_Row01;
-	m_Row23 = Rhs.m_Row23;
-	return *this;
-}
-
 LWSMatrix4<float>& LWSMatrix4<float>::operator+= (const LWSMatrix4<float>& Rhs) {
 	m_Row01 = _mm256_add_ps(m_Row01, Rhs.m_Row01);
 	m_Row23 = _mm256_add_ps(m_Row23, Rhs.m_Row23);
@@ -673,6 +667,8 @@ LWSMatrix4<float>::LWSMatrix4(const LWMatrix4<float> &M) {
 }
 
 LWSMatrix4<float>::LWSMatrix4(__m256 Row01, __m256 Row23) : m_Row01(Row01), m_Row23(Row23) {}
+
+LWSMatrix4<float>::LWSMatrix4() : m_Row01(_mm256_set_ps(0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f)), m_Row23(_mm256_set_ps(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f)) {}
 
 LWSMatrix4<float>::LWSMatrix4(float xScale, float yScale, float zScale, float wScale) : m_Row01(_mm256_set_ps(0.0f, 0.0f, yScale, 0.0f, 0.0f, 0.0f, 0.0f, xScale)), m_Row23(_mm256_set_ps(wScale, 0.0f, 0.0f, 0.0f, 0.0f, zScale, 0.0f, 0.0f)) {}
 

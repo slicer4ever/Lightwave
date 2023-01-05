@@ -36,6 +36,9 @@ struct LWSocketAddr {
 	/*!< \brief creates a hash out of this address structure. */
 	uint32_t Hash(void) const;
 
+	/*!< \brief hashs only the ip portion of the address, and not the port. */
+	uint32_t HashIP(void) const;
+
 	/*!< \brief returns true if IP6 flag is raised. */
 	bool IsIP6Addr(void) const;
 

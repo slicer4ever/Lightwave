@@ -168,8 +168,6 @@ struct alignas(__m128i) LWSVector4<int32_t> {
 
 	int32_t &operator[](uint32_t i);
 
-	LWSVector4<int32_t>& operator = (const LWSVector4<int32_t>& Rhs);
-
 	LWSVector4<int32_t>& operator += (const LWSVector4<int32_t>& Rhs);
 
 	LWSVector4<int32_t>& operator += (int32_t Rhs);
@@ -844,6 +842,8 @@ struct alignas(__m128i) LWSVector4<int32_t> {
 
 	LWSVector4(int32_t vx, int32_t vy, int32_t vz, int32_t vw);
 
-	LWSVector4(int32_t f = 0);
+	LWSVector4(int32_t f);
+
+	LWSVector4();
 };
 #endif

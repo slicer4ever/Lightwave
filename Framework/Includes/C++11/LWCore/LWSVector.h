@@ -373,14 +373,6 @@ struct alignas(Type[4]) LWSVector4 {
 		return (&x)[i];
 	}
 
-	LWSVector4<Type> &operator = (const LWSVector4<Type> &Rhs) {
-		x = Rhs.x;
-		y = Rhs.y;
-		z = Rhs.z;
-		w = Rhs.w;
-		return *this;
-	};
-
 	LWSVector4<Type> &operator += (const LWSVector4<Type> &Rhs) {
 		x += Rhs.x;
 		y += Rhs.y;
@@ -1770,7 +1762,9 @@ struct alignas(Type[4]) LWSVector4 {
 
 	LWSVector4(Type vx, Type vy, Type vz, Type vw) : x(vx), y(vy), z(vz), w(vw) {}
 
-	LWSVector4(Type f = 0) : x(f), y(f), z(f), w(f) {}
+	LWSVector4(Type f) : x(f), y(f), z(f), w(f) {}
+
+	LWSVector4() : x(0), y(0), z(0), w(0) {}
 };
 
 /*!< \brief float implementation of LWSVector4 */

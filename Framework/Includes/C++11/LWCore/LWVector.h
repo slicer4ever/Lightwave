@@ -15,14 +15,99 @@
 
 template<class Type>
 struct LWVector4{
-	Type x; /*!< \brief x component of the Vector4 */
-	Type y; /*!< \brief y component of the Vector4 */
-	Type z; /*!< \brief z component of the Vector4 */
-	Type w; /*!< \brief w component of the Vector4 */
+	Type x = (Type)0; /*!< \brief x component of the Vector4 */
+	Type y = (Type)0; /*!< \brief y component of the Vector4 */
+	Type z = (Type)0; /*!< \brief z component of the Vector4 */
+	Type w = (Type)0; /*!< \brief w component of the Vector4 */
 
 	/*! \brief returns a simd version of this vector4. */
 	LWSVector4<Type> AsSVec4(void) const {
 		return LWSVector4<Type>(x, y, z, w);
+	}
+
+	LWVector4<Type> RotateAngleAxis3(Type Theta, const LWVector4<Type> &Axis) {
+		Type s, c;
+		s = (Type)sin((double)Theta); c = (Type)cos((double)Theta);
+
+		const Type XX = Axis.x * Axis.x;
+		const Type YY = Axis.y * Axis.y;
+		const Type ZZ = Axis.z * Axis.z;
+
+		const Type XY = Axis.x * Axis.y;
+		const Type YZ = Axis.y * Axis.z;
+		const Type ZX = Axis.z * Axis.x;
+
+		const Type XS = Axis.x * s;
+		const Type YS = Axis.y * s;
+		const Type ZS = Axis.z * s;
+
+		const Type OMC = (Type)1.f - c;
+
+		return LWVector4<Type>(
+			(OMC * XX + c) * x + (OMC * XY - ZS) * y + (OMC * ZX + YS) * z,
+			(OMC * XY + ZS) * x + (OMC * YY + c) * y + (OMC * YZ - XS) * z,
+			(OMC * ZX - YS) * x + (OMC * YZ + XS) * y + (OMC * ZZ + c) * z,
+			w);
+	}
+
+	/*! \brief returns the cross product of two vector4's of the xyz components. */
+	LWVector4<Type> Cross3(const LWVector4<Type> &O) const {
+		return LWVector4<Type>(y * O.z - z * O.y, z * O.x - x * O.z, x * O.y - y * O.x, w);
+	}
+
+	/*! \brief Gets the length of the xyz components.
+		\return the length of the xyz components.
+	*/
+	Type Length3(void) const {
+		Type L = x * x + y * y + z * z;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) return 0;
+		return (Type)sqrt(L);
+	}
+
+	/*! \brief Gets the squared length of the xyz.
+		\return the squared length of the xyz.
+	*/
+	Type LengthSquared3(void) const {
+		return x * x + y * y + z * z;
+	}
+
+	/*! \brief returns a value of the distance between two vector4's xyz components.
+		\return the distance between two Vector4's xyz components.
+	*/
+	Type Distance3(const LWVector4<Type> &O) const {
+		return (*this - O).Length3();
+	}
+
+	/*! \brief return the squared distance between two vector4's xyz components.
+		\return the distance between two Vector4's xyz components.
+	*/
+	Type DistanceSquared3(const LWVector4<Type> &O) const {
+		return (*this - O).LengthSquared3();
+	}
+
+	/*! \brief returns the dot product between two vector4's xyz components.
+	*/
+	Type Dot3(const LWVector4<Type> &O) const {
+		return x * O.x + y * O.y + z * O.z;
+	}
+
+	/*! \brief returns a copy of the normalized vector4 xyz components. */
+	LWVector4<Type> Normalize3(void) const {
+		Type L = x * x + y * y + z * z;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) L = 0;
+		else L = (Type)1.0 / (Type)sqrt(L);
+		return LWVector4<Type>(x * L, y * L, z * L, w);
+	}
+
+	/*! \brief returns normalized vector4, and writes the pre-normalized distance of the vector into distance. */
+	LWVector4<Type> Normalize3(Type &Distance) const {
+		Type L = Distance = x * x + y * y + z * z;
+		if(L <= (Type)std::numeric_limits<float>::epsilon()) L = Distance = (Type)0;
+		else {
+			Distance = (Type)sqrt(L);
+			L = (Type)1.0 / Distance;
+		}
+		return LWVector4<Type>(x * L, y * L, z * L, w);
 	}
 
 	/*! \brief returns a copy of the normalized vector4. */
@@ -31,6 +116,16 @@ struct LWVector4{
 		if (L <= (Type)std::numeric_limits<float>::epsilon()) L = 0;
 		else L = (Type)1 / (Type)sqrt(L);
 		return LWVector4<Type>(x*L, y*L, z*L, w*L);
+	}
+
+	LWVector4<Type> Normalize(Type &Distance) const {
+		Type L = Distance = x * x + y * y + z * z + w * w;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) L = Distance = (Type)0;
+		else {
+			Distance = (Type)sqrt(L);
+			L = (Type)1.0 / Distance;
+		}
+		return LWVector4<Type>(x * L, y * L, z * L, w * L);
 	}
 
 	/*!< \brief returns the min element of all vec4 components. */
@@ -144,14 +239,6 @@ struct LWVector4{
 	}
 
 	/*! \cond */
-	LWVector4<Type> &operator = (const LWVector4<Type> &Rhs){
-		x = Rhs.x;
-		y = Rhs.y;
-		z = Rhs.z;
-		w = Rhs.w;
-		return *this;
-	}
-
 	LWVector4<Type> &operator += (const LWVector4<Type> &Rhs){
 		x += Rhs.x;
 		y += Rhs.y;
@@ -1776,7 +1863,9 @@ struct LWVector4{
 	LWVector4(const Type *Xy, const LWVector2<Type> &Zw) : x(Xy[0]), y(Xy[1]), z(Zw.x), w(Zw.y){}
 
 	/*! \brief Construct for LWVector4 Type with defaults all parameters to f. */
-	LWVector4(Type f=0) : x(f), y(f), z(f), w(f){}
+	LWVector4(Type f) : x(f), y(f), z(f), w(f){}
+
+	LWVector4() {};
 };
 
 /*! \brief A vector3 math utility which allows for numerous mathematical expressions to be expressed quickly and easily.
@@ -1784,9 +1873,9 @@ struct LWVector4{
 
 template<class Type>
 struct LWVector3{
-	Type x; /*!< \brief x component of the Vector3 */
-	Type y; /*!< \brief y component of the Vector3 */
-	Type z; /*!< \brief z component of the Vector3 */
+	Type x = (Type)0; /*!< \brief x component of the Vector3 */
+	Type y = (Type)0; /*!< \brief y component of the Vector3 */
+	Type z = (Type)0; /*!< \brief z component of the Vector3 */
 
 	/*! \brief returns a copy of the normalized vector3. */
 	LWVector3<Type> Normalize(void) const{
@@ -1794,6 +1883,17 @@ struct LWVector3{
 		if (L <= (Type)std::numeric_limits<float>::epsilon()) L = 0;
 		else L = (Type)1 / sqrt(L);
 		return LWVector3<Type>(x*L, y*L, z*L);
+	}
+
+	/*! \brief returns a copy of the normalized vector3, returns pre-normalized distance into distance.. */
+	LWVector3<Type> Normalize(Type &Distance) const {
+		Type L = Distance = x * x + y * y + z * z;
+		if (L <= (Type)std::numeric_limits<float>::epsilon()) L = Distance = 0;
+		else {
+			Distance = (Type)sqrt(Distance);
+			L = (Type)1.0 / Distance;
+		}
+		return LWVector3<Type>(x * L, y * L, z * L);
 	}
 
 	/*!< \brief checks the sign of each component, and returns +1 for positive sign, and -1 for negative sign components. */
@@ -1842,6 +1942,30 @@ struct LWVector3{
 		Right = Cross(A).Normalize();
 		Up = Cross(Right);
 		return;
+	}
+
+	LWVector3<Type> RotateAngleAxis(Type Theta, const LWVector4<Type> &Axis) {
+		Type s, c;
+		s = (Type)sin((double)Theta); c = (Type)cos((double)Theta);
+
+		const Type XX = Axis.x * Axis.x;
+		const Type YY = Axis.y * Axis.y;
+		const Type ZZ = Axis.z * Axis.z;
+
+		const Type XY = Axis.x * Axis.y;
+		const Type YZ = Axis.y * Axis.z;
+		const Type ZX = Axis.z * Axis.x;
+
+		const Type XS = Axis.x * s;
+		const Type YS = Axis.y * s;
+		const Type ZS = Axis.z * s;
+
+		const Type OMC = (Type)1.f - c;
+
+		return LWVector3<Type>(
+			(OMC * XX + c) * x + (OMC * XY - ZS) * y + (OMC * ZX + YS) * z,
+			(OMC * XY + ZS) * x + (OMC * YY + c) * y + (OMC * YZ - XS) * z,
+			(OMC * ZX - YS) * x + (OMC * YZ + XS) * y + (OMC * ZZ + c) * z);
 	}
 
 	/*! \brief returns the cross product of two vector3's. 
@@ -1936,13 +2060,6 @@ struct LWVector3{
 	}
 
 	/*! \cond */
-	LWVector3<Type> &operator = (const LWVector3<Type> &Rhs){
-		x = Rhs.x;
-		y = Rhs.y;
-		z = Rhs.z;
-		return *this;
-	}
-
 	LWVector3<Type> &operator += (const LWVector3<Type> &Rhs){
 		x += Rhs.x;
 		y += Rhs.y;
@@ -2251,7 +2368,9 @@ struct LWVector3{
 	LWVector3(Type x, const LWVector2<Type> &Yz) : x(x), y(Yz.x), z(Yz.y){}
 	
 	/*! \brief Construct for LWVector3 Type with defaults all parameters to f. */
-	LWVector3(Type f = 0) : x(f), y(f), z(f){}
+	LWVector3(Type f) : x(f), y(f), z(f){}
+
+	LWVector3() {};
 };
 
 
@@ -2260,8 +2379,8 @@ struct LWVector3{
 
 template<class Type>
 struct LWVector2{
-	Type x; /*!< \brief x component of the Vector2 */
-	Type y; /*!< \brief y component of the Vector2 */
+	Type x = 0; /*!< \brief x component of the Vector2 */
+	Type y = 0; /*!< \brief y component of the Vector2 */
 
 	/*! \brief returns the internal components as an array of Type. */
 	Type *AsArray(void) {
@@ -2409,12 +2528,6 @@ struct LWVector2{
 	}
 
 	/*! \cond */
-	LWVector2<Type> &operator = (const LWVector2<Type> &Rhs){
-		x = Rhs.x;
-		y = Rhs.y;
-		return *this;
-	}
-
 	LWVector2<Type> &operator += (const LWVector2<Type> &Rhs){
 		x += Rhs.x;
 		y += Rhs.y;
@@ -2594,7 +2707,9 @@ struct LWVector2{
 
 	/*! \brief Construct for LWVector2 Type with defaults all parameters to f. */
 
-	LWVector2(Type f = 0) : x(f), y(f){}
+	LWVector2(Type f) : x(f), y(f){}
+
+	LWVector2() {};
 };
 
 /*! @} */

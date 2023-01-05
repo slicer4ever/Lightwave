@@ -437,11 +437,6 @@ double &LWSVector4<double>::operator[](uint32_t i) {
 	return (&x)[i];
 }
 
-LWSVector4<double>& LWSVector4<double>::operator = (const LWSVector4<double>& Rhs) {
-	m_Data = Rhs.m_Data;
-	return *this;
-}
-
 LWSVector4<double>& LWSVector4<double>::operator += (const LWSVector4<double>& Rhs) {
 	m_Data = _mm256_add_pd(m_Data, Rhs.m_Data);
 	return *this;
@@ -1811,5 +1806,7 @@ LWSVector4<double>::LWSVector4(const LWVector2<double>& vxy, double vz, double v
 LWSVector4<double>::LWSVector4(double vx, double vy, double vz, double vw) : m_Data(_mm256_set_pd(vw, vz, vy, vx)) {}
 
 LWSVector4<double>::LWSVector4(double f) : m_Data(_mm256_set_pd(f, f, f, f)) {}
+
+LWSVector4<double>::LWSVector4() : m_Data(_mm256_set_pd(0.0, 0.0, 0.0, 0.0)) {}
 
 #endif

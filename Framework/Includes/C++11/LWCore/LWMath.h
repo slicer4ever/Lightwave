@@ -17,6 +17,8 @@
 #define LWEpsilon 0.001f
 /*!< \brief encodes a floating point number with a specific range into N bits (i.e: LWENCODE_FLOAT(LW_PI, LW_2PI, 100) would result in 50. */
 #define LWENCODE_FLOAT(Value, Range, N) (std::min<uint32_t>((uint32_t)(((Value)/(Range))*(float)(N)+LWEpsilon), (N)))
+#define LWENCODE_FLOAT64(Value, Range, N) (std::min<uint64_t>((uint64_t)(((Value)/(Range))*(float)(N)+LWEpsilon), (N)))
+
 /*!< \brief decodes an encoded floating point number with a specefic range back to a floating point value. (i.e: LWDECODE_FLOAT(50, LW_2PI, 100) would result in LW_PI value.) */
 #define LWDECODE_FLOAT(Value, Range, N) (std::min<float>((((Value)/(float)(N))*(Range)), (Range)))
 

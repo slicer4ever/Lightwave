@@ -204,13 +204,6 @@ struct alignas(LWSVector4<Type>[4]) LWSMatrix4 {
 	}
 
 	/*! \cond */
-	LWSMatrix4 &operator = (const LWSMatrix4 &Rhs) {
-		m_Rows[0] = Rhs.m_Rows[0];
-		m_Rows[1] = Rhs.m_Rows[1];
-		m_Rows[2] = Rhs.m_Rows[2];
-		m_Rows[3] = Rhs.m_Rows[3];
-		return *this;
-	}
 
 	LWSMatrix4 &operator+= (const LWSMatrix4 &Rhs) {
 		m_Rows[0] += Rhs.m_Rows[0];
@@ -682,9 +675,16 @@ struct alignas(LWSVector4<Type>[4]) LWSMatrix4 {
 		m_Rows[3] = LWSVector4<Type>(0, 0, 0, 1);
 	}
 	
+	LWSMatrix4() {
+		m_Rows[0] = { (Type)1, 0, 0, 0 };
+		m_Rows[1] = { 0, (Type)1, 0, 0 };
+		m_Rows[2] = { 0, 0, (Type)1, 0 };
+		m_Rows[3] = { 0, 0, 0, (Type)1};
+	}
+
 	/*! \brief constructs a 4x4 matrix with each row scaled by the respective scales.
 	*/
-	LWSMatrix4(Type xScale = 1, Type yScale = 1, Type zScale = 1, Type wScale = 1) {
+	LWSMatrix4(Type xScale, Type yScale, Type zScale, Type wScale) {
 		m_Rows[0] = { xScale, 0, 0, 0 };
 		m_Rows[1] = { 0, yScale, 0, 0 };
 		m_Rows[2] = { 0, 0, zScale, 0 };

@@ -9,22 +9,22 @@
 template<class Type, std::size_t Len>
 struct LWUTFC_View {
 	Type m_Data[Len];
-	const Type *m_ReadData = m_Data;
+	//const Type *m_ReadData = m_Data;
 	uint32_t m_DataLen = 0;
 
 	/*!< \brief returns the underlying data for giving to the c-api(since these c-api's almost universally take a const char *, we return a const char *). */
 	const char *operator*(void) const {
-		return (const char *)m_ReadData;
+		return (const char *)m_Data;
 	}
 
 	// \brief hash's the c-view string by calling the UnicodeIterators hash function on it. */
 	uint32_t Hash(void) const {
-		return LWUnicodeIterator<Type>(m_ReadData).Hash();
+		return LWUnicodeIterator<Type>(m_Data).Hash();
 	}
 
 	/*!< \brief returns an iterator to C_View data. */
 	LWUnicodeIterator<Type> operator()(void) const {
-		return LWUnicodeIterator<Type>(m_ReadData);
+		return LWUnicodeIterator<Type>(m_Data);
 	}
 
 	friend std::ostream &operator<<(std::ostream &o, const LWUTFC_View<Type, Len> &cView) {
@@ -34,7 +34,7 @@ struct LWUTFC_View {
 	/*!< \brief constructs the c string copy of the iterator range, if Iterator ends on a null character then ReadData will point to the iterator current position instead. */
 	LWUTFC_View(const LWUnicodeIterator<Type> &Iterator) {
 		uint32_t L = Iterator.Copy(m_Data, Len);
-		if (L) m_ReadData = (*(Iterator() + (L - 1))) == 0 ? Iterator() : m_Data;
+		//if (L) m_ReadData = (*(Iterator() + (L - 1))) == 0 ? Iterator() : m_Data;
 		m_DataLen = std::min<uint32_t>(L, Len);
 	}
 

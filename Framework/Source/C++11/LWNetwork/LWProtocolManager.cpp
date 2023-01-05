@@ -79,7 +79,7 @@ uint32_t LWProtocolManager::GetActiveSocketCount(void) const{
 	return m_ActiveSocketCount;
 }
 
-bool LWProtocolManager::Poll(uint32_t Timeout, uint64_t lCurrentTime) {
+int32_t LWProtocolManager::Poll(uint32_t Timeout, uint64_t lCurrentTime) {
 
 	auto HandleClose = [this, &lCurrentTime](uint32_t i, LWRef<LWSocket> &Socket, LWRef<LWProtocol> &SocketProto)->bool {
 		if (!Socket->IsClosable(lCurrentTime)) return false;
@@ -110,8 +110,9 @@ bool LWProtocolManager::Poll(uint32_t Timeout, uint64_t lCurrentTime) {
 		return true;
 	};
 
-	if(!PollSet(m_SocketSet, m_ActiveSocketCount, 0)) return false; //something went wrong polling.
+	if(!PollSet(m_SocketSet, m_ActiveSocketCount, 0)) return -1; //something went wrong polling.
 	uint32_t Count = m_ActiveSocketCount;
+	int32_t ReadCount = 0;
 	for (uint32_t i = 0; i < Count; ++i) {
 		LWRef<LWSocket> Sock = m_Sockets[i];
 		if (HandleClose(i, Sock, m_Protocols[Sock->GetProtocolID()])) {
@@ -121,9 +122,10 @@ bool LWProtocolManager::Poll(uint32_t Timeout, uint64_t lCurrentTime) {
 			if (Sock->IsListener()) HandleListener(Sock, m_Protocols[Sock->GetProtocolID()]);
 			else HandleRead(Sock, m_Protocols[Sock->GetProtocolID()]);
 			m_SocketSet[i].revents = 0;
+			ReadCount++;
 		}
 	}
-	return true;
+	return ReadCount;
 }
 
 void LWProtocolManager::ProcessAsyncSockets(bool Verbose, uint64_t lTimeout, uint64_t lCurrentTime) {

@@ -116,7 +116,7 @@ uint32_t LWEHTTPMessage::MakeJSONQueryString(LWEJson &Json, char8_t *Buffer, uin
 uint32_t LWEHTTPMessage::MakeHTTPDate(void *Buffer, uint32_t BufferLen) {
 	time_t now = time(0);
 	struct tm mtime;
-#if _MSC_VER
+#ifdef _MSC_VER
 	gmtime_s(&mtime, &now);
 #else
 	gmtime_r(&now, &mtime);
@@ -127,7 +127,7 @@ uint32_t LWEHTTPMessage::MakeHTTPDate(void *Buffer, uint32_t BufferLen) {
 uint32_t LWEHTTPMessage::MakeAMZDate(void *Buffer, uint32_t BufferLen, bool IncludeSubTime) {
 	time_t now = time(0);
 	struct tm gtime;
-#if _MSC_VER
+#ifdef _MSC_VER
 	gmtime_s(&gtime, &now);
 #else
 	gmtime_r(&now, &gtime);
