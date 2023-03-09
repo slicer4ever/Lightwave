@@ -145,7 +145,13 @@ bool LWEXML::ParseBuffer(LWEXML &XML, LWAllocator &Allocator, const LWUTF8Iterat
 			CopyAndStrip(ActiveNode, P, C, StripFormatting);
 			LWUTF8Iterator F = C;
 			C = (C + 1).AdvanceWord(true);
-			if (C.Compare("!--", 3)) { //Node is start of comment:
+			if (C.Compare("?xml", 4)) { //node is header defining encoding
+				//we skip for now, assume utf-8 encoding.
+				C.AdvancerSubString("?>");
+				C += 2;
+				P = C + 1;
+				continue;
+			} else if (C.Compare("!--", 3)) { //Node is start of comment:
 				C.AdvanceSubString("-->"); //Skip to end of comment.
 				C += 2;
 				P = C + 1;

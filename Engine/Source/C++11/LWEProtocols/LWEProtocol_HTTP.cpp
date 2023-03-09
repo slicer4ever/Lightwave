@@ -257,7 +257,8 @@ uint32_t LWEHTTPMessage::DeserializeBody(const void *Buffer, uint32_t Len, bool 
 		}
 		uint32_t ReadLen = std::min<uint32_t>(m_ChunkLength, Len-o);
 		uint32_t BodyLength = std::min<uint32_t>(ReadLen, BodyRemaining);
-		std::copy((char8_t *)Buffer+o, (char8_t *)Buffer+o+BodyLength, m_Body+ m_ChunkOffset);
+		std::copy((char8_t *)Buffer+o, (char8_t *)Buffer+o+BodyLength, m_Body+m_ChunkOffset);
+		m_Body[std::min<uint32_t>(m_ChunkOffset+BodyLength, sizeof(m_Body)-1)] = '\0';
 		m_ChunkOffset+=ReadLen;
 		m_ChunkLength-=ReadLen;
 		o += ReadLen;

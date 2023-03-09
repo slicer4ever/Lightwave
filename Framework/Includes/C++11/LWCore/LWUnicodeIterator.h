@@ -211,8 +211,8 @@ public:
 
 	/*!< \brief returns true if the codepoint is a whitespace. */
 	static bool isWhitespace(uint32_t CodePoint) {
-		//extended list from: https://www.compart.com/en/unicode/category/Zs
-		return (CodePoint >= 0x9 && CodePoint <= 0xD) || CodePoint == 0x20 || CodePoint == 0xA0 || CodePoint == 0x1680 || (CodePoint >= 0x2001 && CodePoint <= 0x200A) || CodePoint == 0x202F || CodePoint == 0x205F || CodePoint == 0x3000;
+		//extended list from: https://www.compart.com/en/unicode/category/Zs & https://jkorpela.fi/chars/spaces.html
+		return (CodePoint >= 0x9 && CodePoint <= 0xD) || CodePoint == 0x20 || CodePoint == 0xA0 || CodePoint == 0x1680 || (CodePoint >= 0x2001 && CodePoint <= 0x200B) || CodePoint == 0x202F || CodePoint == 0x205F || CodePoint == 0x3000 || CodePoint == 0xFEFF;
 	}
 
 	/*!< \brief returns true if the codepoint is a linebreak character.(\n). */
