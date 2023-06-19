@@ -53,6 +53,7 @@ bool LWLog(uint32_t LogLevel, const LWUTF8Iterator &Text) { \
 	static bool bDidOpen = false; \
 	static LWFileStream LogFile; \
 	if (!bInitialized) {\
+		bInitialized = true; \
 		char8_t SourceFileName[256];\
 		char8_t TargetFileName[256];\
 		LWUTF8I::Fmt_n(SourceFileName, sizeof(SourceFileName), "{}_{}.txt", FilePath, FileCount-1);\
@@ -69,7 +70,6 @@ bool LWLog(uint32_t LogLevel, const LWUTF8Iterator &Text) { \
 		if (!bDidOpen) {\
 			fmt::print("Error: Could not create log file '{}'\n", FilePath); \
 		}\
-		bInitialized = true; \
 	}\
 	auto ErrorMessage = LWLog_FormatString<4096>(LogLevel, Text); \
 	if (bOutputConsole) fmt::print("{}", ErrorMessage); \

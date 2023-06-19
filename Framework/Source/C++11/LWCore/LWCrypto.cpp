@@ -567,23 +567,26 @@ uint32_t LWCrypto::Base64Encode(const char *InBuffer, uint32_t InBufferLen, char
 	return (InBufferLen + 2) / 3 * 4 + 1;
 }
 
-uint32_t LWCrypto::Base64Decode(const char *InBuffer, uint32_t InBufferLen, char *OutBuffer, uint32_t OutBufferLen){
+uint32_t LWCrypto::Base64Decode(const char *InBuffer, uint32_t InBufferLen, char *OutBuffer, uint32_t OutBufferLen) {
 	if (!OutBuffer) return (InBufferLen + 3) / 4 * 3;
 	char CodeTable[] = { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" };
 	char *OutLast = OutBuffer + OutBufferLen;
-	for (uint32_t i = 0; i < InBufferLen;i+=4){
-		
+	uint32_t Chars = 3;
+	uint32_t Count = 0;
+	for (uint32_t i = 0; i + 3 < InBufferLen && Chars == 3; i += 4, Count += Chars) {
 		uintptr_t iA = (uintptr_t)(strchr(CodeTable, InBuffer[i]) - CodeTable);
-		uintptr_t iB = (uintptr_t)(strchr(CodeTable, InBuffer[i+1]) - CodeTable);
-		uintptr_t iC = (uintptr_t)(strchr(CodeTable, InBuffer[i+2]));
-		uintptr_t iD = (uintptr_t)(strchr(CodeTable, InBuffer[i+3]));
+		uintptr_t iB = (uintptr_t)(strchr(CodeTable, InBuffer[i + 1]) - CodeTable);
+		uintptr_t iC = (uintptr_t)(strchr(CodeTable, InBuffer[i + 2]));
+		uintptr_t iD = (uintptr_t)(strchr(CodeTable, InBuffer[i + 3]));
 		iC = iC == 0 ? iC : (iC - (uintptr_t)CodeTable);
 		iD = iD == 0 ? iD : (iD - (uintptr_t)CodeTable);
 		if (OutBuffer != OutLast) *OutBuffer++ = (char)((iA << 2) | ((iB & 0x30) >> 4));
 		if (OutBuffer != OutLast) *OutBuffer++ = (char)(((iB & 0x0F) << 4) | ((iC & 0x3C) >> 2));
 		if (OutBuffer != OutLast) *OutBuffer++ = (char)(((iC & 0x03) << 6) | iD);
+		if (InBuffer[i + 3] == '=') Chars--;
+		if (InBuffer[i + 2] == '=') Chars--;
 	}
-	return (InBufferLen + 3) / 4 * 3;
+	return Count;
 }
 
 uint32_t LWCrypto::HexEncode(const char *InBuffer, uint32_t InBufferLen, char *OutBuffer, uint32_t OutBufferLen) {
