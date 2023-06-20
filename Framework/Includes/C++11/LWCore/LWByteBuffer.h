@@ -2598,6 +2598,10 @@ public:
 	*/
 	LWByteBuffer &SetPosition(int32_t Position);
 
+	/*! \brief Set's the internal write and read pointers to Position.  this functions should ideally be used when you want to rewind from a write that is no longer wanted. */
+	LWByteBuffer &MoveAllHeadsTo(int32_t Position);
+
+
 	/*! \brief offset's the position to the next alignment.
 		\param Write, add the offset to bytesWritten.
 		\return the number of bytes that need to be added for alignment.
