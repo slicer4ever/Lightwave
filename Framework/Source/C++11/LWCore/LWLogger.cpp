@@ -52,6 +52,15 @@ uint64_t LWLoggerTimeMetrics::MakeFPS(void) const {
 	return LWTimer::GetResolution() / Average;
 }
 
+uint64_t LWLoggerTimeMetrics::Average(void) const {
+	if(!m_ValueCount) return 0;
+	uint64_t ValueCnt = std::min<uint64_t>(m_ValueCount, MaxValues);
+	uint64_t Average = 0;
+	for (uint32_t i = 0; i < ValueCnt; i++) Average += m_Values[i];
+	Average /= ValueCnt;
+	return Average;
+}
+
 void LWLoggerTimeMetrics::GetValues(uint64_t &Lowest, uint64_t &Highest, uint64_t &Average) const {
 	if (!m_ValueCount) {
 		Lowest = Highest = Average = 0;

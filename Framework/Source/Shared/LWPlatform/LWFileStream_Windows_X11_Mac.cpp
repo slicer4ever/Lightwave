@@ -6,7 +6,7 @@
 
 bool LWFileStream::OpenStream(LWFileStream &Result, const LWUTF8Iterator &FilePath, uint32_t Flag, LWAllocator &Allocator, const LWFileStream *ExistingStream) {
 	char8_t Buffer[512];
-	char Modes[][4] = { "", "r", "w", "rw", "a", "", "", "", "", "rb", "wb", "rwb" };
+	const char Modes[][4] = { "", "r", "w", "rw", "a", "r+", "w+", "a+", "", "rb", "wb", "rwb", "ab", "r+b", "w+b", "a+b" };
 	if (!ParsePath(FilePath, Buffer, sizeof(Buffer), ExistingStream)) return false;
 	FILE *pFile = nullptr;
 	pFile = fopen(Buffer, Modes[Flag]);

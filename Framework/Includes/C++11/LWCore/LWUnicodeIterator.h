@@ -1077,12 +1077,40 @@ public:
 
 	/*!< \brief compares to an array of list of comparable items, upto n codepoints.  returning the index of that matching list item, or -1 if no match is found. */
 	template<class T>
-	uint32_t CompareLista(uint32_t Count, const T *List, uint32_t CodePointCount) {
+	uint32_t CompareLista(uint32_t Count, const T *List, uint32_t CodePointCount) const {
 		for (uint32_t i = 0; i < Count; i++)
 			if (Compare(List[i], CodePointCount)) return i;
 		return -1;
 	}
 	
+	/*!< \brief compares this string to Iter, returns < 0 if this strings first char is lower value then the first non equal string in B, > 0 if the value is greater, and 0 if the two are the same. upto Count characters. */
+	int32_t CompareRelative(const LWUnicodeIterator<Type> &Iter, uint32_t Count) const {
+		LWUnicodeIterator<Type> A = *this;
+		LWUnicodeIterator<Type> B = Iter;
+		bool isEqual = true;
+		while (!A.AtEnd() && !B.AtEnd() && Count--) {
+			isEqual = *A == *B;
+			if(!isEqual) break;
+			A++;
+			B++;
+		}
+		isEqual = isEqual && (Count == 0 || (A.AtEnd() && B.AtEnd()));
+		if(isEqual) return 0;
+		if(A.AtEnd()) return 1;
+		else if(B.AtEnd()) return -1;
+		return *A-*B;
+	}
+
+	/*!< \brief Compare relative overload, but with c string. */
+	int32_t CompareRelative(const Type *Value, uint32_t ValueCount) const {
+		return CompareRelative(LWUTF8Iterator(Value, ValueCount), ValueCount);
+	}
+
+	/*!< \brief Compare relative overload, but with no limit on the character count. */
+	int32_t CompareRelative(const LWUnicodeIterator<Type> &Iter) const {
+		return CompareRelative(Iter, std::numeric_limits<uint32_t>::max());
+	}
+
 	/*!< \brief search's string for the first occurrent of SubString, returning true if found, or false if not found. */
 	bool HasSubString(const LWUnicodeIterator<Type> &SubString) const {
 		return !NextSubString(SubString, false).AtEnd();

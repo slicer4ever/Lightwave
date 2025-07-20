@@ -234,7 +234,7 @@ App::App(LWAllocator &Allocator) : m_Allocator(Allocator) {
 	m_VDriver = LWVideoDriver::MakeVideoDriver(m_Window, TargetDriver);
 	if(!LWLogCriticalIf(m_VDriver, "Error creating video driver.")) {
 		m_JobQueue.SetFinished(true);
-		return;
+		return;.
 	}
 	m_Window->SetTitle(LWUTF8I::Fmt<128>("{} | {} | {} | {}", AppName, DriverNames[m_VDriver->GetDriverID()], ArchNames[LWARCH_ID], PlatformNames[LWPLATFORM_ID]));
 

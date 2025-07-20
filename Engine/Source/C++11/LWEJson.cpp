@@ -538,9 +538,9 @@ bool LWEJson::Parse(LWEJson &JSon, const LWUTF8Iterator &Source, LWEJObject *Par
 }
 
 uint32_t LWEJson::Serialize(char8_t *Buffer, uint32_t BufferLen, bool Format) {
-	std::function<bool(char *, uint32_t, uint32_t &, LWEJson &, LWEJObject &, uint32_t , bool, bool, bool)> SerializeObject = [&SerializeObject](char8_t *Buffer, uint32_t BufferLen, uint32_t &o, LWEJson &Js, LWEJObject &Obj, uint32_t Depth, bool Last, bool WriteName, bool Format)->bool {
+	std::function<bool(char *, uint32_t, uint32_t &, LWEJson &, LWEJObject &, uint32_t , bool, bool, bool)> SerializeObject = [this, &SerializeObject](char8_t *Buffer, uint32_t BufferLen, uint32_t &o, LWEJson &Js, LWEJObject &Obj, uint32_t Depth, bool Last, bool WriteName, bool Format)->bool {
 		char NewLine[2] = {};
-		char Buf[512];
+		char SmallBuf[512];
 		if (Format) NewLine[0] = '\n';
 		uint32_t dm = Format ? Depth * 2 : 0;
 		if(WriteName) o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "{: <{}}\"{}\": ", "", dm, Obj.m_Name);
@@ -561,8 +561,14 @@ uint32_t LWEJson::Serialize(char8_t *Buffer, uint32_t BufferLen, bool Format) {
 			}
 			o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "{: <{}}}}", "", dm);
 		} else if (Obj.m_Type == LWEJObject::String) {
-			EscapeString(Obj.m_Value, Buf, sizeof(Buf));
-			o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "\"{}\"", Buf);
+			uint32_t Len = EscapeString(Obj.m_Value, SmallBuf, sizeof(SmallBuf));
+			if(Len>sizeof(SmallBuf)) {
+				char *EBuffer = m_Allocator.Allocate<char>(Len);
+				uint32_t ELen = EscapeString(Obj.m_Value, EBuffer, Len);
+				assert(Len==ELen);
+				o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "\"{}\"", EBuffer);
+				LWAllocator::Destroy(EBuffer);
+			}else o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "\"{}\"", SmallBuf);
 		} else {
 			o += LWUTF8I::Fmt_ns(Buffer, BufferLen, o, "{}", Obj.m_Value);
 		}

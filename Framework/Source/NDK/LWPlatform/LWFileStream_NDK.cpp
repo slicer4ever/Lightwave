@@ -30,7 +30,7 @@ uint32_t LWFileStream::GetFolderPath(uint32_t FolderID, char8_t *Buffer, uint32_
 
 bool LWFileStream::OpenStream(LWFileStream &Result, const LWUTF8Iterator &FilePath, uint32_t Flag, LWAllocator &Allocator, const LWFileStream *ExistingStream) {
 	char8_t Buffer[512];
-	const char Modes[][4] = { "", "r", "w", "rw", "a", "", "", "", "", "rb", "wb", "rwb" };
+	const char Modes[][4] = { "", "r", "w", "rw", "a", "r+", "w+", "a+", "", "rb", "wb", "rwb", "ab", "r+b", "w+b", "a+b" };
 	auto OpenAsset = [&Buffer, &Modes, &Flag, &Result, &Allocator](void)->bool {
 		if (Flag & WriteMode) return false;
 		AAsset *aFile = AAssetManager_open(LWAppContext.m_App->assetManager, Buffer + 1, AASSET_MODE_STREAMING);

@@ -101,6 +101,8 @@ struct LWLoggerTimeMetrics {
 
 	uint64_t MakeFPS(void) const;
 
+	uint64_t Average(void) const;
+
 	void GetValues(uint64_t &Lowest, uint64_t &Highest, uint64_t &Average) const;
 };
 
