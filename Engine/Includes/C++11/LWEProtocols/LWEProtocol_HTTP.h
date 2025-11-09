@@ -60,27 +60,33 @@ struct LWEHTTPMessage {
 	static const uint32_t Method_Options = 6;
 	static const uint32_t Method_Trace = 7;
 	static const uint32_t Method_Patch = 8;
+	static const uint32_t Method_Count = 9;
 
 	static const uint32_t Connection_Close = 0;
 	static const uint32_t Connection_KeepAlive = 1;
 	static const uint32_t Connection_Upgrade = 2;
+	static const uint32_t Connection_Count = 3;
 
 	static const uint32_t CacheControl_None = 0;//Default cache control if not indicated.
 	static const uint32_t CacheControl_NoCache = 1; 
 	static const uint32_t CacheControl_NoStore = 2;
 	static const uint32_t CacheControl_Cache = 3;
+	static const uint32_t CacheControl_Count = 4;
 
 	static const uint32_t Encode_None = 0;
 	static const uint32_t Encode_Chunked = 1;
+	static const uint32_t Encode_Count = 2;
 
 	static const uint32_t ContentEncode_Identity = 0;
 	static const uint32_t ContentEncode_GZip = 1;
 	static const uint32_t ContentEncode_Compress = 2;
 	static const uint32_t ContentEncode_Deflate = 3;
 	static const uint32_t ContentEncode_BR = 4;
+	static const uint32_t ContentEncode_Count = 5;
 
 	static const uint32_t Upgrade_None = 0;
 	static const uint32_t Upgrade_WebSocket = 1;
+	static const uint32_t Upgrade_Count = 2;
 
 	static const uint32_t HeadersRead = 0x40000000;
 	static const uint32_t GenerateDate = 0x80000000;
@@ -106,6 +112,13 @@ struct LWEHTTPMessage {
 	static const uint32_t S_DomainNoResponse = 600; //Custom code returned to requests if domain could not be found/would not respond to connection.
 
 	static const char8_t StatusCodeNames[S_Count][32]; //Named codes
+	static const char8_t MethodNames[Method_Count][32]; //Named Methods.
+	static const char8_t CacheNames[CacheControl_Count][32];
+	static const char8_t ConnectionNames[Connection_Count][32];
+	static const char8_t EncodingNames[Encode_Count][32];
+	static const char8_t ContentEncodingNames[ContentEncode_Count][32];
+	static const char8_t UpgradeNames[Upgrade_Count][32];
+
 	static const uint32_t StatusCodeMap[S_Count]; //Map of names to status codes.
 
 	char8_t m_Body[BodyMaxLength]= {};

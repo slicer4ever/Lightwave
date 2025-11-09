@@ -29,6 +29,14 @@ LWEHTTPMessageHeader::LWEHTTPMessageHeader(uint32_t NameOffset, uint32_t NameLen
 const char8_t LWEHTTPMessage::StatusCodeNames[S_Count][32] = { "Continue", "Switching Protocols", "OK", "Bad Request", "Unauthorized", "Forbidden", "Not Found", "Request Timeout",  "Not Implemented", "Bad Gateway", "Internal Server Error" };
 const uint32_t LWEHTTPMessage::StatusCodeMap[S_Count]  = { S_Continue, S_SwitchingProtocols, S_Ok, S_BadRequest, S_Unauthorized, S_Forbidden, S_NotFound, S_RequestTimeout, S_NotImplemented, S_BadGateway, S_InternalServerError};
 
+const char8_t LWEHTTPMessage::MethodNames[Method_Count][32] = { "GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH" };
+const char8_t LWEHTTPMessage::CacheNames[CacheControl_Count][32] = { "none", "no-cache", "no-store", "cache" };
+const char8_t LWEHTTPMessage::ConnectionNames[Connection_Count][32] = { "close", "Keep-Alive",  "upgrade" };
+const char8_t LWEHTTPMessage::EncodingNames[Encode_Count][32] = { "", "chunk" };
+const char8_t LWEHTTPMessage::ContentEncodingNames[ContentEncode_Count][32] = { "identity", "gzip", "compress", "deflate", "br" };
+const char8_t LWEHTTPMessage::UpgradeNames[Upgrade_Count][32] = { "", "websocket" };
+
+
 const uint32_t LWEHTTPMessage::BodyMaxLength; //256kb default.
 const uint32_t LWEHTTPMessage::ValueMaxLength;
 const uint32_t LWEHTTPMessage::PathMaxLength;
@@ -51,27 +59,33 @@ const uint32_t LWEHTTPMessage::Method_Connect;
 const uint32_t LWEHTTPMessage::Method_Options;
 const uint32_t LWEHTTPMessage::Method_Trace;
 const uint32_t LWEHTTPMessage::Method_Patch;
+const uint32_t LWEHTTPMessage::Method_Count;
 
 const uint32_t LWEHTTPMessage::Connection_Close;
 const uint32_t LWEHTTPMessage::Connection_KeepAlive;
 const uint32_t LWEHTTPMessage::Connection_Upgrade;
+const uint32_t LWEHTTPMessage::Connection_Count;
 
 const uint32_t LWEHTTPMessage::CacheControl_None;//Default cache control if not indicated.
 const uint32_t LWEHTTPMessage::CacheControl_NoCache;
 const uint32_t LWEHTTPMessage::CacheControl_NoStore;
 const uint32_t LWEHTTPMessage::CacheControl_Cache;
+const uint32_t LWEHTTPMessage::CacheControl_Count;
 
 const uint32_t LWEHTTPMessage::Encode_None;
 const uint32_t LWEHTTPMessage::Encode_Chunked;
+const uint32_t LWEHTTPMessage::Encode_Count;
 
 const uint32_t LWEHTTPMessage::ContentEncode_Identity;
 const uint32_t LWEHTTPMessage::ContentEncode_GZip;
 const uint32_t LWEHTTPMessage::ContentEncode_Compress;
 const uint32_t LWEHTTPMessage::ContentEncode_Deflate;
 const uint32_t LWEHTTPMessage::ContentEncode_BR;
+const uint32_t LWEHTTPMessage::ContentEncode_Count;
 
 const uint32_t LWEHTTPMessage::Upgrade_None;
 const uint32_t LWEHTTPMessage::Upgrade_WebSocket;
+const uint32_t LWEHTTPMessage::Upgrade_Count;
 
 const uint32_t LWEHTTPMessage::HeadersRead;
 const uint32_t LWEHTTPMessage::GenerateDate;
@@ -155,12 +169,6 @@ uint32_t LWEHTTPMessage::SerializeBody(void *Buffer, uint32_t BufferLen) {
 }
 
 uint32_t LWEHTTPMessage::SerializeHeaders(void *Buffer, uint32_t BufferLen, const LWUTF8Iterator &UserAgent) {
-	char8_t Methods[][32] = { "GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH" };
-	char8_t Caches[][32] = { "none", "no-cache", "no-store", "cache" };
-	char8_t Connections[][32] = { "close", "Keep-Alive",  "upgrade"};
-	char8_t Encodings[][32] = { "", "chunk" };
-	char8_t ContentEncodings[][32] = { "identity", "gzip", "compress", "deflate", "br" };
-	char8_t Upgrades[][32] = { "", "websocket" };
 	
 	uint32_t HeaderSize = std::min<uint32_t>(m_HeaderOffset + m_HeaderCount*4/*{}: {}\r\n*/ + 1024/*Include flagged headers*/, BufferLen); //We guess how big our header will be, slightly over is preferred to detect if we will be chunking this content.
 	if (m_ContentLength > BufferLen-HeaderSize) m_Flag = LWBitFieldSet(EncodingBits, m_Flag, Encode_Chunked); //if we can't send entire chunk in 1 go, then we use chunked encoding format.
@@ -180,7 +188,7 @@ uint32_t LWEHTTPMessage::SerializeHeaders(void *Buffer, uint32_t BufferLen, cons
 		uint32_t Index = (uint32_t)std::distance(StatusCodeMap, StatusMap);
 		const char8_t *lStatusName = Index==S_Count ? "" : StatusCodeNames[Index];
 		o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "HTTP/1.1 {} {}\r\n", lStatusCode, lStatusName);
-	}else o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "{} {} HTTP/1.1\r\n", Methods[GetMethod()], m_Path);
+	}else o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "{} {} HTTP/1.1\r\n", MethodNames[GetMethod()], m_Path);
 	
 	//Write all header's:
 	for (uint32_t i = 0; i < m_HeaderCount; i++) {
@@ -193,19 +201,19 @@ uint32_t LWEHTTPMessage::SerializeHeaders(void *Buffer, uint32_t BufferLen, cons
 		else o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "User-Agent: {}\r\n", UserAgent);
 	} 
 	if (m_WebSockVersion && !bIsResponse) o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "Sec-WebSocket-Version: {}\r\n", m_WebSockVersion);
-	if (*Encodings[Encoding]) o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "Transfer-Encoding: {}\r\n", Encodings[Encoding]);
-	if (*Upgrades[UpgradeState]) o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "Upgrade: {}\r\n", Upgrades[UpgradeState]);
-	o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "Connection: {}\r\n", Connections[Connection]);
+	if (*EncodingNames[Encoding]) o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "Transfer-Encoding: {}\r\n", EncodingNames[Encoding]);
+	if (*UpgradeNames[UpgradeState]) o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "Upgrade: {}\r\n", UpgradeNames[UpgradeState]);
+	o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "Connection: {}\r\n", ConnectionNames[Connection]);
 	if(Connection==LWEHTTPMessage::Connection_KeepAlive && (m_KeepAliveTimeout>0 || m_KeepAliveMessages>0)) {
 		o += LWUTF8I::Fmt_ns((char8_t*)Buffer, BufferLen, o, "Keep-Alive: timeout={}, max={}\r\n", m_KeepAliveTimeout, m_KeepAliveMessages);
 	}
 	if(Cache!=CacheControl_None || m_CacheMaxAge>0) {
 		o += LWUTF8I::Fmt_ns((char8_t*)Buffer, BufferLen, o, "Cache-Control: ");
 		if(m_CacheMaxAge>0) o += LWUTF8I::Fmt_ns((char8_t*)Buffer, BufferLen, o, "max-age={}{} ", m_CacheMaxAge, (Cache!=CacheControl_None?",":""));
-		if(Cache!=CacheControl_None) o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "{}", Caches[Cache]);
+		if(Cache!=CacheControl_None) o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "{}", CacheNames[Cache]);
 		o += LWUTF8I::Fmt_ns((char8_t*)Buffer, BufferLen, o, "\r\n");
 	}
-	if (ContentEncode != ContentEncode_Identity)  o += LWUTF8I::Fmt_ns((char8_t*)Buffer, BufferLen, o, "Content-Encoding: {}\r\n", ContentEncodings[ContentEncode]);
+	if (ContentEncode != ContentEncode_Identity)  o += LWUTF8I::Fmt_ns((char8_t*)Buffer, BufferLen, o, "Content-Encoding: {}\r\n", ContentEncodingNames[ContentEncode]);
 	o += LWUTF8I::Fmt_ns((char8_t *)Buffer, BufferLen, o, "\r\n");
 	//if(!m_ContentLength) o += LWUTF8I::Fmt_ns((char8_t*)Buffer, BufferLen, o, "\r\n");
 	LWLogWarnIf<256>(o<HeaderSize, "Predicted header size: '{}' is smaller than actual header size: '{}'", HeaderSize, o); 
@@ -275,11 +283,8 @@ uint32_t LWEHTTPMessage::DeserializeBody(const void *Buffer, uint32_t Len, bool 
 }
 
 uint32_t LWEHTTPMessage::DeserializeHeaders(const void *Buffer, uint32_t Len, bool bIsTrailingHeaders, bool Verbose) {
-	char8_t Methods[][32] = { "GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH" };
 	char8_t NameBuffer[1024];
 	char8_t ResultBuffer[1024];
-
-	const uint32_t MethodCnt = sizeof(Methods)/sizeof(Methods[0]);
 
 	uint32_t StatusCode = GetStatus();
 	uint32_t HTTPMajorVersion = 0;
@@ -292,8 +297,8 @@ uint32_t LWEHTTPMessage::DeserializeHeaders(const void *Buffer, uint32_t Len, bo
 	if (n == 0) {
 		std::sscanf((char8_t *)Buffer + o, "%255s %1023s HTTP/%d.%d\r\n%n", NameBuffer, m_Path, &HTTPMajorVersion, &HTTPMinorVersion, &n);
 		if(n!=0) {
-			uint32_t MethodType = LWUTF8I(NameBuffer).CompareLista(MethodCnt, Methods);
-			if(!LWLogWarnIfv<256>(MethodType<MethodCnt, Verbose, "HTTP Message has unknown method: '{}'", NameBuffer)) return 0;
+			uint32_t MethodType = LWUTF8I(NameBuffer).CompareLista(Method_Count, MethodNames);
+			if(!LWLogWarnIfv<256>(MethodType<Method_Count, Verbose, "HTTP Message has unknown method: '{}'", NameBuffer)) return 0;
 			SetMethod(MethodType);
 		}
 	}else {
