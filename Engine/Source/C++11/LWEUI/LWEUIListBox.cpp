@@ -78,15 +78,15 @@ LWEUIListBox *LWEUIListBox::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager
 	}
 	if (MinimumHeightAttr) {
 		LWUTF8Iterator Value = ParseComponentAttribute(Buffer, sizeof(Buffer), MinimumHeightAttr->GetValue(), ActiveComponent, ActiveComponentNode);
-		MinHeight = (float)atof((const char*)Value());
+		MinHeight = Value.As<float>();
 	}
 	if (BorderSizeAttr) {
 		LWUTF8Iterator Value = ParseComponentAttribute(Buffer, sizeof(Buffer), BorderSizeAttr->GetValue(), ActiveComponent, ActiveComponentNode);
-		BorderSize = (float)atof((const char*)Value());
+		BorderSize = Value.As<float>();
 	}
 	if (FontScaleAttr) {
 		LWUTF8Iterator Value = ParseComponentAttribute(Buffer, sizeof(Buffer), FontScaleAttr->GetValue(), ActiveComponent, ActiveComponentNode);
-		ListBox->SetFontScale((float)atof((const char*)Value()));
+		ListBox->SetFontScale(Value.As<float>());
 	}
 	ListBox->SetOffMaterial(OffMat).SetOverMaterial(OverMat).SetDownMaterial(DownMat).SetBackgroundMaterial(BackMat).SetFontMaterial(FntMat);
 	ListBox->SetFont(Font).SetBorderSize(BorderSize).SetMinimumHeightSize(MinHeight);

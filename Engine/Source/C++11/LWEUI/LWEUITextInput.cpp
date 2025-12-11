@@ -165,19 +165,19 @@ LWEUITextInput *LWEUITextInput::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIMan
 	if (BtnDownAttr) BtnDownMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), BtnDownAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	if (BtnOverAttr) BtnOverMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), BtnOverAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	if (FontAttr) Font = AM->GetAsset<LWFont>(ParseComponentAttribute(Buffer, sizeof(Buffer), FontAttr->GetValue(), ActiveComponent, ActiveComponentNode));
-	if (BorderSizeAttr) BorderSize = (float)atof((const char*)ParseComponentAttribute(Buffer, sizeof(Buffer), BorderSizeAttr->GetValue(), ActiveComponent, ActiveComponentNode)());
-	if (CursorSizeAttr) CursorSize = (float)atof((const char*)ParseComponentAttribute(Buffer, sizeof(Buffer), CursorSizeAttr->GetValue(), ActiveComponent, ActiveComponentNode)());
-	if (MaxLengthAttr) MaxLength = (uint32_t)atoi((const char*)ParseComponentAttribute(Buffer, sizeof(Buffer), MaxLengthAttr->GetValue(), ActiveComponent, ActiveComponentNode)());
-	if (MaxLinesAttr) MaxLines = (uint32_t)atoi((const char*)ParseComponentAttribute(Buffer, sizeof(Buffer), MaxLinesAttr->GetValue(), ActiveComponent, ActiveComponentNode)());
+	if (BorderSizeAttr) BorderSize = ParseComponentAttribute(Buffer, sizeof(Buffer), BorderSizeAttr->GetValue(), ActiveComponent, ActiveComponentNode).As<float>();
+	if (CursorSizeAttr) CursorSize = ParseComponentAttribute(Buffer, sizeof(Buffer), CursorSizeAttr->GetValue(), ActiveComponent, ActiveComponentNode).As<float>();
+	if (MaxLengthAttr) MaxLength = ParseComponentAttribute(Buffer, sizeof(Buffer), MaxLengthAttr->GetValue(), ActiveComponent, ActiveComponentNode).As<uint32_t>();
+	if (MaxLinesAttr) MaxLines = ParseComponentAttribute(Buffer, sizeof(Buffer), MaxLinesAttr->GetValue(), ActiveComponent, ActiveComponentNode).As<uint32_t>();
 	if (FontScaleAttr) {
-		float Scale = (float)atof((const char*)ParseComponentAttribute(Buffer, sizeof(Buffer), FontScaleAttr->GetValue(), ActiveComponent, ActiveComponentNode)());
+		float Scale = ParseComponentAttribute(Buffer, sizeof(Buffer), FontScaleAttr->GetValue(), ActiveComponent, ActiveComponentNode).As<float>();
 		TextInput->SetFontScale(Scale).SetDefaultFontScale(Scale);
 	}
 	if (DefaultFontScaleAttr) {
-		float Scale = (float)atof((const char*)ParseComponentAttribute(Buffer, sizeof(Buffer), DefaultFontScaleAttr->GetValue(), ActiveComponent, ActiveComponentNode)());
+		float Scale = ParseComponentAttribute(Buffer, sizeof(Buffer), DefaultFontScaleAttr->GetValue(), ActiveComponent, ActiveComponentNode).As<float>();
 		TextInput->SetDefaultFontScale(Scale);
 	}
-	if (BtnFontScaleAttr) TextInput->SetBtnFontScale((float)atof((const char*)ParseComponentAttribute(Buffer, sizeof(Buffer), BtnFontScaleAttr->GetValue(), ActiveComponent, ActiveComponentNode)()));
+	if (BtnFontScaleAttr) TextInput->SetBtnFontScale(ParseComponentAttribute(Buffer, sizeof(Buffer), BtnFontScaleAttr->GetValue(), ActiveComponent, ActiveComponentNode).As<float>());
 	if (AllowedCharactersAttr) TextInput->SetAllowedCharacters(ParseComponentAttribute(Buffer, sizeof(Buffer), AllowedCharactersAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	TextInput->SetBorderMaterial(BorderMat).SetFontMaterial(FontMat).SetDefaultMaterial(DefaultMat).SetSelectMaterial(SelectMat).SetTextAreaMaterial(TextAreaMat).SetCursorMaterial(CursorMat).SetBtnOffMaterial(BtnOffMat).SetBtnOverMaterial(BtnOverMat).SetBtnDownMaterial(BtnDownMat).SetBtnFontMaterial(BtnFontMat);
 	TextInput->SetFont(Font).SetBorderSize(BorderSize).SetCursorSize(CursorSize).SetMaxLength(MaxLength).SetMaxLines(MaxLines);

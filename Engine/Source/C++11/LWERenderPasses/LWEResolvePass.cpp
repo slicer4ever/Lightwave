@@ -35,7 +35,7 @@ LWEPass *LWEResolvePass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer *
 			LWEResolvable Res;
 			if(!LWLogCriticalIf<256>((Res.m_SourceID = FindRenderID(SourceAttr->GetValue(), Res.m_SourceAttachment)), "ResolvePass: Could not find Source: '{}'", SourceAttr->GetValue())) continue;
 			if(!LWLogCriticalIf<256>((Res.m_TargetID = FindRenderID(TargetAttr->GetValue(), Res.m_TargetAttachment)), "ResolvePass: Could not find Target: '{}'", TargetAttr->GetValue())) continue;
-			if (MipmapLevelAttr) Res.m_MipLevel = (uint32_t)atoi(MipmapLevelAttr->GetValue().c_str());
+			if (MipmapLevelAttr) Res.m_MipLevel = MipmapLevelAttr->As<uint32_t>();
 			RPass->PushResolve(Res);
 		}else ParseXMLChild(C, RPass, Renderer, AssetManager, Allocator);
 	}

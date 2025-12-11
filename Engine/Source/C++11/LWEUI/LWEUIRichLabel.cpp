@@ -50,7 +50,7 @@ LWEUIRichLabel *LWEUIRichLabel::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIMan
 	}
 	if (ScaleAttr) {
 		LWUTF8Iterator Scale = ParseComponentAttribute(Buffer, sizeof(Buffer), ScaleAttr->GetValue(), ActiveComponent, ActiveComponentNode);
-		Label->SetFontScale((float)atof((const char*)Scale()));
+		Label->SetFontScale(Scale.As<float>());
 	}
 	return Label;
 }

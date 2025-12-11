@@ -20,8 +20,8 @@ LWEPass *LWEShadowMapPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer
 	LWEXMLAttribute *BucketsAttr = Node->FindAttribute("Buckets");
 	LWEXMLAttribute *ArraySizeAttr = Node->FindAttribute("ArraySize");
 	LWEXMLAttribute *PassBitIDAttr = Node->FindAttribute("PassBitID");
-	uint32_t PassBitID = PassBitIDAttr ? atoi(PassBitIDAttr->GetValue().c_str()) : 0;
-	uint32_t BucketCount = BucketsAttr ? (uint32_t)atoi(BucketsAttr->GetValue().c_str()) : 0;
+	uint32_t PassBitID = PassBitIDAttr->AsOr<uint32_t>(0);
+	uint32_t BucketCount = BucketsAttr->AsOr<uint32_t>(0);
 	SMPass->SetPassBitID(PassBitID);
 	if (!BucketCount) {
 		LWLogCritical("Shadowmap Pass must contain > 0 'Buckets' attributes.");
@@ -60,7 +60,7 @@ LWEPass *LWEShadowMapPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer
 		}
 	}
 	SMPass->SetShadowIDs(ShadowArrayID, ShadowArrayFBID, ShadowCubeTexID, ShadowCubeFBID);
-	if (CascadeCountAttr) SMPass->SetCascadeCount((uint32_t)atoi(CascadeCountAttr->GetValue().c_str()));
+	if (CascadeCountAttr) SMPass->SetCascadeCount(CascadeCountAttr->As<uint32_t>());
 	SMPass->SetGeometryBucketCount(BucketCount);
 	for (uint32_t i = 0; i < BucketCount; i++) SMPass->SetGeometryBucketPropertys(i, LWEBucketPropertys(LWEPassPropertys(), 0, PassBitID));
 	Renderer->ProcessPendingResources((uint64_t)-1); //need to make the named resources exposed.

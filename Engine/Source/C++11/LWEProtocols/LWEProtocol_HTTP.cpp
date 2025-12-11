@@ -331,8 +331,8 @@ uint32_t LWEHTTPMessage::DeserializeHeaders(const void *Buffer, uint32_t Len, bo
 		Name.Lower(NameBuffer, sizeof(NameBuffer)); //Lower Name.
 
 		//Check if header is any that we convert to flags/values.
-		if (Name.Compare("content-length")) m_ContentLength = atoi(Value.c_str());
-		else if(Name.Compare("sec-websocket-version")) m_WebSockVersion = atoi(Value.c_str());
+		if (Name.Compare("content-length")) m_ContentLength = Value.As<uint32_t>();
+		else if(Name.Compare("sec-websocket-version")) m_WebSockVersion = Value.As<uint32_t>();
 		else if (Name.Compare("connection")) {
 			for (LWUTF8Iterator C = Value; !C.AtEnd(); C.AdvanceToken(',').Advance().AdvanceWord(true)) {
 				if (C.Compare("close", 5)) SetConnectionState(Connection_Close);
@@ -351,7 +351,7 @@ uint32_t LWEHTTPMessage::DeserializeHeaders(const void *Buffer, uint32_t Len, bo
 					LWUTF8Iterator MaxAgeSubStr = Value.NextSubString("max-age=");
 					if(!MaxAgeSubStr.AtEnd()) {
 						LWUTF8Iterator AgeValue = Value.Advance(8);
-						m_CacheMaxAge = (uint32_t)atoi(Value.c_str());
+						m_CacheMaxAge = Value.As<uint32_t>();
 					}
 				} else if (hdr == 1) { //transfer-encoding:
 					if (Value.Compare("chunked")) SetEncoding(Encode_Chunked);

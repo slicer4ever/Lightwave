@@ -18,8 +18,8 @@ LWEPass *LWEGausianBlurPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERender
 
 	LWEXMLAttribute *RadiusAttr = Node->FindAttribute("Radius");
 	LWEXMLAttribute *IntensityAttr = Node->FindAttribute("Intensity");
-	float DefaultRadius = RadiusAttr ? (float)atof(RadiusAttr->GetValue().c_str()) : 1.0f;
-	float DefaultIntensity = IntensityAttr ? (float)atof(IntensityAttr->GetValue().c_str()) : 1.0f;
+	float DefaultRadius = RadiusAttr->AsOr<float>(1.0f);
+	float DefaultIntensity = IntensityAttr->AsOr<float>(1.0f);
 
 	auto ParseSubPass = [&GBPass, &AssetManager, &Renderer, &DefaultRadius, &DefaultIntensity](LWEXMLNode *N)->bool {
 		LWEXMLAttribute *SourceAttr = N->FindAttribute("Source");
@@ -31,8 +31,8 @@ LWEPass *LWEGausianBlurPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERender
 		LWEXMLAttribute *IntensityAttr = N->FindAttribute("Intensity");
 		LWEXMLAttribute *RadiusAttr = N->FindAttribute("Radius");
 
-		float Radius = RadiusAttr ? (float)atof(RadiusAttr->GetValue().c_str()) : DefaultRadius;
-		float Intensity = IntensityAttr ? (float)atof(IntensityAttr->GetValue().c_str()) : DefaultIntensity;
+		float Radius = RadiusAttr ? RadiusAttr->As<float>() : DefaultRadius;
+		float Intensity = IntensityAttr ? IntensityAttr->As<float>() : DefaultIntensity;
 
 		LWEPassPropertys Props;
 		LWEPassResource SourceResource;

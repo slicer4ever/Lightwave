@@ -5,6 +5,10 @@
 #include <iostream>
 #include <cstdarg>
 
+//Helper function for static assert on unimplmented types for As() function.
+template<class T>
+class LWFalseType_T : public std::false_type {};
+
 /*!< \brief LWUTFC_View is for giving to c api's a static null terminated copy of the iterator. */
 template<class Type, std::size_t Len>
 struct LWUTFC_View {
@@ -361,6 +365,14 @@ public:
 		}
 		if (BufferSize) *Buffer = '\0';
 		return o+1;
+	}
+
+	/*!< \brief tries to convert to value type(i.e: int32, float, double, etc). Because this function uses c_str() to make a null terminated string to pass to underlying atoX functions, it uses 128 bytes on the stack for this copy, if your number is longer than 128 characters, then this function will fail.(hopefully in the future we won't have to d this). */
+	/*!< Also calls NextWord(true) to skip any leading whitespace.  For bool type we check only the first character is either a 't', 'T', or '1', otherwise false is returned. */
+	template<class ValueType>
+	ValueType As() const { //This method is specialized for all known basic c types.
+		static_assert(LWFalseType_T<ValueType>::value && "Not implemented for this type.");
+		return ValueType();
 	}
 
 	/*!< \brief returns the CodePoint position is currently on. */
@@ -1065,13 +1077,31 @@ public:
 		if (Compare(Arg, Count)) return N;
 		return CompareListnc<N + 1>(Pack...);
 	}
-
 	
 	/*!< \brief compares to an array of list of comparable items, returning the index of that matching List item, or -1 if no match is found. */
 	template<class T>
 	uint32_t CompareLista(uint32_t Count, const T *List) const {
 		for (uint32_t i = 0; i < Count; i++)
 			if (Compare(List[i])) return i;
+		return -1;
+	}
+
+	/*!< \brief compares this iterator's hashed value with a list of hashed values, returning the index of the hash, or -1 if no match is found. */
+	uint32_t CompareListHash(uint32_t Count, const uint32_t *HashList) const {
+		uint32_t mHash = Hash();
+		for(uint32_t i=0;i<Count;++i) {
+			if(mHash==HashList[i]) return i;
+		}
+		return -1;
+	}
+
+	/*!< \brief compares this iterator with other iterators, but hash's them for check, instead of doing value comparisons. returns -1 if no match is found. */
+	template<class T>
+	uint32_t CompareByHashesList(uint32_t Count, const T *CompareIters) const {
+		uint32_t mHash = Hash();
+		for(uint32_t i=0;i<Count;++i) {
+			if(mHash==CompareIters[i].Hash()) return i;
+		}
 		return -1;
 	}
 
@@ -1387,5 +1417,218 @@ using LWUTF16C_View = LWUTFC_View<char16_t, Len>;
 
 template<std::size_t Len>
 using LWUTF32C_View = LWUTFC_View<char32_t, Len>;
+
+
+//Specializing All As types:
+//Char8_t
+template<> template<>
+inline bool LWUnicodeIterator<char8_t>::As<bool>() const {
+	uint32_t CP = CodePoint();
+	return CP=='t' || CP=='T' || CP == '1';
+}
+
+template<> template<>
+inline int8_t LWUnicodeIterator<char8_t>::As<int8_t>() const {
+	return (int8_t)atoi(*NextWord(true).c_str<128>());
+}
+
+template<> template<>
+inline uint8_t LWUnicodeIterator<char8_t>::As<uint8_t>() const {
+	return (uint8_t)atoi(*NextWord(true).c_str<128>());
+}
+
+template<> template<>
+inline int16_t LWUnicodeIterator<char8_t>::As<int16_t>() const {
+	return (int16_t)atoi(*NextWord(true).c_str<128>());
+}
+
+template<> template<>
+inline uint16_t LWUnicodeIterator<char8_t>::As<uint16_t>() const {
+	return (uint16_t)atoi(*NextWord(true).c_str<128>());
+}
+
+template<> template<>
+inline int32_t LWUnicodeIterator<char8_t>::As<int32_t>() const {
+	return atoi(*NextWord(true).c_str<128>());
+}
+
+template<> template<>
+inline uint32_t LWUnicodeIterator<char8_t>::As<uint32_t>() const {
+	return (uint32_t)atoi(*NextWord(true).c_str<128>());
+}
+
+template<> template<>
+inline int64_t LWUnicodeIterator<char8_t>::As<int64_t>() const {
+	return atoll(*NextWord(true).c_str<128>());
+}
+
+template<> template<>
+inline uint64_t LWUnicodeIterator<char8_t>::As<uint64_t>() const {
+	return (uint32_t)atoll(*NextWord(true).c_str<128>());
+}
+
+template<> template<>
+inline float LWUnicodeIterator<char8_t>::As<float>() const {
+	return (float)atof(*NextWord(true).c_str<128>());
+}
+
+template<> template<>
+inline double LWUnicodeIterator<char8_t>::As<double>() const {
+	return atof(*NextWord(true).c_str<128>());
+}
+
+//Char16_t
+template<> template<>
+inline bool LWUnicodeIterator<char16_t>::As<bool>() const {
+	uint32_t CP = CodePoint();
+	return CP == 't' || CP == 'T' || CP == '1';
+}
+
+template<> template<>
+inline int8_t LWUnicodeIterator<char16_t>::As<int8_t>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return (int8_t)atoi(Buffer);
+}
+
+template<> template<>
+inline uint8_t LWUnicodeIterator<char16_t>::As<uint8_t>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return (uint8_t)atoi(Buffer);
+}
+
+template<> template<>
+inline int16_t LWUnicodeIterator<char16_t>::As<int16_t>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return (int16_t)atoi(Buffer);
+}
+
+template<> template<>
+inline uint16_t LWUnicodeIterator<char16_t>::As<uint16_t>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return (uint16_t)atoi(Buffer);
+}
+
+template<> template<>
+inline int32_t LWUnicodeIterator<char16_t>::As<int32_t>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return atoi(Buffer);
+}
+
+template<> template<>
+inline uint32_t LWUnicodeIterator<char16_t>::As<uint32_t>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return (uint32_t)atoi(Buffer);
+}
+
+template<> template<>
+inline int64_t LWUnicodeIterator<char16_t>::As<int64_t>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return atoll(Buffer);
+}
+
+template<> template<>
+inline uint64_t LWUnicodeIterator<char16_t>::As<uint64_t>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return (uint32_t)atoll(Buffer);
+}
+
+template<> template<>
+inline float LWUnicodeIterator<char16_t>::As<float>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return (float)atof(Buffer);
+}
+
+template<> template<>
+inline double LWUnicodeIterator<char16_t>::As<double>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return atof(Buffer);
+}
+
+//Char32_t
+template<> template<>
+inline bool LWUnicodeIterator<char32_t>::As<bool>() const {
+	uint32_t CP = CodePoint();
+	return CP == 't' || CP == 'T' || CP == '1';
+}
+
+template<> template<>
+inline int8_t LWUnicodeIterator<char32_t>::As<int8_t>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return (int8_t)atoi(Buffer);
+}
+
+template<> template<>
+inline uint8_t LWUnicodeIterator<char32_t>::As<uint8_t>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return (uint8_t)atoi(Buffer);
+}
+
+template<> template<>
+inline int16_t LWUnicodeIterator<char32_t>::As<int16_t>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return (int16_t)atoi(Buffer);
+}
+
+template<> template<>
+inline uint16_t LWUnicodeIterator<char32_t>::As<uint16_t>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return (uint16_t)atoi(Buffer);
+}
+
+template<> template<>
+inline int32_t LWUnicodeIterator<char32_t>::As<int32_t>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return atoi(Buffer);
+}
+
+template<> template<>
+inline uint32_t LWUnicodeIterator<char32_t>::As<uint32_t>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return (uint32_t)atoi(Buffer);
+}
+
+template<> template<>
+inline int64_t LWUnicodeIterator<char32_t>::As<int64_t>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return atoll(Buffer);
+}
+
+template<> template<>
+inline uint64_t LWUnicodeIterator<char32_t>::As<uint64_t>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return (uint32_t)atoll(Buffer);
+}
+
+template<> template<>
+inline float LWUnicodeIterator<char32_t>::As<float>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return (float)atof(Buffer);
+}
+
+template<> template<>
+inline double LWUnicodeIterator<char32_t>::As<double>() const {
+	char8_t Buffer[128];
+	NextWord(true).MakeUTF<char8_t>(Buffer, sizeof(Buffer));
+	return atof(Buffer);
+}
 
 #endif

@@ -3,6 +3,7 @@
 #include <functional>
 #include "LWETypes.h"
 #include <LWCore/LWUnicode.h>
+#include <LWCore/LWLogger.h>
 
 #define LWEXMLMAXNAMELEN 32
 #define LWEXMLMAXVALUELEN 256
@@ -23,6 +24,32 @@ struct LWEXMLAttribute {
 	LWUTF8Iterator GetName(void) const;
 
 	LWUTF8Iterator GetValue(void) const;
+
+	//Helper function that Checks that *this* is non null pointer, otherwise returns default value.
+	template<class Type>
+	Type AsOr(Type Default) const {
+		return this ? As<Type>() : Default;
+	}
+
+	//Helper function that checks that *this* is a non null pointer, otherwise prints to LWLogError ErrorMsg, on success writes into Result a value.
+	template<class Type>
+	bool HasOrError(Type &Result, const LWUTF8Iterator &ErrorMsg) {
+		if (!this) return LWLogCritical(ErrorMsg);
+		Result = As<Type>();
+		return true;
+	}
+
+	template<class Type, std::size_t ErrorLogCapacity, typename ...Args>
+	bool HasOrError(Type &Result, const LWUTF8Iterator &ErrorFmtMsg, Args ...Pack) {
+		if (!this) return LWLogCritical<ErrorLogCapacity>(ErrorFmtMsg, std::forward<Args>(Pack)...);
+		Result = As<Type>();
+		return true;
+	}
+
+	template<class Type>
+	Type As() const {
+		return GetValue().As<Type>();
+	}
 
 	LWEXMLAttribute(const LWUTF8Iterator &Name, const LWUTF8Iterator &Value);
 

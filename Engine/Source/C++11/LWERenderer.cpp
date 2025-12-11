@@ -103,7 +103,7 @@ bool LWERenderer::ParseXMLFrameBuffer(LWEXMLNode *Node) {
 			} else if (SplitCnt == 2) { //Possibly texture, framebuffer, or created texture:
 				//now figure out if we are a framebuffer, or this is a layer:
 				uint32_t AttachPnt = SplitList[1].NextWord(true).CompareList("Color", "Color1", "Color2", "Color3", "Color4", "Color5", "Depth");
-				if (AttachPnt == -1) Attachment = LWERenderFramebufferTexture(SplitList[0], 0, (uint32_t)atoi(SplitList[1].NextWord(true).c_str()));
+				if (AttachPnt == -1) Attachment = LWERenderFramebufferTexture(SplitList[0], 0, SplitList[1].As<uint32_t>());
 				else Attachment = LWERenderFramebufferTexture(SplitList[0], 0, AttachPnt, 0, true);
 			} else {//TextureName:Layer:Mipmap:Face
 				uint32_t Face = 0;
@@ -114,7 +114,7 @@ bool LWERenderer::ParseXMLFrameBuffer(LWEXMLNode *Node) {
 						if (!SplitList[3].AtEnd()) LWLogWarn<256>("unknown face specified: '{}'", SplitList[3]);
 					}
 				}
-				Attachment = LWERenderFramebufferTexture(SplitList[0], (uint32_t)atoi(SplitList[2].NextWord(true).c_str()), (uint32_t)atoi(SplitList[1].NextWord(true).c_str()), Face);
+				Attachment = LWERenderFramebufferTexture(SplitList[0], SplitList[2].As<uint32_t>(), SplitList[1].As<uint32_t>(), Face);
 			}
 		}
 		return;
@@ -127,7 +127,7 @@ bool LWERenderer::ParseXMLFrameBuffer(LWEXMLNode *Node) {
 	LWEXMLAttribute *Color4Attr = Node->FindAttribute("Color4");
 	LWEXMLAttribute *Color5Attr = Node->FindAttribute("Color5");
 	LWEXMLAttribute *DepthAttr = Node->FindAttribute("Depth");
-	uint32_t Samples = SamplesAttr ? (uint32_t)atoi(SamplesAttr->GetValue().c_str()) : 0;
+	uint32_t Samples = SamplesAttr->AsOr<uint32_t>(0);
 	LWERenderPendingFrameBuffer FB;
 	
 	ParseXMLSizeAttribute(SizeAttr, FB.m_StaticSize, FB.m_DynamicSize, FB.m_NamedDynamic);
@@ -163,8 +163,8 @@ bool LWERenderer::ParseXMLTexture(LWEXMLNode *Node) {
 
 	uint32_t PackType = PackTypeAttr->GetValue().NextWord(true).CompareList("SRGBA", "RGBA8", "RGBA8S", "RGBA16", "RGBA16S", "RGBA32", "RGBA32S", "RGBA32F", "RG8", "RG8S", "RG16", "RG16S", "RG32", "RG32S", "RG32F", "R8", "R8S", "R16", "R16S", "R32", "R32S", "R32F", "DEPTH16", "DEPTH24", "DEPTH32", "DEPTH24STENCIL8");
 	uint32_t TexState = 0;
-	uint32_t Layers = LayersAttr ? (uint32_t)atoi(LayersAttr->GetValue().c_str()) : 0;
-	uint32_t Samples = SamplesAttr ? (uint32_t)atoi(SamplesAttr->GetValue().c_str()) : 4;
+	uint32_t Layers = LayersAttr->AsOr<uint32_t>(0);
+	uint32_t Samples = SamplesAttr->AsOr<uint32_t>(4);
 	if ((TexType == LWTexture::Texture2DMS || TexType == LWTexture::Texture2DMSArray) && Samples == 0) {
 		LWLogWarn<256>("{} is a multi-sampled texture with samples set to 0.", Node->GetName());
 	}
@@ -195,8 +195,8 @@ bool LWERenderer::ParseXMLVideoBuffer(LWEXMLNode *Node) {
 
 	LWEXMLAttribute *UsageAttr = Node->FindAttribute("Usage");
 
-	uint32_t TypeSize = (uint32_t)atoi(TypeSizeAttr->GetValue().c_str());
-	uint32_t Count = (uint32_t)atoi(CountAttr->GetValue().c_str());
+	uint32_t TypeSize = TypeSizeAttr->As<uint32_t>();
+	uint32_t Count = CountAttr->As<uint32_t>();
 
 	if(!LWLogCriticalIf<256>(TypeSize, "{} has invalid '{}' TypeSize.", NameAttr->GetValue(), TypeSizeAttr->GetValue())) return true;
 	if(!LWLogCriticalIf<256>(Count, "{} has invalid '{}' Count.", NameAttr->GetValue(), CountAttr->GetValue())) return true;
@@ -217,8 +217,8 @@ bool LWERenderer::ParseXMLNamedDynamicScalar(LWEXMLNode *Node) {
 	LWEXMLAttribute *WidthAttr = Node->FindAttribute("Width");
 	LWEXMLAttribute *HeightAttr = Node->FindAttribute("Height");
 	LWEXMLAttribute *FORCEAttr = Node->FindAttribute("FORCE");
-	float Width = WidthAttr ? (float)atof(WidthAttr->GetValue().c_str()) : 0.0f;
-	float Height = HeightAttr ? (float)atof(HeightAttr->GetValue().c_str()) : 0.0f;
+	float Width = WidthAttr->AsOr<float>(0.0f);
+	float Height = HeightAttr->AsOr<float>(0.0f);
 	auto Iter = m_NamedDynamicMap.find(NameAttr->GetValue().Hash());
 	if (Iter != m_NamedDynamicMap.end()) {
 		if (!FORCEAttr) return true;
@@ -245,7 +245,7 @@ bool LWERenderer::ParseXMLBlockGeometry(LWEXMLNode *Node) {
 			LWUTF8Iterator BracketIter = TypeIter.NextToken('[');
 			
 			uint32_t NameHash = A.GetName().Hash();
-			uint32_t Length = BracketIter.AtEnd() ? 1 : atoi(BracketIter.c_str() + 1);
+			uint32_t Length = BracketIter.AtEnd() ? 1 : (BracketIter+1).As<uint32_t>();
 			TypeIter = LWUTF8Iterator(TypeIter,BracketIter);
 
 			uint32_t TypeHash = TypeIter.Hash();
@@ -281,10 +281,10 @@ bool LWERenderer::ParseXMLBlockGeometry(LWEXMLNode *Node) {
 	LWEXMLAttribute *BuildPrimitivesAttr = Node->FindAttribute("BuildPrimitives");
 	LWEXMLAttribute *LocalAttr = Node->FindAttribute("Local");
 	LWEXMLAttribute *DebugAttr = Node->FindAttribute("Debug");
-	uint32_t VerticesPerBlock = VerticesPerBlockAttr ? (uint32_t)atoi(VerticesPerBlockAttr->GetValue().c_str()) : LWERendererBlockGeometry::DefaultVerticesPerBlock;
-	uint32_t MaxVerticeBlocks = MaxVerticeBlocksAttr ? (uint32_t)atoi(MaxVerticeBlocksAttr->GetValue().c_str()) : LWERendererBlockGeometry::DefaultMaxVerticeBlocks;
-	uint32_t IndicesPerBlock = IndicesPerBlockAttr ? (uint32_t)atoi(IndicesPerBlockAttr->GetValue().c_str()) : LWERendererBlockGeometry::DefaultIndicesPerBlock;
-	uint32_t MaxIndiceBlocks = MaxIndiceBlocksAttr ? (uint32_t)atoi(MaxIndiceBlocksAttr->GetValue().c_str()) : LWERendererBlockGeometry::DefaultMaxIndiceBlocks;
+	uint32_t VerticesPerBlock = VerticesPerBlockAttr ? VerticesPerBlockAttr->As<uint32_t>() : LWERendererBlockGeometry::DefaultVerticesPerBlock;
+	uint32_t MaxVerticeBlocks = MaxVerticeBlocksAttr ? MaxVerticeBlocksAttr->As<uint32_t>() : LWERendererBlockGeometry::DefaultMaxVerticeBlocks;
+	uint32_t IndicesPerBlock = IndicesPerBlockAttr ? IndicesPerBlockAttr->As<uint32_t>() : LWERendererBlockGeometry::DefaultIndicesPerBlock;
+	uint32_t MaxIndiceBlocks = MaxIndiceBlocksAttr ? MaxIndiceBlocksAttr->As<uint32_t>() : LWERendererBlockGeometry::DefaultMaxIndiceBlocks;
 	uint32_t AttributeLayoutCount = 0;
 	uint32_t PositionLayoutCount = 0;
 	if (TypeAttr) {

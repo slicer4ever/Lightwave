@@ -20,7 +20,7 @@ LWEUIRect *LWEUIRect::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManager *Mana
 		if (Localize && Localize->ParseLocalization(SBuffer, sizeof(SBuffer), Text)) Text = LWUTF8Iterator(SBuffer);
 		Mat = Manager->GetMaterial(Text);
 	}
-	if(ThetaAttr) Theta = (float)atof(ThetaAttr->m_Value) * LW_DEGTORAD;
+	if(ThetaAttr) Theta = ThetaAttr->As<float>() * LW_DEGTORAD;
 
 	Rect->SetMaterial(Mat).SetTheta(Theta);
 	return Rect;

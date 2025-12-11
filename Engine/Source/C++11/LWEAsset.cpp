@@ -121,14 +121,14 @@ bool LWEAssetManager::XMLParseFont(LWEXMLNode *N, LWEAssetManager *AM) {
 	LWEXMLAttribute *ErrorGlyphAttr = N->FindAttribute("ErrorGlyph");
 	LWELocalization *Localize = AM->GetLocalization();
 	if (!PathAttr || !NameAttr) return false;
-	if (SizeAttr) Size = atoi(SizeAttr->m_Value);
+	if (SizeAttr) Size = SizeAttr->As<uint32_t>();
 	if (GlyphFirstAttr && GlyphLengthAttr) {
 		uint32_t FirstCnt = GlyphFirstAttr->GetValue().SplitToken(GFirstListIters, MaxRanges, '|');
 		uint32_t LengthCnt = GlyphLengthAttr->GetValue().SplitToken(GLengthListIters, MaxRanges, '|');
 		GlyphCount = std::min<uint32_t>(FirstCnt, LengthCnt);
 		for(uint32_t i=0;i< GlyphCount;i++) {
-			GFirstList[i] = atoi((const char*)GFirstListIters[i]());
-			GLengthList[i] = atoi((const char*)GLengthListIters[i]());
+			GFirstList[i] = GFirstListIters[i].As<uint32_t>();
+			GLengthList[i] = GLengthListIters[i].As<uint32_t>();
 		}
 	}
 	LWFont *F = nullptr;
@@ -148,14 +148,14 @@ bool LWEAssetManager::XMLParseFont(LWEXMLNode *N, LWEAssetManager *AM) {
 		LWAllocator::Destroy(F);
 		return false;
 	}
-	if (ErrorGlyphAttr) F->SetErrorGlyph(atoi(ErrorGlyphAttr->m_Value));
+	if (ErrorGlyphAttr) F->SetErrorGlyph(ErrorGlyphAttr->As<uint32_t>());
 	for (LWEXMLNode *C = N->m_FirstChild; C; C = C->m_Next) {
 		uint32_t n = C->GetName().CompareList("GlyphName");
 		if (n == 0) {
 			LWEXMLAttribute *GNameAttr = C->FindAttribute("Name");
 			LWEXMLAttribute *GCodeAttr = C->FindAttribute("Code");
 			if (!GNameAttr || !GCodeAttr) continue;
-			F->InsertGlyphName(GNameAttr->m_Value, atoi(GCodeAttr->m_Value));
+			F->InsertGlyphName(GNameAttr->m_Value, GCodeAttr->As<uint32_t>());
 		}
 	}
 	return true;
@@ -227,11 +227,11 @@ bool LWEAssetManager::XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM) {
 		if(!LWLogCriticalIf<256>(B, "Block '{}' could not find buffer: '{}'", N->GetName(), NameAttr->GetValue())) return;
 
 		uint32_t SlotIdx = -1;
-		if (SlotAttr) SlotIdx = atoi(SlotAttr->m_Value);
+		if (SlotAttr) SlotIdx = SlotAttr->As<uint32_t>();
 		else if (SlotNameAttr) SlotIdx = P->FindBlock(SlotNameAttr->m_Value);
 		if(!LWLogCriticalIf<256>(SlotIdx!=-1, "Block '{}' slot '{}' could not be found.", N->GetName(), SlotAttr ? SlotAttr->GetValue() : SlotNameAttr->GetValue())) return;
 
-		uint32_t Offset = OffsetAttr ? atoi(OffsetAttr->m_Value) : 0;
+		uint32_t Offset = OffsetAttr->AsOr<uint32_t>(0);
 		P->SetUniformBlock(SlotIdx, B, Offset);
 		return;
 	};
@@ -249,11 +249,11 @@ bool LWEAssetManager::XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM) {
 		if (!LWLogCriticalIf<256>(B || T, "Block '{}' could not find buffer or texture: '{}'", N->GetName(), NameAttr->GetValue())) return;
 
 		uint32_t SlotIdx = -1;
-		if (SlotAttr) SlotIdx = atoi(SlotAttr->m_Value);
+		if (SlotAttr) SlotIdx = SlotAttr->As<uint32_t>();
 		else if (SlotNameAttr) SlotIdx = P->FindResource(SlotNameAttr->m_Value);
 		if (!LWLogCriticalIf<256>(SlotIdx != -1, "Block '{}' resource slot '{}' could not be found.", N->GetName(), SlotAttr ? SlotAttr->GetValue() : SlotNameAttr->GetValue())) return;
 
-		uint32_t Offset = OffsetAttr ? atoi(OffsetAttr->m_Value) : 0;
+		uint32_t Offset = OffsetAttr->AsOr<uint32_t>(0);
 		if (B) P->SetResource(SlotIdx, B, Offset);
 		else P->SetResource(SlotIdx, T);
 		return;
@@ -340,17 +340,17 @@ bool LWEAssetManager::XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM) {
 		if(LWLogWarnIf<256>(n!=-1, "Pipeline '{}' encountered unknown stencil op pass mode: '{}'", NameAttr->GetValue(), StencilOpPassAttr->GetValue())) Flags |= (StencilOpValues[n] << LWPipeline::STENCIL_OP_PASS_BITOFFSET);
 	}
 	if (StencilRefValueAttr) {
-		uint64_t Value = (uint64_t)atoi(StencilRefValueAttr->m_Value);
+		uint64_t Value = StencilRefValueAttr->As<uint64_t>();
 		Value = std::max<uint64_t>(Value, 255);
 		Flags |= (Value << LWPipeline::STENCIL_REF_VALUE_BITOFFSET);
 	}
 	if (StencilReadMaskValueAttr) {
-		uint64_t Value = (uint64_t)atoi(StencilReadMaskValueAttr->m_Value);
+		uint64_t Value = StencilReadMaskValueAttr->As<uint64_t>();
 		Value = std::max<uint64_t>(Value, 255);
 		Flags |= (Value << LWPipeline::STENCIL_READMASK_BITOFFSET);
 	}
 	if (StencilWriteMaskValueAttr) {
-		uint64_t Value = (uint64_t)atoi(StencilWriteMaskValueAttr->m_Value);
+		uint64_t Value = StencilWriteMaskValueAttr->As<uint64_t>();
 		Value = std::max<uint64_t>(Value, 255);
 		Flags |= (Value << LWPipeline::STENCIL_WRITEMASK_BITOFFSET);
 	}
@@ -359,7 +359,7 @@ bool LWEAssetManager::XMLParsePipeline(LWEXMLNode *N, LWEAssetManager *AM) {
 	else if (CS) P = Driver->CreatePipeline(CS, Alloc);
 	if(!LWLogCriticalIf<256>(P, "Failed to create pipeline for: '{}'", NameAttr->GetValue())) return false;
 	
-	P->SetDepthBias((P->GetFlag()&LWPipeline::DEPTH_BIAS), DepthBiasAttr ? (float)atof(DepthBiasAttr->m_Value) : 0.0f, DepthSlopedBiasAttr ? (float)atof(DepthSlopedBiasAttr->m_Value) : 0.0f);
+	P->SetDepthBias((P->GetFlag()&LWPipeline::DEPTH_BIAS), DepthBiasAttr->AsOr<float>(0.0f), DepthSlopedBiasAttr->AsOr<float>(0.0f));
 	for (LWEXMLNode *C = N->m_FirstChild; C; C = C->m_Next) {
 		uint32_t i = C->GetName().CompareList("Resource", "Block");
 		if (i == 0) ParseResourceBinding(C, P, AM);
@@ -389,11 +389,11 @@ bool LWEAssetManager::XMLParsePipelineBuilder(LWEXMLNode *N, LWEAssetManager *AM
 		if (!LWLogCriticalIf<256>(B, "Block '{}' could not find buffer: '{}'", N->GetName(), NameAttr->GetValue())) return;
 
 		uint32_t SlotIdx = -1;
-		if (SlotAttr) SlotIdx = atoi(SlotAttr->m_Value);
+		if (SlotAttr) SlotIdx = SlotAttr->As<uint32_t>();
 		else if (SlotNameAttr) SlotIdx = P->FindBlock(SlotNameAttr->m_Value);
 		if (!LWLogCriticalIf<256>(SlotIdx != -1, "Block '{}' slot '{}' could not be found.", N->GetName(), SlotAttr ? SlotAttr->GetValue() : SlotNameAttr->GetValue())) return;
 
-		uint32_t Offset = OffsetAttr ? atoi(OffsetAttr->m_Value) : 0;
+		uint32_t Offset = OffsetAttr->AsOr<uint32_t>(0);
 		P->SetUniformBlock(SlotIdx, B, Offset);
 		return;
 	};
@@ -411,11 +411,11 @@ bool LWEAssetManager::XMLParsePipelineBuilder(LWEXMLNode *N, LWEAssetManager *AM
 		if (!LWLogCriticalIf<256>(B || T, "Block '{}' could not find buffer or texture: '{}'", N->GetName(), NameAttr->GetValue())) return;
 
 		uint32_t SlotIdx = -1;
-		if (SlotAttr) SlotIdx = atoi(SlotAttr->m_Value);
+		if (SlotAttr) SlotIdx = SlotAttr->As<uint32_t>();
 		else if (SlotNameAttr) SlotIdx = P->FindResource(SlotNameAttr->m_Value);
 		if (!LWLogCriticalIf<256>(SlotIdx != -1, "Block '{}' resource slot '{}' could not be found.", N->GetName(), SlotAttr ? SlotAttr->GetValue() : SlotNameAttr->GetValue())) return;
 
-		uint32_t Offset = OffsetAttr ? atoi(OffsetAttr->m_Value) : 0;
+		uint32_t Offset = OffsetAttr->AsOr<uint32_t>(0);
 		if (B) P->SetResource(SlotIdx, B, Offset);
 		else P->SetResource(SlotIdx, T);
 		return;
@@ -499,22 +499,22 @@ bool LWEAssetManager::XMLParsePipelineBuilder(LWEXMLNode *N, LWEAssetManager *AM
 			if (LWLogWarnIf<256>(n != -1, "PipelineBuilder encountered unknown stencil op pass mode: '{}'", StencilOpPassAttr->GetValue())) DefaultFlags |= (StencilOpValues[n] << LWPipeline::STENCIL_OP_PASS_BITOFFSET);
 		}
 		if (StencilRefValueAttr) {
-			uint64_t Value = (uint64_t)atoi(StencilRefValueAttr->m_Value);
+			uint64_t Value = StencilRefValueAttr->As<uint64_t>();
 			Value = std::max<uint64_t>(Value, 255);
 			DefaultFlags = (DefaultFlags&~LWPipeline::STENCIL_REF_VALUE_BITS) | (Value << LWPipeline::STENCIL_REF_VALUE_BITOFFSET);
 		}
 		if (StencilReadMaskValueAttr) {
-			uint64_t Value = (uint64_t)atoi(StencilReadMaskValueAttr->m_Value);
+			uint64_t Value = StencilReadMaskValueAttr->As<uint64_t>();
 			Value = std::max<uint64_t>(Value, 255);
 			DefaultFlags = (DefaultFlags & ~LWPipeline::STENCIL_READMASK_BITS) | (Value << LWPipeline::STENCIL_READMASK_BITOFFSET);
 		}
 		if (StencilWriteMaskValueAttr) {
-			uint64_t Value = (uint64_t)atoi(StencilWriteMaskValueAttr->m_Value);
+			uint64_t Value = StencilWriteMaskValueAttr->As<uint64_t>();
 			Value = std::max<uint64_t>(Value, 255);
 			DefaultFlags = (DefaultFlags & ~LWPipeline::STENCIL_WRITEMASK_BITS) | (Value << LWPipeline::STENCIL_WRITEMASK_BITOFFSET);
 		}
-		if (DepthBiasAttr) DepthBias = (float)atof(DepthBiasAttr->GetValue().c_str());
-		if (DepthSlopedBiasAttr) DepthSlopeBias = (float)atof(DepthSlopedBiasAttr->GetValue().c_str());
+		if (DepthBiasAttr) DepthBias = DepthBiasAttr->As<float>();
+		if (DepthSlopedBiasAttr) DepthSlopeBias = DepthSlopedBiasAttr->As<float>();
 		return DefaultFlags;
 	};
 
@@ -616,8 +616,8 @@ bool LWEAssetManager::XMLParseShader(LWEXMLNode *N, LWEAssetManager *AM) {
 			LWUTF8Iterator InstanceFreqIter = TypeIter.NextToken(':');
 
 			uint32_t NameHash = A.GetName().Hash();
-			uint32_t Length = BracketIter.AtEnd()?1:atoi(BracketIter.c_str()+1);
-			uint32_t InstanceFreq = InstanceFreqIter.AtEnd() ? 0 : atoi(InstanceFreqIter.c_str() + 1);
+			uint32_t Length = BracketIter.AtEnd() ? 1 : (BracketIter+1).As<uint32_t>();
+			uint32_t InstanceFreq = InstanceFreqIter.AtEnd() ? 0 : (InstanceFreqIter + 1).As<uint32_t>();
 			TypeIter = LWUTF8Iterator(TypeIter, BracketIter.AtEnd() ? InstanceFreqIter : BracketIter);
 			
 			uint32_t TypeHash = TypeIter.Hash();
@@ -817,8 +817,8 @@ bool LWEAssetManager::XMLParseShaderBuilder(LWEXMLNode *N, LWEAssetManager *AM) 
 			LWUTF8Iterator InstanceFreqIter = TypeIter.NextToken(':');
 
 			uint32_t NameHash = A.GetName().Hash();
-			uint32_t Length = BracketIter.AtEnd() ? 1 : atoi(BracketIter.c_str() + 1);
-			uint32_t InstanceFreq = InstanceFreqIter.AtEnd() ? 0 : atoi(InstanceFreqIter.c_str() + 1);
+			uint32_t Length = BracketIter.AtEnd() ? 1 : (BracketIter + 1).As<uint32_t>();
+			uint32_t InstanceFreq = InstanceFreqIter.AtEnd() ? 0 : (InstanceFreqIter + 1).As<uint32_t>();
 
 			TypeIter = LWUTF8Iterator(TypeIter, BracketIter.AtEnd() ? InstanceFreqIter : BracketIter);
 			uint32_t TypeHash = TypeIter.Hash();
@@ -1039,8 +1039,8 @@ bool LWEAssetManager::XMLParseVideoBuffer(LWEXMLNode *N, LWEAssetManager *AM) {
 	uint32_t TypeID = TypeAttr->GetValue().CompareList("Vertex", "Uniform", "Index16", "Index32", "ImageBuffer", "Indirect");
 	if (!LWLogCriticalIf<256>(TypeID!=-1, "VideoBuffer {}: has unknown type: '{}'", NameAttr->GetValue(), TypeAttr->GetValue())) return false;
 
-	uint32_t Length = atoi(LengthAttr->m_Value);
-	uint32_t TypeSize = atoi(TypeSizeAttr->m_Value);
+	uint32_t Length = LengthAttr->As<uint32_t>();
+	uint32_t TypeSize = TypeSizeAttr->As<uint32_t>();
 	if (PaddedAttr) TypeSize = Driver->GetUniformBlockPaddedSize(TypeSize);
 	if(!LWLogCriticalIf<256>(Length, "VideoBuffer {}: Has 0 length.", NameAttr->GetValue())) return false;
 	if(!LWLogCriticalIf<256>(TypeSize, "VideoBuffer {}: Has 0 type size.", NameAttr->GetValue())) return false;
@@ -1137,8 +1137,8 @@ bool LWEAssetManager::XMLParseVideo(LWEXMLNode *N, LWEAssetManager *AM) {
 			if(LWLogWarnIf<256>(n!=-1, "Video {}: Encountered unknown flag: '{}'", NameAttr->GetValue(), FlagIterList[i])) Flag |= FlagValues[n];
 		}
 	}
-	if (LoopCntAttr) LoopCount = atoi(LoopCntAttr->m_Value);
-	if (PlaybackSpeedAttr) PlaybackSpeed = (float)atof(PlaybackSpeedAttr->m_Value);
+	if (LoopCntAttr) LoopCount = LoopCntAttr->As<uint32_t>();
+	if (PlaybackSpeedAttr) PlaybackSpeed = PlaybackSpeedAttr->As<float>();
 	LWUTF8Iterator Path = PathAttr->GetValue();
 	if (Localize && Localize->ParseLocalization(SBuffer, sizeof(SBuffer), Path)) Path = SBuffer;
 	LWEVideoPlayer *Video = AM->GetAllocator().Create<LWEVideoPlayer>();

@@ -4,6 +4,7 @@
 #include <cstdarg>
 #include <LWCore/LWVector.h>
 #include <LWCore/LWUnicode.h>
+#include <LWCore/LWLogger.h>
 #include "LWETypes.h"
 
 struct LWEJChild {
@@ -60,19 +61,32 @@ struct LWEJObject {
 
 	LWUTF8Iterator GetValue(void) const;
 
-	int32_t AsInt(void) const;
+	//Helper function that Checks that *this* is non null pointer, otherwise returns default value.
+	template<class Type>
+	Type AsOr(Type Default) const {
+		return this ? As<Type>() : Default;
+	}
 
-	uint32_t AsUInt(void) const;
+	//Helper function that checks that *this* is a non null pointer, otherwise prints to LWLogError ErrorMsg, on success writes into Result a value.
+	template<class Type>
+	bool HasOrError(Type &Result, const LWUTF8Iterator &ErrorMsg) {
+		if(!this) return LWLogCritical(ErrorMsg);
+		Result = As<Type>();
+		return true;
+	}
 
-	int64_t AsInt64(void) const;
+	template<class Type, std::size_t ErrorLogCapacity, typename ...Args>
+	bool HasOrError(Type &Result, const LWUTF8Iterator &ErrorFmtMsg, Args ...Pack) {
+		if(!this) return LWLogCritical<ErrorLogCapacity>(ErrorFmtMsg, std::forward<Args>(Pack)...);
+		Result = As<Type>();
+		return true;
+	}
 
-	uint64_t AsUInt64(void) const;
-
-	float AsFloat(void) const;
-
-	double AsDouble(void) const;
-
-	bool AsBoolean(void) const;
+	//Simple returns value as the specified type if possible.
+	template<class Type>
+	Type As(void) const {
+		return GetValue().As<Type>();
+	}
 
 	LWVector2f AsVec2f(LWEJson &Js);
 

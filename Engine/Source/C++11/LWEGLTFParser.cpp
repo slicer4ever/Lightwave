@@ -45,7 +45,7 @@ bool LWEGLTFBuffer::ParseJSON(LWEGLTFBuffer &Buf, LWEJson &J, LWEJObject *Obj, L
 	if(!LWLogCriticalIf(JByteLength, "No buffer bytelength found.")) return false;
 	if (!JURI) {
 		if(!LWLogCriticalIf(BinChunk, "glb does not have a binary chunk.")) return false;
-		Length = JByteLength->AsInt();
+		Length = JByteLength->As<uint32_t>();
 		Buffer = Allocator.Allocate<uint8_t>(Length);
 		std::copy(BinChunk, BinChunk + Length, Buffer);
 	} else {
@@ -117,10 +117,11 @@ bool LWEGLTFBufferView::ParseJSON(LWEGLTFBufferView &BufView, LWEJson &J, LWEJOb
 	LWEJObject *JByteLength = Obj->FindChild("byteLength", J);
 	LWEJObject *JByteOffset = Obj->FindChild("byteOffset", J);
 	LWEJObject *JByteStride = Obj->FindChild("byteStride", J);
-	if(!LWLogCriticalIf(JBuffer, "Bufferview does not have 'buffer' field.")) return false;
-	if(!LWLogCriticalIf(JByteLength, "Bufferview does not have 'byteLength' field.")) return false;
+	int32_t BufferID, BufferLength;
+	if(!JBuffer->HasOrError<int32_t>(BufferID, "Bufferview does not have 'buffer' field.")) return false;
+	if(!JBuffer->HasOrError<int32_t>(BufferLength, "Bufferview does not have 'byteLength' field.")) return false;
 
-	BufView = LWEGLTFBufferView(JBuffer->AsInt(), JByteOffset ? JByteOffset->AsInt() : 0, JByteLength->AsInt(), JByteStride ? JByteStride->AsInt() : 0);
+	BufView = LWEGLTFBufferView(BufferID, JByteOffset->AsOr<int32_t>(0),  BufferLength, JByteStride->AsOr<int32_t>(0));
 	return true;
 }
 
@@ -140,16 +141,15 @@ bool LWEGLTFAccessor::ParseJSON(LWEGLTFAccessor &Buf, LWEJson &J, LWEJObject *Ob
 	LWEJObject *JCount = Obj->FindChild("count", J);
 	LWEJObject *JComponentType = Obj->FindChild("componentType", J);
 	LWEJObject *JType = Obj->FindChild("type", J);
-	if(!LWLogCriticalIf(JCount, "accessor does not have 'count' field.")) return false;
-	if(!LWLogCriticalIf(JComponentType, "accessor does not have 'componentType' field.")) return false;
+	int32_t Count, ComponentType;
+	if(!JCount->HasOrError<int32_t>(Count, "Accessor does not have 'count' field.")) return false;
+	if(!JComponentType->HasOrError<int32_t>(ComponentType, "Accessor does not have 'componentType' field.")) return false;
 	if(!LWLogCriticalIf(JType, "accessor does not have 'type' field.")) return false;
-
-	uint32_t TypeHash = JType->GetValue().Hash();
-	uint32_t Type = 0;
-	for (; Type < TypeCnt && TypeHash != Typehashs[Type]; Type++) {}
+	uint32_t Type = JType->GetValue().CompareListHash(TypeCnt, Typehashs);
+	if(!LWLogCriticalIf<128>(Type!=-1, "'type' field was unknown type '{}'", JType->GetValue())) return false;
 	uint32_t Flag = 0;
-	if (JNormalized) Flag |= JNormalized->AsBoolean() ? Normalized : 0;
-	Buf = LWEGLTFAccessor(JBufferView ? JBufferView->AsInt() : -1, JByteOffset ? JByteOffset->AsInt() : 0, JComponentType->AsInt() - BaseTypeOffset, JCount->AsInt(), Type, Flag);
+	if (JNormalized) Flag |= JNormalized->As<bool>() ? Normalized : 0;
+	Buf = LWEGLTFAccessor(JBufferView->AsOr<int32_t>(-1), JByteOffset->AsOr<int32_t>(0), ComponentType - BaseTypeOffset, Count, Type, Flag);
 	return true;
 }
 
@@ -162,11 +162,12 @@ bool LWEGLTFCameraOrtho::ParseJSON(LWEGLTFCameraOrtho &Ortho, LWEJson &J, LWEJOb
 	LWEJObject *JYMag = Obj->FindChild("ymag", J);
 	LWEJObject *JZFar = Obj->FindChild("zfar", J);
 	LWEJObject *JZNear = Obj->FindChild("znear", J);
-	if (!LWLogCriticalIf(JXMag, "ortho camera does not have 'xmag' field.")) return false;
-	if (!LWLogCriticalIf(JYMag, "ortho camera does not have 'ymag' field.")) return false;
-	if (!LWLogCriticalIf(JZFar, "ortho camera does not have 'zfar' field.")) return false;
-	if (!LWLogCriticalIf(JZNear, "ortho camera does not have 'znear' field.")) return false;
-	Ortho = LWEGLTFCameraOrtho(JXMag->AsFloat(), JYMag->AsFloat(), JZNear->AsFloat(), JZFar->AsFloat());
+	float xMag, yMag, zNear, zFar;
+	if (!JXMag->HasOrError<float>(xMag, "ortho camera does not have 'xmag' field.")) return false;
+	if (!JYMag->HasOrError<float>(yMag, "ortho camera does not have 'ymag' field.")) return false;
+	if (!JZFar->HasOrError<float>(zFar, "ortho camera does not have 'zfar' field.")) return false;
+	if (!JZNear->HasOrError<float>(zNear, "ortho camera does not have 'znear' field.")) return false;
+	Ortho = LWEGLTFCameraOrtho(xMag, yMag, zNear, zFar);
 	return true;
 }
 
@@ -183,11 +184,12 @@ bool LWEGLTFCameraPerspective::ParseJSON(LWEGLTFCameraPerspective &Persp, LWEJso
 	LWEJObject *JFOV = Obj->FindChild("yfov", J);
 	LWEJObject *JZNear = Obj->FindChild("znear", J);
 	LWEJObject *JZFar = Obj->FindChild("zfar", J);
-	if(!LWLogCriticalIf(JZNear, "perspective camera does not have 'znear' field.")) return false;
-	if(!LWLogCriticalIf(JFOV, "perspective camera does not have 'yfov' field.")) return false;
-	Persp = LWEGLTFCameraPerspective(JFOV->AsFloat(), JZNear->AsFloat());
-	if (JAspect) Persp.m_Aspect = JAspect->AsFloat();
-	if (JZFar) Persp.m_ZFar = JZFar->AsFloat();
+	float zNear, Fov;
+	if(!JZNear->HasOrError<float>(zNear, "perspective camera does not have 'znear' field.")) return false;
+	if(!JFOV->HasOrError<float>(Fov, "perspective camera does not have 'yfov' field.")) return false;
+	Persp = LWEGLTFCameraPerspective(Fov, zNear);
+	Persp.m_Aspect = JAspect->AsOr<float>(Persp.m_Aspect);
+	Persp.m_ZFar = JZFar->AsOr<float>(Persp.m_ZFar);
 	return true;
 }
 
@@ -264,7 +266,7 @@ const uint32_t LWEGLTFAttribute::WEIGHTS_0; //LWText::MakeHash("WEIGHTS_0");
 const uint32_t LWEGLTFPrimitive::MaxAttributes;
 
 bool LWEGLTFAttribute::ParseJSON(LWEGLTFAttribute &Attribute, LWEJson &J, LWEJObject *Obj) {
-	Attribute = LWEGLTFAttribute(Obj->AsInt(), Obj->GetName().Hash());
+	Attribute = LWEGLTFAttribute(Obj->As<uint32_t>(), Obj->GetName().Hash());
 	return true;
 }
 
@@ -280,7 +282,7 @@ bool LWEGLTFPrimitive::ParseJSON(LWEGLTFPrimitive &Primitive, LWEJson &J, LWEJOb
 	LWEJObject *JMaterial = Obj->FindChild("material", J);
 	if(!LWLogCriticalIf(JAttributes, "primitive does not have 'attributes' field.")) return false;
 	uint32_t AttributeCnt = std::min<uint32_t>(MaxAttributes, JAttributes->m_Length);
-	Primitive = LWEGLTFPrimitive(JMaterial ? JMaterial->AsInt() : -1, JIndices ? JIndices->AsInt() : -1, AttributeCnt);
+	Primitive = LWEGLTFPrimitive(JMaterial->AsOr<uint32_t>(-1), JIndices->AsOr<uint32_t>(-1), AttributeCnt);
 	for (uint32_t i = 0; i < AttributeCnt; i++) {
 		LWEGLTFAttribute::ParseJSON(Primitive.m_AttributeList[i], J, J.GetElement(i, JAttributes));
 	}
@@ -339,7 +341,7 @@ bool LWEGLTFImage::ParseJSON(LWEGLTFImage &Img, LWEJson &J, LWEJObject *Obj, LWF
 	LWEJObject *JUri = Obj->FindChild("uri", J);
 	LWEJObject *JMime = Obj->FindChild("mimeType", J);
 	LWEJObject *JBufferView = Obj->FindChild("bufferView", J);
-	Img = LWEGLTFImage(JName ? JName->GetValue() : LWUTF8Iterator(), LWUTF8Iterator(), JMime ? JMime->GetValue().Hash() : MimeNone, JBufferView ? JBufferView->AsInt() : -1);
+	Img = LWEGLTFImage(JName ? JName->GetValue() : LWUTF8Iterator(), LWUTF8Iterator(), JMime ? JMime->GetValue().Hash() : MimeNone, JBufferView->AsOr<uint32_t>(-1));
 	if (JUri) {
 		LWUTF8Iterator Dir, Name;
 		LWFileStream::SplitPath(*Stream.GetFilePath(), Dir, Name);
@@ -400,12 +402,12 @@ bool LWEGLTFTexture::ParseJSON(LWEGLTFTexture &Tex, LWEJson &J, LWEJObject *Obj)
 		LWEJObject *JWrapT = Node->FindChild("wrapT", J);
 		LWEJObject *JWrapR = Node->FindChild("WrapR", J);
 		if (JMagFilter) {
-			uint32_t ID = JMagFilter->AsInt();
+			uint32_t ID = JMagFilter->As<uint32_t>();
 			if (ID == GLTF_NEAREST) MagFilter = LWTexture::MagNearest;
 			else if (ID == GLTF_LINEAR) MagFilter = LWTexture::MagLinear;
 		}
 		if (JMinFilter) {
-			uint32_t ID = JMinFilter->AsInt();
+			uint32_t ID = JMinFilter->As<uint32_t>();
 			if (ID == GLTF_NEAREST) MinFilter = LWTexture::MinNearest;
 			else if (ID == GLTF_LINEAR) MinFilter = LWTexture::MinLinear;
 			else if (ID == GLTF_NEAREST_MIPMAP_NEAREST) MinFilter = LWTexture::MinNearestMipmapNearest;
@@ -414,7 +416,7 @@ bool LWEGLTFTexture::ParseJSON(LWEGLTFTexture &Tex, LWEJson &J, LWEJObject *Obj)
 			else if (ID == GLTF_LINEAR_MIPMAP_LINEAR) MinFilter = LWTexture::MinLinearMipmapLinear;
 		}
 		if (JWrapS) {
-			uint32_t ID = JWrapS->AsInt();
+			uint32_t ID = JWrapS->As<uint32_t>();
 			if (ID == GLTF_CLAMP_TO_EDGE) WrapS = LWTexture::WrapSClampToEdge;
 			else if (ID == GLTF_CLAMP_TO_BORDER) WrapS = LWTexture::WrapSClampToBorder;
 			else if (ID == GLTF_MIRROR_REPEAT) WrapS = LWTexture::WrapSMirroredRepeat;
@@ -422,14 +424,14 @@ bool LWEGLTFTexture::ParseJSON(LWEGLTFTexture &Tex, LWEJson &J, LWEJObject *Obj)
 		}
 
 		if (JWrapT) {
-			uint32_t ID = JWrapT->AsInt();
+			uint32_t ID = JWrapT->As<uint32_t>();
 			if (ID == GLTF_CLAMP_TO_EDGE) WrapT = LWTexture::WrapTClampToEdge;
 			else if (ID == GLTF_CLAMP_TO_BORDER) WrapT = LWTexture::WrapTClampToBorder;
 			else if (ID == GLTF_MIRROR_REPEAT) WrapT = LWTexture::WrapTMirroredRepeat;
 			else if (ID == GLTF_REPEAT) WrapT = LWTexture::WrapTRepeat;
 		}
 		if (JWrapR) {
-			uint32_t ID = JWrapR->AsInt();
+			uint32_t ID = JWrapR->As<uint32_t>();
 			if (ID == GLTF_CLAMP_TO_EDGE) WrapR = LWTexture::WrapRClampToEdge;
 			else if (ID == GLTF_CLAMP_TO_BORDER) WrapR = LWTexture::WrapRClampToBorder;
 			else if (ID == GLTF_MIRROR_REPEAT) WrapR = LWTexture::WrapRMirroredRepeat;
@@ -441,7 +443,7 @@ bool LWEGLTFTexture::ParseJSON(LWEGLTFTexture &Tex, LWEJson &J, LWEJObject *Obj)
 
 	auto ParseMSFTtextureddsExtension = [](LWEGLTFTexture &Tex, LWEJson &J, LWEJObject *ExtObj) {
 		LWEJObject *JSource = ExtObj->FindChild("source", J);
-		if (JSource) Tex.m_ImageID = JSource->AsInt();
+		if (JSource) Tex.m_ImageID = JSource->As<uint32_t>();
 	};
 
 	LWEJObject *JSource = Obj->FindChild("source", J);
@@ -449,10 +451,9 @@ bool LWEGLTFTexture::ParseJSON(LWEGLTFTexture &Tex, LWEJson &J, LWEJObject *Obj)
 	LWEJObject *JName = Obj->FindChild("name", J);
 	LWEJObject *JExtension = Obj->FindChild("extensions", J);
 
-
 	uint32_t SamplerFlag = LWTexture::MinNearestMipmapNearest | LWTexture::MagNearest | LWTexture::WrapSRepeat | LWTexture::WrapTRepeat | LWTexture::WrapTRepeat;
 	if (JSampler) SamplerFlag = ParseSampler(J, JSampler);
-	Tex = LWEGLTFTexture(JName ? JName->GetValue() : LWUTF8Iterator(), JSource ? JSource->AsInt() : -1, SamplerFlag);
+	Tex = LWEGLTFTexture(JName ? JName->GetValue() : LWUTF8Iterator(), JSource->AsOr<uint32_t>(-1), SamplerFlag);
 	if (JExtension) {
 		LWEJObject *JMsftExtension = JExtension->FindChild("MSFT_texture_dds", J);
 		if (JMsftExtension) ParseMSFTtextureddsExtension(Tex, J, JMsftExtension);
@@ -487,8 +488,8 @@ bool LWEGLTFTextureInfo::ParseJSON(LWEGLTFTextureInfo &TexInfo, LWEJson &J, LWEJ
 
 		if (JOffset) TexInfo.m_Offset = JOffset->AsVec2f(J);
 		if (JScale) TexInfo.m_Scale = JScale->AsVec2f(J);
-		if (JRotation) TexInfo.m_Rotation = JRotation->AsFloat();
-		if (JTexCoord) TexInfo.m_TexCoord = JTexCoord->AsInt();
+		if (JRotation) TexInfo.m_Rotation = JRotation->As<float>();
+		if (JTexCoord) TexInfo.m_TexCoord = JTexCoord->As<uint32_t>();
 		return true;
 	};
 
@@ -497,8 +498,8 @@ bool LWEGLTFTextureInfo::ParseJSON(LWEGLTFTextureInfo &TexInfo, LWEJson &J, LWEJ
 	LWEJObject *JExtensions = Obj->FindChild("extensions", J);
 	if(!LWLogCriticalIf(JIndex, "gltf texture info is missing 'index' field.")) return false;
 
-	TexInfo = LWEGLTFTextureInfo(JIndex->AsInt());
-	if (JTexCoord) TexInfo.m_TexCoord = JTexCoord->AsInt();
+	TexInfo = LWEGLTFTextureInfo(JIndex->As<uint32_t>());
+	if (JTexCoord) TexInfo.m_TexCoord = JTexCoord->As<uint32_t>();
 	if (JExtensions) {
 		LWEJObject *KHR_Texture_Transform = JExtensions->FindChild("KHR_texture_transform", J);
 		if (KHR_Texture_Transform) ParseKHRTextureTransform(TexInfo, J, KHR_Texture_Transform);
@@ -522,8 +523,8 @@ bool LWEGLTFMatMetallicRoughness::ParseJSON(LWEGLTFMatMetallicRoughness &Mat, LW
 	if (JBaseColorTexture) {
 		if (!LWEGLTFTextureInfo::ParseJSON(Mat.m_BaseColorTexture, J, JBaseColorTexture)) return false;
 	}
-	if (JMetallicFactor) Mat.m_MetallicFactor = JMetallicFactor->AsFloat();
-	if (JRoughnessFactor) Mat.m_RoughnessFactor = JRoughnessFactor->AsFloat();
+	if (JMetallicFactor) Mat.m_MetallicFactor = JMetallicFactor->As<float>();
+	if (JRoughnessFactor) Mat.m_RoughnessFactor = JRoughnessFactor->As<float>();
 	if (JMetallicRoughnessTexture) {
 		if (!LWEGLTFTextureInfo::ParseJSON(Mat.m_MetallicRoughnessTexture, J, JMetallicRoughnessTexture)) return false;
 	}
@@ -544,7 +545,7 @@ bool LWEGLTFMatSpecularGlossyness::ParseJSON(LWEGLTFMatSpecularGlossyness &Mat, 
 	LWEJObject *JSpecularGlossinessTexture = Obj->FindChild("specularGlossinessTexture", J);
 	if (JDiffusefactor) Mat.m_DiffuseFactor = JDiffusefactor->AsVec4f(J);
 	if (JSpecularFactor) Mat.m_SpecularFactor = JSpecularFactor->AsVec3f(J);
-	if (JGlossinessFactor) Mat.m_Glossiness = JGlossinessFactor->AsFloat();
+	if (JGlossinessFactor) Mat.m_Glossiness = JGlossinessFactor->As<float>();
 	if (JDiffuseTexture) {
 		if (!LWEGLTFTextureInfo::ParseJSON(Mat.m_DiffuseTexture, J, JDiffuseTexture)) return false;
 	}
@@ -598,8 +599,8 @@ bool LWEGLTFMaterial::ParseJSON(LWEGLTFMaterial &Mat, LWEJson &J, LWEJObject *Ob
 
 		Mat.m_Flag |= (AlphaMode << AlphaBitOffset);
 	}
-	if (JAlphaCutoff) Mat.m_AlphaCutoff = JAlphaCutoff->AsFloat();
-	if (JDoubleSided) Mat.m_Flag |= JDoubleSided->AsBoolean() ? DoubleSided : 0;
+	if (JAlphaCutoff) Mat.m_AlphaCutoff = JAlphaCutoff->As<float>();
+	if (JDoubleSided) Mat.m_Flag |= JDoubleSided->As<bool>() ? DoubleSided : 0;
 	if (JExtensions) {
 		LWEJObject *JKHR_Materials_Unlit = JExtensions->FindChild("KHR_materials_unlit", J);
 		LWEJObject *JKHR_Materials_SpecularGlossiness = JExtensions->FindChild("KHR_materials_pbrSpecularGlossiness", J);
@@ -651,13 +652,13 @@ bool LWEGLTFLight::ParseJSON(LWEGLTFLight &L, LWEJson &J, LWEJObject *Obj) {
 	}
 	L = LWEGLTFLight(JName ? JName->GetValue() : LWUTF8Iterator(), JType->GetValue().Hash());
 	if (JColor) L.m_Color = JColor->AsVec3f(J);
-	if (JIntensisty) L.m_Intensity = JIntensisty->AsFloat();
-	if (JRange) L.m_Range = JRange->AsFloat();
+	if (JIntensisty) L.m_Intensity = JIntensisty->As<float>();
+	if (JRange) L.m_Range = JRange->As<float>();
 	if (JSpot) {
 		LWEJObject *JInnerConeAngle = JSpot->FindChild("innerConeAngle", J);
 		LWEJObject *JOuterConeAngle = JSpot->FindChild("outerConeAngle", J);
-		if (JInnerConeAngle) L.m_InnerConeTheta = JInnerConeAngle->AsFloat();
-		if (JOuterConeAngle) L.m_OuterConeTheta = JOuterConeAngle->AsFloat();
+		if (JInnerConeAngle) L.m_InnerConeTheta = JInnerConeAngle->As<float>();
+		if (JOuterConeAngle) L.m_OuterConeTheta = JOuterConeAngle->As<float>();
 	}
 	return true;
 };
@@ -698,18 +699,18 @@ bool LWEGLTFNode::ParseJSON(LWEGLTFNode &Node, LWEJson &J, LWEJObject *Obj) {
 		LWQuaternionf Rot = JRotation ? JRotation->AsQuaternionf(J) : LWQuaternionf();
 		Matrix = LWMatrix4f(Rot, Scale, Translation).Transpose3x3();
 	}
-	Node = LWEGLTFNode(JName ? JName->GetValue() : LWUTF8Iterator(), JMesh ? JMesh->AsInt() : -1, JSkin ? JSkin->AsInt() : -1, JCamera ? JCamera->AsInt():-1, JChildren ? JChildren->m_Length : 0, Matrix);
+	Node = LWEGLTFNode(JName ? JName->GetValue() : LWUTF8Iterator(), JMesh->AsOr<uint32_t>(-1), JSkin->AsOr<uint32_t>(-1), JCamera->AsOr<uint32_t>(-1), JChildren ? JChildren->m_Length : 0, Matrix);
 	if (JChildren) {
 		for (uint32_t i = 0; i < JChildren->m_Length; i++) {
 			LWEJObject *C = J.GetElement(i, JChildren);
-			Node.m_Children.push_back(C->AsInt());
+			Node.m_Children.push_back(C->As<uint32_t>());
 		}
 	}
 	if (JExtensions) {
 		LWEJObject *JKHR_Lights_Punctual = JExtensions->FindChild("KHR_lights_punctual", J);
 		if (JKHR_Lights_Punctual) {
 			LWEJObject *JLight = JKHR_Lights_Punctual->FindChild("light", J);
-			if (JLight) Node.m_LightID = JLight->AsInt();
+			if (JLight) Node.m_LightID = JLight->As<uint32_t>();
 		}
 	}
 	return true;
@@ -740,7 +741,7 @@ bool LWEGLTFScene::ParseJSON(LWEGLTFScene &Scene, LWEJson &J, LWEJObject *Obj) {
 	Scene = LWEGLTFScene(JName ? JName->GetValue() : LWUTF8Iterator(), JNodes ? JNodes->m_Length : 0);
 	for (uint32_t i = 0; i < JNodes->m_Length; i++) {
 		LWEJObject *C = J.GetElement(i, JNodes);
-		Scene.m_NodeList.push_back(C->AsInt());
+		Scene.m_NodeList.push_back(C->As<uint32_t>());
 	}
 	return true;
 }
@@ -770,10 +771,10 @@ bool LWEGLTFSkin::ParseJSON(LWEGLTFSkin &Skin, LWEJson &J, LWEJObject *Obj) {
 	LWEJObject *JSkeleton = Obj->FindChild("skeleton", J);
 	if(!LWLogCriticalIf(JJoints, "skin is missing 'joints' field.")) return false;
 
-	Skin = LWEGLTFSkin(JName ? JName->GetValue() : LWUTF8Iterator(), JJoints->m_Length, JInverseBindMatrices ? JInverseBindMatrices->AsInt() : -1, JSkeleton ? JSkeleton->AsInt() : -1);
+	Skin = LWEGLTFSkin(JName ? JName->GetValue() : LWUTF8Iterator(), JJoints->m_Length, JInverseBindMatrices->AsOr<uint32_t>(-1), JSkeleton->AsOr<uint32_t>(-1));
 	for (uint32_t i = 0; i < JJoints->m_Length; i++) {
 		LWEJObject *JJnt = J.GetElement(i, JJoints);
-		Skin.m_JointList.push_back(JJnt->AsInt());
+		Skin.m_JointList.push_back(JJnt->As<uint32_t>());
 	}
 	return true;
 }
@@ -811,8 +812,8 @@ bool LWEGLTFAnimChannel::ParseJSON(LWEGLTFAnimChannel &Channel, LWEJson &J, LWEJ
 		if(!LWLogCriticalIf(JInput, "Animation sampler is missing 'input' field.")) return false;
 		if(!LWLogCriticalIf(JOutput, "Animation sampler is missing 'output' field.")) return false;
 
-		Channel.m_InputID = JInput->AsInt();
-		Channel.m_OutputID = JOutput->AsInt();
+		Channel.m_InputID = JInput->As<int32_t>();
+		Channel.m_OutputID = JOutput->As<int32_t>();
 		if (JInterpolation) Channel.m_Interpolation = JInterpolation->GetValue().Hash();
 		return true;
 	};
@@ -823,7 +824,7 @@ bool LWEGLTFAnimChannel::ParseJSON(LWEGLTFAnimChannel &Channel, LWEJson &J, LWEJ
 		if(!LWLogCriticalIf(JPath, "Animation channel is missing 'path' field.")) return false;
 
 		Channel.m_Path = JPath->GetValue().Hash();
-		if (JNode) Channel.m_Node = JNode->AsInt();
+		if (JNode) Channel.m_Node = JNode->As<int32_t>();
 		return true;
 	};
 
@@ -835,8 +836,8 @@ bool LWEGLTFAnimChannel::ParseJSON(LWEGLTFAnimChannel &Channel, LWEJson &J, LWEJ
 	LWEJObject *JAnimSamplers = AnimObj->FindChild("samplers", J);
 	if(!LWLogCriticalIf(JAnimSamplers, "Animation is missing 'samplers' field.")) return false;
 
-	LWEJObject *JASampler = J.GetElement(JSampler->AsInt(), JAnimSamplers);
-	if(!LWLogCriticalIf<256>(JASampler, "Animation sampler index is outside of bounds: {}", JSampler->AsInt())) return false;
+	LWEJObject *JASampler = J.GetElement(JSampler->As<int32_t>(), JAnimSamplers);
+	if(!LWLogCriticalIf<256>(JASampler, "Animation sampler index is outside of bounds: {}", JSampler->As<int32_t>())) return false;
 
 	if (!ParseSampler(Channel, J, JASampler)) return false;
 	if (!ParseTarget(Channel, J, JTarget)) return false;
@@ -997,7 +998,7 @@ bool LWEGLTFParser::ParseJSON(LWEGLTFParser &Parser, LWEJson &J, LWFileStream &S
 		if (JKHR_Lights_Punctual) JLights = JKHR_Lights_Punctual->FindChild("lights", J);
 	}
 
-	Parser.SetDefaultScene(JScene ? JScene->AsInt() : -1);
+	Parser.SetDefaultScene(JScene ? JScene->As<int32_t>() : -1);
 
 	if (!LWLogCriticalIf<256>(JMeshs, "parsing glb '{}': No meshes structure found.", Stream.GetFilePath())) return false;
 	if (!LWLogCriticalIf<256>(JNodes, "parsing glb '{}': No nodes structure found.", Stream.GetFilePath())) return false;

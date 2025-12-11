@@ -52,34 +52,6 @@ LWUTF8Iterator LWEJObject::GetValue(void) const {
 	return LWUTF8Iterator(m_Value);
 }
 
-int32_t LWEJObject::AsInt(void) const {
-	return strtol(m_Value, nullptr, 10);
-}
-
-uint32_t LWEJObject::AsUInt(void) const {
-	return strtoul(m_Value, nullptr, 10);
-}
-
-int64_t LWEJObject::AsInt64(void) const {
-	return strtoll(m_Value, nullptr, 10);
-}
-
-uint64_t LWEJObject::AsUInt64(void) const {
-	return strtoull(m_Value, nullptr, 10);
-}
-
-float LWEJObject::AsFloat(void) const {
-	return (float)atof(m_Value);
-}
-
-double LWEJObject::AsDouble(void) const {
-	return atof(m_Value);
-}
-
-bool LWEJObject::AsBoolean(void) const {
-	return *m_Value == 't' || *m_Value == 'T';
-}
-
 uint32_t LWEJObject::FindChild(const LWUTF8Iterator &ChildName) {
 	uint32_t Hash = ChildName.Hash();
 	for (uint32_t i = 0; i < m_Length; i++) {
@@ -129,14 +101,14 @@ LWVector2f LWEJObject::AsVec2f(LWEJson &Js) {
 		float *V = &Vec.x;
 		for (uint32_t i = 0; i < Len; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
-			V[i] = JO->AsFloat();
+			V[i] = JO->As<float>();
 		}
 	} else {
 		for (uint32_t i = 0; i < m_Length; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
 			if (!JO) continue;
-			if (*JO->m_Name == 'x' || *JO->m_Name == 'X') Vec.x = JO->AsFloat();
-			if (*JO->m_Name == 'y' || *JO->m_Name == 'Y') Vec.y = JO->AsFloat();
+			if (*JO->m_Name == 'x' || *JO->m_Name == 'X') Vec.x = JO->As<float>();
+			if (*JO->m_Name == 'y' || *JO->m_Name == 'Y') Vec.y = JO->As<float>();
 		}
 	}
 	return Vec;
@@ -149,15 +121,15 @@ LWVector3f LWEJObject::AsVec3f(LWEJson &Js) {
 		float *V = &Vec.x;
 		for (uint32_t i = 0; i < Len; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
-			V[i] = JO->AsFloat();
+			V[i] = JO->As<float>();
 		}
 	} else {
 		for (uint32_t i = 0; i < m_Length; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
 			if (!JO) continue;
-			if (*JO->m_Name == 'x' || *JO->m_Name == 'X') Vec.x = JO->AsFloat();
-			if (*JO->m_Name == 'y' || *JO->m_Name == 'Y') Vec.y = JO->AsFloat();
-			if (*JO->m_Name == 'z' || *JO->m_Name == 'Z') Vec.z = JO->AsFloat();
+			if (*JO->m_Name == 'x' || *JO->m_Name == 'X') Vec.x = JO->As<float>();
+			if (*JO->m_Name == 'y' || *JO->m_Name == 'Y') Vec.y = JO->As<float>();
+			if (*JO->m_Name == 'z' || *JO->m_Name == 'Z') Vec.z = JO->As<float>();
 		}
 	}
 	return Vec;
@@ -170,16 +142,16 @@ LWVector4f LWEJObject::AsVec4f(LWEJson &Js) {
 		float *V = &Vec.x;
 		for (uint32_t i = 0; i < Len; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
-			V[i] = JO->AsFloat();
+			V[i] = JO->As<float>();
 		}
 	} else {
 		for (uint32_t i = 0; i < m_Length; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
 			if (!JO) continue;
-			if (*JO->m_Name == 'x' || *JO->m_Name == 'X') Vec.x = JO->AsFloat();
-			if (*JO->m_Name == 'y' || *JO->m_Name == 'Y') Vec.y = JO->AsFloat();
-			if (*JO->m_Name == 'z' || *JO->m_Name == 'Z') Vec.z = JO->AsFloat();
-			if (*JO->m_Name == 'w' || *JO->m_Name == 'W') Vec.w = JO->AsFloat();
+			if (*JO->m_Name == 'x' || *JO->m_Name == 'X') Vec.x = JO->As<float>();
+			if (*JO->m_Name == 'y' || *JO->m_Name == 'Y') Vec.y = JO->As<float>();
+			if (*JO->m_Name == 'z' || *JO->m_Name == 'Z') Vec.z = JO->As<float>();
+			if (*JO->m_Name == 'w' || *JO->m_Name == 'W') Vec.w = JO->As<float>();
 		}
 	}
 	return Vec;
@@ -192,16 +164,16 @@ LWQuaternionf LWEJObject::AsQuaternionf(LWEJson &Js){
 		float *V = &Quat.x;
 		for (uint32_t i = 0; i < Len; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
-			V[i] = JO->AsFloat();
+			V[i] = JO->As<float>();
 		}		
 	} else {
 		for (uint32_t i = 0; i < m_Length; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
 			if (!JO) continue;
-			if (*JO->m_Name == 'x' || *JO->m_Name == 'X') Quat.x = JO->AsFloat();
-			if (*JO->m_Name == 'y' || *JO->m_Name == 'Y') Quat.y = JO->AsFloat();
-			if (*JO->m_Name == 'z' || *JO->m_Name == 'Z') Quat.z = JO->AsFloat();
-			if (*JO->m_Name == 'w' || *JO->m_Name == 'W') Quat.w = JO->AsFloat();
+			if (*JO->m_Name == 'x' || *JO->m_Name == 'X') Quat.x = JO->As<float>();
+			if (*JO->m_Name == 'y' || *JO->m_Name == 'Y') Quat.y = JO->As<float>();
+			if (*JO->m_Name == 'z' || *JO->m_Name == 'Z') Quat.z = JO->As<float>();
+			if (*JO->m_Name == 'w' || *JO->m_Name == 'W') Quat.w = JO->As<float>();
 		}
 	}
 	return Quat;
@@ -214,17 +186,17 @@ LWQuaternionf LWEJObject::AsQuaternionfr(LWEJson &Js) {
 		float *V = &Quat.x;
 		for (uint32_t i = 0; i < Len; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
-			V[i] = JO->AsFloat();
+			V[i] = JO->As<float>();
 		}
 		Quat = LWQuaternionf(Quat.x, Quat.y, Quat.z, Quat.w);
 	} else {
 		for (uint32_t i = 0; i < m_Length; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
 			if (!JO) continue;
-			if (*JO->m_Name == 'x' || *JO->m_Name == 'X') Quat.x = JO->AsFloat();
-			if (*JO->m_Name == 'y' || *JO->m_Name == 'Y') Quat.y = JO->AsFloat();
-			if (*JO->m_Name == 'z' || *JO->m_Name == 'Z') Quat.z = JO->AsFloat();
-			if (*JO->m_Name == 'w' || *JO->m_Name == 'W') Quat.w = JO->AsFloat();
+			if (*JO->m_Name == 'x' || *JO->m_Name == 'X') Quat.x = JO->As<float>();
+			if (*JO->m_Name == 'y' || *JO->m_Name == 'Y') Quat.y = JO->As<float>();
+			if (*JO->m_Name == 'z' || *JO->m_Name == 'Z') Quat.z = JO->As<float>();
+			if (*JO->m_Name == 'w' || *JO->m_Name == 'W') Quat.w = JO->As<float>();
 		}
 	}
 	return Quat;
@@ -237,7 +209,7 @@ LWMatrix2f LWEJObject::AsMat2f(LWEJson &Js) {
 		float *V = &Mat.m_Rows[0].x;
 		for (uint32_t i = 0; i < Len; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
-			V[i] = JO->AsFloat();
+			V[i] = JO->As<float>();
 		}
 	}
 	return Mat;
@@ -250,7 +222,7 @@ LWMatrix3f LWEJObject::AsMat3f(LWEJson &Js) {
 		float *V = &Mat.m_Rows[0].x;
 		for (uint32_t i = 0; i < Len; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
-			V[i] = JO->AsFloat();
+			V[i] = JO->As<float>();
 		}
 	}
 	return Mat;
@@ -263,7 +235,7 @@ LWMatrix4f LWEJObject::AsMat4f(LWEJson &Js) {
 		float *V = &Mat.m_Rows[0].x;
 		for (uint32_t i = 0; i < Len; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
-			V[i] = JO->AsFloat();
+			V[i] = JO->As<float>();
 		}
 	}
 	return Mat;
@@ -276,14 +248,14 @@ LWVector2i LWEJObject::AsVec2i(LWEJson &Js) {
 		int32_t *V = &Vec.x;
 		for (uint32_t i = 0; i < Len; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
-			V[i] = JO->AsInt();
+			V[i] = JO->As<int32_t>();
 		}
 	} else {
 		for (uint32_t i = 0; i < m_Length; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
 			if (!JO) continue;
-			if (*JO->m_Name == 'x' || *JO->m_Name == 'X') Vec.x = JO->AsInt();
-			if (*JO->m_Name == 'y' || *JO->m_Name == 'Y') Vec.y = JO->AsInt();
+			if (*JO->m_Name == 'x' || *JO->m_Name == 'X') Vec.x = JO->As<int32_t>();
+			if (*JO->m_Name == 'y' || *JO->m_Name == 'Y') Vec.y = JO->As<int32_t>();
 		}
 	}
 	return Vec;
@@ -296,15 +268,15 @@ LWVector3i LWEJObject::AsVec3i(LWEJson &Js) {
 		int32_t *V = &Vec.x;
 		for (uint32_t i = 0; i < Len; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
-			V[i] = JO->AsInt();
+			V[i] = JO->As<int32_t>();
 		}
 	} else {
 		for (uint32_t i = 0; i < m_Length; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
 			if (!JO) continue;
-			if (*JO->m_Name == 'x' || *JO->m_Name == 'X') Vec.x = JO->AsInt();
-			if (*JO->m_Name == 'y' || *JO->m_Name == 'Y') Vec.y = JO->AsInt();
-			if (*JO->m_Name == 'z' || *JO->m_Name == 'Z') Vec.z = JO->AsInt();
+			if (*JO->m_Name == 'x' || *JO->m_Name == 'X') Vec.x = JO->As<int32_t>();
+			if (*JO->m_Name == 'y' || *JO->m_Name == 'Y') Vec.y = JO->As<int32_t>();
+			if (*JO->m_Name == 'z' || *JO->m_Name == 'Z') Vec.z = JO->As<int32_t>();
 		}
 	}
 	return Vec;
@@ -317,16 +289,16 @@ LWVector4i LWEJObject::AsVec4i(LWEJson &Js){
 		int32_t *V = &Vec.x;
 		for (uint32_t i = 0; i < Len; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
-			V[i] = JO->AsInt();
+			V[i] = JO->As<int32_t>();
 		}
 	} else {
 		for (uint32_t i = 0; i < m_Length; i++) {
 			LWEJObject *JO = Js[m_Children[i].m_FullNameHash];
 			if (!JO) continue;
-			if (*JO->m_Name == 'x' || *JO->m_Name == 'X') Vec.x = JO->AsInt();
-			if (*JO->m_Name == 'y' || *JO->m_Name == 'Y') Vec.y = JO->AsInt();
-			if (*JO->m_Name == 'z' || *JO->m_Name == 'Z') Vec.z = JO->AsInt();
-			if (*JO->m_Name == 'w' || *JO->m_Name == 'W') Vec.w = JO->AsInt();
+			if (*JO->m_Name == 'x' || *JO->m_Name == 'X') Vec.x = JO->As<int32_t>();
+			if (*JO->m_Name == 'y' || *JO->m_Name == 'Y') Vec.y = JO->As<int32_t>();
+			if (*JO->m_Name == 'z' || *JO->m_Name == 'Z') Vec.z = JO->As<int32_t>();
+			if (*JO->m_Name == 'w' || *JO->m_Name == 'W') Vec.w = JO->As<int32_t>();
 		}
 	}
 	return Vec;

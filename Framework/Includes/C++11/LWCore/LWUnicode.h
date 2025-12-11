@@ -165,6 +165,11 @@ public:
 		return true;
 	}
 
+	template<class Type>
+	Type As() const {
+		return begin().As<Type>();
+	}
+
 	/*!< \brief returns an iterator to the first grapheme in the unicode string. */
 	LWUnicodeGraphemeIterator<Type> beginGrapheme(void) const {
 		return LWUnicodeGraphemeIterator<Type>(m_Buffer, m_Buffer + m_RawLength - 1);
@@ -376,6 +381,17 @@ public:
 	template<class T>
 	uint32_t CompareLista(uint32_t Count, const T *List, uint32_t CodepointCount) const {
 		return begin().CompareLista(Count, List, CodepointCount);
+	}
+
+	/*!< \brief compares this iterator's hashed value with a list of hashed values, returning the index of the hash, or -1 if no match is found. */
+	uint32_t CompareListHash(uint32_t Count, const uint32_t *HashList) const {
+		return begin().CompareListHash(Count, HashList);
+	}
+
+	/*!< \brief compares this iterator with other iterators, but hash's them for check, instead of doing value comparisons. returns -1 if no match is found. */
+	template<class T>
+	uint32_t CompareByHashesList(uint32_t Count, const T *CompareIters) const {
+		return begin().CompareByHashesList<T>(Count,CompareIters);
 	}
 
 	/*!< \brief search's string for the first occurrent of SubString, returning true if found, or false if not found. */

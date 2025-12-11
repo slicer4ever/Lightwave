@@ -592,8 +592,8 @@ bool LWEUIManager::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
 		LWEXMLAttribute *DPIAttr = Node->FindAttribute("DPI");
 		LWEXMLAttribute *ScaleAttr = Node->FindAttribute("Scale");
 		if (!DPIAttr || !ScaleAttr) return;
-		uint32_t DPI = (uint32_t)atoi(DPIAttr->m_Value);
-		float s = (float)atof(ScaleAttr->m_Value);
+		uint32_t DPI = DPIAttr->As<uint32_t>();
+		float s = ScaleAttr->As<float>();
 		Man->PushDPIScale(DPI, s);
 		return;
 	};
@@ -603,9 +603,9 @@ bool LWEUIManager::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
 		LWEXMLAttribute *HeightAttr = Node->FindAttribute("Height");
 		LWEXMLAttribute *ScaleAttr = Node->FindAttribute("Scale");
 		if (!WidthAttr || !HeightAttr || !ScaleAttr) return;
-		int32_t w = atoi(WidthAttr->m_Value);
-		int32_t h = atoi(HeightAttr->m_Value);
-		float s = (float)atof(ScaleAttr->m_Value);
+		int32_t w = WidthAttr->As<int32_t>();
+		int32_t h = HeightAttr->As<int32_t>();
+		float s = ScaleAttr->As<float>();
 		Man->PushScreenScale(LWVector2i(w, h), s);
 		return;
 	};
@@ -639,8 +639,8 @@ bool LWEUIManager::XMLParser(LWEXMLNode *Node, void *UserData, LWEXML *X) {
 		if (FontMatAttr) TT.m_FontMaterial = Man->GetMaterial(FontMatAttr->m_Value);
 		if (BorderMatAttr) TT.m_BorderMaterial = Man->GetMaterial(BorderMatAttr->m_Value);
 		if (BackgroundMatAttr) TT.m_BackgroundMaterial = Man->GetMaterial(BackgroundMatAttr->m_Value);
-		if (BorderSizeAttr) TT.m_BorderSize = (float)atof(BorderSizeAttr->m_Value);
-		if (FontScaleAttr) TT.m_FontScale = (float)atof(FontScaleAttr->m_Value);
+		if (BorderSizeAttr) TT.m_BorderSize = BorderSizeAttr->As<float>();
+		if (FontScaleAttr) TT.m_FontScale = FontScaleAttr->As<float>();
 		return;
 	};
 

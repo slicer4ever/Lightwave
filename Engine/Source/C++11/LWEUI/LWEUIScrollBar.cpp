@@ -30,9 +30,9 @@ LWEUIScrollBar *LWEUIScrollBar::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIMan
 	if (DownAttr) DownMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), DownAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	if (OffAttr) OffMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), OffAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	if (BackAttr) BackMat = Manager->GetMaterial(ParseComponentAttribute(Buffer, sizeof(Buffer), BackAttr->GetValue(), ActiveComponent, ActiveComponentNode));
-	if (ScrollAttr) Scroll = (float)atof((const char*)ParseComponentAttribute(Buffer, sizeof(Buffer), ScrollAttr->GetValue(), ActiveComponent, ActiveComponentNode)());
-	if (MaxScrollAttr) MaxScroll = (float)atof((const char*)ParseComponentAttribute(Buffer, sizeof(Buffer), MaxScrollAttr->GetValue(), ActiveComponent, ActiveComponentNode)());
-	if (ScrollSizeAttr) ScrollSize = (float)atof((const char*)ParseComponentAttribute(Buffer, sizeof(Buffer), ScrollSizeAttr->GetValue(), ActiveComponent, ActiveComponentNode)());
+	if (ScrollAttr) Scroll = ParseComponentAttribute(Buffer, sizeof(Buffer), ScrollAttr->GetValue(), ActiveComponent, ActiveComponentNode).As<float>();
+	if (MaxScrollAttr) MaxScroll = ParseComponentAttribute(Buffer, sizeof(Buffer), MaxScrollAttr->GetValue(), ActiveComponent, ActiveComponentNode).As<float>();
+	if (ScrollSizeAttr) ScrollSize = ParseComponentAttribute(Buffer, sizeof(Buffer), ScrollSizeAttr->GetValue(), ActiveComponent, ActiveComponentNode).As<float>();
 
 	ScrollBar->SetBarOffMaterial(OffMat).SetBarOverMaterial(OverMat).SetBarDownMaterial(DownMat).SetBackgroundMaterial(BackMat);
 	ScrollBar->SetMaxScroll(MaxScroll).SetScrollSize(ScrollSize).SetScroll(Scroll);

@@ -28,7 +28,7 @@ LWVector4f LWEUI::EvaluatePerPixelAttr(const LWUTF8Iterator &Value) {
 		else if (cp == 'y' || cp == 'Y') x = false;
 		if (CodepointIsNumber(cp) && !CodepointIsNumber(*P)) P = C;
 		if (cp == '%' || cp == 'p') {
-			float v = (float)atof((const char*)P());
+			float v = P.As<float>();
 			if (x) {
 				if (cp == '%') Val.x += v / 100.0f;
 				else Val.z += v;

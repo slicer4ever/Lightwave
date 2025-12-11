@@ -36,7 +36,7 @@ bool LWEGeometryPass::ParseXMLBucketPropertys(LWEXMLNode *Node, LWEBucketPropert
 		}
 	}
 	if (PrimaryAttr) BucketProps.m_Flags |= LWEBucketPropertys::PrimarySource;
-	if (PassBitIDAttr) BucketProps.m_Flags = LWBitFieldSet(LWEBucketPropertys::PassBitIDBits, BucketProps.m_Flags, atoi(PassBitIDAttr->GetValue().c_str()));
+	if (PassBitIDAttr) BucketProps.m_Flags = LWBitFieldSet(LWEBucketPropertys::PassBitIDBits, BucketProps.m_Flags, PassBitIDAttr->As<uint32_t>());
 	return true;
 }
 
@@ -47,7 +47,7 @@ LWEPass *LWEGeometryPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer 
 		return nullptr;
 	}
 	LWEXMLAttribute *PassBitIDAttr = Node->FindAttribute("PassBitID");
-	uint32_t DefaultBitID = PassBitIDAttr ? atoi(PassBitIDAttr->GetValue().c_str()) : 0;
+	uint32_t DefaultBitID = PassBitIDAttr->AsOr<uint32_t>(0);
 	uint32_t BucketCount = 0;
 	for (LWEXMLNode *C = Node->m_FirstChild; C; C = C->m_Next) {
 		uint32_t cID = C->GetName().CompareList("Bucket");

@@ -89,15 +89,15 @@ LWEUITreeList *LWEUITreeList::XMLParse(LWEXMLNode *Node, LWEXML *XML, LWEUIManag
 	if (FontAttr) Font = AM->GetAsset<LWFont>(ParseComponentAttribute(Buffer, sizeof(Buffer), FontAttr->GetValue(), ActiveComponent, ActiveComponentNode));
 	if (MinimumHeightAttr) {
 		LWUTF8Iterator Res = ParseComponentAttribute(Buffer, sizeof(Buffer), MinimumHeightAttr->GetValue(), ActiveComponent, ActiveComponentNode);
-		Tree->SetMinimumHeight((float)atof((const char*)Res()));
+		Tree->SetMinimumHeight(Res.As<float>());
 	}
 	if (LineThicknessAttr) {
 		LWUTF8Iterator Res = ParseComponentAttribute(Buffer, sizeof(Buffer), LineThicknessAttr->GetValue(), ActiveComponent, ActiveComponentNode);
-		Tree->SetLineThickness((float)atof((const char*)Res()));
+		Tree->SetLineThickness(Res.As<float>());
 	}
 	if (FontScaleAttr) {
 		LWUTF8Iterator Res = ParseComponentAttribute(Buffer, sizeof(Buffer), FontScaleAttr->GetValue(), ActiveComponent, ActiveComponentNode);
-		Tree->SetFontScale((float)atof((const char*)Res()));
+		Tree->SetFontScale(Res.As<float>());
 	}
 	Tree->SetOffMaterial(OffMat).SetOverMaterial(OverMat).SetDownMaterial(DownMat).SetBackgroundMaterial(BackMat).SetFontMaterial(FntMat);
 	Tree->SetLineMaterial(LineMat).SetHighlightMaterial(HighMat);

@@ -79,14 +79,14 @@ bool LWEPass::ParseXMLPassPropertys(LWEXMLNode *Node, LWEPassPropertys &Property
 	if (ClearDepthAttr) {
 		if (ClearDepthAttr->GetValue().AtEnd()) Propertys.m_Flag &= ~LWEPassPropertys::ClearDepth;
 		else {
-			Propertys.m_ClearDepth = (float)atof(ClearDepthAttr->GetValue().c_str());
+			Propertys.m_ClearDepth = ClearDepthAttr->As<float>();
 			Propertys.m_Flag |= LWEPassPropertys::ClearDepth;
 		}
 	}
 	if (ClearStencilAttr) {
 		if (ClearStencilAttr->GetValue().AtEnd()) Propertys.m_Flag &= ~LWEPassPropertys::ClearStencil;
 		else {
-			Propertys.m_ClearStencil = (uint8_t)atoi(ClearStencilAttr->GetValue().c_str());
+			Propertys.m_ClearStencil = ClearStencilAttr->As<uint8_t>();
 			Propertys.m_Flag |= LWEPassPropertys::ClearStencil;
 		}
 	}
@@ -123,7 +123,7 @@ bool LWEPass::ParseXML(LWEXMLNode *Node, LWEPass *Pass, LWERenderer *Renderer, L
 bool LWEPass::ParseXMLPipelineBlock(LWEXMLAttribute &Attr, LWEPassResource &Block, LWEAssetManager *AssetManager, LWERenderer *Renderer) {
 	LWUTF8Iterator SplitList[2];
 	uint32_t SplitCnt = Attr.GetValue().SplitToken(SplitList, 2, ':');
-	uint32_t Offset = SplitCnt == 2 ? atoi(SplitList[1].c_str()) : 0;
+	uint32_t Offset = SplitCnt == 2 ? SplitList[1].As<uint32_t>() : 0;
 	uint32_t RenderID = Renderer->FindNamedVideoBuffer(SplitList[0], false);
 	if (RenderID) Block = LWEPassResource(Attr.GetName(), RenderID, Offset);
 	else {
@@ -149,10 +149,10 @@ bool LWEPass::ParseXMLPipelineResource(LWEXMLAttribute &Attr, LWEPassResource &R
 		} else {
 			RenderID = Renderer->FindNamedVideoBuffer(SplitList[0], false);
 			if (RenderID) {
-				uint32_t Offset = SplitCnt == 2 ? (uint32_t)atoi(SplitList[1].c_str()) : 0;
+				uint32_t Offset = SplitCnt == 2 ? SplitList[1].As<uint32_t>() : 0;
 				Resource = LWEPassResource(Attr.GetName(), RenderID | LWEPassResource::VideoBufferBit, Offset);
 			} else {
-				uint32_t Offset = SplitCnt == 2 ? (uint32_t)atoi(SplitList[1].c_str()) : 0;
+				uint32_t Offset = SplitCnt == 2 ? SplitList[1].As<uint32_t>() : 0;
 				LWEAsset *Asset = AssetManager->GetAsset(SplitList[0]);
 				if (!Asset) return false;
 				Resource = LWEPassResource(Attr.GetName(), (LWVideoBuffer*)Asset->GetAsset(), Offset); //Asset will be correctly interpreted by the pipeline.
